@@ -1,0 +1,114 @@
+version: "1.0"
+stages:
+  - setup
+  - build
+  - finalise
+steps:
+  main_clone:
+    title: Cloning main repository...
+    stage: 'setup'
+    type: git-clone
+    git: github
+    repo: "${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}"
+    revision: "${{CF_REVISION}}"
+
+  SetProperties:
+    title: Setup build
+    stage: 'setup'
+    image: alpine/git
+    commands:
+      - cf_export CICD_REPO="${{CF_VOLUME_PATH}}/m2_repository"
+      - cf_export GPG_IMPORT_COMMAND="cat <(echo -e '${{GPG_PRIVATE_KEY}}') | gpg --batch --import" --mask
+
+  TagReleaseName:
+    title: Setup RELEASE_NAME variable with tag
+    stage: 'setup'
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == true"
+    commands:
+      - cf_export RELEASE_NAME=${{TAG_NAME}}
+
+  BranchReleaseName:
+    title: Setup RELEASE_NAME variable with branch name
+    stage: 'setup'
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == false"
+    commands:
+      - cf_export RELEASE_NAME=${{GLOBAL_RELEASE_VERSION}}.${{CF_BRANCH_TAG_NORMALIZED}}-SNAPSHOT
+
+  ReleaseProperties:
+    title: Setup release build
+    stage: 'setup'
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == true"
+    commands:
+      - cf_export MVN_SET_VERSION="versions:set-property -DnewVersion=${{RELEASE_NAME}}"
+
+  BranchProperties:
+    title: Setup branch build
+    stage: 'setup'
+    image: alpine/git
+    when:
+      condition:
+        all:
+          releaseNameNotDefined: "${{TAG_REPO}} == false"
+    commands:
+      - cf_export MVN_SET_VERSION="versions:update-property -DnewVersion=[${{RELEASE_NAME}}] -DallowSnapshots=true -DallowDowngrade=true"
+
+  Build:
+    title: Maven build
+    stage: 'build'
+    fail_fast: true
+    image: maven:3.8.5-openjdk-17
+    working_directory: ./
+    commands:
+      - bash -c "${{GPG_IMPORT_COMMAND}}"
+      - mvn versions:set -DnewVersion=${{RELEASE_NAME}} -DallowSnapshots=true -P regnosys
+      - mvn ${{MVN_SET_VERSION}} -Dproperty=regnosys.bundle.version -P regnosys
+      - export CI_DEPLOY_USERNAME="${{CI_DEPLOY_USERNAME}}"
+      - export CI_DEPLOY_PASSWORD="${{CI_DEPLOY_PASSWORD}}"
+      - export GPG_KEYNAME="${{GPG_KEYNAME}}"
+      - export GPG_PASSPHRASE="${{GPG_PASSPHRASE}}"
+      - mvn -s settings.xml -U -B clean deploy -P gpg,regnosys
+
+  RunPythonUnitTests:
+    title: Run Python Unit tests
+    stage: 'build'
+    fail_fast: false
+    image: python:3.10-alpine
+    working_directory: ./python
+    shell: sh
+    commands:
+      - export PYTHONDONTWRITEBYTECODE=1
+      - python3 -m pip install pydantic
+      - python3 -m pip install ./src/main/resources/runtime/rosetta_runtime-2.1.0-py3-none-any.whl --force-reinstall
+      - |-
+        python3 -m pip wheel --no-deps --only-binary :all: --wheel-dir ./target/python_unit_tests ./target/python_unit_tests
+      - python3 -m pip install ./target/python_unit_tests/python_rosetta-0.0.0-py3-none-any.whl
+      - python3 -m pip install pytest
+      - pytest -p no:cacheprovider ./test/rosetta_tests
+      - pytest -p no:cacheprovider ./test/runtime_tests
+
+  TagRepo:
+    title: Tag git repo with release name
+    stage: 'finalise'
+    image: alpine/git
+    when:
+      condition:
+        all:
+          buildPassed: steps.BuildRelease.result == 'success'
+          isRelease: "${{TAG_REPO}}"
+    commands:
+      - echo This is a release build, tag repos with release name [${{RELEASE_NAME}}]
+      - git fetch --prune https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git "+refs/tags/*:refs/tags/*"
+      - git tag ${{RELEASE_NAME}}
+      - git push https://${{REGNOSYS_OPS}}:${{REGNOSYS_OPS_TOKEN}}@github.com/REGnosys/${{CF_REPO_NAME}}.git ${{RELEASE_NAME}}
