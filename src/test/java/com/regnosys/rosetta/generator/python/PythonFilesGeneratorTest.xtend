@@ -6,7 +6,6 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.Disabled
 import org.slf4j.LoggerFactory
 import com.regnosys.rosetta.tests.RosettaInjectorProvider
 import java.io.IOException

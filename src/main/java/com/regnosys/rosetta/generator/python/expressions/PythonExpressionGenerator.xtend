@@ -229,8 +229,7 @@ class PythonExpressionGenerator {
                         expr.feature.name
                     }
                     default:
-                        throw new UnsupportedOperationException("Unsupported expression type of " +
-                            expr.feature.eClass.name)
+                        throw new UnsupportedOperationException("Unsupported expression type of " + expr.feature.eClass.name)
                 }
 
                 if (right == "None")

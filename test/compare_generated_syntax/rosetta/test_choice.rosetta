@@ -1,0 +1,6 @@
+namespace test.generated_syntax.semantic : <"generate Python unit tests from Rosetta.">
+
+type Choice:
+    intType int (0..1)
+    stringType string (0..1)
+    condition Choice: one-of

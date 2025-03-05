@@ -24,7 +24,7 @@ MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
 
 echo "***** make the directory: "
-CDM_VERSION="master"
+CDM_VERSION="5.20.0"
 rm -rf common-domain-model
 mkdir common-domain-model
 cd common-domain-model
