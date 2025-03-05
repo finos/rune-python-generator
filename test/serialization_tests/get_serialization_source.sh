@@ -14,9 +14,9 @@ function error
 export PYTHONDONTWRITEBYTECODE=1
 
 type -P python > /dev/null && PYEXE=python || PYEXE=python3
-if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,10)' > /dev/null 2>&1; then
+if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1; then
         echo "Found $($PYEXE -V)"
-        echo "Expecting at least python 3.10 - exiting!"
+        echo "Expecting at least python 3.11 - exiting!"
         exit 1
 fi
 
