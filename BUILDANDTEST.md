@@ -6,6 +6,11 @@
 mvn clean install
 ```
 
+There are two types of JUnit tests to confirm that generated code matches expectations.
+
+1. In memory string comparisons of generated Python to expected results.
+2. Generated Python written to the file system (see the target directory) compared to expected results read from the file system (see the directory test/compare_generated_syntax/expected).
+
 All tests should pass.
 
 ## To run the Python Unit Tests
