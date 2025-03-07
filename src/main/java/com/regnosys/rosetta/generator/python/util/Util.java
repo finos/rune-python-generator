@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Function;
-import com.regnosys.rosetta.rosetta.RosettaType;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 
 public class Util {
@@ -18,9 +17,9 @@ public class Util {
         return new DistinctByIterator<>(parentIterable, extractFunction);
     }
 
-    public static <T> boolean exists(Iterable<?> iter, Class<T> clazz) {
+    public static <T> boolean exists(Iterable<?> iter, Class<T> rt) {
         for (Object item : iter) {
-            if (clazz.isInstance(item)) {
+            if (rt.isInstance(item)) {
                 return true;
             }
         }
@@ -70,13 +69,5 @@ public class Util {
                 }
             };
         }
-    }
-
-    public static String fullname(RosettaType clazz) {
-        return clazz.getModel().getName() + "." + clazz.getName();
-    }
-
-    public static String packageName(RosettaType clazz) {
-        return clazz.getModel().getName();
     }
 }

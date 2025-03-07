@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.regnosys.rosetta.code-generators</groupId>
-    <artifactId>python</artifactId>
+    <artifactId>python-generator</artifactId>
     <version>0.0.0.main-SNAPSHOT</version>
     <packaging>jar</packaging> <!-- Changed from pom to jar -->
     <name>code-gen-python</name>
@@ -259,8 +259,7 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-            <!-- Xtext uses Log4j directly. The following dependency will
-			redirect Log4j messages to slf4j. -->
+            <!-- Xtext uses Log4j directly. The following dependency will redirect Log4j messages to slf4j. -->
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>log4j-over-slf4j</artifactId>
@@ -366,6 +365,11 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>1.5.2</version>        
         </dependency>
         <!-- extra dependencies -->
         <dependency>

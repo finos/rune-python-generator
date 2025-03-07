@@ -1,4 +1,5 @@
 package com.regnosys.rosetta.generator.python.expressions
+// TODO: function support
 
 import com.regnosys.rosetta.generator.java.enums.EnumHelper
 import com.regnosys.rosetta.rosetta.RosettaCallableWithArgs
@@ -15,7 +16,6 @@ import com.regnosys.rosetta.rosetta.expression.DistinctOperation
 import com.regnosys.rosetta.rosetta.expression.FilterOperation
 import com.regnosys.rosetta.rosetta.expression.FirstOperation
 import com.regnosys.rosetta.rosetta.expression.FlattenOperation
-// TODO: function support
 // import com.regnosys.rosetta.rosetta.expression.InlineFunction
 import com.regnosys.rosetta.rosetta.expression.LastOperation
 import com.regnosys.rosetta.rosetta.expression.ListLiteral
@@ -74,18 +74,6 @@ class PythonExpressionGenerator {
                 res += generateExpressionCondition(cond)
             n_condition += 1;
         }
-        return res
-    }
-
-    def generateConditions(List<Condition> conditions) {
-        var n_condition = 0;
-        var res = '';
-        for (Condition cond : conditions) {
-            res += generateConditionBoilerPlate(cond, n_condition)
-            res += generateExpressionCondition(cond)
-            n_condition += 1;
-        }
-
         return res
     }
 

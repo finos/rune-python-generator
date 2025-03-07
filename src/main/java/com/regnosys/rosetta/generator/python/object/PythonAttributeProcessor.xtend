@@ -311,8 +311,30 @@ class PythonAttributeProcessor {
             _builder.append(ra.definition);
             _builder.append("\n\"\"\"");
         }
-        _builder.append("\n");
+        _builder.newLine();
         return _builder.toString();
+    }
+
+    def getDependenciesFromAttributes(Data rosettaClass) {
+        val allAttributes = rosettaClass.buildRDataType.getOwnAttributes.filter [
+            (it.name !== "reference") && (it.name !== "meta") && (it.name !== "scheme")
+        ].filter[!PythonTranslator::isRosettaBasicType(it)]
+
+        val dependencies = newArrayList
+        for (attribute : allAttributes) {
+            var rt = attribute.getRMetaAnnotatedType.getRType
+            // get all non-Meta attributes
+            if (rt instanceof RAliasType) {
+                rt = typeSystem.stripFromTypeAliases(rt);
+            }
+            if (rt === null) {
+                throw new Exception("Attribute type is null for " + attribute.name + " for class " + rosettaClass.name)
+            }
+            if (!PythonTranslator::isRosettaBasicType(rt.getName())) { // need imports for derived types
+                dependencies.add(rt.getQualifiedName)
+            }
+        }
+        return dependencies.toSet.toList
     }
 
     def getImportsFromAttributes(Data rosettaClass) {

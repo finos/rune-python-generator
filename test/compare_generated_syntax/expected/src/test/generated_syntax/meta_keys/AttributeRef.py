@@ -26,4 +26,4 @@ class AttributeRef(BaseDataClass):
       'dateReference': {'@ref', '@ref:external'}
     }
 
-import test 
+import test

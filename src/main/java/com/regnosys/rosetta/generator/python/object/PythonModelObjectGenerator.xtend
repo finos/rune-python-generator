@@ -11,7 +11,11 @@ import java.util.HashMap
 import java.util.List
 import java.util.Map
 import org.eclipse.xtend2.lib.StringConcatenation
-
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
+import org.jgrapht.graph.GraphCycleProhibitedException;
 /*
  * Generate Python from Rune Types
  */
@@ -24,8 +28,21 @@ class PythonModelObjectGenerator {
     @Inject PythonAttributeProcessor pythonAttributeProcessor;
     @Inject PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
-    List<String> importsFound;
-    
+    var Graph<String, DefaultEdge> dependencyDAG = null;
+
+    def void beforeAllGenerate () {
+        dependencyDAG = new DirectedAcyclicGraph<String, DefaultEdge>(typeof(DefaultEdge))
+    }
+    def List<String> afterAllGenerate () {
+        val orderedList = newArrayList
+        if (dependencyDAG !== null) {
+            val topologicalOrderIterator = new TopologicalOrderIterator<String, DefaultEdge>(dependencyDAG)
+            while (topologicalOrderIterator.hasNext) {
+            	orderedList.add (topologicalOrderIterator.next())
+            }
+        }
+        return orderedList;
+    }
     /**
      * Generate Python from the collection of Rosetta classes (of type Data)
      * 
@@ -34,10 +51,9 @@ class PythonModelObjectGenerator {
      * rosettaClasses - the collection of Rosetta Classes for this model
      * metaDataItems - a hash map of each "key" type found in meta data found in the classes and attributes of the class
      */
-    def Map<String, ? extends CharSequence> generate(Iterable<Data> rosettaClasses, /*Iterable<RosettaMetaType> metaDataItems, */String version) {
+    def Map<String, ? extends CharSequence> generate(Iterable<Data> rosettaClasses, String version) {
 
         var metaDataKeys = pythonMetaDataProcessor.getMetaDataKeys(rosettaClasses.toList);
-        
         val result = new HashMap
 
         for (Data rosettaClass : rosettaClasses) {
@@ -45,11 +61,25 @@ class PythonModelObjectGenerator {
             val nameSpace = Util::getNamespace(model)
             val pythonBody = generateClass(rosettaClass, metaDataKeys, nameSpace, version).toString.replace('\t', '  ')
             result.put(
-                PythonModelGeneratorUtil::toPyFileName(model.name, rosettaClass.getName()),
+                model.name + "." + rosettaClass.getName(),
                 PythonModelGeneratorUtil::createImports(rosettaClass.getName()) + pythonBody
             )
+            if (dependencyDAG !== null) {
+                val className = model.name + "." + rosettaClass.getName()
+                dependencyDAG.addVertex(className)
+                val dependencies = pythonAttributeProcessor.getDependenciesFromAttributes (rosettaClass)
+                for (dependency : dependencies) {
+                    dependencyDAG.addVertex(dependency.toString())
+                    if (!className.equals(dependency.toString())) {
+                        try {
+                            dependencyDAG.addEdge(className, dependency.toString());
+                        } catch (GraphCycleProhibitedException e) {
+                        }
+                    }
+                }
+            }
         }
-        result;
+        return result;
     }
 
     private def generateClass(Data rosettaClass, Map<String, String> metaDataKeys, String nameSpace, String version) {
@@ -64,18 +94,39 @@ class PythonModelObjectGenerator {
         if (superType !== null && superType.name === null) {
             throw new Exception("The class superType for " + rosettaClass.name + " exists but its name is null")
         }
-        importsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass)
+        val importsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass)
         expressionGenerator.importsFound = importsFound;
         val classDefinition = generateBody(rosettaClass, metaDataKeys)
 
-        return '''
-            «IF superType!==null»from «(superType.eContainer as RosettaModel).name».«superType.name» import «superType.name»«ENDIF»
-            
-            «classDefinition»
-            
-            import «nameSpace» 
-            «FOR importLine : importsFound SEPARATOR "\n"»«importLine»«ENDFOR»
-        '''
+        var _builder = new StringConcatenation();
+        if (superType !== null) {
+            _builder.append("from ")
+            _builder.append((superType.eContainer as RosettaModel).name)
+            _builder.append(".")
+            _builder.append(superType.name)
+            _builder.append(" import ")
+            _builder.append(superType.name)
+            _builder.newLine();
+
+        }
+        _builder.newLine();
+
+        _builder.append(classDefinition)
+        _builder.append("\nimport ")
+        _builder.append(nameSpace)
+        _builder.newLine();
+
+        var firstLine = true;
+        for (importLine : importsFound) {
+            if (firstLine) {
+                firstLine = false;
+            } else {
+                _builder.newLine();
+
+            }
+            _builder.append(importLine)
+        }
+        return _builder.toString();
     }
 
     private def keyRefConstraintsToString (Map<String, List<String>> keyRefConstraints) {

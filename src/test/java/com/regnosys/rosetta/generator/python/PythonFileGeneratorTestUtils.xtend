@@ -25,9 +25,9 @@ import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.tests.util.ModelHelper
 import org.slf4j.LoggerFactory
 
-class PythonCodeGeneratorUtils {
+class PythonFileGeneratorTestUtils {
 
-    static val LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorUtils)
+    static val LOGGER = LoggerFactory.getLogger(PythonFileGeneratorTestUtils)
 
     @Inject Provider<XtextResourceSet> resourceSetProvider
 
@@ -88,11 +88,9 @@ class PythonCodeGeneratorUtils {
     def Map<String, CharSequence> generatePythonFromRosettaModel(RosettaModel m, org.eclipse.emf.ecore.resource.ResourceSet resourceSet) {
         val version = m.version
         val result = newHashMap
-        result.putAll(generator.beforeAllGenerate(resourceSet, #{m}, version))
         result.putAll(generator.beforeGenerate(m.eResource, m, version))
         result.putAll(generator.generate(m.eResource, m, version))
         result.putAll(generator.afterGenerate(m.eResource, m, version))
-        result.putAll(generator.afterAllGenerate(resourceSet, #{m}, version))
         result
     }
 
@@ -178,12 +176,18 @@ class PythonCodeGeneratorUtils {
             .flatMap[contents.filter(RosettaModel)]
             .toList as Collection<RosettaModel>
         LOGGER.info("generatePythonFromDSLFiles ... created {} rosetta models", rosettaModels.length.toString())                  
+        val m = rosettaModels.head() as RosettaModel
+        val version = m.version
         val generatedFiles = newHashMap
+
+        generator.beforeAllGenerate(resourceSet, rosettaModels, version)
         for (model : rosettaModels) {
             LOGGER.info("generatePythonFromDSLFiles ... processing model: {}", model.name)
             val python = generatePythonFromRosettaModel(model, resourceSet)
             generatedFiles.putAll(python)
         }
+        generatedFiles.putAll(generator.afterAllGenerate(resourceSet, rosettaModels, version))
+
         cleanFolder(outputPath)
         writeFiles(outputPath, generatedFiles)
         LOGGER.info("generatePythonFromDSLFiles ... done")

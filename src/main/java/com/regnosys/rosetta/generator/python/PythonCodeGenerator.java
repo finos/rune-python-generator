@@ -6,7 +6,6 @@ import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.func.PythonFunctionGenerator;
 import com.regnosys.rosetta.generator.python.object.PythonModelObjectGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil;
-import com.regnosys.rosetta.generator.python.object.PythonMetaDataProcessor;
 
 import com.regnosys.rosetta.generator.python.util.Util;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
@@ -14,8 +13,10 @@ import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
+
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.xtend2.lib.StringConcatenation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,22 +30,25 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
     @Inject private PythonModelObjectGenerator pojoGenerator;
     @Inject private PythonFunctionGenerator funcGenerator;
     @Inject private PythonEnumGenerator enumGenerator;
-    @Inject private PythonMetaDataProcessor metaDataProcessor;
     
     private List<String> subfolders;
     private AtomicReference<String> previousNamespace;
     private String namespace;
+    private Map<String, CharSequence> objects = null;
+
 
     public PythonCodeGenerator() {
-        super("Python");
+        super("PythonCodeGenerator");
     }
 
     @Override
-    public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set,
-            Collection<? extends RosettaModel> models, String version) {
+    public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set, Collection<? extends RosettaModel> models, String version) {
+        System.out.println("******* PythonCodeGenerator.beforeAllGenerate");
         subfolders = new ArrayList<>();
         previousNamespace = new AtomicReference<>("");
         namespace = null;
+        pojoGenerator.beforeAllGenerate();
+        objects = new HashMap<>();
         return Collections.emptyMap();
     }
 
@@ -80,7 +84,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             LOGGER.debug("Processing module: {}", model.getName());
         }
 
-        result.putAll(pojoGenerator.generate(rosettaClasses, /*metaDataItems, */cleanVersion));
+        objects.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion));
         result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
         result.putAll(funcGenerator.generate(rosettaFunctions, cleanVersion));
 
@@ -89,7 +93,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
     @Override
     public Map<String, ? extends CharSequence> afterAllGenerate(ResourceSet set,
-            Collection<? extends RosettaModel> models, String version) {
+        Collection<? extends RosettaModel> models, String version) {
         String cleanVersion = cleanVersion(version);
         Map<String, CharSequence> result = new HashMap<>();
 
@@ -104,7 +108,19 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         if (namespace != null) {
             result.put("pyproject.toml", PythonModelGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
         }
-
+        System.out.println("******* PythonCodeGenerator.afterAllGenerate");
+        List<String> orderedClasses = pojoGenerator.afterAllGenerate();
+        StringConcatenation _builder = new StringConcatenation();
+        for (String oc : orderedClasses) {
+            CharSequence cs = objects.get(oc);
+            if (cs != null) {
+                _builder.append(cs);
+                _builder.newLine();
+                String fileName = "src/" + oc.replace(".", "/") + ".py";
+                result.put(fileName, cs);
+            }
+            result.put("src/" + namespace + "/_bundle.py", _builder.toString());
+        }
         return result;
     }
 

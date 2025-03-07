@@ -26,5 +26,5 @@ class NodeRef(BaseDataClass):
       'typeA': {'@key', '@key:external'}
     }
 
-import test 
+import test
 import test.generated_syntax.meta_keys.A

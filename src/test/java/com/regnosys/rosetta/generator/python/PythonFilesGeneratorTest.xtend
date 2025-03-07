@@ -13,7 +13,6 @@ import java.nio.file.Paths
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.^extension.ExtendWith
-import com.regnosys.rosetta.generator.python.PythonCodeGeneratorUtils;
 import static org.junit.jupiter.api.Assertions.*
 import java.util.ArrayList
 
@@ -31,7 +30,7 @@ class PythonFilesGeneratorTest {
 
     static val LOGGER = LoggerFactory.getLogger(PythonFilesGeneratorTest)
 
-    @Inject PythonCodeGeneratorUtils utils
+    @Inject PythonFileGeneratorTestUtils utils
 
     /*
      * generate CDM from Rosetta files.  Should be disabled for releases
@@ -57,6 +56,7 @@ class PythonFilesGeneratorTest {
         }
         catch(Exception e) {
             LOGGER.error('generateCDMPythonFromRosetta ... processing failed with an Exception')
+            LOGGER.error('generateCDMPythonFromRosetta ... exception:', e)
         }
     }
     /*
