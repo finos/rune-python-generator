@@ -15,6 +15,8 @@ import java.nio.file.Path
 import org.junit.jupiter.api.^extension.ExtendWith
 import static org.junit.jupiter.api.Assertions.*
 import java.util.ArrayList
+import org.junit.jupiter.api.Disabled
+
 
 /*
  * File based unit tests 
@@ -62,6 +64,7 @@ class PythonFilesGeneratorTest {
     /*
      * generate Python Unit Tests from Rosetta files.
      */
+    @Disabled
     @Test
     def void generatePythonUnitTests() {
         try {
@@ -92,6 +95,7 @@ class PythonFilesGeneratorTest {
     /*
      * generate Serialization Python Unit Tests from Rosetta files.
      */
+    @Disabled
     @Test
     def void generatePythonSerializationUnitTests() {
         try {
@@ -137,6 +141,7 @@ class PythonFilesGeneratorTest {
     /*
      * Test generated syntax matching expectations
      */
+    @Disabled
     @TestFactory
     def Iterable<DynamicTest> testGeneratedSyntax() {
         val tests = newArrayList

@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.generator.python.object
 
 import com.google.inject.Inject
-import com.regnosys.rosetta.generator.python.util.PythonTranslator
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper
 import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.types.RAliasType
 import com.regnosys.rosetta.types.RAttribute
@@ -11,6 +11,7 @@ import com.regnosys.rosetta.types.builtin.RNumberType
 import com.regnosys.rosetta.types.builtin.RStringType
 import java.util.ArrayList
 import java.util.HashMap
+import java.util.HashSet
 import org.eclipse.xtend2.lib.StringConcatenation
 import java.util.Map
 import com.regnosys.rosetta.types.REnumType
@@ -57,17 +58,17 @@ class PythonAttributeProcessor {
         var isRosettaBasicType = false;
         if (attrRType instanceof RAliasType) {
             attrRType = typeSystem.stripFromTypeAliases(attrRType);
-            attrTypeName = PythonTranslator::toPythonType(attrRType); // alias must be of underlying type number or string
+            attrTypeName = RuneToPythonMapper::toPythonType(attrRType); // alias must be of underlying type number or string
             isRosettaBasicType = true;
         } else {
-            attrTypeName = PythonTranslator::toPythonType(ra);
-            isRosettaBasicType = PythonTranslator::isRosettaBasicType (ra);
+            attrTypeName = RuneToPythonMapper::toPythonType(ra);
+            isRosettaBasicType = RuneToPythonMapper::isRosettaBasicType (ra);
         }
         // an empty attribute name is cause for an exception
         if (attrTypeName === null) {
             throw new Exception("Attribute type is null for " + ra.name + " in class " + rosettaClass.name);
         }
-        var attrName = PythonTranslator.mangleName(ra.getName()) // mangle the attribute name if it is a Python keyword
+        var attrName = RuneToPythonMapper.mangleName(ra.getName()) // mangle the attribute name if it is a Python keyword
         val attrDesc = (ra.definition === null) ? '' : ra.definition.replaceAll('\\s+', ' ').replace("'", "\\'");
         // get the properties / parameters if there are any (applies to string and number)
         val attrProp = new HashMap<String, String>();
@@ -235,7 +236,7 @@ class PythonAttributeProcessor {
         var hasBeenAnnotated = false;
         if (!validators.isEmpty()) {
             if (!attributeIsMetaKey) {
-                attrTypeName = PythonTranslator.getAttributeTypeWithMeta(attrTypeName);
+                attrTypeName = RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeName);
             }
             metaPrefix = "Annotated[";
             hasBeenAnnotated = true;
@@ -259,6 +260,7 @@ class PythonAttributeProcessor {
             metaSuffix += "))]"
         }
         if (!hasBeenAnnotated && !isRosettaBasicType && !(attrRType instanceof REnumType)) { 
+            // todo handle this condition ?  should this be an exception?
             if (metaPrefix.length() > 0) {
                 println ("----- @@@@@ whoops ... metaPrefix: " + metaPrefix)
             }
@@ -307,42 +309,25 @@ class PythonAttributeProcessor {
             _builder.append(")");
         }
         if (ra.definition !== null) {
-            _builder.append("\n\"\"\"\n");
+            _builder.newLine();
+            _builder.append("\"\"\"");
+            _builder.newLine();
             _builder.append(ra.definition);
-            _builder.append("\n\"\"\"");
+            _builder.newLine();
+            _builder.append("\"\"\"");
         }
         _builder.newLine();
         return _builder.toString();
     }
 
-    def getDependenciesFromAttributes(Data rosettaClass) {
-        val allAttributes = rosettaClass.buildRDataType.getOwnAttributes.filter [
-            (it.name !== "reference") && (it.name !== "meta") && (it.name !== "scheme")
-        ].filter[!PythonTranslator::isRosettaBasicType(it)]
-
-        val dependencies = newArrayList
-        for (attribute : allAttributes) {
-            var rt = attribute.getRMetaAnnotatedType.getRType
-            // get all non-Meta attributes
-            if (rt instanceof RAliasType) {
-                rt = typeSystem.stripFromTypeAliases(rt);
-            }
-            if (rt === null) {
-                throw new Exception("Attribute type is null for " + attribute.name + " for class " + rosettaClass.name)
-            }
-            if (!PythonTranslator::isRosettaBasicType(rt.getName())) { // need imports for derived types
-                dependencies.add(rt.getQualifiedName)
-            }
-        }
-        return dependencies.toSet.toList
-    }
 
     def getImportsFromAttributes(Data rosettaClass) {
         val allAttributes = rosettaClass.buildRDataType.getOwnAttributes.filter [
             (it.name !== "reference") && (it.name !== "meta") && (it.name !== "scheme")
-        ].filter[!PythonTranslator::isRosettaBasicType(it)]
+        ].filter[!RuneToPythonMapper::isRosettaBasicType(it)]
 
-        val imports = newArrayList
+        val imports = new HashSet<String>()
+//        val imports = newArrayList
         for (attribute : allAttributes) {
             var rt = attribute.getRMetaAnnotatedType.getRType
             // get all non-Meta attributes
@@ -352,10 +337,16 @@ class PythonAttributeProcessor {
             if (rt === null) {
                 throw new Exception("Attribute type is null for " + attribute.name + " for class " + rosettaClass.name)
             }
-            if (!PythonTranslator::isRosettaBasicType(rt.getName())) { // need imports for derived types
+            if (rt instanceof REnumType) {
+                imports.add ('''import «rt.getQualifiedName»''')
+            }
+/*
+            if (!RuneToPythonMapper::isRosettaBasicType(rt.getName())) { // need imports for derived types
                 imports.add('''import «rt.getQualifiedName»''')
             }
+*/
         }
-        return imports.toSet.toList
+//        return imports.toSet.toList
+        return imports;
     }
 }

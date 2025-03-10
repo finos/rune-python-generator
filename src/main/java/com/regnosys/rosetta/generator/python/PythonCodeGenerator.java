@@ -43,7 +43,6 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
     @Override
     public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set, Collection<? extends RosettaModel> models, String version) {
-        System.out.println("******* PythonCodeGenerator.beforeAllGenerate");
         subfolders = new ArrayList<>();
         previousNamespace = new AtomicReference<>("");
         namespace = null;
@@ -108,19 +107,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         if (namespace != null) {
             result.put("pyproject.toml", PythonModelGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
         }
-        System.out.println("******* PythonCodeGenerator.afterAllGenerate");
-        List<String> orderedClasses = pojoGenerator.afterAllGenerate();
-        StringConcatenation _builder = new StringConcatenation();
-        for (String oc : orderedClasses) {
-            CharSequence cs = objects.get(oc);
-            if (cs != null) {
-                _builder.append(cs);
-                _builder.newLine();
-                String fileName = "src/" + oc.replace(".", "/") + ".py";
-                result.put(fileName, cs);
-            }
-            result.put("src/" + namespace + "/_bundle.py", _builder.toString());
-        }
+        result.putAll(pojoGenerator.afterAllGenerate(namespace, objects));
         return result;
     }
 

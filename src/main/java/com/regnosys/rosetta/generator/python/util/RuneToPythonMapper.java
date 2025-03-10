@@ -10,7 +10,7 @@ import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RType;
 
-public class PythonTranslator {
+public class RuneToPythonMapper {
     private static final Set<String> PYTHON_KEYWORDS = new HashSet<>();
 
     static {
@@ -143,7 +143,10 @@ public class PythonTranslator {
         if (rtName == null)
             return null;
         String pythonType = toPythonBasicTypeInnerFunction(rtName);
-        return (pythonType == null) ? rt.getNamespace() + "." + rtName + "." + rtName : pythonType;
+        if (pythonType != null)
+            return pythonType;
+        pythonType = rt.getNamespace().toString() + "." + rtName;
+        return (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType.replace(".", "_");
     }
 
     public static String toPythonType(Attribute rosettaAttributeType) {

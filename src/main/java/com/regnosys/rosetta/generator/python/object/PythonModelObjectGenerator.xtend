@@ -8,9 +8,13 @@ import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.types.RObjectFactory
 import java.util.HashMap
+import java.util.HashSet
+import java.util.ArrayList
+import java.util.Set
 import java.util.List
 import java.util.Map
 import org.eclipse.xtend2.lib.StringConcatenation
+
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -29,19 +33,60 @@ class PythonModelObjectGenerator {
     @Inject PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
     var Graph<String, DefaultEdge> dependencyDAG = null;
+    var Set<String> imports = null;
 
     def void beforeAllGenerate () {
         dependencyDAG = new DirectedAcyclicGraph<String, DefaultEdge>(typeof(DefaultEdge))
+        imports = new HashSet<String>()
     }
-    def List<String> afterAllGenerate () {
-        val orderedList = newArrayList
+    def Map<String, ? extends CharSequence> afterAllGenerate (String namespace, Map<String, CharSequence> objects) {
+        // create bundle and stub classes
+        val result = new HashMap
         if (dependencyDAG !== null) {
+            var _bundle = new StringConcatenation();
             val topologicalOrderIterator = new TopologicalOrderIterator<String, DefaultEdge>(dependencyDAG)
+            // for each element in the ordered collection add the generated class to the bundle and add a stub class to the results
+            var isFirst = true;
             while (topologicalOrderIterator.hasNext) {
-            	orderedList.add (topologicalOrderIterator.next())
+                if (isFirst) {
+                    _bundle.append(PythonModelGeneratorUtil.createImports());
+                    for (import : imports) {
+                        _bundle.append(import)
+                        _bundle.newLine()
+                    }
+                    isFirst = false;
+                }
+                val name = topologicalOrderIterator.next();
+                val object = objects.get(name);
+                if (object !== null){
+                    // append the class to the bundle
+                    _bundle.newLine()
+                    _bundle.newLine()
+                    _bundle.append(object);
+                    // create the stub
+                    val parsedName = newArrayList(name.split("_")) 
+                    val stubFileName = "src/" + parsedName.join("/") + ".py"
+                    var _stubContents = new StringConcatenation();
+                    _stubContents.append("# pylint: disable=unused-import");
+                    _stubContents.newLine()
+                    _stubContents.append("from ");
+                    _stubContents.append(parsedName.head());
+                    _stubContents.append("._bundle import ")
+                    _stubContents.append(name)
+                    _stubContents.append(" as ")
+                    _stubContents.append(parsedName.last())
+                    _stubContents.newLine()
+                    _stubContents.newLine()
+                    _stubContents.append("# EOF")
+                    _stubContents.newLine()
+                    result.put (stubFileName, _stubContents.toString())
+                }
             }
+            _bundle.append("# EOF");
+            _bundle.newLine();
+            result.put("src/" + namespace + "/_bundle.py", _bundle.toString());
         }
-        return orderedList;
+        return result;
     }
     /**
      * Generate Python from the collection of Rosetta classes (of type Data)
@@ -53,35 +98,36 @@ class PythonModelObjectGenerator {
      */
     def Map<String, ? extends CharSequence> generate(Iterable<Data> rosettaClasses, String version) {
 
-        var metaDataKeys = pythonMetaDataProcessor.getMetaDataKeys(rosettaClasses.toList);
         val result = new HashMap
 
+        var metaDataKeys = pythonMetaDataProcessor.getMetaDataKeys(rosettaClasses.toList);
         for (Data rosettaClass : rosettaClasses) {
             val model = rosettaClass.eContainer as RosettaModel
             val nameSpace = Util::getNamespace(model)
             val pythonBody = generateClass(rosettaClass, metaDataKeys, nameSpace, version).toString.replace('\t', '  ')
-            result.put(
-                model.name + "." + rosettaClass.getName(),
-                PythonModelGeneratorUtil::createImports(rosettaClass.getName()) + pythonBody
-            )
+            val className = (model.name + "." + rosettaClass.getName()).replace(".", "_")
+            result.put(className, pythonBody)
             if (dependencyDAG !== null) {
-                val className = model.name + "." + rosettaClass.getName()
                 dependencyDAG.addVertex(className)
-                val dependencies = pythonAttributeProcessor.getDependenciesFromAttributes (rosettaClass)
-                for (dependency : dependencies) {
-                    dependencyDAG.addVertex(dependency.toString())
-                    if (!className.equals(dependency.toString())) {
-                        try {
-                            dependencyDAG.addEdge(className, dependency.toString());
-                        } catch (GraphCycleProhibitedException e) {
-                        }
-                    }
-                }
+                if (rosettaClass.superType !== null) {
+                    val superClass = rosettaClass.superType;
+                    val superModel = superClass.eContainer as RosettaModel
+                    addDependency(className, superModel.getName().replace(".", "_") + "_" + superClass.getName())
+                } 
             }
         }
         return result;
     }
-
+    private def addDependency (String className, String dependencyName) {
+        dependencyDAG.addVertex(dependencyName)
+        if (!className.equals(dependencyName)) {
+            try {
+                dependencyDAG.addEdge(dependencyName, className);
+            } catch (GraphCycleProhibitedException e) {
+                println("***** exception adding dependency className: " + className + " dependencyName:" + dependencyName)
+            }
+        }
+    }
     private def generateClass(Data rosettaClass, Map<String, String> metaDataKeys, String nameSpace, String version) {
         // generate Python for the class
         // ... get the imports from the attributes
@@ -95,38 +141,13 @@ class PythonModelObjectGenerator {
             throw new Exception("The class superType for " + rosettaClass.name + " exists but its name is null")
         }
         val importsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass)
-        expressionGenerator.importsFound = importsFound;
+        imports.addAll(importsFound);
+        expressionGenerator.importsFound = new ArrayList<String>(importsFound);
         val classDefinition = generateBody(rosettaClass, metaDataKeys)
 
         var _builder = new StringConcatenation();
-        if (superType !== null) {
-            _builder.append("from ")
-            _builder.append((superType.eContainer as RosettaModel).name)
-            _builder.append(".")
-            _builder.append(superType.name)
-            _builder.append(" import ")
-            _builder.append(superType.name)
-            _builder.newLine();
-
-        }
-        _builder.newLine();
-
         _builder.append(classDefinition)
-        _builder.append("\nimport ")
-        _builder.append(nameSpace)
-        _builder.newLine();
-
-        var firstLine = true;
-        for (importLine : importsFound) {
-            if (firstLine) {
-                firstLine = false;
-            } else {
-                _builder.newLine();
-
-            }
-            _builder.append(importLine)
-        }
-        return _builder.toString();
+        return classDefinition;
     }
 
     private def keyRefConstraintsToString (Map<String, List<String>> keyRefConstraints) {
@@ -169,8 +190,18 @@ class PythonModelObjectGenerator {
         val rosettaDataType = rosettaClass.buildRDataType
         val choiceAliasesAsAString = pythonChoiceAliasProcessor.generateChoiceAliasesAsString(rosettaDataType);
         val keyRefConstraints = new HashMap<String, List<String>> ();
+        val model = rosettaClass.eContainer as RosettaModel
+        val className = (model.getName() + "." + rosettaClass.getName()).replace(".", "_")
+        var superClassName = if (rosettaClass.superType !== null) {
+            val superClass = rosettaClass.superType;
+            val superModel = superClass.eContainer as RosettaModel
+            superModel.getName().replace(".", "_") + "_" + superClass.getName()
+        } else {
+            "BaseDataClass"
+        }
+        
         return '''
-            class «rosettaClass.name»«IF rosettaClass.superType === null»«ENDIF»«IF rosettaClass.superType !== null»(«rosettaClass.superType.name»):«ELSE»(BaseDataClass):«ENDIF»
+            class «className»(«superClassName»):
                 «choiceAliasesAsAString»
                 «IF rosettaClass.definition !== null»
                     """
