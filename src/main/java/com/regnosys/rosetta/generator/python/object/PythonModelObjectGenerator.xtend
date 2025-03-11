@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.generator.python.object
 
+// TODO: fix unit tests
 import com.google.inject.Inject
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator
 import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil
@@ -181,6 +182,10 @@ class PythonModelObjectGenerator {
         }
         return _builder.toString();
     }
+    private def getBundleClassName (Data rosettaClass) {
+        val model = rosettaClass.eContainer as RosettaModel
+        return model.getName().replace(".", "_") + "_" + rosettaClass.getName()
+    }
     private def generateBody(Data rosettaClass,  Map<String, String> metaDataKeys) {
         // generate the main body of the class
         // ... first generate choice aliases
@@ -190,18 +195,8 @@ class PythonModelObjectGenerator {
         val rosettaDataType = rosettaClass.buildRDataType
         val choiceAliasesAsAString = pythonChoiceAliasProcessor.generateChoiceAliasesAsString(rosettaDataType);
         val keyRefConstraints = new HashMap<String, List<String>> ();
-        val model = rosettaClass.eContainer as RosettaModel
-        val className = (model.getName() + "." + rosettaClass.getName()).replace(".", "_")
-        var superClassName = if (rosettaClass.superType !== null) {
-            val superClass = rosettaClass.superType;
-            val superModel = superClass.eContainer as RosettaModel
-            superModel.getName().replace(".", "_") + "_" + superClass.getName()
-        } else {
-            "BaseDataClass"
-        }
-        
         return '''
-            class «className»(«superClassName»):
+            class «getBundleClassName(rosettaClass)»(«(rosettaClass.superType !== null) ? getBundleClassName(rosettaClass.superType) : "BaseDataClass"»):
                 «choiceAliasesAsAString»
                 «IF rosettaClass.definition !== null»
                     """

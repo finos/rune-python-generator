@@ -258,7 +258,7 @@ class PythonExpressionGenerator {
             }
             RosettaOnlyElement: {
                 val argument = expr.argument //as RosettaExpression
-                '''get_only_element(«generateExpression(argument, iflvl, isLambda)»)'''
+                '''rune_get_only_element(«generateExpression(argument, iflvl, isLambda)»)'''
             }
             RosettaEnumValueReference: {
                 val value = EnumHelper.convertValue(expr.value)
@@ -478,11 +478,11 @@ class PythonExpressionGenerator {
                     '''(«generateExpression(expr.left, iflvl, isLambda)» != «generateExpression(expr.right, iflvl, isLambda)»)'''
                 }
                 case ("contains"): {
-                    '''contains(«generateExpression(expr.left, iflvl, isLambda)», «generateExpression(expr.right, iflvl, isLambda)»)'''
+                    '''rune_contains(«generateExpression(expr.left, iflvl, isLambda)», «generateExpression(expr.right, iflvl, isLambda)»)'''
 
                 }
                 case ("disjoint"): {
-                    '''disjoint(«generateExpression(expr.left, iflvl,isLambda)», «generateExpression(expr.right, iflvl,isLambda)»)'''
+                    '''rune_disjoint(«generateExpression(expr.left, iflvl,isLambda)», «generateExpression(expr.right, iflvl,isLambda)»)'''
 
                 }
                 case ("join"): {
