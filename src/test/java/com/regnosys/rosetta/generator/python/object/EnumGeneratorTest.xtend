@@ -21,9 +21,6 @@ class EnumGeneratorTest {
     
     @Inject extension ModelHelper
     @Inject PythonCodeGenerator generator;
-
-
-    
    
     @Test
     def void testEnumGeneration() {

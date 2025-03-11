@@ -24,15 +24,17 @@ import org.eclipse.xtext.testing.util.ParseHelper
 import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.tests.util.ModelHelper
 import org.slf4j.LoggerFactory
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.^extension.ExtendWith
+import static org.junit.jupiter.api.Assertions.*
 
-class PythonFileGeneratorTestUtils {
+class PythonGeneratorTestUtils {
 
-    static val LOGGER = LoggerFactory.getLogger(PythonFileGeneratorTestUtils)
+    static val LOGGER = LoggerFactory.getLogger(PythonGeneratorTestUtils)
 
+    @Inject extension ModelHelper
     @Inject Provider<XtextResourceSet> resourceSetProvider
-
     @Inject extension ParseHelper<RosettaModel>
-    
     @Inject PythonCodeGenerator generator   
 
     def Properties getProperties() throws Exception {
@@ -155,7 +157,7 @@ class PythonFileGeneratorTestUtils {
                 stream.close()
             }
         } catch (IOException e) {
-			throw e;
+            throw e;
         }
         LOGGER.info("getFileListWithRecursion ... found {} files in {}", result.size.toString, dslSourceDir)
         return result    
@@ -191,5 +193,35 @@ class PythonFileGeneratorTestUtils {
         cleanFolder(outputPath)
         writeFiles(outputPath, generatedFiles)
         LOGGER.info("generatePythonFromDSLFiles ... done")
+    }
+
+    def generatePythonFromString (String model) {
+        val m = model.parseRosettaWithNoErrors
+        val resourceSet = m.eResource.resourceSet
+        val version = m.version
+        
+        val result = newHashMap
+        result.putAll(generator.beforeAllGenerate(resourceSet, #{m}, version))
+        result.putAll(generator.beforeGenerate(m.eResource, m, version))
+        result.putAll(generator.generate(m.eResource, m, version))
+        result.putAll(generator.afterGenerate(m.eResource, m, version))
+        result.putAll(generator.afterAllGenerate(resourceSet, #{m}, version))
+        result
+    }
+    def generatePythonAndExtractBundle (String model) {
+        val python = generatePythonFromString (model);
+        return python.get("src/com/_bundle.py").toString()
+    }
+
+    def assertBundleContainsExpectedString(String model, String expectedString) {
+        // Generate the bundle using the existing function
+        val generatedBundle = generatePythonAndExtractBundle(model)
+        assertTrue(generatedBundle.contains(expectedString), 
+                    '''
+                    generated Python does not match expected
+                    Expected:
+                    «expectedString»
+                    Generated:
+                    «generatedBundle»''')
     }
 }

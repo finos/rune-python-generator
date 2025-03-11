@@ -1,5 +1,5 @@
 package com.regnosys.rosetta.generator.python;
-
+// TODO fix unit tests
 import com.google.inject.Inject;
 import com.regnosys.rosetta.generator.external.AbstractExternalGenerator;
 import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
@@ -16,7 +16,6 @@ import com.regnosys.rosetta.rosetta.simple.Function;
 
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.eclipse.xtend2.lib.StringConcatenation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

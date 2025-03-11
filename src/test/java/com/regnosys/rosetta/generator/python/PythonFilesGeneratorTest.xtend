@@ -32,7 +32,7 @@ class PythonFilesGeneratorTest {
 
     static val LOGGER = LoggerFactory.getLogger(PythonFilesGeneratorTest)
 
-    @Inject PythonFileGeneratorTestUtils utils
+    @Inject PythonGeneratorTestUtils utils
 
     /*
      * generate CDM from Rosetta files.  Should be disabled for releases
