@@ -24,8 +24,6 @@ import org.eclipse.xtext.testing.util.ParseHelper
 import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.tests.util.ModelHelper
 import org.slf4j.LoggerFactory
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.^extension.ExtendWith
 import static org.junit.jupiter.api.Assertions.*
 
 class PythonGeneratorTestUtils {
@@ -212,16 +210,18 @@ class PythonGeneratorTestUtils {
         val python = generatePythonFromString (model);
         return python.get("src/com/_bundle.py").toString()
     }
-
-    def assertBundleContainsExpectedString(String model, String expectedString) {
-        // Generate the bundle using the existing function
-        val generatedBundle = generatePythonAndExtractBundle(model)
-        assertTrue(generatedBundle.contains(expectedString), 
+    def assertStringInString (String generated, String expectedString) {
+        assertTrue(generated.contains(expectedString), 
                     '''
                     generated Python does not match expected
                     Expected:
                     «expectedString»
                     Generated:
-                    «generatedBundle»''')
+                    «generated»''')
+    }
+    def assertBundleContainsExpectedString(String model, String expectedString) {
+        // Generate the bundle using the existing function
+        val generatedBundle = generatePythonAndExtractBundle(model)
+        assertStringInString(generatedBundle, expectedString)
     }
 }

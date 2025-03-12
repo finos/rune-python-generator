@@ -1,27 +1,24 @@
 package com.regnosys.rosetta.generator.python.expression
 
 import com.google.inject.Inject
-import com.regnosys.rosetta.generator.python.PythonCodeGenerator
 import com.regnosys.rosetta.tests.RosettaInjectorProvider
-import com.regnosys.rosetta.tests.util.ModelHelper
+import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils
 import org.eclipse.xtext.testing.InjectWith
 import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
-
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RosettaInjectorProvider)
 
 class RosettaExistsExpressionTest {
     
-    @Inject extension ModelHelper
-    @Inject PythonCodeGenerator generator;
-
+    @Inject PythonGeneratorTestUtils testUtils
 
     @Test
     def void setUp() {
-        '''
+        val pythonString = testUtils.generatePythonFromString(
+            '''
             type Foo:
                 bar Bar (0..*)
                 baz Baz (0..1)
@@ -160,22 +157,6 @@ class RosettaExistsExpressionTest {
                 output: result boolean (1..1)
                 set result:
                     foo -> bar -> before exists or ( foo -> baz -> other exists and foo -> bar -> after exists ) or foo -> baz -> bazValue exists
-            '''.generatePython
-
-    }
-    
-    def generatePython(CharSequence model) {
-        val m = model.parseRosettaWithNoErrors
-        val resourceSet = m.eResource.resourceSet
-        val version = m.version
-        
-        val result = newHashMap
-        result.putAll(generator.beforeAllGenerate(resourceSet, #{m}, version))
-        result.putAll(generator.beforeGenerate(m.eResource, m, version))
-        result.putAll(generator.generate(m.eResource, m, version))
-        result.putAll(generator.afterGenerate(m.eResource, m, version))
-        result.putAll(generator.afterAllGenerate(resourceSet, #{m}, version))
-        
-        result
+            ''').toString()
     }
 }

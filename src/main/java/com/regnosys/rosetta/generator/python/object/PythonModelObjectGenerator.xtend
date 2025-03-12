@@ -98,16 +98,14 @@ class PythonModelObjectGenerator {
      * metaDataItems - a hash map of each "key" type found in meta data found in the classes and attributes of the class
      */
     def Map<String, ? extends CharSequence> generate(Iterable<Data> rosettaClasses, String version) {
-
         val result = new HashMap
-
         var metaDataKeys = pythonMetaDataProcessor.getMetaDataKeys(rosettaClasses.toList);
         for (Data rosettaClass : rosettaClasses) {
             val model = rosettaClass.eContainer as RosettaModel
             val nameSpace = Util::getNamespace(model)
-            val pythonBody = generateClass(rosettaClass, metaDataKeys, nameSpace, version).toString.replace('\t', '  ')
+            val pythonClass = generateClass(rosettaClass, metaDataKeys, nameSpace, version).toString.replace('\t', '  ')
             val className = (model.name + "." + rosettaClass.getName()).replace(".", "_")
-            result.put(className, pythonBody)
+            result.put(className, pythonClass)
             if (dependencyDAG !== null) {
                 dependencyDAG.addVertex(className)
                 if (rosettaClass.superType !== null) {
@@ -125,7 +123,6 @@ class PythonModelObjectGenerator {
             try {
                 dependencyDAG.addEdge(dependencyName, className);
             } catch (GraphCycleProhibitedException e) {
-                println("***** exception adding dependency className: " + className + " dependencyName:" + dependencyName)
             }
         }
     }

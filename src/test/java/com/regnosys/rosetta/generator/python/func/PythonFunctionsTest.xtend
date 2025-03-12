@@ -18,9 +18,8 @@ import static org.junit.jupiter.api.Assertions.*
 @InjectWith(RosettaInjectorProvider)
 class PythonFunctionsTest {
     
-     @Inject extension ModelHelper
-     @Inject PythonCodeGenerator generator;
-    
+    @Inject extension ModelHelper
+    @Inject PythonCodeGenerator generator;
 
     @Test
     def void testSimpleSet() {
@@ -66,10 +65,7 @@ class PythonFunctionsTest {
             return result
         '''
         assertTrue(python.toString.contains(expected))
-    
-        
     }
-    
     
     @Test
     def void testSimpleAdd() {
