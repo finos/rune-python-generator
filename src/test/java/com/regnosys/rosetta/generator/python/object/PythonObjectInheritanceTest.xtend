@@ -18,35 +18,39 @@ class PythonObjectInheritanceTest {
     @Test
     def void testPythonClassGenerationWithMultipleParents() {
         val pythonString = testUtils.generatePythonFromString (
-        '''
-        type D extends C:
-            dd string (0..1)
-        type B extends A:
-            bb string (0..1)
-        type C extends B:
-            cc string (0..1)
-        type A:
-            aa string (0..1)
-        ''').toString()
+            '''
+            type D extends C:
+                dd string (0..1)
+            type B extends A:
+                bb string (0..1)
+            type C extends B:
+                cc string (0..1)
+            type A:
+                aa string (0..1)
+            ''').toString()
 
         val expectedA =
         '''
         class com_rosetta_test_model_A(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.A'
             aa: Optional[str] = Field(None, description='')
         '''
         val expectedB =
         '''
         class com_rosetta_test_model_B(com_rosetta_test_model_A):
+            _FQRTN = 'com.rosetta.test.model.B'
             bb: Optional[str] = Field(None, description='')
         '''
         val expectedC =
         '''
         class com_rosetta_test_model_C(com_rosetta_test_model_B):
+            _FQRTN = 'com.rosetta.test.model.C'
             cc: Optional[str] = Field(None, description='')
         '''
         val expectedD =
         '''
         class com_rosetta_test_model_D(com_rosetta_test_model_C):
+            _FQRTN = 'com.rosetta.test.model.D'
             dd: Optional[str] = Field(None, description='')
         '''
         testUtils.assertStringInString(pythonString, expectedA)
@@ -71,18 +75,21 @@ class PythonObjectInheritanceTest {
         val expectedBaz =
         '''
         class test_Baz(BaseDataClass):
+            _FQRTN = 'test.Baz'
             pass
         '''
 
         val expectedBar =
         '''
         class test_Bar(test_Baz):
+            _FQRTN = 'test.Bar'
             pass
         '''
 
         val expectedFoo =
         '''
         class test_Foo(test_Bar):
+            _FQRTN = 'test.Foo'
             pass
         '''
 

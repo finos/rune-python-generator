@@ -25,6 +25,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Tester(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Tester'
                 one: Optional[str] = Field(None, description='')
                 list: list[str] = Field([], description='', min_length=1)'''
         )
@@ -40,6 +41,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Tester(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Tester'
                 one: Optional[int] = Field(None, description='')
                 list: list[int] = Field([], description='', min_length=1)'''
         )
@@ -55,6 +57,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Tester(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Tester'
                 one: Optional[Decimal] = Field(None, description='')
                 list: list[Decimal] = Field([], description='', min_length=1)'''
         )
@@ -70,6 +73,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Tester(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Tester'
                 one: Optional[bool] = Field(None, description='')
                 list: list[bool] = Field([], description='', min_length=1)'''
         )
@@ -85,6 +89,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Tester(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Tester'
                 one: Optional[datetime.date] = Field(None, description='')
                 list: list[datetime.date] = Field([], description='', min_length=1)'''
         )
@@ -101,6 +106,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Tester(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Tester'
                 one: Optional[datetime.date] = Field(None, description='')
                 list: list[datetime.date] = Field([], description='', min_length=1)
                 zoned: Optional[datetime.datetime] = Field(None, description='')'''
@@ -117,6 +123,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Tester(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Tester'
                 one: Optional[datetime.time] = Field(None, description='')
                 list: list[datetime.time] = Field([], description='', min_length=1)'''
         )
@@ -131,6 +138,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_AttributeGlobalKeyTest(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.AttributeGlobalKeyTest'
                 withoutGlobalKey: str = Field(..., description='')'''
         )
     }
@@ -153,6 +161,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_A(com_rosetta_test_model_B):
+                _FQRTN = 'com.rosetta.test.model.A'
                 c: list[Annotated[com_rosetta_test_model_C, com_rosetta_test_model_C.serializer(), com_rosetta_test_model_C.validator()]] = Field([], description='', min_length=1)'''
         )
         testUtils.assertBundleContainsExpectedString(
@@ -171,6 +180,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_B(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.B'
                 pass'''
         )
         testUtils.assertBundleContainsExpectedString(
@@ -189,6 +199,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_C(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.C'
                 one: Optional[int] = Field(None, description='')
                 list: list[int] = Field([], description='', min_length=1)'''
         )
@@ -208,6 +219,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_D(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.D'
                 s: list[str] = Field([], description='', min_length=1)'''
         )
     }
@@ -225,6 +237,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Foo(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Foo'
                 a: Optional[str] = Field(None, description='')
                 b: Optional[str] = Field(None, description='')'''
         )
@@ -239,6 +252,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):
+                _FQRTN = 'com.rosetta.test.model.Bar'
                 a: Optional[str] = Field(None, description='')'''
         )
     }
@@ -252,6 +266,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Foo(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Foo'
                 bar: Optional[str] = Field(None, description='')'''
         )
     }
@@ -267,6 +282,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Foo(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.Foo'
                 attr: Optional[str] = Field(None, description='')'''
         )
         testUtils.assertBundleContainsExpectedString(
@@ -278,6 +294,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):
+                _FQRTN = 'com.rosetta.test.model.Bar'
                 pass'''
         )
     }
@@ -309,6 +326,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_A(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.A'
                 a0: Optional[int] = Field(None, description='')
                 a1: Optional[int] = Field(None, description='')
                 
@@ -342,6 +360,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_B(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.B'
                 intValue1: Optional[int] = Field(None, description='')
                 intValue2: Optional[int] = Field(None, description='')
                 aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
@@ -394,6 +413,7 @@ class PythonObjectGeneratorTest {
                 """
                 Test type description.
                 """
+                _FQRTN = 'com.rosetta.test.model.TestType'
                 testTypeValue1: str = Field(..., description='Test string')
                 """
                 Test string
@@ -435,6 +455,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_TestType2(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.TestType2'
                 testType2Value1: list[Decimal] = Field([], description='Test number list', min_length=1)
                 """
                 Test number list
@@ -470,6 +491,7 @@ class PythonObjectGeneratorTest {
                 """
                 Provides an abstract base class shared by Price and Quantity.
                 """
+                _FQRTN = 'com.rosetta.test.model.MeasureBase'
                 amount: Decimal = Field(..., description='Specifies an amount to be qualified and used in a Price or Quantity definition.')
                 """
                 Specifies an amount to be qualified and used in a Price or Quantity definition.
@@ -497,6 +519,7 @@ class PythonObjectGeneratorTest {
                 """
                 Defines the unit to be used for price, quantity, or other purposes
                 """
+                _FQRTN = 'com.rosetta.test.model.UnitType'
                 currency: Optional[str] = Field(None, description='Defines the currency to be used as a unit for a price, quantity, or other purpose.')
                 """
                 Defines the currency to be used as a unit for a price, quantity, or other purpose.
@@ -520,6 +543,7 @@ class PythonObjectGeneratorTest {
                 """
                 Specifies a quantity to be associated to a financial product, for example a trade amount or a cashflow amount resulting from a trade.
                 """
+                _FQRTN = 'com.rosetta.test.model.Quantity'
                 multiplier: Optional[Decimal] = Field(None, description='Defines the number to be multiplied by the amount to derive a total quantity.')
                 """
                 Defines the number to be multiplied by the amount to derive a total quantity.
@@ -549,6 +573,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_TestType(com_rosetta_test_model_TestType2):
+                _FQRTN = 'com.rosetta.test.model.TestType'
                 TestTypeValue1: str = Field(..., description='Test string')
                 """
                 Test string
@@ -574,6 +599,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_TestType2(com_rosetta_test_model_TestType3):
+                _FQRTN = 'com.rosetta.test.model.TestType2'
                 TestType2Value1: Optional[Decimal] = Field(None, description='Test number')
                 """
                 Test number
@@ -599,6 +625,7 @@ class PythonObjectGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_TestType3(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.TestType3'
                 TestType3Value1: Optional[str] = Field(None, description='Test string')
                 """
                 Test string
@@ -627,6 +654,7 @@ class PythonObjectGeneratorTest {
                 """
                 Test type with one-of condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.TestType'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 """
                 Test string field 1
@@ -672,6 +700,7 @@ class PythonObjectGeneratorTest {
                 """
                 Test type with one-of condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.TestType'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 """
                 Test string field 1
@@ -729,6 +758,7 @@ class PythonObjectGeneratorTest {
                         or (intValue2 exists and intValue1 exists and intValue1 is absent)''',
             '''
             class com_rosetta_test_model_A(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.A'
                 a0: Optional[int] = Field(None, description='')
                 a1: Optional[int] = Field(None, description='')
                 
@@ -759,6 +789,7 @@ class PythonObjectGeneratorTest {
                         or (intValue2 exists and intValue1 exists and intValue1 is absent)''',
             '''
             class com_rosetta_test_model_B(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.B'
                 intValue1: Optional[int] = Field(None, description='')
                 intValue2: Optional[int] = Field(None, description='')
                 aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')

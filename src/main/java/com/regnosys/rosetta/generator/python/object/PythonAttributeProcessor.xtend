@@ -256,7 +256,18 @@ class PythonAttributeProcessor {
         return attrProp
     }
     private def String createPropString(Map<String, String> attrProp) {
-        return attrProp.entrySet.join(", ", "[", "]", [entry | entry.key + "=" + entry.value])
+        var propString = "";
+        var isFirst = true;
+        for (attrPropEntry : attrProp.entrySet()) {
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                propString += ", ";
+            }
+            propString += (attrPropEntry.key + "=" + attrPropEntry.value);
+        }
+        return propString;
+//        return attrProp.entrySet.join(", ", "[", "]", [entry | entry.key + "=" + entry.value])
     }
     private def HashMap<String, String> processCardinality(RAttribute ra) {
         // process the cardinality of the attribute

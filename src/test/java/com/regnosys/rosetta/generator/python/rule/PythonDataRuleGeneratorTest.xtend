@@ -31,6 +31,7 @@ class PythonDataRuleGeneratorTest {
         val expectedFoo =
         '''
         class com_rosetta_test_model_Foo(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Foo'
             bar: Optional[str] = Field(None, description='')
             baz: Optional[str] = Field(None, description='')
             
@@ -70,6 +71,7 @@ class PythonDataRuleGeneratorTest {
         val expectedFoo =
         '''
         class com_rosetta_test_model_Foo(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Foo'
             bar: Optional[str] = Field(None, description='')
             baz: Optional[str] = Field(None, description='')
             
@@ -116,6 +118,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuote = 
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Quote'
             quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
             
             @rune_condition
@@ -132,6 +135,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuotePrice = 
         '''
         class com_rosetta_test_model_QuotePrice(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.QuotePrice'
             bidPrice: Optional[Decimal] = Field(None, description='')
             offerPrice: Optional[Decimal] = Field(None, description='')'''
         
@@ -163,6 +167,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuote = 
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Quote'
             quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
             
             @rune_condition
@@ -178,6 +183,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuotePrice = 
         '''
         class com_rosetta_test_model_QuotePrice(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.QuotePrice'
             price1: Optional[Decimal] = Field(None, description='')
             price2: Optional[Decimal] = Field(None, description='')
             price3: Optional[Decimal] = Field(None, description='')'''
@@ -203,6 +209,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuote=
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Quote'
             quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
             
             @rune_condition
@@ -219,6 +226,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuotePrice=
         '''
         class com_rosetta_test_model_QuotePrice(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.QuotePrice'
             bidPrice: Optional[Decimal] = Field(None, description='')'''
         
         testUtils.assertStringInString(pythonString, expectedQuote)
@@ -246,6 +254,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuote=
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Quote'
             price: Optional[Decimal] = Field(None, description='')
             
             @rune_condition
@@ -284,6 +293,7 @@ class PythonDataRuleGeneratorTest {
         val expectedQuote=
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Quote'
             price: Optional[Decimal] = Field(None, description='')
             
             @rune_condition
@@ -317,6 +327,7 @@ class PythonDataRuleGeneratorTest {
         val expected=
         '''
         class com_rosetta_test_model_Coin(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Coin'
             head: Optional[bool] = Field(None, description='')
             tail: Optional[bool] = Field(None, description='')
             
@@ -350,6 +361,7 @@ class PythonDataRuleGeneratorTest {
         val expected=
         '''
         class com_rosetta_test_model_Coin(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Coin'
             head: Optional[bool] = Field(None, description='')
             tail: Optional[bool] = Field(None, description='')
             
@@ -383,6 +395,7 @@ class PythonDataRuleGeneratorTest {
         val expected=
         '''
         class com_rosetta_test_model_Coin(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Coin'
             head: Optional[bool] = Field(None, description='')
             tail: Optional[bool] = Field(None, description='')
             
@@ -414,6 +427,7 @@ class PythonDataRuleGeneratorTest {
         val expected = 
         '''
         class com_rosetta_test_model_CondTest(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.CondTest'
             multiAttr: list[Decimal] = Field([], description='', min_length=1)
             
             @rune_condition
@@ -444,6 +458,7 @@ class PythonDataRuleGeneratorTest {
         val expectedFoo=
         '''
         class com_rosetta_test_model_Foo(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Foo'
             x: Optional[str] = Field(None, description='')
             y: Optional[str] = Field(None, description='')
             
@@ -455,6 +470,7 @@ class PythonDataRuleGeneratorTest {
         val expectedBar=
         '''
         class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):
+            _FQRTN = 'com.rosetta.test.model.Bar'
             z: Optional[str] = Field(None, description='')
             
             @rune_condition
@@ -487,6 +503,7 @@ class PythonDataRuleGeneratorTest {
         val expectedFoo=
         '''
         class com_rosetta_test_model_Foo(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Foo'
             x: Optional[str] = Field(None, description='')
             y: Optional[str] = Field(None, description='')
             
@@ -498,6 +515,7 @@ class PythonDataRuleGeneratorTest {
         val expectedBar=
         '''
         class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):
+            _FQRTN = 'com.rosetta.test.model.Bar'
             z: Optional[str] = Field(None, description='')
             
             @rune_condition

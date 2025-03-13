@@ -1,4 +1,4 @@
-class BasicSingle(BaseDataClass):
+class test_generated_syntax_basic_BasicSingle(BaseDataClass):
     booleanType: bool = Field(..., description='')
     numberType: Decimal = Field(..., description='')
     parameterisedNumberType: Decimal = Field(..., description='', max_digits=18, decimal_places=2)

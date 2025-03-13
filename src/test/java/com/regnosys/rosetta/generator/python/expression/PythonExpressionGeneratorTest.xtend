@@ -30,6 +30,7 @@ class PythonExpressionGeneratorTest {
             ''',
             '''
             class com_rosetta_test_model_FooTest(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.FooTest'
                 a: int = Field(..., description='')
                 
                 @rune_condition
@@ -62,6 +63,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test choice condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 """
                 Test string field 1
@@ -95,6 +97,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test one-of condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 """
                 Test string field 1
@@ -122,6 +125,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test if-then condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 """
                 Test string field 1
@@ -164,6 +168,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test if-then-else condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 """
                 Test string field 1
@@ -206,6 +211,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test boolean condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: bool = Field(..., description='Test booelan field 1')
                 """
                 Test booelan field 1
@@ -248,6 +254,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test absent condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: bool = Field(..., description='Test booelan field 1')
                 """
                 Test booelan field 1
@@ -307,6 +314,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test only-element condition.
                 """
+                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Test enum field 1')
                 """
                 Test enum field 1
@@ -352,6 +360,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test only exists condition
                 """
+                _FQRTN = 'com.rosetta.test.model.Test'
                 aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='Test A type aValue')
                 """
                 Test A type aValue
@@ -388,6 +397,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test type
                 """
+                _FQRTN = 'com.rosetta.test.model.A'
                 field1: Optional[Decimal] = Field(None, description='Test number field 1')
                 """
                 Test number field 1
@@ -418,6 +428,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test count operation condition
                 """
+                _FQRTN = 'com.rosetta.test.model.Test'
                 aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field([], description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
@@ -458,6 +469,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test type
                 """
+                _FQRTN = 'com.rosetta.test.model.A'
                 field1: Optional[list[int]] = Field(None, description='Test int field 1')
                 """
                 Test int field 1
@@ -493,6 +505,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test any operation condition
                 """
+                _FQRTN = 'com.rosetta.test.model.Test'
                 field1: str = Field(..., description='Test string field1')
                 """
                 Test string field1
@@ -539,6 +552,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test distinct operation condition
                 """
+                _FQRTN = 'com.rosetta.test.model.Test'
                 aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field([], description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
@@ -581,6 +595,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test type
                 """
+                _FQRTN = 'com.rosetta.test.model.A'
                 field1: list[int] = Field([], description='Test int field 1', min_length=1)
                 """
                 Test int field 1
@@ -590,59 +605,6 @@ class PythonExpressionGeneratorTest {
                 Test int field 2
                 """'''
         )
-    }
-
-    // TODO: enable once the syntax for flatten is determined
-    @Disabled    
-    @Test
-    def void testGenerateFlattenCondition() {
-        val pythonString = testUtils.generatePythonFromString(
-        '''
-        type A: <"Test type A">
-            field1 int (1..1) <"Test int field 1">
-            field2 int (0..*) <"Test int field 2">
-        type Test: <"Test filter operation condition">
-            aValue A (1..1) <"Test A type aValue">
-            field3 boolean (0..1) <"Test boolean type field6">
-            condition TestCond: <"Test condition">
-                if aValue->field2 exists
-                    then aValue->field2 flatten
-        ''').toString()
-        val expectedTest = 
-        '''
-        class com_rosetta_test_model_Test(BaseDataClass):
-            """
-            Test filter operation condition
-            """
-            aValue: Annotated[com_rosetta_test_model_A] = Field(..., description='Test A type aValue')
-            """
-            Test A type aValue
-            """
-            
-            @rune_condition
-            def condition_0_TestCond(self):
-                """
-                Test condition
-                """
-                item = self
-                return (lambda item: rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field2")[0])(rune_filter(item, lambda item: rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")))'''
-        val expectedA =
-        '''
-        class com_rosetta_test_model_A(BaseDataClass):
-            """
-            Test type
-            """
-            field1: bool = Field(..., description='Test int field 1')
-            """
-            Test int field 1
-            """
-            field2: list[int] = Field([], description='Test int field 2', min_length=1)
-            """
-            Test int field 2
-            """
-        '''
-        testUtils.assertStringInString(pythonString, expectedTest)
-        testUtils.assertStringInString(pythonString, expectedA)
     }
     
     @Test
@@ -685,6 +647,7 @@ class PythonExpressionGeneratorTest {
             """
             Test type
             """
+            _FQRTN = 'com.rosetta.test.model.A'
             field1: list[int] = Field([], description='Test int field 1', min_length=1)
             """
             Test int field 1
@@ -699,6 +662,7 @@ class PythonExpressionGeneratorTest {
             """
             Test type B
             """
+            _FQRTN = 'com.rosetta.test.model.B'
             field2: list[int] = Field([], description='Test int field 2', min_length=1)
             """
             Test int field 2
@@ -713,6 +677,7 @@ class PythonExpressionGeneratorTest {
             """
             Test filter operation condition
             """
+            _FQRTN = 'com.rosetta.test.model.Test'
             bValue: list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]] = Field([], description='Test B type bValue', min_length=1)
             """
             Test B type bValue
@@ -759,6 +724,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test disjoint binary expression condition
                 """
+                _FQRTN = 'com.rosetta.test.model.Test'
                 field1: str = Field(..., description='Test string field1')
                 """
                 Test string field1
@@ -939,5 +905,59 @@ class PythonExpressionGeneratorTest {
                     foo -> bar -> before exists or ( foo -> baz -> other exists and foo -> bar -> after exists ) or foo -> baz -> bazValue exists
             ''').toString()
         */
-    }    
+    }  
+    // TODO: enable once the syntax for flatten is determined
+    @Disabled    
+    @Test
+    def void testGenerateFlattenCondition() {
+        val pythonString = testUtils.generatePythonFromString(
+        '''
+        type A: <"Test type A">
+            field1 int (1..1) <"Test int field 1">
+            field2 int (0..*) <"Test int field 2">
+        type Test: <"Test filter operation condition">
+            aValue A (1..1) <"Test A type aValue">
+            field3 boolean (0..1) <"Test boolean type field6">
+            condition TestCond: <"Test condition">
+                if aValue->field2 exists
+                    then aValue->field2 flatten
+        ''').toString()
+        val expectedTest = 
+        '''
+        class com_rosetta_test_model_Test(BaseDataClass):
+            """
+            Test filter operation condition
+            """
+            _FQRTN = 'com.rosetta.test.model.Test'
+            aValue: Annotated[com_rosetta_test_model_A] = Field(..., description='Test A type aValue')
+            """
+            Test A type aValue
+            """
+            
+            @rune_condition
+            def condition_0_TestCond(self):
+                """
+                Test condition
+                """
+                item = self
+                return (lambda item: rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field2")[0])(rune_filter(item, lambda item: rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")))'''
+        val expectedA =
+        '''
+        class com_rosetta_test_model_A(BaseDataClass):
+            """
+            Test type
+            """
+            _FQRTN = 'com.rosetta.test.model.A'
+            field1: bool = Field(..., description='Test int field 1')
+            """
+            Test int field 1
+            """
+            field2: list[int] = Field([], description='Test int field 2', min_length=1)
+            """
+            Test int field 2
+            """
+        '''
+        testUtils.assertStringInString(pythonString, expectedTest)
+        testUtils.assertStringInString(pythonString, expectedA)
+    }
 }

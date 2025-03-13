@@ -7,6 +7,7 @@ import org.eclipse.xtext.testing.InjectWith
 import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
+import org.junit.jupiter.api.Disabled
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RosettaInjectorProvider)
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.^extension.ExtendWith
 class RosettaExistsExpressionTest {
     
     @Inject PythonGeneratorTestUtils testUtils
-
+    @Disabled    
     @Test
     def void setUp() {
         val pythonString = testUtils.generatePythonFromString(

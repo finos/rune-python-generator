@@ -179,9 +179,12 @@ class PythonModelObjectGenerator {
         }
         return _builder.toString();
     }
-    private def getBundleClassName (Data rosettaClass) {
+    private def String getFullyQualifiedName (Data rosettaClass) {
         val model = rosettaClass.eContainer as RosettaModel
-        return model.getName().replace(".", "_") + "_" + rosettaClass.getName()
+        return model.getName() + "." + rosettaClass.getName()
+    }
+    private def getBundleClassName (Data rosettaClass) {
+        return getFullyQualifiedName(rosettaClass).replace(".", "_")
     }
     private def generateBody(Data rosettaClass,  Map<String, String> metaDataKeys) {
         // generate the main body of the class
@@ -200,6 +203,7 @@ class PythonModelObjectGenerator {
                     «rosettaClass.definition»
                     """
                 «ENDIF»
+                _FQRTN = '«getFullyQualifiedName(rosettaClass)»'
                 «pythonAttributeProcessor.generateAllAttributes(rosettaClass, metaDataKeys, keyRefConstraints)»
                 «IF !keyRefConstraints.isEmpty()»
                     «keyRefConstraintsToString(keyRefConstraints)»

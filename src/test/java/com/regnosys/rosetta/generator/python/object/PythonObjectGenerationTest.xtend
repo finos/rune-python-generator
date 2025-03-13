@@ -28,6 +28,7 @@ class PythonObjectGenerationTest {
         val expectedFoo = 
         '''
         class com_rosetta_test_model_Foo(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.Foo'
             attr: int = Field(..., description='This is a multiline definition')
             """
             This is a
@@ -66,6 +67,7 @@ class PythonObjectGenerationTest {
         val expectedA =
         '''
         class com_rosetta_test_model_A(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.A'
             a0: Optional[int] = Field(None, description='')
             a1: Optional[int] = Field(None, description='')
             
@@ -77,6 +79,7 @@ class PythonObjectGenerationTest {
         val expectedB = 
         '''
         class com_rosetta_test_model_B(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.B'
             intValue1: Optional[int] = Field(None, description='')
             intValue2: Optional[int] = Field(None, description='')
             aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
@@ -132,6 +135,7 @@ class PythonObjectGenerationTest {
             """
             Test type description.
             """
+            _FQRTN = 'com.rosetta.test.model.TestType'
             testTypeValue1: str = Field(..., description='Test string')
             """
             Test string
@@ -155,6 +159,7 @@ class PythonObjectGenerationTest {
         val expectedTestType2 =
         '''
         class com_rosetta_test_model_TestType2(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.TestType2'
             testType2Value1: list[Decimal] = Field([], description='Test number list', min_length=1)
             """
             Test number list
@@ -207,6 +212,7 @@ class PythonObjectGenerationTest {
         val expectedTestType = 
         '''
         class com_rosetta_test_model_TestType(com_rosetta_test_model_TestType2):
+            _FQRTN = 'com.rosetta.test.model.TestType'
             TestTypeValue1: str = Field(..., description='Test string')
             """
             Test string
@@ -218,6 +224,7 @@ class PythonObjectGenerationTest {
         val expectedTestType2 = 
         '''
         class com_rosetta_test_model_TestType2(com_rosetta_test_model_TestType3):
+            _FQRTN = 'com.rosetta.test.model.TestType2'
             TestType2Value1: Optional[Decimal] = Field(None, description='Test number')
             """
             Test number
@@ -229,6 +236,7 @@ class PythonObjectGenerationTest {
         val expectedTestType3 =
         '''
         class com_rosetta_test_model_TestType3(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.TestType3'
             TestType3Value1: Optional[str] = Field(None, description='Test string')
             """
             Test string
@@ -261,6 +269,7 @@ class PythonObjectGenerationTest {
             """
             Test type with one-of condition.
             """
+            _FQRTN = 'com.rosetta.test.model.TestType'
             field1: Optional[str] = Field(None, description='Test string field 1')
             """
             Test string field 1
@@ -308,6 +317,7 @@ class PythonObjectGenerationTest {
             """
             Test type with one-of condition.
             """
+            _FQRTN = 'com.rosetta.test.model.TestType'
             field1: Optional[str] = Field(None, description='Test string field 1')
             """
             Test string field 1
@@ -362,6 +372,7 @@ class PythonObjectGenerationTest {
             """
             Test type with one-of condition.
             """
+            _FQRTN = 'com.rosetta.test.model.TestType'
             field1: Optional[str] = Field(None, description='Test string field 1')
             """
             Test string field 1
@@ -414,6 +425,7 @@ class PythonObjectGenerationTest {
             """
             A class defining a contiguous series of calendar dates. The date range is defined as all the dates between and including the start and the end date. The start date must fall on or before the end date.
             """
+            _FQRTN = 'com.rosetta.test.model.DateRange'
             startDate: datetime.date = Field(..., description='The first date of a date range.')
             """
             The first date of a date range.
@@ -460,6 +472,7 @@ class PythonObjectGenerationTest {
         val expectedA = 
         '''
         class com_rosetta_test_model_A(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.A'
             a0: Optional[int] = Field(None, description='')
             a1: Optional[int] = Field(None, description='')
             
@@ -471,6 +484,7 @@ class PythonObjectGenerationTest {
         val expectedB =
         '''
         class com_rosetta_test_model_B(BaseDataClass):
+            _FQRTN = 'com.rosetta.test.model.B'
             intValue1: Optional[int] = Field(None, description='')
             intValue2: Optional[int] = Field(None, description='')
             aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
@@ -530,6 +544,7 @@ class PythonObjectGenerationTest {
             """
             Provides an abstract base class shared by Price and Quantity.
             """
+            _FQRTN = 'com.rosetta.test.model.MeasureBase'
             amount: Decimal = Field(..., description='Specifies an amount to be qualified and used in a Price or Quantity definition.')
             """
             Specifies an amount to be qualified and used in a Price or Quantity definition.
@@ -544,6 +559,7 @@ class PythonObjectGenerationTest {
             """
             Defines the unit to be used for price, quantity, or other purposes
             """
+            _FQRTN = 'com.rosetta.test.model.UnitType'
             currency: Optional[str] = Field(None, description='Defines the currency to be used as a unit for a price, quantity, or other purpose.')
             """
             Defines the currency to be used as a unit for a price, quantity, or other purpose.
@@ -554,6 +570,7 @@ class PythonObjectGenerationTest {
             """
             Specifies a quantity to be associated to a financial product, for example a trade amount or a cashflow amount resulting from a trade.
             """
+            _FQRTN = 'com.rosetta.test.model.Quantity'
             multiplier: Optional[Decimal] = Field(None, description='Defines the number to be multiplied by the amount to derive a total quantity.')
             """
             Defines the number to be multiplied by the amount to derive a total quantity.
@@ -582,19 +599,18 @@ class PythonObjectGenerationTest {
 
         type LegalEntity: <"A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).">
             [metadata key]
-
             entityId string (0..*) <"A legal entity identifier (e.g. RED entity code).">
                 [metadata scheme]
             name string (1..1) <"The legal entity name.">
                 [metadata scheme]
 
         type TelephoneNumber: <"A class to specify a telephone number as a type of phone number (e.g. work, personal, ...) alongside with the actual number.">
-
+            _FQRTN = 'com.rosetta.test.model.TelephoneNumber'
             telephoneNumberType TelephoneTypeEnum (0..1) <"The type of telephone number, e.g. work, mobile.">
             number string (1..1) <"The actual telephone number.">
 
         type AncillaryEntity: <"Holds an identifier for an ancillary entity, either identified directly via its ancillary role or directly as a legal entity.">
-
+            _FQRTN = 'com.rosetta.test.model.AncillaryEntity'
             ancillaryParty AncillaryRoleEnum (0..1) <"Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)">
             legalEntity LegalEntity (0..1)
 
@@ -607,6 +623,7 @@ class PythonObjectGenerationTest {
             """
             A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).
             """
+            _FQRTN = 'com.rosetta.test.model.LegalEntity'
             entityId: list[AttributeWithMeta[str] | str] = Field([], description='A legal entity identifier (e.g. RED entity code).')
             """
             A legal entity identifier (e.g. RED entity code).
@@ -621,6 +638,7 @@ class PythonObjectGenerationTest {
             """
             A class to specify a telephone number as a type of phone number (e.g. work, personal, ...) alongside with the actual number.
             """
+            _FQRTN = 'com.rosetta.test.model.TelephoneNumber'
             telephoneNumberType: Optional[com.rosetta.test.model.TelephoneTypeEnum.TelephoneTypeEnum] = Field(None, description='The type of telephone number, e.g. work, mobile.')
             """
             The type of telephone number, e.g. work, mobile.
@@ -635,6 +653,7 @@ class PythonObjectGenerationTest {
             """
             Holds an identifier for an ancillary entity, either identified directly via its ancillary role or directly as a legal entity.
             """
+            _FQRTN = 'com.rosetta.test.model.AncillaryEntity'
             ancillaryParty: Optional[com.rosetta.test.model.AncillaryRoleEnum.AncillaryRoleEnum] = Field(None, description='Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)')
             """
             Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)
@@ -728,6 +747,8 @@ class PythonObjectGenerationTest {
             """
             Provides an abstract type to define a measure as a number associated to a unit. This type is abstract because all its attributes are optional. The types that extend it can specify further existence constraints.
             """
+            _FQRTN = 'com.rosetta.test.model.MeasureBase'
+
             value: Optional[Decimal] = Field(None, description='Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.')
             """
             Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.
@@ -743,6 +764,7 @@ class PythonObjectGenerationTest {
             """
             Defines a concrete measure as a number associated to a unit. It extends MeasureBase by requiring the value attribute to be present. A measure may be unit-less so the unit attribute is still optional.
             """
+            _FQRTN = 'com.rosetta.test.model.Measure'
 
             @rune_condition
             def condition_0_ValueExists(self):
@@ -795,6 +817,8 @@ class PythonObjectGenerationTest {
             """
             Defines the unit to be used for price, quantity, or other purposes
             """
+            _FQRTN = 'com.rosetta.test.model.UnitType'
+
             capacityUnit: Optional[com.rosetta.test.model.CapacityUnitEnum.CapacityUnitEnum] = Field(None, description='Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.')
             """
             Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.
@@ -879,6 +903,8 @@ class PythonObjectGenerationTest {
             """
             Defines the unit to be used for price, quantity, or other purposes
             """
+            _FQRTN = 'com.rosetta.test.model.UnitType'
+
             capacityUnit: Optional[com.rosetta.test.model.CapacityUnitEnum.CapacityUnitEnum] = Field(None, description='Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.')
             """
             Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.

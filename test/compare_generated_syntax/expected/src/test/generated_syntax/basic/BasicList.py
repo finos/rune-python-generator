@@ -1,4 +1,4 @@
-class BasicList(BaseDataClass):
+class test_generated_syntax_basic_BasicList(BaseDataClass):
     booleanTypes: list[bool] = Field([], description='', min_length=1)
     numberTypes: list[Decimal] = Field([], description='', min_length=1)
     parameterisedNumberTypes: list[Annotated[Decimal, Field(max_digits=18, decimal_places=2)]] = Field([], description='', min_length=1)
