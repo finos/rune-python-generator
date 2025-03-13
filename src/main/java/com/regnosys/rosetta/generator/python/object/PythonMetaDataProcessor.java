@@ -30,7 +30,7 @@ public class PythonMetaDataProcessor {
             rcRData.getMetaAttributes().forEach(metaData -> {
                 String metaType = metaData.getName();
                 if ("key".equals(metaType)) {
-                    metaDataKeys.put(modelName + '.' + rosettaClass.getName() + '.' + rosettaClass.getName(), metaType);
+                    metaDataKeys.put(modelName + '.' + rosettaClass.getName(), metaType);
                 }
             });
             // capture any keys of the class' attributes

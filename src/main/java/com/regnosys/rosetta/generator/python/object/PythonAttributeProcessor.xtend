@@ -51,7 +51,7 @@ class PythonAttributeProcessor {
         /*
          * generate Python representation of attribute
          */
-		// TODO: more refactoring is possible
+        // TODO: more refactoring is possible
         var rt = ra.getRMetaAnnotatedType().getRType();
         // TODO: confirm refactoring of type properly handles enums
         var attrTypeName = null as String;
@@ -73,39 +73,39 @@ class PythonAttributeProcessor {
         // process meta data
         val validators = processMetaDataAttributes(ra, attrTypeName, metaDataItems, keyRefConstraints)
         return createAttributeString (
-        	ra, 
-        	attrTypeName, 
-        	rt,
-        	metaDataItems, 
-        	validators, 
-        	attrProp, 
-        	cardinalityMap
+            ra, 
+            attrTypeName, 
+            rt,
+            metaDataItems, 
+            validators, 
+            attrProp, 
+            cardinalityMap
         )
     }
     private def String createAttributeString (
-    	RAttribute ra, 
-    	String attrTypeNameIn, 
-    	RType rt, 
-    	Map<String, String> metaDataItems,
-    	ArrayList<String> validators, 
-    	HashMap<String, String> attrProp, 
-    	HashMap<String, String> cardinalityMap
-    	) {
+        RAttribute ra, 
+        String attrTypeNameIn, 
+        RType rt, 
+        Map<String, String> metaDataItems,
+        ArrayList<String> validators, 
+        HashMap<String, String> attrProp, 
+        HashMap<String, String> cardinalityMap
+        ) {
         val propString = createPropString (attrProp)
         val isRosettaBasicType = RuneToPythonMapper::isRosettaBasicType(rt);
         var attrName = RuneToPythonMapper.mangleName(ra.getName()) // mangle the attribute name if it is a Python keyword
         var metaPrefix = "";
         var metaSuffix = "";
         val attrTypeName = (!validators.isEmpty() && !metaDataItems.containsKey(attrTypeNameIn)) ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn) : attrTypeNameIn;
+        val attrTypeNameOut = (isRosettaBasicType || rt instanceof REnumType) ? attrTypeName : attrTypeName.replace('.', '_')
         if (!validators.isEmpty()) {
             metaPrefix = getMetaDataPrefix(validators)
-            metaSuffix = getMetaDataSuffix(validators, attrTypeName)
+            metaSuffix = getMetaDataSuffix(validators, attrTypeNameOut)
         } else if (!isRosettaBasicType && !(rt instanceof REnumType)) {
             metaPrefix = "Annotated[";
-            metaSuffix = ", " + attrTypeName + ".serializer(), " + attrTypeName + ".validator()]";
+            metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
         }
         val attrDesc = (ra.definition === null) ? '' : ra.definition.replaceAll('\\s+', ' ').replace("'", "\\'");
-
          var _builder = new StringConcatenation();
         _builder.append(attrName);
         _builder.append(": ");
@@ -114,7 +114,7 @@ class PythonAttributeProcessor {
         if (!attrProp.isEmpty() && !cardinalityMap.isEmpty() && cardinalityMap.get("cardinalityString").length() > 0) {
             _builder.append(cardinalityMap.get("cardinalityPrefix"));
             _builder.append("Annotated[")
-            _builder.append(attrTypeName);
+            _builder.append(attrTypeNameOut);
             _builder.append(", Field(");
             _builder.append(propString);
             if (metaSuffix.length() != 0) {
@@ -133,7 +133,7 @@ class PythonAttributeProcessor {
         } else {
             _builder.append(cardinalityMap.get("cardinalityPrefix"));
             _builder.append(metaPrefix);
-            _builder.append(attrTypeName);
+            _builder.append(attrTypeNameOut);
             _builder.append(metaSuffix);
             _builder.append(cardinalityMap.get("cardinalitySuffix"));
             _builder.append(" = Field(");
@@ -187,10 +187,10 @@ class PythonAttributeProcessor {
         return (validators.isEmpty()) ? "" : "Annotated["
     }
     private def processMetaDataAttributes(
-    	RAttribute ra, 
-    	String attrTypeName, 
-    	Map<String, String> metaDataItems, 
-    	Map<String, List<String>> keyRefConstraints
+        RAttribute ra, 
+        String attrTypeName, 
+        Map<String, String> metaDataItems, 
+        Map<String, List<String>> keyRefConstraints
     ) {
         val attrRMAT = ra.getRMetaAnnotatedType
         val validators = new ArrayList<String>

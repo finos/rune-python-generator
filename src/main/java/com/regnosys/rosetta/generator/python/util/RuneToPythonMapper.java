@@ -128,7 +128,7 @@ public class RuneToPythonMapper {
         if (pythonType == null) {
         	String rtName = rt.getName();
             pythonType = rt.getNamespace().toString() + "." + rtName;
-            pythonType = (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType.replace(".", "_");;
+            pythonType = (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType;
         }
         return pythonType;
     }
