@@ -144,7 +144,7 @@ class PythonObjectGenerationTest {
             """
             Test optional string
             """
-            testTypeValue3: list[str] = Field([], description='Test string list', min_length=1)
+            testTypeValue3: list[str] = Field(..., description='Test string list', min_length=1)
             """
             Test string list
             """
@@ -160,7 +160,7 @@ class PythonObjectGenerationTest {
         '''
         class com_rosetta_test_model_TestType2(BaseDataClass):
             _FQRTN = 'com.rosetta.test.model.TestType2'
-            testType2Value1: list[Decimal] = Field([], description='Test number list', min_length=1)
+            testType2Value1: list[Decimal] = Field(..., description='Test number list', min_length=1)
             """
             Test number list
             """
@@ -229,7 +229,7 @@ class PythonObjectGenerationTest {
             """
             Test number
             """
-            TestType2Value2: list[datetime.date] = Field([], description='Test date', min_length=1)
+            TestType2Value2: list[datetime.date] = Field(..., description='Test date', min_length=1)
             """
             Test date
             """'''
@@ -241,7 +241,7 @@ class PythonObjectGenerationTest {
             """
             Test string
             """
-            TestType4Value2: list[int] = Field([], description='Test int', min_length=1)
+            TestType4Value2: list[int] = Field(..., description='Test int', min_length=1)
             """
             Test int
             """'''
@@ -282,7 +282,7 @@ class PythonObjectGenerationTest {
             """
             Test number field 3
             """
-            field4: list[Decimal] = Field([], description='Test number field 4', min_length=1)
+            field4: list[Decimal] = Field(..., description='Test number field 4', min_length=1)
             """
             Test number field 4
             """
@@ -330,7 +330,7 @@ class PythonObjectGenerationTest {
             """
             Test number field 3
             """
-            field4: list[Decimal] = Field([], description='Test number field 4', min_length=1)
+            field4: list[Decimal] = Field(..., description='Test number field 4', min_length=1)
             """
             Test number field 4
             """
@@ -385,7 +385,7 @@ class PythonObjectGenerationTest {
             """
             Test number field 3
             """
-            field4: list[Decimal] = Field([], description='Test number field 4', min_length=1)
+            field4: list[Decimal] = Field(..., description='Test number field 4', min_length=1)
             """
             Test number field 4
             """

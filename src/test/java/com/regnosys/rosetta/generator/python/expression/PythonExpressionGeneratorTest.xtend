@@ -429,7 +429,7 @@ class PythonExpressionGeneratorTest {
                 Test count operation condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field([], description='Test A type aValue', min_length=1)
+                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
                 """
@@ -474,11 +474,11 @@ class PythonExpressionGeneratorTest {
                 """
                 Test int field 1
                 """
-                field2: list[int] = Field([], description='Test int field 2', min_length=1)
+                field2: list[int] = Field(..., description='Test int field 2', min_length=1)
                 """
                 Test int field 2
                 """
-                field3: list[int] = Field([], description='Test int field 3', min_length=1, max_length=3)
+                field3: list[int] = Field(..., description='Test int field 3', min_length=1, max_length=3)
                 """
                 Test int field 3
                 """
@@ -553,7 +553,7 @@ class PythonExpressionGeneratorTest {
                 Test distinct operation condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field([], description='Test A type aValue', min_length=1)
+                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
                 """
@@ -596,11 +596,11 @@ class PythonExpressionGeneratorTest {
                 Test type
                 """
                 _FQRTN = 'com.rosetta.test.model.A'
-                field1: list[int] = Field([], description='Test int field 1', min_length=1)
+                field1: list[int] = Field(..., description='Test int field 1', min_length=1)
                 """
                 Test int field 1
                 """
-                field2: list[int] = Field([], description='Test int field 2', min_length=1)
+                field2: list[int] = Field(..., description='Test int field 2', min_length=1)
                 """
                 Test int field 2
                 """'''
@@ -648,11 +648,11 @@ class PythonExpressionGeneratorTest {
             Test type
             """
             _FQRTN = 'com.rosetta.test.model.A'
-            field1: list[int] = Field([], description='Test int field 1', min_length=1)
+            field1: list[int] = Field(..., description='Test int field 1', min_length=1)
             """
             Test int field 1
             """
-            cValue: list[com.rosetta.test.model.C.C] = Field([], description='Test C type cValue', min_length=1)
+            cValue: list[com.rosetta.test.model.C.C] = Field(..., description='Test C type cValue', min_length=1)
             """
             Test C type cValue
             """'''
@@ -663,11 +663,11 @@ class PythonExpressionGeneratorTest {
             Test type B
             """
             _FQRTN = 'com.rosetta.test.model.B'
-            field2: list[int] = Field([], description='Test int field 2', min_length=1)
+            field2: list[int] = Field(..., description='Test int field 2', min_length=1)
             """
             Test int field 2
             """
-            aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field([], description='Test A type aValue', min_length=1)
+            aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
             """
             Test A type aValue
             """'''
@@ -678,7 +678,7 @@ class PythonExpressionGeneratorTest {
             Test filter operation condition
             """
             _FQRTN = 'com.rosetta.test.model.Test'
-            bValue: list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]] = Field([], description='Test B type bValue', min_length=1)
+            bValue: list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]] = Field(..., description='Test B type bValue', min_length=1)
             """
             Test B type bValue
             """

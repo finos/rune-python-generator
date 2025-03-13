@@ -428,7 +428,7 @@ class PythonDataRuleGeneratorTest {
         '''
         class com_rosetta_test_model_CondTest(BaseDataClass):
             _FQRTN = 'com.rosetta.test.model.CondTest'
-            multiAttr: list[Decimal] = Field([], description='', min_length=1)
+            multiAttr: list[Decimal] = Field(..., description='', min_length=1)
             
             @rune_condition
             def condition_0_(self):

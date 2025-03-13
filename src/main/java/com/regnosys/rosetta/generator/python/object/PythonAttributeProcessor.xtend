@@ -276,8 +276,8 @@ class PythonAttributeProcessor {
         // otherwise it is required
         // for a and b gt 1
         /*
-         * numberTypes: list[Decimal] = Field([], description='', min_length=1)
-         *  attribute name: list[attribute type] = Field([],
+         * numberTypes: list[Decimal] = Field(..., description='', min_length=1)
+         *  attribute name: list[attribute type] = Field(<...|None>,
          *                                               description,
          *                                               [min_length=#],
          *                                               [max_length=#],
@@ -289,12 +289,12 @@ class PythonAttributeProcessor {
          *     NumberWithMeta.serializer(),
          *     NumberWithMeta.validator(('@ref', )),
          *     Field(decimal_places=2, max_digits=6)]] = Field(
-         *     	    [],
+         *     	    ...,
          *     	    description='',
          *          min_length=1)
          *
          * Optional always calls for None
-         * for a list the argument is []
+         * for a list the argument is ... if upper bound is not 0 and None if it is
          * when the item is not optional and not a list use "..." (ellipsis)
          */
         val cardinalityMap = new HashMap<String, String>
@@ -328,16 +328,14 @@ class PythonAttributeProcessor {
                 // 1..1 --> not optional, no list, no min_length, no max_length
                 // 1..n --> list[min_length=1, max_length=n]
                 // 1..* --> list[min_length=1]
+                fieldDefault = "..."
                 if (cardinality.isMulti || upperBoundIsGTOne) {
                     cardinalityPrefix = "list["
                     cardinalitySuffix = "]"
                     cardinalityString = ", min_length=1"
-                    fieldDefault = "[]"
                     if (upperBoundIsGTOne) {
                         cardinalityString += ", max_length=" + upperCardinality.get.toString
                     }
-                } else {
-                    fieldDefault = "..."
                 }
             }
             default: {
@@ -347,7 +345,7 @@ class PythonAttributeProcessor {
                 cardinalityPrefix = "list["
                 cardinalitySuffix = "]"
                 cardinalityString = ", min_length=" + lowerBound.toString
-                fieldDefault = "[]"
+                fieldDefault = "..."
                 if (upperCardinality.isPresent) {
                     var upperBound = upperCardinality.get
                     if (upperBound > 1) {
