@@ -42,9 +42,13 @@ def test_correct_attrib_validation():
 
 
 if __name__ == "__main__":
+    print("test_recursive_conditions_base_fail")
     test_recursive_conditions_base_fail()
+    print("test_recursive_conditions_direct_fail")
     test_recursive_conditions_direct_fail()
+    print("test_bad_attrib_validation")
     test_bad_attrib_validation()
+    print("test_correct_attrib_validation")
     test_correct_attrib_validation()
 
 # EOF

@@ -204,14 +204,10 @@ class PythonExpressionGenerator {
                         expr.feature.name
                     }
                     RosettaEnumValue: {
-                        val rosettaValue = expr.feature as RosettaEnumValue
-                        val value = EnumHelper.convertValue(rosettaValue)
-
                         val symbol = (expr.receiver as RosettaSymbolReference).symbol
                         val model = symbol.eContainer as RosettaModel
                         addImportsFromConditions(symbol.name, model.name)
-
-                        value
+						return generateEnumString(expr.feature as RosettaEnumValue)
                     }
                     RosettaFeature: {
                         expr.feature.name
@@ -373,7 +369,8 @@ class PythonExpressionGenerator {
                 val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
                 val defaultFuncName = '''_then_default'''
                 funcNames.add(defaultFuncName)
-                val block_default_then = '''
+                val block_default_then = 
+                '''
                     def «defaultFuncName»():
                         return «defaultExprDef»
                 '''
@@ -382,7 +379,6 @@ class PythonExpressionGenerator {
         «FOR i : 0 ..< expr.cases.length»case «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(),0,isLambda)»: return «funcNames.get(i)»()
         «ENDFOR»case _: return «funcNames.get(funcNames.size-1)»()
 '''
-
             }
             default:{
                 throw new UnsupportedOperationException("Unsupported expression type of " + expr?.class?.simpleName)
@@ -433,7 +429,8 @@ class PythonExpressionGenerator {
                 '''«s.name»'''
             }
             RosettaEnumValue: {
-                '''«s.name»'''
+            	// return the fully qualified enum name
+				return generateEnumString (s)
             }
             RosettaCallableWithArgs: {
                 callableWithArgsCall(s, expr, iflvl, isLambda)
@@ -448,6 +445,15 @@ class PythonExpressionGenerator {
                 throw new UnsupportedOperationException("Unsupported symbol reference for: " + s.class.simpleName)
         }
     }
+	private def String generateEnumString (RosettaEnumValue rev) {
+		// translate the enum value to a fully qualified name as long as the value is not None
+		
+		val value = EnumHelper.convertValue(rev)
+		val parent = rev.getEnumeration()
+		val parentName = parent.getName()
+		val modelName = parent.getModel().getName()
+        return '''«modelName».«parentName».«parentName».«value»'''
+	} 
 
     def String callableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr, int iflvl,
         boolean isLambda) {

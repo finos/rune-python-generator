@@ -18,13 +18,7 @@ from cdm.base.staticdata.party.CounterpartyRoleEnum import CounterpartyRoleEnum
 from cdm.base.staticdata.asset.common.Index import Index
 from cdm.base.staticdata.identifier.AssignedIdentifier import AssignedIdentifier
 from cdm.event.common.TradeState import TradeState
-
-sys.path.append(
-    os.path.abspath(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir)))
-# pylint:disable=wrong-import-position,import-error
-from test_helpers.config import CDM_JSON_SAMPLE_SOURCE
-
+from rune.runtime.metadata import DateWithMeta
 
 def test_trade():
     '''Constructs a simple Trade in memory and validates the model.'''
@@ -49,6 +43,7 @@ def test_trade():
                         assignedIdentifier=[assigned_identifier])
     ]
 
+#    t = Trade(tradeDate=DateWithMeta(str(date(2023, 1, 1))),
     t = Trade(tradeDate=date(2023, 1, 1),
               tradableProduct=tradable_product,
               tradeIdentifier=trade_identifier)

@@ -33,6 +33,7 @@ else
     PY_SCRIPTS='Scripts'
 fi
 
+rm -rf $VENV_PATH/$VENV_NAME
 ${PY_EXE} -m venv --clear $VENV_PATH/$VENV_NAME || error
 . $VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
 ${PY_EXE} -m pip install --upgrade pip || error

@@ -2,20 +2,19 @@
 import datetime
 import pytest
 from cdm.base.datetime.DateList import DateList
-from rune.runtime.conditions import ConditionViolationError
-
+from pydantic import ValidationError
 
 def test_1_many_fail():
     '''DateList cannot be empty'''
-    with pytest.raises(ConditionViolationError):
+    with pytest.raises(ValidationError):
         dl = DateList(date=[])
         dl.validate_conditions()
 
 
 def test_1_many_fail_empty_constructor():
     '''DateList cannot be empty'''
-    dl = DateList()
-    with pytest.raises(ConditionViolationError):
+    with pytest.raises(ValidationError):
+        dl = DateList()
         dl.validate_conditions()
 
 

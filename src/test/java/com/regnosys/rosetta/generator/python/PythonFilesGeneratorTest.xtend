@@ -37,7 +37,7 @@ class PythonFilesGeneratorTest {
     /*
      * generate CDM from Rosetta files.  Should be disabled for releases
      */
-    @Disabled
+//    @Disabled
     @Test
     def void generateCDMPythonFromRosetta() {
         try {
@@ -65,7 +65,7 @@ class PythonFilesGeneratorTest {
     /*
      * generate Python Unit Tests from Rosetta files.
      */
-    @Disabled
+//    @Disabled
     @Test
     def void generatePythonUnitTests() {
         try {
@@ -96,7 +96,7 @@ class PythonFilesGeneratorTest {
     /*
      * generate Serialization Python Unit Tests from Rosetta files.
      */
-    @Disabled
+//    @Disabled
     @Test
     def void generatePythonSerializationUnitTests() {
         try {

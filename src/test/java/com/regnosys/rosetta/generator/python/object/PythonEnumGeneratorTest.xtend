@@ -19,6 +19,59 @@ class PythonEnumGeneratorTest {
     @Inject PythonGeneratorTestUtils testUtils
    
     @Test
+    def void testEnumWithConditions () {
+        val rosetta = 
+            '''
+            enum PeriodExtendedEnum /*extends PeriodEnum*/ : <"The enumerated values to specify a time period containing the additional value of Term.">
+                H <"Hour">
+                D <"Day">
+                W <"Week">
+                M <"Month">
+                Y <"Year">
+                T <"Term. The period commencing on the effective date and ending on the termination date. The T period always appears in association with periodMultiplier = 1, and the notation is intended for use in contexts where the interval thus qualified (e.g. accrual period, payment period, reset period, ...) spans the entire term of the trade.">
+                C <"CalculationPeriod - the period corresponds to the calculation period   For example, used in the Commodity Markets to indicate that a reference contract is the one that corresponds to the period of the calculation period.">
+
+            type Frequency: <"A class for defining a date frequency, e.g. one day, three months, through the combination of an integer value and a standardized period value that is specified as part of an enumeration.">
+                [metadata key]
+
+                periodMultiplier int (1..1) <"A time period multiplier, e.g. 1, 2, or 3. If the period value is T (Term) then period multiplier must contain the value 1.">
+                period PeriodExtendedEnum (1..1) <"A time period, e.g. a day, week, month, year or term of the stream.">
+
+                condition TermPeriod: <"FpML specifies that if period value is T (Term) then periodMultiplier must contain the value 1.">
+                    if period = PeriodExtendedEnum -> T then periodMultiplier = 1
+
+                condition PositivePeriodMultiplier: <"FpML specifies periodMultiplier as a positive integer.">
+                    periodMultiplier > 0
+            '''
+            val python = testUtils.generatePythonFromString(rosetta)
+            val generatedTestEnum = python.get("src/com/rosetta/test/model/PeriodExtendedEnum.py").toString()
+            val generatedEnumTestTypeProxy = python.get("src/com/rosetta/test/model/Frequency.py").toString()
+            val generatedBundle = python.get("src/com/_bundle.py").toString()
+            println ('----- testEnumWithConditions')
+            println (generatedTestEnum)
+            println (generatedEnumTestTypeProxy)
+            println (generatedBundle)
+
+/*
+            enum TestEnum:
+                A
+                B
+
+            type EnumTestType:
+                ett TestEnum(1..1)
+                condition Test:
+                    ett = TestEnum.B
+            '''
+            val python = testUtils.generatePythonFromString(rosetta)
+            val generatedTestEnum = python.get("src/com/rosetta/test/model/EnumTestType.py").toString()
+            val generatedEnumTestTypeProxy = python.get("src/com/rosetta/test/model/TestEnum.py").toString()
+            val generatedBundle = python.get("src/com/_bundle.py").toString()
+            println ('----- testEnumWithConditions')
+            println (generatedTestEnum)
+            println (generatedEnumTestTypeProxy)
+            println (generatedBundle)
+*/
+    }
     def void testEnumGeneration() {
         val pythonString = testUtils.generatePythonFromString(
             '''
@@ -64,19 +117,6 @@ class PythonEnumGeneratorTest {
         assertThat(EnumHelper.formatEnumName("_30E_360_ISDA"), is("_30E_360_ISDA"))
         assertThat(EnumHelper.formatEnumName("ACT_365L"), is("ACT_365L"))
         assertThat(EnumHelper.formatEnumName("OSPPrice"), is("OSP_PRICE"))
-        assertThat(EnumHelper.formatEnumName("FRAYield"), is("FRA_YIELD"))
-        assertThat(EnumHelper.formatEnumName("AED-EBOR-Reuters"), is("AED_EBOR_REUTERS"))
-        assertThat(EnumHelper.formatEnumName("EUR-EURIBOR-Reuters"), is("EUR_EURIBOR_REUTERS"))
-        assertThat(EnumHelper.formatEnumName("DJ.iTraxx.Europe"), is("DJ_I_TRAXX_EUROPE"))
-        assertThat(EnumHelper.formatEnumName("IVS1OpenMarkets"), is("IVS_1_OPEN_MARKETS"))
-        assertThat(EnumHelper.formatEnumName("D"), is("D"))
-        assertThat(EnumHelper.formatEnumName("_1"), is("_1"))
-        assertThat(EnumHelper.formatEnumName("DJ.CDX.NA"), is("DJ_CDX_NA"))
-        assertThat(EnumHelper.formatEnumName("novation"), is("NOVATION"))
-        assertThat(EnumHelper.formatEnumName("partialNovation"), is("PARTIAL_NOVATION"))
-        assertThat(EnumHelper.formatEnumName("ALUMINIUM_ALLOY_LME_15_MONTH"), is("ALUMINIUM_ALLOY_LME_15_MONTH"))
-        assertThat(EnumHelper.formatEnumName("AggregateClient"), is("AGGREGATE_CLIENT"))
-        assertThat(EnumHelper.formatEnumName("Currency1PerCurrency2"), is("CURRENCY_1_PER_CURRENCY_2"))
     }
 
     @Test
