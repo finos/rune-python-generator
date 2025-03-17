@@ -45,7 +45,7 @@ class PythonMetaKeyRefGeneratorTest {
 
             # EOF''')
         val proxyScopedKeyRef = python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py")
-        if (proxyKeyRef === null) {
+        if (proxyScopedKeyRef === null) {
             fail ('src/test/generated_syntax/meta_key_ref/proxyScopedKeyRef.py was not found')
         }
         testUtils.assertStringInString(
@@ -56,7 +56,7 @@ class PythonMetaKeyRefGeneratorTest {
 
             # EOF''')
         val generatedBundle = python.get("src/test/_bundle.py").toString()
-        if (proxyKeyRef === null) {
+        if (generatedBundle === null) {
             fail ('src/test/_bundle.py was not found')
         }
         val expectedKeyRef = 

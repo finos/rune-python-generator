@@ -119,7 +119,7 @@ class PythonDataRuleGeneratorTest {
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
             _FQRTN = 'com.rosetta.test.model.Quote'
-            quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
+            quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')
             
             @rune_condition
             def condition_0_Quote_Price(self):
@@ -168,7 +168,7 @@ class PythonDataRuleGeneratorTest {
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
             _FQRTN = 'com.rosetta.test.model.Quote'
-            quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
+            quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')
             
             @rune_condition
             def condition_0_Quote_Price(self):
@@ -210,7 +210,7 @@ class PythonDataRuleGeneratorTest {
         '''
         class com_rosetta_test_model_Quote(BaseDataClass):
             _FQRTN = 'com.rosetta.test.model.Quote'
-            quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
+            quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')
             
             @rune_condition
             def condition_0_Quote_Price(self):

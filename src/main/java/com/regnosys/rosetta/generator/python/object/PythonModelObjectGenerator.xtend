@@ -200,20 +200,21 @@ class PythonModelObjectGenerator {
         val rosettaDataType = rosettaClass.buildRDataType
         val choiceAliasesAsAString = pythonChoiceAliasProcessor.generateChoiceAliasesAsString(rosettaDataType);
         val keyRefConstraints = new HashMap<String, List<String>> ();
-        return '''
-            class «getBundleClassName(rosettaClass)»(«(rosettaClass.superType !== null) ? getBundleClassName(rosettaClass.superType) : "BaseDataClass"»):
-                «choiceAliasesAsAString»
-                «IF rosettaClass.definition !== null»
-                    """
-                    «rosettaClass.definition»
-                    """
-                «ENDIF»
-                _FQRTN = '«getFullyQualifiedName(rosettaClass)»'
-                «pythonAttributeProcessor.generateAllAttributes(rosettaClass, metaDataKeys, keyRefConstraints)»
-                «IF !keyRefConstraints.isEmpty()»
-                    «keyRefConstraintsToString(keyRefConstraints)»
-                «ENDIF»
-                «expressionGenerator.generateConditions(rosettaClass)»
+        return
+        '''
+        class «getBundleClassName(rosettaClass)»(«(rosettaClass.superType !== null) ? getBundleClassName(rosettaClass.superType) : "BaseDataClass"»):
+            «choiceAliasesAsAString»
+            «IF rosettaClass.definition !== null»
+                """
+                «rosettaClass.definition»
+                """
+            «ENDIF»
+            _FQRTN = '«getFullyQualifiedName(rosettaClass)»'
+            «pythonAttributeProcessor.generateAllAttributes(rosettaClass, metaDataKeys, keyRefConstraints)»
+            «IF !keyRefConstraints.isEmpty()»
+                «keyRefConstraintsToString(keyRefConstraints)»
+            «ENDIF»
+            «expressionGenerator.generateConditions(rosettaClass)»
         '''
     }
 }

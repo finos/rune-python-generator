@@ -336,7 +336,7 @@ class PythonExpressionGeneratorTest {
                     def _else_fn0():
                         return True
                     
-                    return if_cond_fn(rune_all_elements(rune_get_only_element(rune_resolve_attr(self, "field1")), "=", rune_resolve_attr(TestEnum, "TEST_ENUM_VALUE_1")), _then_fn0, _else_fn0)'''
+                    return if_cond_fn(rune_all_elements(rune_get_only_element(rune_resolve_attr(self, "field1")), "=", com.rosetta.test.model.TestEnum.TestEnum.TEST_ENUM_VALUE_1), _then_fn0, _else_fn0)'''
             testUtils.assertStringInString (pythonString, expectedTestEnum)
             testUtils.assertStringInString (pythonString, expectedTest1)
     }
@@ -361,7 +361,7 @@ class PythonExpressionGeneratorTest {
                 Test only exists condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='Test A type aValue')
+                aValue: com_rosetta_test_model_A = Field(..., description='Test A type aValue')
                 """
                 Test A type aValue
                 """
@@ -429,7 +429,7 @@ class PythonExpressionGeneratorTest {
                 Test count operation condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
+                aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
                 """
@@ -541,7 +541,7 @@ class PythonExpressionGeneratorTest {
                     
             type Test: <"Test distinct operation condition">
                 aValue A (1..*) <"Test A type aValue">
-                    field3 number (1..1)<"Test number field 3">
+                field3 number (1..1)<"Test number field 3">
                 condition TestCond: <"Test condition">
                     if aValue -> field1 distinct count = 1
                         then field3=0
@@ -553,7 +553,7 @@ class PythonExpressionGeneratorTest {
                 Test distinct operation condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
+                aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
                 """
@@ -667,7 +667,7 @@ class PythonExpressionGeneratorTest {
             """
             Test int field 2
             """
-            aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
+            aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
             """
             Test A type aValue
             """'''
@@ -678,7 +678,7 @@ class PythonExpressionGeneratorTest {
             Test filter operation condition
             """
             _FQRTN = 'com.rosetta.test.model.Test'
-            bValue: list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]] = Field(..., description='Test B type bValue', min_length=1)
+            bValue: list[com_rosetta_test_model_B] = Field(..., description='Test B type bValue', min_length=1)
             """
             Test B type bValue
             """
@@ -694,7 +694,7 @@ class PythonExpressionGeneratorTest {
                 """
                 item = self
                 def _then_fn0():
-                    return rune_contains(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bValue"), "aValue"), "cValue"), rune_resolve_attr(C, "FIELD_4"))
+                    return rune_contains(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bValue"), "aValue"), "cValue"), com.rosetta.test.model.C.C.FIELD_4)
                 
                 def _else_fn0():
                     return True

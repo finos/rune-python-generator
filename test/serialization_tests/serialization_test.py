@@ -32,7 +32,7 @@ def process_file(path_name,
         json_str_in = Path(path_name).read_text(encoding='utf8')
         if (reset_registry):
             _OBJECT_REGISTRY = {}
-        obj = BaseDataClass().rune_deserialize(json_str_in)
+        obj = BaseDataClass.rune_deserialize(json_str_in)
         json_str_out = obj.rune_serialize()
         if compare:
             dict_file_in = json.loads(json_str_in)

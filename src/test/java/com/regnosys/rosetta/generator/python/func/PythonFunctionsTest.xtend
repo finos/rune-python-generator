@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
 import com.regnosys.rosetta.generator.python.PythonCodeGenerator
 import static org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Disabled
+import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils
 
 /*
  * Test Principal
@@ -20,6 +22,7 @@ class PythonFunctionsTest {
     
     @Inject extension ModelHelper
     @Inject PythonCodeGenerator generator;
+    @Inject PythonGeneratorTestUtils testUtils
 
     @Test
     def void testSimpleSet() {
@@ -391,38 +394,40 @@ class PythonFunctionsTest {
     @Test
     def void testWithEnumAttr() {
         
-        val python =
-        '''
-        enum ArithmeticOperationEnum: <"An arithmetic operator that can be passed to a function">
-            Add <"Addition">
-            Subtract <"Subtraction">
-            Multiply <"Multiplication">
-            Divide <"Division">
-            Max <"Max of 2 values">
-            Min <"Min of 2 values">
-        
-        func ArithmeticOperation:
-            inputs:
-                n1 number (1..1)
-                op ArithmeticOperationEnum (1..1)
-                n2 number (1..1)
-            output:
-                result number (1..1)
-        
-            set result:
-                if op = ArithmeticOperationEnum -> Add then
-                    n1 + n2
-                else if op = ArithmeticOperationEnum -> Subtract then
-                    n1 - n2
-                else if op = ArithmeticOperationEnum -> Multiply then
-                    n1 * n2
-                else if op = ArithmeticOperationEnum -> Divide then
-                    n1 / n2
-                else if op = ArithmeticOperationEnum -> Max then
-                    Max( n1, n2 )
-                else if op = ArithmeticOperationEnum -> Min then
-                    Min( n1, n2 )
-        '''.generatePython
+        val python = testUtils.generatePythonFromString(
+            '''
+            enum ArithmeticOperationEnum: <"An arithmetic operator that can be passed to a function">
+                Add <"Addition">
+                Subtract <"Subtraction">
+                Multiply <"Multiplication">
+                Divide <"Division">
+                Max <"Max of 2 values">
+                Min <"Min of 2 values">
+            
+            func ArithmeticOperation:
+                inputs:
+                    n1 number (1..1)
+                    op ArithmeticOperationEnum (1..1)
+                    n2 number (1..1)
+                output:
+                    result number (1..1)
+            
+                set result:
+                    if op = ArithmeticOperationEnum -> Add then
+                        n1 + n2
+                    else if op = ArithmeticOperationEnum -> Subtract then
+                        n1 - n2
+                    else if op = ArithmeticOperationEnum -> Multiply then
+                        n1 * n2
+                    else if op = ArithmeticOperationEnum -> Divide then
+                        n1 / n2
+                    else if op = ArithmeticOperationEnum -> Max then
+                        Max( n1, n2 )
+                    else if op = ArithmeticOperationEnum -> Min then
+                        Min( n1, n2 )
+            '''
+        )
+        val generatedFunction = python.get("src/com/rosetta/test/model/functions/ArithmeticOperation.py").toString()
 
         val expected =
         '''
@@ -456,40 +461,38 @@ class PythonFunctionsTest {
                 return Max(rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2"))
             
             def _else_fn4():
-                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", rune_resolve_attr(ArithmeticOperationEnum, "MIN")), _then_fn5, _else_fn5)
+                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MIN), _then_fn5, _else_fn5)
             
             def _then_fn3():
                 return (rune_resolve_attr(self, "n1") / rune_resolve_attr(self, "n2"))
             
             def _else_fn3():
-                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", rune_resolve_attr(ArithmeticOperationEnum, "MAX")), _then_fn4, _else_fn4)
+                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MAX), _then_fn4, _else_fn4)
             
             def _then_fn2():
                 return (rune_resolve_attr(self, "n1") * rune_resolve_attr(self, "n2"))
             
             def _else_fn2():
-                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", rune_resolve_attr(ArithmeticOperationEnum, "DIVIDE")), _then_fn3, _else_fn3)
+                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.DIVIDE), _then_fn3, _else_fn3)
             
             def _then_fn1():
                 return (rune_resolve_attr(self, "n1") - rune_resolve_attr(self, "n2"))
             
             def _else_fn1():
-                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", rune_resolve_attr(ArithmeticOperationEnum, "MULTIPLY")), _then_fn2, _else_fn2)
+                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MULTIPLY), _then_fn2, _else_fn2)
             
             def _then_fn0():
                 return (rune_resolve_attr(self, "n1") + rune_resolve_attr(self, "n2"))
             
             def _else_fn0():
-                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", rune_resolve_attr(ArithmeticOperationEnum, "SUBTRACT")), _then_fn1, _else_fn1)
+                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.SUBTRACT), _then_fn1, _else_fn1)
             
-            result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", rune_resolve_attr(ArithmeticOperationEnum, "ADD")), _then_fn0, _else_fn0)
+            result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.ADD), _then_fn0, _else_fn0)
             
             
             return result
-        
-        sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
         '''
-        assertTrue(python.toString.contains(expected))
+        testUtils.assertStringInString (generatedFunction, expected)
     }
      
     @Test

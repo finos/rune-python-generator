@@ -25,6 +25,7 @@ import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.tests.util.ModelHelper
 import org.slf4j.LoggerFactory
 import static org.junit.jupiter.api.Assertions.*
+import java.util.HashMap
 
 class PythonGeneratorTestUtils {
 
@@ -193,7 +194,7 @@ class PythonGeneratorTestUtils {
         LOGGER.info("generatePythonFromDSLFiles ... done")
     }
 
-    def generatePythonFromString (String model) {
+    def HashMap<String, CharSequence>  generatePythonFromString (String model) {
         val m = model.parseRosettaWithNoErrors
         val resourceSet = m.eResource.resourceSet
         val version = m.version

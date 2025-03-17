@@ -20,7 +20,7 @@ class PythonEnumGeneratorTest {
    
     @Test
     def void testEnumWithConditions () {
-        val rosetta = 
+        val python = testUtils.generatePythonFromString(
             '''
             enum PeriodExtendedEnum /*extends PeriodEnum*/ : <"The enumerated values to specify a time period containing the additional value of Term.">
                 H <"Hour">
@@ -42,36 +42,50 @@ class PythonEnumGeneratorTest {
 
                 condition PositivePeriodMultiplier: <"FpML specifies periodMultiplier as a positive integer.">
                     periodMultiplier > 0
-            '''
-            val python = testUtils.generatePythonFromString(rosetta)
-            val generatedTestEnum = python.get("src/com/rosetta/test/model/PeriodExtendedEnum.py").toString()
-            val generatedEnumTestTypeProxy = python.get("src/com/rosetta/test/model/Frequency.py").toString()
-            val generatedBundle = python.get("src/com/_bundle.py").toString()
-            println ('----- testEnumWithConditions')
-            println (generatedTestEnum)
-            println (generatedEnumTestTypeProxy)
-            println (generatedBundle)
+            ''')
+        val generatedBundle = python.get("src/com/_bundle.py").toString()
+        val expected = 
+        '''
+        class com_rosetta_test_model_Frequency(BaseDataClass):
+            """
+            A class for defining a date frequency, e.g. one day, three months, through the combination of an integer value and a standardized period value that is specified as part of an enumeration.
+            """
+            _FQRTN = 'com.rosetta.test.model.Frequency'
+            periodMultiplier: int = Field(..., description='A time period multiplier, e.g. 1, 2, or 3. If the period value is T (Term) then period multiplier must contain the value 1.')
+            """
+            A time period multiplier, e.g. 1, 2, or 3. If the period value is T (Term) then period multiplier must contain the value 1.
+            """
+            period: com.rosetta.test.model.PeriodExtendedEnum.PeriodExtendedEnum = Field(..., description='A time period, e.g. a day, week, month, year or term of the stream.')
+            """
+            A time period, e.g. a day, week, month, year or term of the stream.
+            """
+            
+            @rune_condition
+            def condition_0_TermPeriod(self):
+                """
+                FpML specifies that if period value is T (Term) then periodMultiplier must contain the value 1.
+                """
+                item = self
+                def _then_fn0():
+                    return rune_all_elements(rune_resolve_attr(self, "periodMultiplier"), "=", 1)
+                
+                def _else_fn0():
+                    return True
+                
+                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "period"), "=", com.rosetta.test.model.PeriodExtendedEnum.PeriodExtendedEnum.T), _then_fn0, _else_fn0)
+            
+            @rune_condition
+            def condition_1_PositivePeriodMultiplier(self):
+                """
+                FpML specifies periodMultiplier as a positive integer.
+                """
+                item = self
+                return rune_all_elements(rune_resolve_attr(self, "periodMultiplier"), ">", 0)
+            '''        
+        testUtils.assertStringInString (generatedBundle, expected)
 
-/*
-            enum TestEnum:
-                A
-                B
-
-            type EnumTestType:
-                ett TestEnum(1..1)
-                condition Test:
-                    ett = TestEnum.B
-            '''
-            val python = testUtils.generatePythonFromString(rosetta)
-            val generatedTestEnum = python.get("src/com/rosetta/test/model/EnumTestType.py").toString()
-            val generatedEnumTestTypeProxy = python.get("src/com/rosetta/test/model/TestEnum.py").toString()
-            val generatedBundle = python.get("src/com/_bundle.py").toString()
-            println ('----- testEnumWithConditions')
-            println (generatedTestEnum)
-            println (generatedEnumTestTypeProxy)
-            println (generatedBundle)
-*/
     }
+    @Test
     def void testEnumGeneration() {
         val pythonString = testUtils.generatePythonFromString(
             '''
@@ -103,7 +117,8 @@ class PythonEnumGeneratorTest {
             _1 = "1"
             """
             Rolls on the 1st day of the month.
-            """'''
+            """
+        '''
         testUtils.assertStringInString (pythonString, expected)
     }
 

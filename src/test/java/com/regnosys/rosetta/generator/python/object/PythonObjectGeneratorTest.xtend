@@ -162,7 +162,7 @@ class PythonObjectGeneratorTest {
             '''
             class com_rosetta_test_model_A(com_rosetta_test_model_B):
                 _FQRTN = 'com.rosetta.test.model.A'
-                c: list[Annotated[com_rosetta_test_model_C, com_rosetta_test_model_C.serializer(), com_rosetta_test_model_C.validator()]] = Field(..., description='', min_length=1)'''
+                c: list[com_rosetta_test_model_C] = Field(..., description='', min_length=1)'''
         )
         testUtils.assertBundleContainsExpectedString(
             '''
@@ -363,7 +363,7 @@ class PythonObjectGeneratorTest {
                 _FQRTN = 'com.rosetta.test.model.B'
                 intValue1: Optional[int] = Field(None, description='')
                 intValue2: Optional[int] = Field(None, description='')
-                aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
+                aValue: com_rosetta_test_model_A = Field(..., description='')
                 
                 @rune_condition
                 def condition_0_Rule(self):
@@ -426,7 +426,7 @@ class PythonObjectGeneratorTest {
                 """
                 Test string list
                 """
-                testTypeValue4: Annotated[com_rosetta_test_model_TestType2, com_rosetta_test_model_TestType2.serializer(), com_rosetta_test_model_TestType2.validator()] = Field(..., description='Test TestType2')
+                testTypeValue4: com_rosetta_test_model_TestType2 = Field(..., description='Test TestType2')
                 """
                 Test TestType2
                 """
@@ -496,7 +496,7 @@ class PythonObjectGeneratorTest {
                 """
                 Specifies an amount to be qualified and used in a Price or Quantity definition.
                 """
-                unitOfAmount: Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()] = Field(..., description='Qualifies the unit by which the amount is measured.')
+                unitOfAmount: com_rosetta_test_model_UnitType = Field(..., description='Qualifies the unit by which the amount is measured.')
                 """
                 Qualifies the unit by which the amount is measured.
                 """'''
@@ -548,7 +548,7 @@ class PythonObjectGeneratorTest {
                 """
                 Defines the number to be multiplied by the amount to derive a total quantity.
                 """
-                multiplierUnit: Optional[Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]] = Field(None, description='Qualifies the multiplier with the applicable unit. For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).')
+                multiplierUnit: Optional[com_rosetta_test_model_UnitType] = Field(None, description='Qualifies the multiplier with the applicable unit. For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).')
                 """
                 Qualifies the multiplier with the applicable unit.  For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).
                 """'''
@@ -792,7 +792,7 @@ class PythonObjectGeneratorTest {
                 _FQRTN = 'com.rosetta.test.model.B'
                 intValue1: Optional[int] = Field(None, description='')
                 intValue2: Optional[int] = Field(None, description='')
-                aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
+                aValue: com_rosetta_test_model_A = Field(..., description='')
                 
                 @rune_condition
                 def condition_0_Rule(self):

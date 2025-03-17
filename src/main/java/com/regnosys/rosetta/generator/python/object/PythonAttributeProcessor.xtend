@@ -52,8 +52,8 @@ class PythonAttributeProcessor {
          * generate Python representation of attribute
          */
         // TODO: more refactoring is possible
-        var rt = ra.getRMetaAnnotatedType().getRType();
         // TODO: confirm refactoring of type properly handles enums
+        var rt = ra.getRMetaAnnotatedType().getRType();
         var attrTypeName = null as String;
         // strip out the alias if there is one and align the attribute type name to the to the underlying type
         if (rt instanceof RAliasType) {
@@ -101,12 +101,15 @@ class PythonAttributeProcessor {
         if (!validators.isEmpty()) {
             metaPrefix = getMetaDataPrefix(validators)
             metaSuffix = getMetaDataSuffix(validators, attrTypeNameOut)
-        } else if (!isRosettaBasicType && !(rt instanceof REnumType)) {
+        } 
+        /*
+        else if (!isRosettaBasicType && !(rt instanceof REnumType)) {
             metaPrefix = "Annotated[";
             metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
         }
+        */
         val attrDesc = (ra.definition === null) ? '' : ra.definition.replaceAll('\\s+', ' ').replace("'", "\\'");
-         var _builder = new StringConcatenation();
+        var _builder = new StringConcatenation();
         _builder.append(attrName);
         _builder.append(": ");
         // attribute string depends on whether there are props and whether there is cardinality
@@ -186,42 +189,50 @@ class PythonAttributeProcessor {
     private def String getMetaDataPrefix(ArrayList<String> validators) {
         return (validators.isEmpty()) ? "" : "Annotated["
     }
-    private def processMetaDataAttributes(
+    private def ArrayList<String> processMetaDataAttributes(
         RAttribute ra, 
         String attrTypeName, 
         Map<String, String> metaDataItems, 
         Map<String, List<String>> keyRefConstraints
     ) {
+        /*
+         * Attribute metadata generation rules: attributes are annotated according to their metadata and that
+         * of their containing Type.  Note that a Type can only have "key" related metadata
+         * 1. If the containing Type has metadata, an attribute gets annotated with the metadata of its containing Type
+         * 2. Attributes get annotated with their metadata and the metadata of its containing Type
+         * 3. If the containing Type and the attribute have no metadata, there are no annotations
+         */
+
         val attrRMAT = ra.getRMetaAnnotatedType
         val validators = new ArrayList<String>
-        val keysRefs = new ArrayList<String>
         val otherMeta = new ArrayList<String>()
 
+        // containing Type has metadata
         if (metaDataItems.containsKey(attrTypeName)) {
-            keysRefs.add("@key")
-            keysRefs.add("@key:external")
+            validators.add("@key")
+            validators.add("@key:external")
         }
 
+        // process attribute metadata
         if (attrRMAT.hasMeta) {
             attrRMAT.getMetaAttributes.forEach [ma |
                 switch(ma.getName) {
                     case "key", case "id": {
-                        keysRefs.add("@key")
-                        keysRefs.add("@key:external")
+                        validators.add("@key")
+                        validators.add("@key:external")
                     }
                     case "reference": {
-                        keysRefs.add("@ref")
-                        keysRefs.add("@ref:external")
+                        validators.add("@ref")
+                        validators.add("@ref:external")
                     }
                     case "scheme": {
                         otherMeta.add("@scheme")
-//                        validators.add("@scheme")
                     }
                     case "location": {
-                        keysRefs.add("@key:scoped")
+                        validators.add("@key:scoped")
                     }
                     case "address": {
-                        keysRefs.add("@ref:scoped")
+                        validators.add("@ref:scoped")
                     }
                     default: {
                         println("---- unprocessed meta ... name: " + ma.name)
@@ -229,15 +240,13 @@ class PythonAttributeProcessor {
                 }
             ]
         }
-
-        validators.addAll(keysRefs)
-        validators.addAll(otherMeta);
-        if (!keysRefs.isEmpty) {
-            keyRefConstraints.put(ra.name, keysRefs)
+        // update the Type's key / ref constraints
+        if (!validators.isEmpty) {
+            keyRefConstraints.put(ra.name, validators)
         }
+        validators.addAll(otherMeta);
         return validators;
     }
-
 
     private def HashMap<String, String> processProperties(RType rt) {
         val attrProp = new HashMap<String, String>
