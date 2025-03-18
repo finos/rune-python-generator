@@ -1,5 +1,4 @@
 '''run serialization unit tests'''
-from hashlib import sha1
 from pathlib import Path
 import os
 import json
@@ -40,8 +39,7 @@ def process_file(path_name,
             result = dict_comp(dict_file_in, dict_file_out)
             if show_results:
                 result_str = 'serialization matches' if result else 'serialization does not match'
-                print('.... processed file: ', file_name, ' result: ',
-                      result_str)
+                print('.... processed file: ', file_name, ' result: ', result_str)
             return result
     except Exception as error_msg:
         if show_results:

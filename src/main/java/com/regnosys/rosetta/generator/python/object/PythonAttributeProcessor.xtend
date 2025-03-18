@@ -102,12 +102,11 @@ class PythonAttributeProcessor {
             metaPrefix = getMetaDataPrefix(validators)
             metaSuffix = getMetaDataSuffix(validators, attrTypeNameOut)
         } 
-        /*
         else if (!isRosettaBasicType && !(rt instanceof REnumType)) {
+            // all complex types need a serializer and a validator
             metaPrefix = "Annotated[";
             metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
         }
-        */
         val attrDesc = (ra.definition === null) ? '' : ra.definition.replaceAll('\\s+', ' ').replace("'", "\\'");
         var _builder = new StringConcatenation();
         _builder.append(attrName);
