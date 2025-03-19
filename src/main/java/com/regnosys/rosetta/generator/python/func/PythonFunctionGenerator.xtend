@@ -21,7 +21,6 @@ import java.util.Set
 import org.eclipse.emf.ecore.EObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-// TODO: function support
 /*
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration
 import com.regnosys.rosetta.rosetta.simple.Condition

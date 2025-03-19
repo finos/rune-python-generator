@@ -1,5 +1,8 @@
 package com.regnosys.rosetta.generator.python;
-// TODO fix unit tests
+// TODO: fix unit tests
+// TODO: ensure that imports are collected as a set rather than an array
+// TODO: re-engineer type generation to use an object that has the features carried throughout the generation (meta data, imports, etc.)
+// TODO: function support
 import com.google.inject.Inject;
 import com.regnosys.rosetta.generator.external.AbstractExternalGenerator;
 import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;

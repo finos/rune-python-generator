@@ -159,10 +159,10 @@ class PythonMetaKeysGeneratorTest {
         val generatedBundle = python.get("src/test/_bundle.py").toString()
         val expectedRoot = 
         '''
-		class test_generated_syntax_meta_key_ref_Root(BaseDataClass):
-		    _FQRTN = 'test.generated_syntax.meta_key_ref.Root'
-		    nodeRef: Optional[test_generated_syntax_meta_key_ref_NodeRef] = Field(None, description='')
-		    attributeRef: Optional[test_generated_syntax_meta_key_ref_AttributeRef] = Field(None, description='')
+        class test_generated_syntax_meta_key_ref_Root(BaseDataClass):
+            _FQRTN = 'test.generated_syntax.meta_key_ref.Root'
+            nodeRef: Optional[Annotated[test_generated_syntax_meta_key_ref_NodeRef, test_generated_syntax_meta_key_ref_NodeRef.serializer(), test_generated_syntax_meta_key_ref_NodeRef.validator()]] = Field(None, description='')
+            attributeRef: Optional[Annotated[test_generated_syntax_meta_key_ref_AttributeRef, test_generated_syntax_meta_key_ref_AttributeRef.serializer(), test_generated_syntax_meta_key_ref_AttributeRef.validator()]] = Field(None, description='')
         '''
         testUtils.assertStringInString(generatedBundle, expectedRoot)
     }

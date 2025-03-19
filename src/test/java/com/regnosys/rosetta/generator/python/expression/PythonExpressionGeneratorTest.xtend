@@ -343,7 +343,7 @@ class PythonExpressionGeneratorTest {
 
     @Test
     def void testGenerateOnlyExistsCondition() {
-        testUtils.assertBundleContainsExpectedString(
+        val pythonString = testUtils.generatePythonFromString(
             '''
             type A: <"Test type">
             field1 number (0..1) <"Test number field 1">
@@ -354,14 +354,17 @@ class PythonExpressionGeneratorTest {
                 condition TestCond: <"Test condition">
                     if aValue -> field1 exists 
                         then aValue -> field1 only exists
-            ''',
+            '''
+        ).toString();
+        testUtils.assertStringInString(
+            pythonString,
             '''
             class com_rosetta_test_model_Test(BaseDataClass):
                 """
                 Test only exists condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: com_rosetta_test_model_A = Field(..., description='Test A type aValue')
+                aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='Test A type aValue')
                 """
                 Test A type aValue
                 """
@@ -380,18 +383,8 @@ class PythonExpressionGeneratorTest {
                     
                     return if_cond_fn(rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), _then_fn0, _else_fn0)'''
         )
-        testUtils.assertBundleContainsExpectedString(
-            '''
-            type A: <"Test type">
-            field1 number (0..1) <"Test number field 1">
-
-            type Test: <"Test only exists condition">
-                aValue A (1..1) <"Test A type aValue">
-
-                condition TestCond: <"Test condition">
-                    if aValue -> field1 exists 
-                        then aValue -> field1 only exists
-            ''',
+        testUtils.assertStringInString(
+            pythonString,
             '''
             class com_rosetta_test_model_A(BaseDataClass):
                 """
@@ -407,7 +400,7 @@ class PythonExpressionGeneratorTest {
     
     @Test
     def void testGenerateCountCondition() {
-        testUtils.assertBundleContainsExpectedString(
+        val pythonString = testUtils.generatePythonFromString (
             '''
             type A: <"Test type">
                 field1 int (0..*) <"Test int field 1">
@@ -422,14 +415,17 @@ class PythonExpressionGeneratorTest {
                     if aValue -> field1 count <> aValue -> field2 count 
                         then True
                     else False
-            ''',
+            '''
+            ).toString()
+        testUtils.assertStringInString(
+            pythonString,
             '''
             class com_rosetta_test_model_Test(BaseDataClass):
                 """
                 Test count operation condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
+                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
                 """
@@ -446,24 +442,11 @@ class PythonExpressionGeneratorTest {
                     def _else_fn0():
                         return False
                     
-                    return if_cond_fn(rune_any_elements(rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), "<>", rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field2"))), _then_fn0, _else_fn0)'''
-        )
-        testUtils.assertBundleContainsExpectedString(
+                    return if_cond_fn(rune_any_elements(rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), "<>", rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field2"))), _then_fn0, _else_fn0)
             '''
-            type A: <"Test type">
-                field1 int (0..*) <"Test int field 1">
-                field2 int (1..*) <"Test int field 2">
-                field3 int (1..3) <"Test int field 3">
-                field4 int (0..3) <"Test int field 4">
-
-            type Test: <"Test count operation condition">
-                aValue A (1..*) <"Test A type aValue">
-                
-                condition TestCond: <"Test condition">
-                    if aValue -> field1 count <> aValue -> field2 count 
-                        then True
-                    else False
-            ''',
+        )
+        testUtils.assertStringInString(
+            pythonString,
             '''
             class com_rosetta_test_model_A(BaseDataClass):
                 """
@@ -485,7 +468,8 @@ class PythonExpressionGeneratorTest {
                 field4: Optional[list[int]] = Field(None, description='Test int field 4', max_length=3)
                 """
                 Test int field 4
-                """'''
+                """
+            '''
         )
     }
     
@@ -533,7 +517,7 @@ class PythonExpressionGeneratorTest {
     
     @Test
     def void testGenerateDistinctCondition() {
-        testUtils.assertBundleContainsExpectedString(
+        val pythonString = testUtils.generatePythonFromString (
             '''
             type A: <"Test type">
                 field1 int (1..*) <"Test int field 1">
@@ -546,14 +530,17 @@ class PythonExpressionGeneratorTest {
                     if aValue -> field1 distinct count = 1
                         then field3=0
                     else field3=1
-            ''',
+            '''
+        ).toString()
+        testUtils.assertStringInString(
+            pythonString,
             '''
             class com_rosetta_test_model_Test(BaseDataClass):
                 """
                 Test distinct operation condition
                 """
                 _FQRTN = 'com.rosetta.test.model.Test'
-                aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
+                aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
                 """
                 Test A type aValue
                 """
@@ -576,20 +563,8 @@ class PythonExpressionGeneratorTest {
                     
                     return if_cond_fn(rune_all_elements(rune_count(set(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1"))), "=", 1), _then_fn0, _else_fn0)'''
         )
-        testUtils.assertBundleContainsExpectedString(
-            '''
-            type A: <"Test type">
-                field1 int (1..*) <"Test int field 1">
-                field2 int (1..*) <"Test int field 2">
-                    
-            type Test: <"Test distinct operation condition">
-                aValue A (1..*) <"Test A type aValue">
-                    field3 number (1..1)<"Test number field 3">
-                condition TestCond: <"Test condition">
-                    if aValue -> field1 distinct count = 1
-                        then field3=0
-                    else field3=1
-            ''',
+        testUtils.assertStringInString(
+            pythonString,
             '''
             class com_rosetta_test_model_A(BaseDataClass):
                 """
@@ -667,7 +642,7 @@ class PythonExpressionGeneratorTest {
             """
             Test int field 2
             """
-            aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
+            aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
             """
             Test A type aValue
             """'''
@@ -678,7 +653,7 @@ class PythonExpressionGeneratorTest {
             Test filter operation condition
             """
             _FQRTN = 'com.rosetta.test.model.Test'
-            bValue: list[com_rosetta_test_model_B] = Field(..., description='Test B type bValue', min_length=1)
+            bValue: list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]] = Field(..., description='Test B type bValue', min_length=1)
             """
             Test B type bValue
             """

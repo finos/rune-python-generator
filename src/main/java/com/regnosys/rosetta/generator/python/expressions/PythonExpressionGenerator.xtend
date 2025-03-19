@@ -1,6 +1,4 @@
 package com.regnosys.rosetta.generator.python.expressions
-// TODO: function support
-
 import com.regnosys.rosetta.generator.java.enums.EnumHelper
 import com.regnosys.rosetta.rosetta.RosettaCallableWithArgs
 import com.regnosys.rosetta.rosetta.RosettaEnumValue
@@ -311,7 +309,6 @@ class PythonExpressionGenerator {
             }
             MapOperation: {
                 val inlineFunc = expr.function //as InlineFunction;
-                // TODO: function support
                 //val funcParameters = inlineFunc.parameters.map[it.name].join(", ");
                 val funcBody = generateExpression(inlineFunc.body, iflvl, true);
                 val lambdaFunction = "lambda item: " + funcBody;

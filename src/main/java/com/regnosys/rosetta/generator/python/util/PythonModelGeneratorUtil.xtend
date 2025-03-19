@@ -41,7 +41,8 @@ class PythonModelGeneratorUtil {
             # pylint: disable=bad-indentation, trailing-whitespace, superfluous-parens
             # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import
             # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
-            # pylint: disable=missing-module-docstring
+            # pylint: disable=missing-module-docstring, unused-variable, unnecessary-pass
+            
             from __future__ import annotations
             from typing import Optional, Annotated
             import datetime

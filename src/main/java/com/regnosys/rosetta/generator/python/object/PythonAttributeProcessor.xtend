@@ -51,8 +51,6 @@ class PythonAttributeProcessor {
         /*
          * generate Python representation of attribute
          */
-        // TODO: more refactoring is possible
-        // TODO: confirm refactoring of type properly handles enums
         var rt = ra.getRMetaAnnotatedType().getRType();
         var attrTypeName = null as String;
         // strip out the alias if there is one and align the attribute type name to the to the underlying type

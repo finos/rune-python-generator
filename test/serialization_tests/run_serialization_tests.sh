@@ -39,7 +39,7 @@ $PYEXE -m pip install test_helper-0.0.0-py3-none-any.whl
 rm test_helper-0.0.0-py3-none-any.whl
 
 echo "***** Build and Install Generated Unit Tests"
-SERIALIZATIONTESTSDIR="../../target/python/serialization_unit_tests"
+SERIALIZATIONTESTSDIR="../../target/python-tests/serialization_unit_tests"
 cd $MY_PATH/$SERIALIZATIONTESTSDIR
 $PYEXE -m pip wheel --no-deps --only-binary :all: . || error
 $PYEXE -m pip install python_*-0.0.0-py3-none-any.whl
