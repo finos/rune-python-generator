@@ -1,0 +1,17 @@
+namespace rosetta_dsl.test.semantic.count_operator : <"generate Python unit tests from Rosetta.">
+
+type classA: <"Test class A">
+	name string (0..1) <"Name">
+	value int (0..1) <"Value">
+	
+type classB: <"Test class B">
+	field1 int (0..*) <"Test int field 1">
+	field2 classA (0..*) <"Test classA field 2">
+	
+type CountTest: <"Test count operation in a condition">
+	bValue classB (1..*) <"Test B type bValue">
+	    
+    condition TestCond: <"Test condition">
+        if bValue -> field2 count > 0 
+            then True
+        else False
