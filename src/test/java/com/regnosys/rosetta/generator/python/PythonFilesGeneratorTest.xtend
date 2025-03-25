@@ -37,7 +37,7 @@ class PythonFilesGeneratorTest {
     /*
      * generate CDM from Rosetta files.  Should be disabled for releases
      */
-//    @Disabled
+    @Disabled
     @Test
     def void generateCDMPythonFromRosetta() {
         try {
