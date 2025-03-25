@@ -322,7 +322,7 @@ class PythonExpressionGenerator {
             }
             FlattenOperation: {
                 val nestedListExpr = generateExpression(expr.argument, iflvl, isLambda)
-                return '''flatten_list(«nestedListExpr»)'''
+                return '''rune_flatten_list(«nestedListExpr»)'''
             }
             RosettaConstructorExpression: {
                 val type = expr.typeCall?.type?.name

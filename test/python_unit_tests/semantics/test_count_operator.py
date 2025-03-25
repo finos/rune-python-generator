@@ -1,14 +1,14 @@
 '''count operator unit tests'''
 import pytest
 
-from rosetta_dsl.test.semantic.count_operator.classA import classA
-from rosetta_dsl.test.semantic.count_operator.classB import classB
+from rosetta_dsl.test.semantic.count_operator.ClassA import ClassA
+from rosetta_dsl.test.semantic.count_operator.ClassB import ClassB
 from rosetta_dsl.test.semantic.count_operator.CountTest import CountTest
 
 def create_classA(name:str,value:int):
-    return classA(name=name,value=value)
-def create_classB (field1:list[int],field2:classA):
-    return classB(field1=field1,field2=field2)
+    return ClassA(name=name,value=value)
+def create_classB (field1:list[int],field2:ClassA):
+    return ClassB(field1=field1,field2=field2)
 def test_count_operator_passes ():
     a1=create_classA("value1",1)
     a2=create_classA("value2",2)
