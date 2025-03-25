@@ -1,5 +1,4 @@
 package com.regnosys.rosetta.generator.python.expressions
-
 import com.regnosys.rosetta.generator.java.enums.EnumHelper
 import com.regnosys.rosetta.rosetta.RosettaCallableWithArgs
 import com.regnosys.rosetta.rosetta.RosettaEnumValue
@@ -15,7 +14,6 @@ import com.regnosys.rosetta.rosetta.expression.DistinctOperation
 import com.regnosys.rosetta.rosetta.expression.FilterOperation
 import com.regnosys.rosetta.rosetta.expression.FirstOperation
 import com.regnosys.rosetta.rosetta.expression.FlattenOperation
-// TODO: function support
 // import com.regnosys.rosetta.rosetta.expression.InlineFunction
 import com.regnosys.rosetta.rosetta.expression.LastOperation
 import com.regnosys.rosetta.rosetta.expression.ListLiteral
@@ -74,18 +72,6 @@ class PythonExpressionGenerator {
                 res += generateExpressionCondition(cond)
             n_condition += 1;
         }
-        return res
-    }
-
-    def generateConditions(List<Condition> conditions) {
-        var n_condition = 0;
-        var res = '';
-        for (Condition cond : conditions) {
-            res += generateConditionBoilerPlate(cond, n_condition)
-            res += generateExpressionCondition(cond)
-            n_condition += 1;
-        }
-
         return res
     }
 
@@ -216,14 +202,10 @@ class PythonExpressionGenerator {
                         expr.feature.name
                     }
                     RosettaEnumValue: {
-                        val rosettaValue = expr.feature as RosettaEnumValue
-                        val value = EnumHelper.convertValue(rosettaValue)
-
                         val symbol = (expr.receiver as RosettaSymbolReference).symbol
                         val model = symbol.eContainer as RosettaModel
                         addImportsFromConditions(symbol.name, model.name)
-
-                        value
+						return generateEnumString(expr.feature as RosettaEnumValue)
                     }
                     RosettaFeature: {
                         expr.feature.name
@@ -270,7 +252,7 @@ class PythonExpressionGenerator {
             }
             RosettaOnlyElement: {
                 val argument = expr.argument //as RosettaExpression
-                '''get_only_element(«generateExpression(argument, iflvl, isLambda)»)'''
+                '''rune_get_only_element(«generateExpression(argument, iflvl, isLambda)»)'''
             }
             RosettaEnumValueReference: {
                 val value = EnumHelper.convertValue(expr.value)
@@ -327,7 +309,6 @@ class PythonExpressionGenerator {
             }
             MapOperation: {
                 val inlineFunc = expr.function //as InlineFunction;
-                // TODO: function support
                 //val funcParameters = inlineFunc.parameters.map[it.name].join(", ");
                 val funcBody = generateExpression(inlineFunc.body, iflvl, true);
                 val lambdaFunction = "lambda item: " + funcBody;
@@ -341,7 +322,7 @@ class PythonExpressionGenerator {
             }
             FlattenOperation: {
                 val nestedListExpr = generateExpression(expr.argument, iflvl, isLambda)
-                return '''flatten_list(«nestedListExpr»)'''
+                return '''rune_flatten_list(«nestedListExpr»)'''
             }
             RosettaConstructorExpression: {
                 val type = expr.typeCall?.type?.name
@@ -385,7 +366,8 @@ class PythonExpressionGenerator {
                 val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
                 val defaultFuncName = '''_then_default'''
                 funcNames.add(defaultFuncName)
-                val block_default_then = '''
+                val block_default_then = 
+                '''
                     def «defaultFuncName»():
                         return «defaultExprDef»
                 '''
@@ -394,7 +376,6 @@ class PythonExpressionGenerator {
         «FOR i : 0 ..< expr.cases.length»case «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(),0,isLambda)»: return «funcNames.get(i)»()
         «ENDFOR»case _: return «funcNames.get(funcNames.size-1)»()
 '''
-
             }
             default:{
                 throw new UnsupportedOperationException("Unsupported expression type of " + expr?.class?.simpleName)
@@ -445,7 +426,8 @@ class PythonExpressionGenerator {
                 '''«s.name»'''
             }
             RosettaEnumValue: {
-                '''«s.name»'''
+            	// return the fully qualified enum name
+				return generateEnumString (s)
             }
             RosettaCallableWithArgs: {
                 callableWithArgsCall(s, expr, iflvl, isLambda)
@@ -460,6 +442,15 @@ class PythonExpressionGenerator {
                 throw new UnsupportedOperationException("Unsupported symbol reference for: " + s.class.simpleName)
         }
     }
+	private def String generateEnumString (RosettaEnumValue rev) {
+		// translate the enum value to a fully qualified name as long as the value is not None
+		
+		val value = EnumHelper.convertValue(rev)
+		val parent = rev.getEnumeration()
+		val parentName = parent.getName()
+		val modelName = parent.getModel().getName()
+        return '''«modelName».«parentName».«parentName».«value»'''
+	} 
 
     def String callableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr, int iflvl,
         boolean isLambda) {
@@ -490,11 +481,11 @@ class PythonExpressionGenerator {
                     '''(«generateExpression(expr.left, iflvl, isLambda)» != «generateExpression(expr.right, iflvl, isLambda)»)'''
                 }
                 case ("contains"): {
-                    '''contains(«generateExpression(expr.left, iflvl, isLambda)», «generateExpression(expr.right, iflvl, isLambda)»)'''
+                    '''rune_contains(«generateExpression(expr.left, iflvl, isLambda)», «generateExpression(expr.right, iflvl, isLambda)»)'''
 
                 }
                 case ("disjoint"): {
-                    '''disjoint(«generateExpression(expr.left, iflvl,isLambda)», «generateExpression(expr.right, iflvl,isLambda)»)'''
+                    '''rune_disjoint(«generateExpression(expr.left, iflvl,isLambda)», «generateExpression(expr.right, iflvl,isLambda)»)'''
 
                 }
                 case ("join"): {

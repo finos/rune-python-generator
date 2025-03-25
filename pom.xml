@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.regnosys.rosetta.code-generators</groupId>
-    <artifactId>python</artifactId>
+    <artifactId>python-generator</artifactId>
     <version>0.0.0.main-SNAPSHOT</version>
     <packaging>jar</packaging> <!-- Changed from pom to jar -->
     <name>code-gen-python</name>
@@ -186,13 +186,10 @@
         <cdm.rosetta.source.path>build/common-domain-model/rosetta-source/src/main/rosetta</cdm.rosetta.source.path>
         <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
         <unittest.rosetta.source.path>test/python_unit_tests/rosetta</unittest.rosetta.source.path>
-        <unittest.python.output.path>target/python/unit_tests</unittest.python.output.path>
-        <unittest.generated.syntax.source.path>test/compare_generated_syntax/rosetta</unittest.generated.syntax.source.path>
-        <unittest.generated.syntax.target.path>target/python/generated_syntax_tests</unittest.generated.syntax.target.path>
-        <unittest.generated.syntax.expected.path>test/compare_generated_syntax/expected</unittest.generated.syntax.expected.path>
+        <unittest.python.output.path>target/python-tests/unit_tests</unittest.python.output.path>
         <serialization.test.rune.roundtrip.source.path>test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-round-trip-test</serialization.test.rune.roundtrip.source.path>
         <serialization.test.rune.shouldfail.source.path>test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-error-handling-test</serialization.test.rune.shouldfail.source.path>
-        <serialization.test.python.output.path>target/python/serialization_unit_tests</serialization.test.python.output.path>
+        <serialization.test.python.output.path>target/python-tests/serialization_unit_tests</serialization.test.python.output.path>
     </properties>
 
     <dependencyManagement>
@@ -259,8 +256,7 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-            <!-- Xtext uses Log4j directly. The following dependency will
-			redirect Log4j messages to slf4j. -->
+            <!-- Xtext uses Log4j directly. The following dependency will redirect Log4j messages to slf4j. -->
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>log4j-over-slf4j</artifactId>
@@ -366,6 +362,11 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>1.5.2</version>        
         </dependency>
         <!-- extra dependencies -->
         <dependency>

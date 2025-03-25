@@ -1,12 +1,14 @@
 package com.regnosys.rosetta.generator.python;
-
+// TODO: fix unit tests
+// TODO: ensure that imports are collected as a set rather than an array
+// TODO: re-engineer type generation to use an object that has the features carried throughout the generation (meta data, imports, etc.)
+// TODO: function support
 import com.google.inject.Inject;
 import com.regnosys.rosetta.generator.external.AbstractExternalGenerator;
 import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.func.PythonFunctionGenerator;
 import com.regnosys.rosetta.generator.python.object.PythonModelObjectGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil;
-import com.regnosys.rosetta.generator.python.object.PythonMetaDataProcessor;
 
 import com.regnosys.rosetta.generator.python.util.Util;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
@@ -14,6 +16,7 @@ import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
+
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.slf4j.Logger;
@@ -29,22 +32,24 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
     @Inject private PythonModelObjectGenerator pojoGenerator;
     @Inject private PythonFunctionGenerator funcGenerator;
     @Inject private PythonEnumGenerator enumGenerator;
-    @Inject private PythonMetaDataProcessor metaDataProcessor;
     
     private List<String> subfolders;
     private AtomicReference<String> previousNamespace;
     private String namespace;
+    private Map<String, CharSequence> objects = null;
+
 
     public PythonCodeGenerator() {
-        super("Python");
+        super("PythonCodeGenerator");
     }
 
     @Override
-    public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set,
-            Collection<? extends RosettaModel> models, String version) {
+    public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set, Collection<? extends RosettaModel> models, String version) {
         subfolders = new ArrayList<>();
         previousNamespace = new AtomicReference<>("");
         namespace = null;
+        pojoGenerator.beforeAllGenerate();
+        objects = new HashMap<>();
         return Collections.emptyMap();
     }
 
@@ -80,7 +85,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             LOGGER.debug("Processing module: {}", model.getName());
         }
 
-        result.putAll(pojoGenerator.generate(rosettaClasses, /*metaDataItems, */cleanVersion));
+        objects.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion));
         result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
         result.putAll(funcGenerator.generate(rosettaFunctions, cleanVersion));
 
@@ -89,7 +94,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
     @Override
     public Map<String, ? extends CharSequence> afterAllGenerate(ResourceSet set,
-            Collection<? extends RosettaModel> models, String version) {
+        Collection<? extends RosettaModel> models, String version) {
         String cleanVersion = cleanVersion(version);
         Map<String, CharSequence> result = new HashMap<>();
 
@@ -104,7 +109,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         if (namespace != null) {
             result.put("pyproject.toml", PythonModelGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
         }
-
+        result.putAll(pojoGenerator.afterAllGenerate(namespace, objects));
         return result;
     }
 

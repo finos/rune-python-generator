@@ -41,7 +41,8 @@ class PythonModelGeneratorUtil {
             # pylint: disable=bad-indentation, trailing-whitespace, superfluous-parens
             # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import
             # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
-            # pylint: disable=missing-module-docstring
+            # pylint: disable=missing-module-docstring, unused-variable, unnecessary-pass
+            
             from __future__ import annotations
             from typing import Optional, Annotated
             import datetime
@@ -55,6 +56,28 @@ class PythonModelGeneratorUtil {
             from rune.runtime.func_proxy import *
             __all__ = [«"'"+name+"'"»]
             
+        '''
+        imports
+    }
+
+    static def String createImports() {
+        val imports = '''
+            # pylint: disable=line-too-long, invalid-name, missing-function-docstring
+            # pylint: disable=bad-indentation, trailing-whitespace, superfluous-parens
+            # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import
+            # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
+            # pylint: disable=missing-module-docstring
+            from __future__ import annotations
+            from typing import Optional, Annotated
+            import datetime
+            import inspect
+            from decimal import Decimal
+            from pydantic import Field
+            from rune.runtime.base_data_class import BaseDataClass
+            from rune.runtime.metadata import *
+            from rune.runtime.utils import *
+            from rune.runtime.conditions import *
+            from rune.runtime.func_proxy import *
         '''
         imports
     }

@@ -3,14 +3,11 @@ package com.regnosys.rosetta.generator.python.util;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.xtext.xbase.lib.StringExtensions;
-
-import com.regnosys.rosetta.rosetta.simple.Attribute;
 import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RType;
 
-public class PythonTranslator {
+public class RuneToPythonMapper {
     private static final Set<String> PYTHON_KEYWORDS = new HashSet<>();
 
     static {
@@ -129,33 +126,17 @@ public class PythonTranslator {
             return null;
         var pythonType = toPythonBasicTypeInnerFunction(rt.getName());
         if (pythonType == null) {
-            pythonType = (rt instanceof REnumType) ? ((REnumType)rt).getName() : rt.getName();
-            pythonType = StringExtensions.toFirstUpper(pythonType);
+        	String rtName = rt.getName();
+            pythonType = rt.getNamespace().toString() + "." + rtName;
+            pythonType = (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType;
         }
         return pythonType;
     }
-
-    public static String toPythonType(RAttribute ra) {
-        RType rt = (ra == null) ? null : ra.getRMetaAnnotatedType().getRType();
-        if (rt == null)
-            return null;
-        String rtName = rt.getName();
-        if (rtName == null)
-            return null;
-        String pythonType = toPythonBasicTypeInnerFunction(rtName);
-        return (pythonType == null) ? rt.getNamespace() + "." + rtName + "." + rtName : pythonType;
+    public static boolean isRosettaBasicType(String rtName) {
+        return (toPythonBasicTypeInnerFunction(rtName) != null);
     }
-
-    public static String toPythonType(Attribute rosettaAttributeType) {
-        if (rosettaAttributeType == null)
-            return null;
-        String rosettaType = rosettaAttributeType.getTypeCall().getType().getName();
-        String pythonType = toPythonBasicTypeInnerFunction(rosettaType);
-        return (pythonType == null) ? StringExtensions.toFirstUpper(rosettaType) : pythonType;
-    }
-
-    public static boolean isRosettaBasicType(String rt) {
-        return (toPythonBasicTypeInnerFunction(rt) != null);
+    public static boolean isRosettaBasicType(RType rt) {
+        return (toPythonBasicTypeInnerFunction(rt.getName()) != null);
     }
     public static boolean isRosettaBasicType(RAttribute ra) {
     	if (ra == null) {

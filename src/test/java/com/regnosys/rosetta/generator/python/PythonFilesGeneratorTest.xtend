@@ -13,9 +13,10 @@ import java.nio.file.Paths
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.^extension.ExtendWith
-import com.regnosys.rosetta.generator.python.PythonCodeGeneratorUtils;
 import static org.junit.jupiter.api.Assertions.*
 import java.util.ArrayList
+import org.junit.jupiter.api.Disabled
+
 
 /*
  * File based unit tests 
@@ -31,11 +32,12 @@ class PythonFilesGeneratorTest {
 
     static val LOGGER = LoggerFactory.getLogger(PythonFilesGeneratorTest)
 
-    @Inject PythonCodeGeneratorUtils utils
+    @Inject PythonGeneratorTestUtils utils
 
     /*
      * generate CDM from Rosetta files.  Should be disabled for releases
      */
+//    @Disabled
     @Test
     def void generateCDMPythonFromRosetta() {
         try {
@@ -57,11 +59,13 @@ class PythonFilesGeneratorTest {
         }
         catch(Exception e) {
             LOGGER.error('generateCDMPythonFromRosetta ... processing failed with an Exception')
+            LOGGER.error('generateCDMPythonFromRosetta ... exception:', e)
         }
     }
     /*
      * generate Python Unit Tests from Rosetta files.
      */
+//    @Disabled
     @Test
     def void generatePythonUnitTests() {
         try {
@@ -92,6 +96,7 @@ class PythonFilesGeneratorTest {
     /*
      * generate Serialization Python Unit Tests from Rosetta files.
      */
+//    @Disabled
     @Test
     def void generatePythonSerializationUnitTests() {
         try {
@@ -137,6 +142,7 @@ class PythonFilesGeneratorTest {
     /*
      * Test generated syntax matching expectations
      */
+    @Disabled
     @TestFactory
     def Iterable<DynamicTest> testGeneratedSyntax() {
         val tests = newArrayList

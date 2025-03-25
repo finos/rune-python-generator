@@ -23,17 +23,7 @@ fi
 MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
 
-echo "***** make the directory: "
-CDM_VERSION="5.20.0"
-rm -rf common-domain-model
-mkdir common-domain-model
-cd common-domain-model
-git init
-echo "***** pull the serialization directory"
-git config core.sparseCheckout true
-echo "rosetta-source/src/main/rosetta" >> .git/info/sparse-checkout
-git remote add origin https://github.com/finos/common-domain-model.git
-git pull origin $CDM_VERSION
+source $MY_PATH/../build/get_cdm.sh
 echo "***** build CDM"
 cd $MY_PATH/..
 mvn clean install
@@ -46,7 +36,7 @@ VENV_NAME=".pyenv"
 VENV_PATH=".."
 source $MY_PATH/$BUILDPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
-echo "***** build CDM"
+echo "***** build CDM Python package"
 PYTHONSOURCEDIR=$MY_PATH/"../target/python-cdm"
 cd $PYTHONSOURCEDIR
 rm python_cdm-*.*.*-py3-none-any.whl

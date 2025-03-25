@@ -8,19 +8,11 @@ fi
 
 export PYTHONDONTWRITEBYTECODE=1
 
-ACDIR=$($PYEXE -c "import sys;print('Scripts' if sys.platform.startswith('win') else 'bin')")
-$PYEXE -m venv --clear .pytest
-source .pytest/$ACDIR/activate
+MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd ${MY_PATH} || error
 
-MYPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-RUNERUNTIMEDIR="../../../../../../rune-python-runtime"
-echo "**** Install Runtime ****"
-$PYEXE -m pip install $RUNERUNTIMEDIR/rune.runtime*-py3-*.whl --force-reinstall
+source $MY_PATH/setup_cdm_test_env.sh || error
 
-# install cdm package
-PYTHONCDMDIR="../../target/python-cdm"
-echo "**** Install CDM package ****"
-$PYEXE -m pip install $MYPATH/$PYTHONCDMDIR/python_cdm-*-py3-none-any.whl
 
 # run tests
 $PYEXE -m pip install pytest

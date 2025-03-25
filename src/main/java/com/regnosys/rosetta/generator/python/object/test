@@ -1,0 +1,218 @@
+
+def generateAttribute(Data rosettaClass, RAttribute ra, Map<String, String> metaDataItems, Map<String, List<String>> keyRefConstraints) {
+    val attrRType = processType(ra)
+    val attrTypeName = validateTypeName(rosettaClass, ra, attrRType)
+    val attrName = RuneToPythonMapper.mangleName(ra.name)
+    val attrDesc = prepareDescription(ra)
+
+    val attrProp = configureProperties(attrRType)
+    val cardinalityConfig = handleCardinality(ra)
+
+    processMetaAttributes(ra, attrTypeName, metaDataItems, keyRefConstraints)
+
+    return buildAttributeString(attrName, attrTypeName, attrDesc, attrProp, cardinalityConfig)
+}
+
+private def RType processType(RAttribute ra) {
+    val attrRMAT = ra.getRMetaAnnotatedType
+    var attrRType = attrRMAT.getRType
+    if (attrRType instanceof RAliasType) {
+        attrRType = typeSystem.stripFromTypeAliases(attrRType)
+    }
+    return attrRType
+}
+
+private def String validateTypeName(Data rosettaClass, RAttribute ra, RType attrRType) {
+    val isRosettaBasicType = RuneToPythonMapper.isRosettaBasicType(ra)
+    var attrTypeName = RuneToPythonMapper.toPythonType(if (attrRType instanceof RAliasType) attrRType else ra)
+    if (attrTypeName === null) {
+        throw new Exception("Attribute type is null for " + ra.name + " in class " + rosettaClass.name)
+    }
+    return attrTypeName
+}
+
+private def String prepareDescription(RAttribute ra) {
+    return ra.definition?.replaceAll("\\s+", " ").replace("'", "\\'") ?: ""
+}
+
+private def HashMap<String, String> configureProperties(RType attrRType) {
+    val attrProp = new HashMap<String, String>
+    if (attrRType instanceof RStringType) {
+        attrRType.pattern.ifPresent[value | attrProp.put("pattern", "r'^" + value + "*$'")]
+        attrRType.interval.min.ifPresent[value | if (value > 0) attrProp.put("min_length", value.toString)]
+        attrRType.interval.max.ifPresent[value | attrProp.put("max_length", value.toString)]
+    } else if (attrRType instanceof RNumberType && !attrRType.isInteger) {
+        attrRType.digits.ifPresent[value | attrProp.put("max_digits", value.toString)]
+        attrRType.fractionalDigits.ifPresent[value | attrProp.put("decimal_places", value.toString)]
+        attrRType.interval.min.ifPresent[value | attrProp.put("ge", value.toPlainString)]
+        attrRType.interval.max.ifPresent[value | attrProp.put("le", value.toPlainString)]
+    }
+    return attrProp
+}
+
+private def handleCardinality(RAttribute ra) {
+    val cardinality = ra.getCardinality
+    val lowerBound = cardinality.getMin
+    val upperCardinality = cardinality.getMax
+    val upperBoundIsGTOne = (upperCardinality.isPresent && upperCardinality.get > 1)
+
+    var fieldDefault = ""
+    var cardinalityPrefix = ""
+    var cardinalitySuffix = ""
+    var cardinalityString = ""
+
+    switch lowerBound {
+        case 0: {
+            cardinalityPrefix = "Optional["
+            cardinalitySuffix = "]"
+            fieldDefault = "None"
+            if (cardinality.isMulti || upperBoundIsGTOne) {
+                cardinalityPrefix += "list["
+                cardinalitySuffix += "]"
+                if (upperBoundIsGTOne) {
+                    cardinalityString = ", max_length=" + upperCardinality.get.toString
+                }
+            }
+        }
+        case 1: {
+            if (cardinality.isMulti || upperBoundIsGTOne) {
+                cardinalityPrefix = "list["
+                cardinalitySuffix = "]"
+                cardinalityString = ", min_length=1"
+                fieldDefault = "[]"
+                if (upperBoundIsGTOne) {
+                    cardinalityString += ", max_length=" + upperCardinality.get.toString
+                }
+            } else {
+                fieldDefault = "..."
+            }
+        }
+        default: {
+            cardinalityPrefix = "list["
+            cardinalitySuffix = "]"
+            cardinalityString = ", min_length=" + lowerBound.toString
+            fieldDefault = "[]"
+            if (upperCardinality.isPresent) {
+                var upperBound = upperCardinality.get
+                if (upperBound > 1) {
+                    cardinalityString += ", max_length=" + upperBound.toString
+                }
+            }
+        }
+    }
+
+    return CardinalityConfig.new(cardinalityPrefix, cardinalitySuffix, cardinalityString, fieldDefault)
+}
+
+private def processMetaAttributes(RAttribute ra, String attrTypeName, Map<String, String> metaDataItems, Map<String, List<String>> keyRefConstraints) {
+    val attrRMAT = ra.getRMetaAnnotatedType
+    val validators = new ArrayList<String>
+    val keysRefs = new ArrayList<String>
+
+    if (metaDataItems.containsKey(attrTypeName)) {
+        keysRefs.add("@key")
+        keysRefs.add("@key:external")
+    }
+
+    if (attrRMAT.hasMeta) {
+        attrRMAT.getMetaAttributes.forEach [ma |
+            switch(ma.getName) {
+                case "key", case "id": {
+                    keysRefs.add("@key")
+                    keysRefs.add("@key:external")
+                }
+                case "reference": {
+                    keysRefs.add("@ref")
+                    keysRefs.add("@ref:external")
+                }
+                case "scheme": {
+                    validators.add("@scheme")
+                }
+                case "location": {
+                    keysRefs.add("@key:scoped")
+                }
+                case "address": {
+                    keysRefs.add("@ref:scoped")
+                }
+                default: {
+                    println("---- unprocessed meta ... name: " + ma.name)
+                }
+            }
+        ]
+    }
+
+    validators.addAll(keysRefs)
+    if (!keysRefs.isEmpty) {
+        keyRefConstraints.put(ra.name, keysRefs)
+    }
+}
+
+private def String buildAttributeString(String attrName, String attrTypeName, String attrDesc, Map<String, String> attrProp, CardinalityConfig cardinalityConfig) {
+    val _builder = new StringConcatenation
+    _builder.append(attrName)
+    _builder.append(": ")
+
+    if (!attrProp.isEmpty && !cardinalityConfig.cardinalityString.isEmpty) {
+        _builder.append(cardinalityConfig.cardinalityPrefix)
+        _builder.append("Annotated[")
+        _builder.append(attrTypeName)
+        _builder.append(", Field(")
+        _builder.append(propString(attrProp))
+        _builder.append(")]")
+        _builder.append(cardinalityConfig.cardinalitySuffix)
+        _builder.append(" = Field(")
+        _builder.append(cardinalityConfig.fieldDefault)
+        _builder.append(", description='")
+        _builder.append(attrDesc)
+        _builder.append("'")
+        _builder.append(cardinalityConfig.cardinalityString)
+        _builder.append(")")
+    } else {
+        _builder.append(cardinalityConfig.cardinalityPrefix)
+        _builder.append(attrTypeName)
+        _builder.append(cardinalityConfig.cardinalitySuffix)
+        _builder.append(" = Field(")
+        _builder.append(cardinalityConfig.fieldDefault)
+        _builder.append(", description='")
+        _builder.append(attrDesc)
+        _builder.append("'")
+        _builder.append(cardinalityConfig.cardinalityString)
+        _builder.append(", " + propString(attrProp))
+        _builder.append(")")
+    }
+
+    return _builder.toString
+}
+
+private def String propString(Map<String, String> attrProp) {
+    return attrProp.entrySet.join(", ", "[", "]", [entry | entry.key + "=" + entry.value])
+}
+
+private class CardinalityConfig {
+    val String cardinalityPrefix
+    val String cardinalitySuffix
+    val String cardinalityString
+    val String fieldDefault
+
+    new(String cardinalityPrefix, String cardinalitySuffix, String cardinalityString, String fieldDefault) {
+        this.cardinalityPrefix = cardinalityPrefix
+        this.cardinalitySuffix = cardinalitySuffix
+        this.cardinalityString = cardinalityString
+        this.fieldDefault = fieldDefault
+    }
+}
+```
+
+### Explanation:
+
+1. **Refactor to Sub-Functions**:
+   - The original function has been divided into several smaller, more focused functions, each handling a specific part of the `generateAttribute` operation.
+
+2. **Sub-functions**:
+   - `processType`: Strips and processes the type of the attribute.
+   - `validateTypeName`: Validates and returns the Python type name.
+   - `prepareDescription`: Prepares and returns the description of the attribute.
+   - `configureProperties`: Configures properties based on the attribute type.
+   - `handleCardinality`: Handles the determination and setup of cardinality information.
+   - `processMetaAttributes`: Handles existing meta attributes and updates key references.
+   - `buildAttributeString`: Constructs the final string representation for the attribute definition in Python.

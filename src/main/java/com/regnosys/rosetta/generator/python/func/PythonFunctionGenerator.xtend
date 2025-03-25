@@ -3,7 +3,7 @@ package com.regnosys.rosetta.generator.python.func
 import com.google.inject.Inject
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator
 import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil
-import com.regnosys.rosetta.generator.python.util.PythonTranslator
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper
 import com.regnosys.rosetta.rosetta.RosettaEnumeration
 import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.rosetta.simple.AssignPathRoot
@@ -21,7 +21,6 @@ import java.util.Set
 import org.eclipse.emf.ecore.EObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-// TODO: function support
 /*
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration
 import com.regnosys.rosetta.rosetta.simple.Condition
@@ -128,8 +127,8 @@ class PythonFunctionGenerator {
         for (input : inputs) {
             val typeName = input.getTypeCall().getType().getName()
             val type = input.getCard().sup == 0
-                    ? "list[" + PythonTranslator.toPythonBasicType(typeName) + "]"
-                    : PythonTranslator.toPythonBasicType(typeName)
+                    ? "list[" + RuneToPythonMapper.toPythonBasicType(typeName) + "]"
+                    : RuneToPythonMapper.toPythonBasicType(typeName)
             result += input.getName() + ": " + type
             if (input.getCard().inf == 0)
                 result += " | None"
@@ -138,7 +137,7 @@ class PythonFunctionGenerator {
         }
         result += ") -> "
         if (output !== null)
-            result += PythonTranslator.toPythonBasicType(output.getTypeCall().getType().getName())
+            result += RuneToPythonMapper.toPythonBasicType(output.getTypeCall().getType().getName())
         else
             result += "None"
         '''«result»'''

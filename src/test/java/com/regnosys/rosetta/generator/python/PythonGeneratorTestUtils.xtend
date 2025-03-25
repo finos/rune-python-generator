@@ -24,15 +24,16 @@ import org.eclipse.xtext.testing.util.ParseHelper
 import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.tests.util.ModelHelper
 import org.slf4j.LoggerFactory
+import static org.junit.jupiter.api.Assertions.*
+import java.util.HashMap
 
-class PythonCodeGeneratorUtils {
+class PythonGeneratorTestUtils {
 
-    static val LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorUtils)
+    static val LOGGER = LoggerFactory.getLogger(PythonGeneratorTestUtils)
 
+    @Inject extension ModelHelper
     @Inject Provider<XtextResourceSet> resourceSetProvider
-
     @Inject extension ParseHelper<RosettaModel>
-    
     @Inject PythonCodeGenerator generator   
 
     def Properties getProperties() throws Exception {
@@ -88,11 +89,9 @@ class PythonCodeGeneratorUtils {
     def Map<String, CharSequence> generatePythonFromRosettaModel(RosettaModel m, org.eclipse.emf.ecore.resource.ResourceSet resourceSet) {
         val version = m.version
         val result = newHashMap
-        result.putAll(generator.beforeAllGenerate(resourceSet, #{m}, version))
         result.putAll(generator.beforeGenerate(m.eResource, m, version))
         result.putAll(generator.generate(m.eResource, m, version))
         result.putAll(generator.afterGenerate(m.eResource, m, version))
-        result.putAll(generator.afterAllGenerate(resourceSet, #{m}, version))
         result
     }
 
@@ -157,7 +156,7 @@ class PythonCodeGeneratorUtils {
                 stream.close()
             }
         } catch (IOException e) {
-			throw e;
+            throw e;
         }
         LOGGER.info("getFileListWithRecursion ... found {} files in {}", result.size.toString, dslSourceDir)
         return result    
@@ -178,14 +177,52 @@ class PythonCodeGeneratorUtils {
             .flatMap[contents.filter(RosettaModel)]
             .toList as Collection<RosettaModel>
         LOGGER.info("generatePythonFromDSLFiles ... created {} rosetta models", rosettaModels.length.toString())                  
+        val m = rosettaModels.head() as RosettaModel
+        val version = m.version
         val generatedFiles = newHashMap
+
+        generator.beforeAllGenerate(resourceSet, rosettaModels, version)
         for (model : rosettaModels) {
             LOGGER.info("generatePythonFromDSLFiles ... processing model: {}", model.name)
             val python = generatePythonFromRosettaModel(model, resourceSet)
             generatedFiles.putAll(python)
         }
+        generatedFiles.putAll(generator.afterAllGenerate(resourceSet, rosettaModels, version))
+
         cleanFolder(outputPath)
         writeFiles(outputPath, generatedFiles)
         LOGGER.info("generatePythonFromDSLFiles ... done")
+    }
+
+    def HashMap<String, CharSequence>  generatePythonFromString (String model) {
+        val m = model.parseRosettaWithNoErrors
+        val resourceSet = m.eResource.resourceSet
+        val version = m.version
+        
+        val result = newHashMap
+        result.putAll(generator.beforeAllGenerate(resourceSet, #{m}, version))
+        result.putAll(generator.beforeGenerate(m.eResource, m, version))
+        result.putAll(generator.generate(m.eResource, m, version))
+        result.putAll(generator.afterGenerate(m.eResource, m, version))
+        result.putAll(generator.afterAllGenerate(resourceSet, #{m}, version))
+        result
+    }
+    def generatePythonAndExtractBundle (String model) {
+        val python = generatePythonFromString (model);
+        return python.get("src/com/_bundle.py").toString()
+    }
+    def assertStringInString (String generated, String expectedString) {
+        assertTrue(generated.contains(expectedString), 
+                    '''
+                    generated Python does not match expected
+                    Expected:
+                    «expectedString»
+                    Generated:
+                    «generated»''')
+    }
+    def assertBundleContainsExpectedString(String model, String expectedString) {
+        // Generate the bundle using the existing function
+        val generatedBundle = generatePythonAndExtractBundle(model)
+        assertStringInString(generatedBundle, expectedString)
     }
 }

@@ -10,7 +10,6 @@ function error
     echo
     exit -1
 }
-
 export PYTHONDONTWRITEBYTECODE=1
 
 type -P python > /dev/null && PYEXE=python || PYEXE=python3
@@ -29,25 +28,15 @@ source $MY_PATH/$BUILDPATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-VENV_PATH=".."
-source $MY_PATH/$BUILDPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+PROJECT_ROOT="../.."
+source $MY_PATH/$PROJECT_ROOT/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
-echo "***** Build and Install Helper"
-cd $MY_PATH/test_helper
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
-$PYEXE -m pip install test_helper-0.0.0-py3-none-any.whl
-rm test_helper-0.0.0-py3-none-any.whl
-
-echo "***** Build and Install Generated Unit Tests"
-SERIALIZATIONTESTSDIR="../../target/python-tests/serialization_unit_tests"
-cd $MY_PATH/$SERIALIZATIONTESTSDIR
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
-$PYEXE -m pip install python_*-0.0.0-py3-none-any.whl
+source $MY_PATH/setup_unit_test_env.sh
 
 # run tests
-echo "***** run tests"
+echo "***** run unit tests"
 cd $MY_PATH
-$PYEXE -m pytest -p no:cacheprovider . 
+$PYEXE -m pytest -p no:cacheprovider $MY_PATH/semantics 
 
 echo "***** cleanup"
 

@@ -10,7 +10,6 @@ function error
     echo
     exit -1
 }
-
 export PYTHONDONTWRITEBYTECODE=1
 
 type -P python > /dev/null && PYEXE=python || PYEXE=python3
@@ -32,24 +31,8 @@ VENV_NAME=".pyenv"
 VENV_PATH=".."
 source $MY_PATH/$BUILDPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
-echo "***** Build and Install Helper"
-cd $MY_PATH/test_helper
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
-$PYEXE -m pip install test_helper-0.0.0-py3-none-any.whl
-rm test_helper-0.0.0-py3-none-any.whl
+# install cdm package
+PYTHONCDMDIR="../../target/python-cdm"
 
-echo "***** Build and Install Generated Unit Tests"
-SERIALIZATIONTESTSDIR="../../target/python-tests/serialization_unit_tests"
-cd $MY_PATH/$SERIALIZATIONTESTSDIR
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
-$PYEXE -m pip install python_*-0.0.0-py3-none-any.whl
-
-# run tests
-echo "***** run tests"
-cd $MY_PATH
-$PYEXE -m pytest -p no:cacheprovider . 
-
-echo "***** cleanup"
-
-deactivate
-source $MY_PATH/$BUILDPATH/cleanup_python_env.sh
+echo "**** Install CDM package ****"
+$PYEXE -m pip install $MY_PATH/$PYTHONCDMDIR/python_cdm-*-py3-none-any.whl
