@@ -23,20 +23,20 @@ MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
 
 echo "***** setting up common environment"
-BUILDPATH="../build"
+BUILDPATH="../../build"
 source $MY_PATH/$BUILDPATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-VENV_PATH=".."
-source $MY_PATH/$BUILDPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+PROJECT_ROOT="../.."
+source $MY_PATH/$PROJECT_ROOT/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
 source $MY_PATH/setup_unit_test_env.sh
 
 # run tests
-echo "***** run tests"
+echo "***** run unit tests"
 cd $MY_PATH
-$PYEXE -m pytest -p no:cacheprovider $MY_PATH/python_unit_tests/semantics 
+$PYEXE -m pytest -p no:cacheprovider $MY_PATH/semantics 
 
 echo "***** cleanup"
 

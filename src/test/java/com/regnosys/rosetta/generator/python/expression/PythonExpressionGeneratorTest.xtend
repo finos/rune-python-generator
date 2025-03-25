@@ -881,7 +881,7 @@ class PythonExpressionGeneratorTest {
             ''').toString()
         */
     }  
-    // TODO: enable once the syntax for flatten is determined
+    // TODO: enable once the Rune syntax for flatten is determined
     @Disabled    
     @Test
     def void testGenerateFlattenCondition() {

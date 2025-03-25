@@ -31,12 +31,11 @@ cd ${MY_PATH} || error
 
 echo "***** activating virtual environment in [project_root]/.pyenv"
 VENV_NAME=".pyenv"
-VENV_PATH=".."
-source $MY_PATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+PROJECT_ROOT="../.."
+source $MY_PATH/$PROJECT_ROOT/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
 echo "***** Build and Install Generated Unit Tests"
-PYTHONUNITTESTDIR="../target/python-tests/unit_tests"
-cd $MY_PATH/$PYTHONUNITTESTDIR
+cd $MY_PATH/$PROJECT_ROOT/target/python-tests/unit_tests
 $PYEXE -m pip wheel --no-deps --only-binary :all: . || processError
 $PYEXE -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
 echo "***** Done"
