@@ -88,7 +88,8 @@ steps:
     working_directory: ./
     shell: sh
     commands:
-        ./test/run_tests.sh
+        apk add --no-cache bash curl
+        ./test/python_unit_tests/run_python_unit_tests.sh
 
   TagRepo:
     title: Tag git repo with release name
