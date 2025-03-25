@@ -1,28 +1,25 @@
-'''testing cardinality enforcement'''
-import datetime
+'''cardinality unit test'''
 import pytest
-from cdm.base.datetime.DateList import DateList
+from rosetta_dsl.test.semantic.cardinality.CardinalityTest import CardinalityTest
 from pydantic import ValidationError
 
-def test_1_many_fail():
-    '''DateList cannot be empty'''
-    with pytest.raises(ValidationError):
-        dl = DateList(date=[])
-        dl.validate_conditions()
 
+def test_1_many_fail():
+    '''list cannot be empty'''
+    with pytest.raises(ValidationError):
+        ct = CardinalityTest(attr=[])
+        ct.validate_conditions()
 
 def test_1_many_fail_empty_constructor():
-    '''DateList cannot be empty'''
+    '''list cannot be empty'''
     with pytest.raises(ValidationError):
-        dl = DateList()
-        dl.validate_conditions()
-
+        ct = CardinalityTest()
+        ct.validate_conditions()
 
 def test_1_many_pass():
-    '''Valid DateList'''
-    dl = DateList(date=[datetime.date(2020, 1, 1)])
-    dl.validate_conditions()
-
+    '''Valid list'''
+    ct = CardinalityTest(attr=[1])
+    ct.validate_conditions()
 
 if __name__ == "__main__":
     print("test_1_many_pass")

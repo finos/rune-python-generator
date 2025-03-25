@@ -1,0 +1,4 @@
+namespace rosetta_dsl.test.semantic.cardinality : <"generate Python unit tests from Rosetta.">
+
+type CardinalityTest:
+    attr int (1..*)
