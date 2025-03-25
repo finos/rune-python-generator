@@ -187,9 +187,6 @@
         <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
         <unittest.rosetta.source.path>test/python_unit_tests/rosetta</unittest.rosetta.source.path>
         <unittest.python.output.path>target/python-tests/unit_tests</unittest.python.output.path>
-        <unittest.generated.syntax.source.path>test/compare_generated_syntax/rosetta</unittest.generated.syntax.source.path>
-        <unittest.generated.syntax.target.path>target/python-tests/generated_syntax_tests</unittest.generated.syntax.target.path>
-        <unittest.generated.syntax.expected.path>test/compare_generated_syntax/expected</unittest.generated.syntax.expected.path>
         <serialization.test.rune.roundtrip.source.path>test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-round-trip-test</serialization.test.rune.roundtrip.source.path>
         <serialization.test.rune.shouldfail.source.path>test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-error-handling-test</serialization.test.rune.shouldfail.source.path>
         <serialization.test.python.output.path>target/python-tests/serialization_unit_tests</serialization.test.python.output.path>
