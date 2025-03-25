@@ -1,9 +1,0 @@
-{
-  "@model" : "serialization",
-  "@type" : "serialization.test.passing.metascheme.Root",
-  "@version" : "0.0.0",
-  "enumType" : {
-    "@data" : "A",
-    "@scheme" : "https://www.example.com/scheme"
-  }
-}
