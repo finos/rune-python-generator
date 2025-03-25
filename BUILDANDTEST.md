@@ -17,7 +17,7 @@ All tests should pass.
 Assuming the build and tests successfully complete and Python 3.11+ is installed.
 
 ```sh
-test/run_tests.sh
+test/python_unit_tests/run_python_unit_tests.sh
 ```
 All tests should pass
 
