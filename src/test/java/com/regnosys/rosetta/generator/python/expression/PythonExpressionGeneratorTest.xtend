@@ -43,9 +43,12 @@ class PythonExpressionGeneratorTest {
                     def _then_default():
                         return False
                     match rune_resolve_attr(self, "a"):
-                        case 1: return _then_1()
-                        case 2: return _then_2()
-                        case _: return _then_default()'''
+                        case 1:
+                            return _then_1()
+                        case 2:
+                            return _then_2()
+                        case _:
+                            return _then_default()'''
         )
     }
 
@@ -882,57 +885,42 @@ class PythonExpressionGeneratorTest {
         */
     }  
     // TODO: enable once the Rune syntax for flatten is determined
-    @Disabled    
+//    @Disabled
     @Test
     def void testGenerateFlattenCondition() {
         val pythonString = testUtils.generatePythonFromString(
         '''
-        type A: <"Test type A">
-            field1 int (1..1) <"Test int field 1">
-            field2 int (0..*) <"Test int field 2">
-        type Test: <"Test filter operation condition">
-            aValue A (1..1) <"Test A type aValue">
-            field3 boolean (0..1) <"Test boolean type field6">
-            condition TestCond: <"Test condition">
-                if aValue->field2 exists
-                    then aValue->field2 flatten
+        type Bar:
+            numbers int (0..*)
+        type Foo: <"Test flatten operation condition">
+            bars Bar (0..*) <"test bar">
+            condition TestCondition: <"Test Condition">
+                [1, 2, 3] = 
+                (bars
+                    extract numbers
+                    then flatten)
         ''').toString()
-        val expectedTest = 
+
+        val expectedFoo = 
         '''
-        class com_rosetta_test_model_Test(BaseDataClass):
+        class com_rosetta_test_model_Foo(BaseDataClass):
             """
-            Test filter operation condition
+            Test flatten operation condition
             """
-            _FQRTN = 'com.rosetta.test.model.Test'
-            aValue: Annotated[com_rosetta_test_model_A] = Field(..., description='Test A type aValue')
+            _FQRTN = 'com.rosetta.test.model.Foo'
+            bars: Optional[list[Annotated[com_rosetta_test_model_Bar, com_rosetta_test_model_Bar.serializer(), com_rosetta_test_model_Bar.validator()]]] = Field(None, description='test bar')
             """
-            Test A type aValue
+            test bar
             """
             
             @rune_condition
-            def condition_0_TestCond(self):
+            def condition_0_TestCondition(self):
                 """
-                Test condition
+                Test Condition
                 """
                 item = self
-                return (lambda item: rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field2")[0])(rune_filter(item, lambda item: rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")))'''
-        val expectedA =
+                return rune_all_elements([1, 2, 3], "=", (lambda item: rune_flatten_list(item))(list(map(lambda item: rune_resolve_attr(item, "numbers"), rune_resolve_attr(self, "bars")))))
         '''
-        class com_rosetta_test_model_A(BaseDataClass):
-            """
-            Test type
-            """
-            _FQRTN = 'com.rosetta.test.model.A'
-            field1: bool = Field(..., description='Test int field 1')
-            """
-            Test int field 1
-            """
-            field2: list[int] = Field([], description='Test int field 2', min_length=1)
-            """
-            Test int field 2
-            """
-        '''
-        testUtils.assertStringInString(pythonString, expectedTest)
-        testUtils.assertStringInString(pythonString, expectedA)
+        testUtils.assertStringInString(pythonString, expectedFoo)
     }
 }

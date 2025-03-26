@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.semantic.flatten_with_comparison : <"generate Python unit tests from Rosetta.">
+
+type Bar:
+    numbers int (0..*)
+type Foo: <"Test flatten operation condition">
+    bars Bar (0..*) <"test bar">
+    condition TestCondition: <"Test Condition">
+        [1, 2, 3] = 
+        (bars
+            extract numbers
+            then flatten)

@@ -58,8 +58,8 @@ import java.util.List
 class PythonExpressionGenerator {
 
     public var List<String> importsFound
-    public var if_cond_blocks = new ArrayList<String>()
-    public var switch_cond_blocks = new ArrayList<String>()
+    public var ifCondBlocks = new ArrayList<String>()
+    public var switchCondBlocks = new ArrayList<String>()
 
     def String generateConditions(Data cls) {
         var n_condition = 0;
@@ -87,8 +87,61 @@ class PythonExpressionGenerator {
         return res
     }
 
-    def boolean isConstraintCondition(Condition cond) {
-        return cond.isOneOf || cond.isChoice
+    def generateExpressionThenElse(RosettaExpression expr, List<Integer> iflvl) {
+        ifCondBlocks = new ArrayList<String>()
+        generateExpression(expr, iflvl.get(0), false)
+        var blocks = ""
+        if (!ifCondBlocks.isEmpty()) {
+            iflvl.set(0, iflvl.get(0) + 1)
+            blocks = '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
+        }
+        return '''«blocks»'''
+    }
+
+    def String generateExpression(RosettaExpression expr, int iflvl, boolean isLambda) {
+        switch (expr) {
+            // literals
+            RosettaNumberLiteral: '''«expr.value»'''
+            RosettaIntLiteral: '''«expr.value»'''
+            RosettaStringLiteral: '''"«expr.value»"'''
+            RosettaBooleanLiteral: expr.value.toString().equals("true") ? "True" : "False"
+            // xText operations
+            AsKeyOperation: '''{«generateExpression(expr.argument, iflvl, isLambda)»: True}'''
+            DistinctOperation: '''set(«generateExpression(expr.argument, iflvl, isLambda)»)'''
+            FilterOperation: generateFilterOperation(expr, iflvl, isLambda)
+            FirstOperation: '''«generateExpression(expr.argument, iflvl, isLambda)»[0]'''
+            FlattenOperation: '''rune_flatten_list(«generateExpression(expr.argument, iflvl, isLambda)»)'''
+            ListLiteral: '''[«FOR arg : expr.elements SEPARATOR ', '»«generateExpression(arg, iflvl,isLambda)»«ENDFOR»]'''
+            LastOperation: '''«generateExpression(expr.argument, iflvl, isLambda)»[-1]'''
+            MapOperation: generateMapOperation(expr, iflvl, isLambda)
+            MaxOperation: '''max(«generateExpression(expr.getArgument(), iflvl, isLambda)»)'''
+            MinOperation: '''min(«generateExpression(expr.getArgument(), iflvl, isLambda)»)'''
+            SortOperation: '''sorted(«generateExpression(expr.argument, iflvl, isLambda)»)'''            ThenOperation: generateThenOperation(expr, iflvl, isLambda)
+            SumOperation: '''sum(«generateExpression(expr.argument, iflvl, isLambda)»)'''
+            SwitchOperation: generateSwitchOperation(expr, iflvl, isLambda)
+            ToEnumOperation: '''«expr.enumeration.name»(«generateExpression(expr.argument, iflvl, isLambda)»)'''
+            ToStringOperation: '''rune_str(«generateExpression(expr.argument, iflvl, isLambda)»)'''
+            // Rune Operations
+            RosettaAbsentExpression: '''(not rune_attr_exists(«generateExpression(expr.argument, iflvl, isLambda)»))'''
+            RosettaBinaryOperation: generateBinaryExpression(expr, iflvl, isLambda)
+            RosettaConditionalExpression: generateConditionalExpression(expr, iflvl, isLambda)
+            RosettaDeepFeatureCall: '''rune_resolve_deep_attr(self, "«expr.feature.name»")'''
+            RosettaEnumValueReference: '''«expr.enumeration».«EnumHelper.convertValue(expr.value)»'''
+            RosettaExistsExpression: '''rune_attr_exists(«generateExpression(expr.argument, iflvl, isLambda)»)'''
+            RosettaFeatureCall: generateFeatureCall(expr, iflvl, isLambda)
+            RosettaOnlyElement: '''rune_get_only_element(«generateExpression(expr.argument, iflvl, isLambda)»)'''
+            RosettaReference: generateReference(expr, iflvl, isLambda)
+            RosettaOnlyExistsExpression: '''rune_check_one_of(self, «generateExpression(expr.getArgs().get(0), iflvl, isLambda)»)'''
+            RosettaCountOperation: '''rune_count(«generateExpression(expr.argument, iflvl,isLambda)»)'''
+            RosettaConstructorExpression: generateConstructorExpression(expr, iflvl, isLambda)
+            default:{
+                throw new UnsupportedOperationException("Unsupported expression type of " + expr?.class?.simpleName)
+            }
+        }
+    }
+
+    private def boolean isConstraintCondition(Condition cond) {
+        return isOneOf(cond) || isChoice(cond)
     }
 
     private def boolean isOneOf(Condition cond) {
@@ -141,16 +194,16 @@ class PythonExpressionGenerator {
     }
 
     private def generateExpressionCondition(Condition c) {
-        if_cond_blocks = new ArrayList<String>()
-        switch_cond_blocks = new ArrayList<String>()
+        ifCondBlocks = new ArrayList<String>()
+        switchCondBlocks = new ArrayList<String>()
         var expr = generateExpression(c.expression, 0, false)
         var blocks = ""
         var switch_blocks = ""
-        if (!if_cond_blocks.isEmpty()) {
-            blocks = '''    «FOR arg : if_cond_blocks»«arg»«ENDFOR»'''
+        if (!ifCondBlocks.isEmpty()) {
+            blocks = '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
         }
-        if (!switch_cond_blocks.isEmpty()) {
-            switch_blocks = '''    «FOR arg : switch_cond_blocks»«arg»«ENDFOR»'''
+        if (!switchCondBlocks.isEmpty()) {
+            switch_blocks = '''    «FOR arg : switchCondBlocks»«arg»«ENDFOR»'''
         }
         if (switch_blocks.equals(""))
             return '''«blocks»    return «expr»
@@ -159,289 +212,139 @@ class PythonExpressionGenerator {
             return '''«switch_blocks»    «expr»'''
     }
 
-    def generateExpressionThenElse(RosettaExpression expr, List<Integer> iflvl) {
-        if_cond_blocks = new ArrayList<String>()
-        generateExpression(expr, iflvl.get(0), false)
-        var blocks = ""
-        if (!if_cond_blocks.isEmpty()) {
-            iflvl.set(0, iflvl.get(0) + 1)
-            blocks = '''    «FOR arg : if_cond_blocks»«arg»«ENDFOR»'''
-        }
-        return '''«blocks»'''
+    private def String generateConditionalExpression(RosettaConditionalExpression expr, int iflvl, boolean isLambda) {
+        val ifExpr = generateExpression(expr.getIf(), iflvl + 1, isLambda)
+        val ifThen = generateExpression(expr.ifthen, iflvl + 1, isLambda)
+        val elseThen = (expr.elsethen !== null && expr.full) ? generateExpression(expr.elsethen, iflvl + 1, isLambda) : 'True'
+        val ifBlocks = '''
+            def _then_fn«iflvl»():
+                return «ifThen»
+            
+            def _else_fn«iflvl»():
+                return «elseThen»
+            
+        '''
+        ifCondBlocks.add(ifBlocks)
+        '''if_cond_fn(«ifExpr», _then_fn«iflvl», _else_fn«iflvl»)'''
     }
 
-    def String generateExpression(RosettaExpression expr, int iflvl, boolean isLambda) {
+    private def String generateFeatureCall(RosettaFeatureCall expr, int iflvl, boolean isLambda) {
+        if (expr.feature instanceof RosettaEnumValue) {
+            val symbol = (expr.receiver as RosettaSymbolReference).symbol
+            val model = symbol.eContainer as RosettaModel
+            addImportsFromConditions(symbol.name, model.name)
+            return generateEnumString(expr.feature as RosettaEnumValue)
+        }
+        var right = expr.feature.name
+        if (right == "None") 
+            right = "NONE"
+        var receiver = generateExpression(expr.receiver, iflvl, isLambda)
+        return (receiver === null) ? '''«right»''' : '''rune_resolve_attr(«receiver», "«right»")'''
+    }
+
+    private def String generateThenOperation(ThenOperation expr, int iflvl, boolean isLambda) {
+        val funcExpr = expr.function
+        val argExpr = generateExpression(expr.argument, iflvl, isLambda)
+        val body = generateExpression(funcExpr.body, iflvl, true)
+        val funcParams = funcExpr.parameters.map[it.name].join(", ")
+        val lambdaFunction = (funcParams.empty) ? '''(lambda item: «body»)''' : '''(lambda «funcParams»: «body»)'''
+        return '''«lambdaFunction»(«argExpr»)'''
+    }
+
+    private def String generateFilterOperation(FilterOperation expr, int iflvl, boolean isLambda) {
+        val argument = generateExpression(expr.argument, iflvl, isLambda)
+        val filterExpression = generateExpression(expr.function.body, iflvl, true)
+        return '''rune_filter(«argument», lambda item: «filterExpression»)'''
+    }
+
+    private def String generateMapOperation(MapOperation expr, int iflvl, boolean isLambda) {
+        val inlineFunc = expr.function
+        val funcBody = generateExpression(inlineFunc.body, iflvl, true)
+        val lambdaFunction = "lambda item: " + funcBody
+        val argument = generateExpression(expr.argument, iflvl, isLambda)
+        return '''list(map(«lambdaFunction», «argument»))'''
+    }
+
+    private def String generateConstructorExpression(RosettaConstructorExpression expr, int iflvl, boolean isLambda) {
+        val type = expr.typeCall?.type?.name
+        val keyValuePairs = expr.values
+        if (type !== null) {
+            '''«type»(«FOR pair : keyValuePairs SEPARATOR ', '»«pair.key.name»=«generateExpression(pair.value, iflvl, isLambda)»«ENDFOR»)'''
+        } else {
+            '''{«FOR pair : keyValuePairs SEPARATOR ', '»'«pair.key.name»': «generateExpression(pair.value, iflvl, isLambda)»«ENDFOR»}'''
+        }
+    }
+
+    private def String generateSwitchOperation(SwitchOperation expr, int iflvl, boolean isLambda) {
+        val attr = generateExpression(expr.argument, 0, isLambda)
+        var funcNames = new ArrayList<String>()
+        for (thenExpr : expr.cases) {
+            val thenExprDef = generateExpression(thenExpr.getExpression(), iflvl + 1, isLambda)
+            val funcName = '''_then_«generateExpression(thenExpr.getGuard().getLiteralGuard(),0,isLambda)»'''
+            funcNames.add(funcName)
+            val blockThen = '''
+                def «funcName»():
+                    return «thenExprDef»
+            '''
+            switchCondBlocks.add(blockThen)
+        }
+        val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
+        val defaultFuncName = '''_then_default'''
+        funcNames.add(defaultFuncName)
+        val blockDefaultThen = 
+        '''
+            def «defaultFuncName»():
+                return «defaultExprDef»
+        '''
+        switchCondBlocks.add(blockDefaultThen)
+        return
+        '''
+        match «attr»:
+                «FOR i : 0 ..< expr.cases.length»
+                case «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(), 0, isLambda)»:
+                    return «funcNames.get(i)»()
+                «ENDFOR»
+                case _:
+                    return «funcNames.get(funcNames.size - 1)»()
+        '''        
+    }
+
+    private def String generateReference(RosettaReference expr, int iflvl, boolean isLambda) {
         switch (expr) {
-            RosettaDeepFeatureCall: {
-                return '''rune_resolve_deep_attr(self, "«expr.feature.name»")'''
-            }
-            RosettaConditionalExpression: {
-                val ifexpr = generateExpression(expr.getIf(), iflvl + 1, isLambda)
-                val ifthen = generateExpression(expr.ifthen, iflvl + 1, isLambda)
-                var elsethen = expr.elsethen !== null && expr.full
-                        ? generateExpression(expr.elsethen, iflvl + 1, isLambda)
-                        : 'True'
-                val if_blocks = '''
-                    def _then_fn«iflvl»():
-                        return «ifthen»
-                    
-                    def _else_fn«iflvl»():
-                        return «elsethen»
-                    
-                '''
-                if_cond_blocks.add(if_blocks)
-
-                '''if_cond_fn(«ifexpr», _then_fn«iflvl», _else_fn«iflvl»)'''
-            }
-            RosettaFeatureCall: {
-                var right = switch (expr.feature) {
-                    Attribute: {
-                        expr.feature.name
-                    }
-                    RosettaMetaType: {
-                        expr.feature.name
-                    }
-                    RosettaEnumValue: {
-                        val symbol = (expr.receiver as RosettaSymbolReference).symbol
-                        val model = symbol.eContainer as RosettaModel
-                        addImportsFromConditions(symbol.name, model.name)
-						return generateEnumString(expr.feature as RosettaEnumValue)
-                    }
-                    RosettaFeature: {
-                        expr.feature.name
-                    }
-                    default:
-                        throw new UnsupportedOperationException("Unsupported expression type of " + expr.feature.eClass.name)
-                }
-
-                if (right == "None")
-                    right = "NONE"
-                var receiver = generateExpression(expr.receiver, iflvl, isLambda)
-                if (receiver === null) {
-                    '''«right»'''
-                } else {
-                    '''rune_resolve_attr(«receiver», "«right»")'''
-                }
-            }
-            RosettaExistsExpression: {
-                val argument = expr.argument //as RosettaExpression
-                '''rune_attr_exists(«generateExpression(argument, iflvl, isLambda)»)'''
-            }
-            RosettaBinaryOperation: {
-                binaryExpr(expr, iflvl, isLambda)
-            }
-            RosettaAbsentExpression: {
-                val argument = expr.argument //as RosettaExpression
-                '''(not rune_attr_exists(«generateExpression(argument, iflvl, isLambda)»))'''
-            }
-            RosettaReference: {
-                reference(expr, iflvl, isLambda)
-            }
-            RosettaNumberLiteral: {
-                '''«expr.value»'''
-            }
-            RosettaBooleanLiteral: {
-                val trimmedValue = expr.value.toString()
-                return trimmedValue.equals("true") ? "True" : "False"
-            }
-            RosettaIntLiteral: {
-                '''«expr.value»'''
-            }
-            RosettaStringLiteral: {
-                '''"«expr.value»"'''
-            }
-            RosettaOnlyElement: {
-                val argument = expr.argument //as RosettaExpression
-                '''rune_get_only_element(«generateExpression(argument, iflvl, isLambda)»)'''
-            }
-            RosettaEnumValueReference: {
-                val value = EnumHelper.convertValue(expr.value)
-                '''«expr.enumeration».«value»'''
-            }
-            RosettaOnlyExistsExpression: {
-                var aux = expr //as RosettaOnlyExistsExpression;
-                '''rune_check_one_of(self, «generateExpression(aux.getArgs().get(0), iflvl, isLambda)»)'''
-            }
-            RosettaCountOperation: {
-                val argument = expr.argument //as RosettaExpression
-                '''rune_count(«generateExpression(argument, iflvl,isLambda)»)'''
-            }
-            ListLiteral: {
-                '''[«FOR arg : expr.elements SEPARATOR ', '»«generateExpression(arg, iflvl,isLambda)»«ENDFOR»]'''
-            }
-            DistinctOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                return '''set(«argument»)''';
-            }
-            SortOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                return '''sorted(«argument»)''';
-            }
-            ThenOperation: {
-                val funcExpr = expr.function
-                val argExpr = generateExpression(expr.argument, iflvl, isLambda)
-                val body = generateExpression(funcExpr.body, iflvl, true)
-                val funcParams = funcExpr.parameters.map[it.name].join(", ")
-                val lambdaFunction = if (funcParams.empty) {
-                        '''(lambda item: «body»)'''
-                    } else {
-                        '''(lambda «funcParams»: «body»)'''
-                    }
-                return '''«lambdaFunction»(«argExpr»)'''
-            }
-            LastOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                return '''«argument»[-1]''';
-            }
-            SumOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                return '''sum(«argument»)''';
-            }
-            FirstOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                return '''«argument»[0]''';
-            }
-            FilterOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                val filterExpression = generateExpression(expr.function.body, iflvl, true);
-                val filterCall = "rune_filter(" + argument + ", lambda item: " + filterExpression + ")";
-                return filterCall;
-            }
-            MapOperation: {
-                val inlineFunc = expr.function //as InlineFunction;
-                //val funcParameters = inlineFunc.parameters.map[it.name].join(", ");
-                val funcBody = generateExpression(inlineFunc.body, iflvl, true);
-                val lambdaFunction = "lambda item: " + funcBody;
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                val pythonMapOperation = "list(map(" + lambdaFunction + ", " + argument + "))";
-                return pythonMapOperation;
-            }
-            AsKeyOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda)
-                return '''{«argument»: True}'''
-            }
-            FlattenOperation: {
-                val nestedListExpr = generateExpression(expr.argument, iflvl, isLambda)
-                return '''rune_flatten_list(«nestedListExpr»)'''
-            }
-            RosettaConstructorExpression: {
-                val type = expr.typeCall?.type?.name
-                val keyValuePairs = expr.values
-                val pythonConstructor = if (type !== null) {
-                        '''«type»(«FOR pair : keyValuePairs SEPARATOR ', '»«pair.key.name»=«generateExpression(pair.value, iflvl, isLambda)»«ENDFOR»)'''
-                    } else {
-                        '''{«FOR pair : keyValuePairs SEPARATOR ', '»'«pair.key.name»': «generateExpression(pair.value, iflvl, isLambda)»«ENDFOR»}'''
-                    }
-                return pythonConstructor
-            }
-            ToStringOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                return '''rune_str(«argument»)''';
-            }
-            ToEnumOperation: {
-                val argument = generateExpression(expr.argument, iflvl, isLambda);
-                return '''«expr.enumeration.name»(«argument»)''';
-            }
-            MinOperation: {
-                val argument = generateExpression(expr.getArgument(), iflvl, isLambda);
-                return '''min(«argument»)''';
-            }
-            MaxOperation: {
-                val argument = generateExpression(expr.getArgument(), iflvl, isLambda);
-                return '''max(«argument»)''';
-            }
-            SwitchOperation: {
-                val attr = generateExpression(expr.argument, 0, isLambda)
-                var funcNames = new ArrayList<String>()
-                for (thenExpr : expr.cases) {
-                    val thenExprDef = generateExpression(thenExpr.getExpression(), iflvl + 1, isLambda)
-                    val funcName = '''_then_«generateExpression(thenExpr.getGuard().getLiteralGuard(),0,isLambda)»'''
-                    funcNames.add(funcName)
-                    val block_then = '''
-                        def «funcName»():
-                            return «thenExprDef»
-                    '''
-                    switch_cond_blocks.add(block_then)
-                }
-                val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
-                val defaultFuncName = '''_then_default'''
-                funcNames.add(defaultFuncName)
-                val block_default_then = 
-                '''
-                    def «defaultFuncName»():
-                        return «defaultExprDef»
-                '''
-                switch_cond_blocks.add(block_default_then)
-                '''match «attr»:
-        «FOR i : 0 ..< expr.cases.length»case «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(),0,isLambda)»: return «funcNames.get(i)»()
-        «ENDFOR»case _: return «funcNames.get(funcNames.size-1)»()
-'''
-            }
-            default:{
-                throw new UnsupportedOperationException("Unsupported expression type of " + expr?.class?.simpleName)
-            }
+            RosettaImplicitVariable: '''«expr.name»'''
+            RosettaSymbolReference:  generateSymbolReference(expr, iflvl, isLambda)
         }
     }
 
-    protected def String reference(RosettaReference expr, int iflvl, boolean isLambda) {
-        switch (expr) {
-            RosettaImplicitVariable: {
-                '''«expr.name»'''
-            }
-            RosettaSymbolReference: {
-                symbolReference(expr, iflvl, isLambda)
-            }
+    private def String  generateSymbolReference(RosettaSymbolReference expr, int iflvl, boolean isLambda) {
+        val symbol = expr.symbol
+        switch (symbol) {
+            Data, RosettaEnumeration: '''«symbol.name»'''
+            Attribute: generateAttributeReference(symbol, isLambda)
+            RosettaEnumValue: generateEnumString(symbol)
+            RosettaCallableWithArgs: generateCallableWithArgsCall(symbol, expr, iflvl, isLambda)
+            ShortcutDeclaration, ClosureParameter: '''rune_resolve_attr(self, "«symbol.name»")'''
+            default: throw new UnsupportedOperationException("Unsupported symbol reference for: " + symbol.class.simpleName)
         }
     }
 
-    def String symbolReference(RosettaSymbolReference expr, int iflvl, boolean isLambda) {
-        val s = expr.symbol
-
-        switch (s) {
-            Data: {
-                '''«s.name»'''
-            }
-            Attribute: {
-                if (isLambda) {
-                    var notInput = true
-                    if (s.eContainer instanceof FunctionImpl) {
-                        var FunctionImpl c = s.eContainer as FunctionImpl
-                        for (inputatt : c.inputs) {
-                            if (inputatt.name.equals(s.name)) {
-                                notInput = false
-                            }
-                        }
+    private def String generateAttributeReference(Attribute s, boolean isLambda) {
+        if (isLambda) {
+            var notInput = true
+            if (s.eContainer instanceof FunctionImpl) {
+                var FunctionImpl c = s.eContainer as FunctionImpl
+                for (inputAttr : c.inputs) {
+                    if (inputAttr.name.equals(s.name)) {
+                        notInput = false
                     }
-
-                    if (notInput) {
-                        '''rune_resolve_attr(item, "«s.name»")'''
-                    } else {
-                        '''rune_resolve_attr(self, "«s.name»")'''
-                    }
-                } else {
-                    '''rune_resolve_attr(self, "«s.name»")'''
                 }
             }
-            RosettaEnumeration: {
-                '''«s.name»'''
-            }
-            RosettaEnumValue: {
-            	// return the fully qualified enum name
-				return generateEnumString (s)
-            }
-            RosettaCallableWithArgs: {
-                callableWithArgsCall(s, expr, iflvl, isLambda)
-            }
-            ShortcutDeclaration: {
-                '''rune_resolve_attr(self, "«s.name»")'''
-            }
-            ClosureParameter: {
-                '''rune_resolve_attr(self, "«s.name»")'''
-            }
-            default:
-                throw new UnsupportedOperationException("Unsupported symbol reference for: " + s.class.simpleName)
+            return (notInput) ? '''rune_resolve_attr(item, "«s.name»")''' : '''rune_resolve_attr(self, "«s.name»")'''
+        } else {
+            return '''rune_resolve_attr(self, "«s.name»")'''
         }
     }
+
 	private def String generateEnumString (RosettaEnumValue rev) {
 		// translate the enum value to a fully qualified name as long as the value is not None
 		
@@ -452,58 +355,41 @@ class PythonExpressionGenerator {
         return '''«modelName».«parentName».«parentName».«value»'''
 	} 
 
-    def String callableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr, int iflvl,
-        boolean isLambda) {
+    private def String generateCallableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr, int iflvl, boolean isLambda) {
         if (s instanceof FunctionImpl)
             addImportsFromConditions(s.getName(), (s.eContainer as RosettaModel).name + "." + "functions")
         else
             addImportsFromConditions(s.name, (s.eContainer as RosettaModel).name)
         var args = '''«FOR arg : expr.args SEPARATOR ', '»«generateExpression(arg, iflvl, isLambda)»«ENDFOR»'''
         '''«s.name»(«args»)'''
-
     }
 
-    def String binaryExpr(RosettaBinaryOperation expr, int iflvl, boolean isLambda) {
+    private def String generateBinaryExpression(RosettaBinaryOperation expr, int iflvl, boolean isLambda) {
         if (expr instanceof ModifiableBinaryOperation) {
-            if (expr.cardMod !== null) {
-                if (expr.operator == "<>") {
-                    '''rune_any_elements(«generateExpression(expr.left, iflvl,isLambda)», "«expr.operator»", «generateExpression(expr.right, iflvl, isLambda)»)'''
-                } else {
-                    '''rune_all_elements(«generateExpression(expr.left, iflvl, isLambda)», "«expr.operator»", «generateExpression(expr.right, iflvl, isLambda)»)'''
-                }
+            if (expr.cardMod === null) {
+                throw new UnsupportedOperationException("ModifiableBinaryOperation with expressions with no cardinality")
             }
+            if (expr.operator == "<>") {
+                '''rune_any_elements(«generateExpression(expr.left, iflvl,isLambda)», "«expr.operator»", «generateExpression(expr.right, iflvl, isLambda)»)'''
+            } else {
+                '''rune_all_elements(«generateExpression(expr.left, iflvl, isLambda)», "«expr.operator»", «generateExpression(expr.right, iflvl, isLambda)»)'''
+            } 
         } else {
             switch expr.operator {
-                case ("="): {
-                    '''(«generateExpression(expr.left, iflvl, isLambda)» == «generateExpression(expr.right, iflvl, isLambda)»)'''
-                }
-                case ("<>"): {
-                    '''(«generateExpression(expr.left, iflvl, isLambda)» != «generateExpression(expr.right, iflvl, isLambda)»)'''
-                }
-                case ("contains"): {
-                    '''rune_contains(«generateExpression(expr.left, iflvl, isLambda)», «generateExpression(expr.right, iflvl, isLambda)»)'''
-
-                }
-                case ("disjoint"): {
-                    '''rune_disjoint(«generateExpression(expr.left, iflvl,isLambda)», «generateExpression(expr.right, iflvl,isLambda)»)'''
-
-                }
-                case ("join"): {
-                    '''«generateExpression(expr.left, iflvl, isLambda)».join(«generateExpression(expr.right, iflvl, isLambda)»)'''
-                }
-                default: {
-                    '''(«generateExpression(expr.left, iflvl, isLambda)» «expr.operator» «generateExpression(expr.right, iflvl, isLambda)»)'''
-                }
+                case ("="): '''(«generateExpression(expr.left, iflvl, isLambda)» == «generateExpression(expr.right, iflvl, isLambda)»)'''
+                case ("<>"): '''(«generateExpression(expr.left, iflvl, isLambda)» != «generateExpression(expr.right, iflvl, isLambda)»)'''
+                case ("contains"): '''rune_contains(«generateExpression(expr.left, iflvl, isLambda)», «generateExpression(expr.right, iflvl, isLambda)»)'''
+                case ("disjoint"): '''rune_disjoint(«generateExpression(expr.left, iflvl,isLambda)», «generateExpression(expr.right, iflvl,isLambda)»)'''
+                case ("join"): '''«generateExpression(expr.left, iflvl, isLambda)».join(«generateExpression(expr.right, iflvl, isLambda)»)'''
+                default: '''(«generateExpression(expr.left, iflvl, isLambda)» «expr.operator» «generateExpression(expr.right, iflvl, isLambda)»)'''
             }
         }
     }
 
     def addImportsFromConditions(String variable, String namespace) {
         val import = '''from «namespace».«variable» import «variable»'''
-        if (importsFound !== null) {
-            if (!importsFound.contains(import)) {
-                importsFound.add(import)
-            }
+        if (importsFound !== null && !importsFound.contains(import)) {
+            importsFound.add(import)
         }
     }
 }

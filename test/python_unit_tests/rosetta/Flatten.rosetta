@@ -1,21 +1,21 @@
 namespace rosetta_dsl.test.semantic.flatten_operator : <"generate Python unit tests from Rosetta.">
 
 type ClassA: <"Test type A">
-	field1 int (0..1) <"test field 1">
-	field2 int (0..1) <"test field 2">
-	field3 int (0..1) <"test field 3">
-	
+    field1 int (0..1) <"test field 1">
+    field2 int (0..1) <"test field 2">
+    field3 int (0..1) <"test field 3">
+    
 type ClassB: <"">
-	fieldList ClassA (0..*) <"">
+    fieldList ClassA (0..*) <"">
 
 type FlattenTest: <"Test flatten operation in a condition">
-	bValue ClassB (0..*) <"Test value">
-	field3 int (1..1) <"Test field 3">
-	condition FlattenTestCond: <"Test condition">
-	    if field3>0
-	    	then bValue
-	    		extract fieldList
-	    		then flatten
-    	else
+    bValue ClassB (0..*) <"Test value">
+    field3 int (1..1) <"Test field 3">
+    condition FlattenTestCond: <"Test condition">
+        if field3>0
+            then bValue
+                extract fieldList
+                then flatten
+        else
            False
-    	
+        

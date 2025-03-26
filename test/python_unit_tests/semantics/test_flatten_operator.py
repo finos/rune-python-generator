@@ -12,5 +12,6 @@ def test_flatten_operator_passes():
     ab2=ClassB(fieldList=[a3,a4])
     ftest=FlattenTest(bValue=[ab1,ab2],field3=2)
     ftest.validate_model()
+# EOF
 
 
