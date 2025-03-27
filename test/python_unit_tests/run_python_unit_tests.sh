@@ -36,7 +36,7 @@ source $MY_PATH/setup_unit_test_env.sh
 # run tests
 echo "***** run unit tests"
 cd $MY_PATH
-$PYEXE -m pytest -p no:cacheprovider $MY_PATH/semantics 
+$PYEXE -m pytest -p no:cacheprovider $MY_PATH
 
 echo "***** cleanup"
 

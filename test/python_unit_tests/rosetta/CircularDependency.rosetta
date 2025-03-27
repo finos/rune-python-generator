@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.model.circular_dependency : <"generate Python unit tests from Rosetta.">
+
+type Bar1: <"Test Circular Dependency">
+    number1 int(1..1)
+    bar2 Bar2(0..1)
+type Bar2: 
+    number2 int(1..1)
+    bar1 Bar1(0..1)
+    condition Test:
+        if bar1 exists
+            then bar1->number1 > 0
