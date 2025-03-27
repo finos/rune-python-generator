@@ -737,6 +737,44 @@ class PythonExpressionGeneratorTest {
                     return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", False), _then_fn0, _else_fn0)'''
         )
     }
+    @Test
+    def void testGenerateFlattenCondition() {
+        val pythonString = testUtils.generatePythonFromString(
+        '''
+        type Bar:
+            numbers int (0..*)
+        type Foo: <"Test flatten operation condition">
+            bars Bar (0..*) <"test bar">
+            condition TestCondition: <"Test Condition">
+                [1, 2, 3] = 
+                (bars
+                    extract numbers
+                    then flatten)
+        ''').toString()
+
+        val expectedFoo = 
+        '''
+        class com_rosetta_test_model_Foo(BaseDataClass):
+            """
+            Test flatten operation condition
+            """
+            _FQRTN = 'com.rosetta.test.model.Foo'
+            bars: Optional[list[Annotated[com_rosetta_test_model_Bar, com_rosetta_test_model_Bar.serializer(), com_rosetta_test_model_Bar.validator()]]] = Field(None, description='test bar')
+            """
+            test bar
+            """
+            
+            @rune_condition
+            def condition_0_TestCondition(self):
+                """
+                Test Condition
+                """
+                item = self
+                return rune_all_elements([1, 2, 3], "=", (lambda item: rune_flatten_list(item))(list(map(lambda item: rune_resolve_attr(item, "numbers"), rune_resolve_attr(self, "bars")))))
+        '''
+        testUtils.assertStringInString(pythonString, expectedFoo)
+    }
+
     @Disabled
     @Test
     def void setUp() {
@@ -884,43 +922,4 @@ class PythonExpressionGeneratorTest {
             ''').toString()
         */
     }  
-    // TODO: enable once the Rune syntax for flatten is determined
-//    @Disabled
-    @Test
-    def void testGenerateFlattenCondition() {
-        val pythonString = testUtils.generatePythonFromString(
-        '''
-        type Bar:
-            numbers int (0..*)
-        type Foo: <"Test flatten operation condition">
-            bars Bar (0..*) <"test bar">
-            condition TestCondition: <"Test Condition">
-                [1, 2, 3] = 
-                (bars
-                    extract numbers
-                    then flatten)
-        ''').toString()
-
-        val expectedFoo = 
-        '''
-        class com_rosetta_test_model_Foo(BaseDataClass):
-            """
-            Test flatten operation condition
-            """
-            _FQRTN = 'com.rosetta.test.model.Foo'
-            bars: Optional[list[Annotated[com_rosetta_test_model_Bar, com_rosetta_test_model_Bar.serializer(), com_rosetta_test_model_Bar.validator()]]] = Field(None, description='test bar')
-            """
-            test bar
-            """
-            
-            @rune_condition
-            def condition_0_TestCondition(self):
-                """
-                Test Condition
-                """
-                item = self
-                return rune_all_elements([1, 2, 3], "=", (lambda item: rune_flatten_list(item))(list(map(lambda item: rune_resolve_attr(item, "numbers"), rune_resolve_attr(self, "bars")))))
-        '''
-        testUtils.assertStringInString(pythonString, expectedFoo)
-    }
 }
