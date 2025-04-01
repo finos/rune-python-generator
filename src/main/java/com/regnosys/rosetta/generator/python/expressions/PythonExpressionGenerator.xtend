@@ -45,6 +45,7 @@ import com.regnosys.rosetta.rosetta.expression.RosettaDeepFeatureCall
 import com.regnosys.rosetta.rosetta.expression.MinOperation
 import com.regnosys.rosetta.rosetta.expression.MaxOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchOperation
+import com.regnosys.rosetta.rosetta.expression.SwitchCaseGuard
 import com.regnosys.rosetta.rosetta.simple.Attribute
 import com.regnosys.rosetta.rosetta.simple.Condition
 import com.regnosys.rosetta.rosetta.simple.Data
@@ -276,38 +277,70 @@ class PythonExpressionGenerator {
         }
     }
 
+    def getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda, String enumName){
+    	if (caseGuard.getEnumGuard!==null){
+    		return '''switchAttribute == «enumName».«caseGuard.getEnumGuard.getName()»'''
+    	}
+    	else if (caseGuard.getChoiceOptionGuard!==null){
+    		return '''rosetta_resolve_attr(switchAttribute,"«caseGuard.getChoiceOptionGuard.getName()»")'''
+    	}
+    	else if (caseGuard.getSymbolGuard!==null){
+    		return '''rosetta_resolve_attr(switchAttribute,"«caseGuard.getSymbolGuard.getName()»")'''
+		}
+    }
+
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
         val attr = generateExpression(expr.argument, 0, isLambda)
+        //functions for each then case
+        val arg= expr.argument as RosettaSymbolReference
+        val argSymbol=arg.symbol
+        var enumName=""
+        if (argSymbol instanceof Attribute){
+            if (argSymbol.typeCall.type instanceof RosettaEnumeration){
+                enumName=argSymbol.typeCall.type.name
+            }
+        }
         var funcNames = new ArrayList<String>()
+        var funcCounter=1
         for (thenExpr : expr.cases) {
             val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
-            val funcName = '''_then_«generateExpression(thenExpr.getGuard().getLiteralGuard(),0,isLambda)»'''
+            val funcName = '''_then_«funcCounter»'''
+            funcCounter += 1
             funcNames.add(funcName)
-            val blockThen = '''
+            val block_then = '''
                 def «funcName»():
                     return «thenExprDef»
             '''
-            switchCondBlocks.add(blockThen)
+            switchCondBlocks.add(block_then)
         }
+        //default case
         val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
         val defaultFuncName = '''_then_default'''
         funcNames.add(defaultFuncName)
-        val blockDefaultThen = 
-        '''
+        val block_default_then = '''
             def «defaultFuncName»():
                 return «defaultExprDef»
         '''
-        switchCondBlocks.add(blockDefaultThen)
-        return
+        switchCondBlocks.add(block_default_then)
+
+        '''switchAttribute= «attr»
+        «FOR i : 0 ..< expr.cases.length»
+            «IF expr.cases.get(i).getGuard().getLiteralGuard() !== null»
+                «IF i===0»    if (switchAttribute == «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(),0,isLambda)»):
+                        return «funcNames.get(i)»()
+                «ELSE»    elif (switchAttribute == «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(),0,isLambda)»):
+                        return «funcNames.get(i)»()
+                «ENDIF»
+            «ELSE»
+                «IF i===0»    if «getGuardExpression(expr.cases.get(i).getGuard(),isLambda,enumName)»:
+                        return «funcNames.get(i)»()
+                «ELSE»    elif «getGuardExpression(expr.cases.get(i).getGuard(),isLambda,enumName)»:
+                        return «funcNames.get(i)»()
+                «ENDIF»
+            «ENDIF»
+        «ENDFOR»
+else : return «funcNames.get(funcNames.size-1)»()
         '''
-        match «attr»:
-                «FOR i : 0 ..< expr.cases.length»
-                case «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(), 0, isLambda)»:
-                    return «funcNames.get(i)»()
-                «ENDFOR»
-                case _:
-                    return «funcNames.get(funcNames.size - 1)»()
-        '''        
     }
 
     private def String generateReference(RosettaReference expr, int ifLevel, boolean isLambda) {
