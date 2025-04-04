@@ -109,6 +109,7 @@ class PythonMetaKeysGeneratorTest {
         val expectedA = 
         '''
         class test_generated_syntax_meta_key_ref_A(BaseDataClass):
+            _ALLOWED_METADATA = {'@key', '@key:external'}
             _FQRTN = 'test.generated_syntax.meta_key_ref.A'
             fieldA: str = Field(..., description='')
         '''
@@ -142,12 +143,11 @@ class PythonMetaKeysGeneratorTest {
         '''
         class test_generated_syntax_meta_key_ref_NodeRef(BaseDataClass):
             _FQRTN = 'test.generated_syntax.meta_key_ref.NodeRef'
-            typeA: Optional[Annotated[test_generated_syntax_meta_key_ref_A, test_generated_syntax_meta_key_ref_A.serializer(), test_generated_syntax_meta_key_ref_A.validator(('@key', '@key:external'))]] = Field(None, description='')
-            aReference: Optional[Annotated[test_generated_syntax_meta_key_ref_A, test_generated_syntax_meta_key_ref_A.serializer(), test_generated_syntax_meta_key_ref_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]] = Field(None, description='')
+            typeA: Optional[Annotated[test_generated_syntax_meta_key_ref_A, test_generated_syntax_meta_key_ref_A.serializer(), test_generated_syntax_meta_key_ref_A.validator()]] = Field(None, description='')
+            aReference: Optional[Annotated[test_generated_syntax_meta_key_ref_A, test_generated_syntax_meta_key_ref_A.serializer(), test_generated_syntax_meta_key_ref_A.validator(('@ref', '@ref:external'))]] = Field(None, description='')
             
             _KEY_REF_CONSTRAINTS = {
-                'aReference': {'@key', '@key:external', '@ref', '@ref:external'},
-                'typeA': {'@key', '@key:external'}
+                'aReference': {'@ref', '@ref:external'}
             }
         '''
         testUtils.assertStringInString(generatedBundle, expectedNodeRef)

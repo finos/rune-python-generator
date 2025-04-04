@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.generator.python.enums
 
 import com.regnosys.rosetta.generator.java.enums.EnumHelper
-import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil
 import com.regnosys.rosetta.rosetta.RosettaEnumeration
 import com.regnosys.rosetta.rosetta.RosettaModel
 import java.util.ArrayList
@@ -25,7 +25,7 @@ class PythonEnumGenerator {
                 __all__ = ['«enum.name»']
                 
             '''
-            result.put(PythonModelGeneratorUtil::toPyFileName(namespace, enum.name), all + enums)
+            result.put(PythonCodeGeneratorUtil::toPyFileName(namespace, enum.name), all + enums)
         }
         return result;
     }
@@ -43,25 +43,25 @@ class PythonEnumGenerator {
 
     private def generateEnums(RosettaEnumeration enume, String version) {
         '''
-            «val allEnumValues = allEnumsValues(enume)»
-            class «enume.name»(rune.runtime.metadata.EnumWithMetaMixin, Enum):
-                «IF enume.definition!==null»
-                    """
-                    «enume.definition»
-                    """
-                «ENDIF»
-                «IF allEnumValues.size()===0»
-                    pass
-                «ELSE»
-                    «FOR value: allEnumValues SEPARATOR ''»
-                        «EnumHelper.convertValue(value)» = "«IF value.display !== null»«value.display»«ELSE»«value.name»«ENDIF»"
-                        «IF value.definition!==null»
-                            """
-                            «value.definition»
-                            """
-                        «ENDIF»
-                    «ENDFOR»
-                «ENDIF»
+        «val allEnumValues = allEnumsValues(enume)»
+        class «enume.name»(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+            «IF enume.definition!==null»
+                """
+                «enume.definition»
+                """
+            «ENDIF»
+            «IF allEnumValues.size()===0»
+                pass
+            «ELSE»
+                «FOR value: allEnumValues SEPARATOR ''»
+                    «EnumHelper.convertValue(value)» = "«IF value.display !== null»«value.display»«ELSE»«value.name»«ENDIF»"
+                    «IF value.definition!==null»
+                        """
+                        «value.definition»
+                        """
+                    «ENDIF»
+                «ENDFOR»
+            «ENDIF»
         '''
     }
 }

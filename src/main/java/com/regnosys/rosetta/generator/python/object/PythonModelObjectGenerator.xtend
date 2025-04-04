@@ -3,8 +3,7 @@ package com.regnosys.rosetta.generator.python.object
 // TODO: fix unit tests
 import com.google.inject.Inject
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator
-import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil
-import com.regnosys.rosetta.generator.python.util.Util
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil
 import com.regnosys.rosetta.rosetta.RosettaModel
 import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.types.RObjectFactory
@@ -21,14 +20,15 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.jgrapht.graph.GraphCycleProhibitedException;
+
 /*
  * Generate Python from Rune Types
  */
 class PythonModelObjectGenerator {
 
     @Inject extension RObjectFactory
+    @Inject RObjectFactory rObjectFactory;
 
-    @Inject PythonMetaDataProcessor pythonMetaDataProcessor;
     @Inject PythonExpressionGenerator expressionGenerator;
     @Inject PythonAttributeProcessor pythonAttributeProcessor;
     @Inject PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
@@ -50,12 +50,12 @@ class PythonModelObjectGenerator {
      */
     def Map<String, ? extends CharSequence> generate(Iterable<Data> rosettaClasses, String version) {
         val result = new HashMap
-        var metaDataKeys = pythonMetaDataProcessor.getMetaDataKeys(rosettaClasses.toList);
+
         for (Data rosettaClass : rosettaClasses) {
             val model = rosettaClass.eContainer as RosettaModel
-            val nameSpace = Util::getNamespace(model)
+            val nameSpace = PythonCodeGeneratorUtil::getNamespace(model)
             // ensure there are no tabs
-            val pythonClass = generateClass(rosettaClass, metaDataKeys, nameSpace, version).toString.replace('\t', '    ')
+            val pythonClass = generateClass(rosettaClass, nameSpace, version).toString.replace('\t', '    ')
             // use "." as a delimiter to preserve the use of "_" in the name
             val className = model.name + '.' + rosettaClass.getName()
             result.put(className, pythonClass)
@@ -71,6 +71,7 @@ class PythonModelObjectGenerator {
         }
         return result;
     }
+
     def Map<String, ? extends CharSequence> afterAllGenerate (String namespace, Map<String, CharSequence> objects) {
         // create bundle and stub classes
         val result = new HashMap
@@ -81,7 +82,7 @@ class PythonModelObjectGenerator {
             var isFirst = true;
             while (topologicalOrderIterator.hasNext) {
                 if (isFirst) {
-                    _bundle.append(PythonModelGeneratorUtil.createImports());
+                    _bundle.append(PythonCodeGeneratorUtil.createImports());
                     for (import : imports) {
                         _bundle.append(import)
                         _bundle.newLine()
@@ -130,7 +131,7 @@ class PythonModelObjectGenerator {
             }
         }
     }
-    private def generateClass(Data rosettaClass, Map<String, String> metaDataKeys, String nameSpace, String version) {
+    private def generateClass(Data rosettaClass, String nameSpace, String version) {
         // generate Python for the class
         // ... get the imports from the attributes
         // ... generate the body of the class
@@ -145,12 +146,37 @@ class PythonModelObjectGenerator {
         val importsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass)
         imports.addAll(importsFound);
         expressionGenerator.importsFound = new ArrayList<String>(importsFound);
-        val classDefinition = generateBody(rosettaClass, metaDataKeys)
+        val classDefinition = generateBody(rosettaClass)
 
         var _builder = new StringConcatenation();
         _builder.append(classDefinition)
         return classDefinition;
     }
+
+	private def String getClassMetaDataString(Data rosettaClass) {
+	    // generate _ALLOWED_METADATA string for the type
+	    val rcRData = rObjectFactory.buildRDataType(rosettaClass)
+    	val isFirstArray = newArrayList(true)
+	    val _builder = new StringConcatenation
+	
+	    rcRData.metaAttributes.forEach[metaData |
+	        if (isFirstArray.get(0)) {
+	            isFirstArray.set(0, false)
+	            _builder.append("_ALLOWED_METADATA = {")
+	        } else {
+	            _builder.append(", ")
+	        }
+	        switch metaData.name {
+	            case "key": _builder.append("'@key', '@key:external'")
+	            case "scheme": _builder.append("'@scheme'")
+	        }
+	    ]
+	    if (!isFirstArray.get(0)) {
+	        _builder.append("}")
+	        _builder.newLine
+	    }
+	    return _builder.toString
+	}
 
     private def keyRefConstraintsToString (Map<String, List<String>> keyRefConstraints) {
         var _builder = new StringConcatenation();
@@ -191,7 +217,7 @@ class PythonModelObjectGenerator {
     private def getBundleClassName (Data rosettaClass) {
         return getFullyQualifiedName(rosettaClass).replace(".", "_")
     }
-    private def generateBody(Data rosettaClass,  Map<String, String> metaDataKeys) {
+    private def generateBody(Data rosettaClass) {
         // generate the main body of the class
         // ... first generate choice aliases
         // ... then add the class definition
@@ -203,6 +229,7 @@ class PythonModelObjectGenerator {
         return
         '''
         class «getBundleClassName(rosettaClass)»(«(rosettaClass.superType !== null) ? getBundleClassName(rosettaClass.superType) : "BaseDataClass"»):
+            «getClassMetaDataString(rosettaClass)»
             «choiceAliasesAsAString»
             «IF rosettaClass.definition !== null»
                 """
@@ -210,7 +237,7 @@ class PythonModelObjectGenerator {
                 """
             «ENDIF»
             _FQRTN = '«getFullyQualifiedName(rosettaClass)»'
-            «pythonAttributeProcessor.generateAllAttributes(rosettaClass, metaDataKeys, keyRefConstraints)»
+            «pythonAttributeProcessor.generateAllAttributes(rosettaClass, keyRefConstraints)»
             «IF !keyRefConstraints.isEmpty()»
                 «keyRefConstraintsToString(keyRefConstraints)»
             «ENDIF»

@@ -47,6 +47,7 @@ class PythonEnumGeneratorTest {
         val expected = 
         '''
         class com_rosetta_test_model_Frequency(BaseDataClass):
+            _ALLOWED_METADATA = {'@key', '@key:external'}
             """
             A class for defining a date frequency, e.g. one day, three months, through the combination of an integer value and a standardized period value that is specified as part of an enumeration.
             """
@@ -81,7 +82,7 @@ class PythonEnumGeneratorTest {
                 """
                 item = self
                 return rune_all_elements(rune_resolve_attr(self, "periodMultiplier"), ">", 0)
-            '''        
+        '''        
         testUtils.assertStringInString (generatedBundle, expected)
 
     }
