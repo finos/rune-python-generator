@@ -12,7 +12,7 @@ import java.util.HashMap
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RosettaInjectorProvider)
-class PythonMetaKeysGeneratorTest {
+class PythonMetaDataGeneratorTest {
 
     @Inject PythonGeneratorTestUtils testUtils
 
@@ -22,7 +22,7 @@ class PythonMetaKeysGeneratorTest {
         if (python === null) {
             python = testUtils.generatePythonFromString(
                 '''
-                namespace test.generated_syntax.meta_key_ref : <"generate Python unit tests from Rosetta.">
+                namespace test.generated_syntax.metadata : <"generate Python unit tests from Rosetta.">
 
                 type A:
                     [metadata key]
@@ -43,6 +43,10 @@ class PythonMetaKeysGeneratorTest {
                     [rootType]
                     nodeRef NodeRef (0..1)
                     attributeRef AttributeRef (0..1)
+                
+                type SchemeTest:
+                    [metadata scheme]
+                    a string (1..1)
                 ''')
         }
         return python
@@ -52,10 +56,10 @@ class PythonMetaKeysGeneratorTest {
     def void testAProxy() {
         val python = getPython()
         testUtils.assertStringInString(
-            python.get("src/test/generated_syntax/meta_key_ref/A.py").toString(),
+            python.get("src/test/generated_syntax/metadata/A.py").toString(),
             '''
             # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_meta_key_ref_A as A
+            from test._bundle import test_generated_syntax_metadata_A as A
 
             # EOF''')
     }
@@ -64,10 +68,10 @@ class PythonMetaKeysGeneratorTest {
     def void testNodeRefProxy() {
         val python = getPython()
         testUtils.assertStringInString(
-            python.get("src/test/generated_syntax/meta_key_ref/NodeRef.py").toString(),
+            python.get("src/test/generated_syntax/metadata/NodeRef.py").toString(),
             '''
             # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_meta_key_ref_NodeRef as NodeRef
+            from test._bundle import test_generated_syntax_metadata_NodeRef as NodeRef
 
             # EOF''')
     }
@@ -76,10 +80,10 @@ class PythonMetaKeysGeneratorTest {
     def void testAttributeRefProxy() {
         val python = getPython()
         testUtils.assertStringInString(
-            python.get("src/test/generated_syntax/meta_key_ref/AttributeRef.py").toString(),
+            python.get("src/test/generated_syntax/metadata/AttributeRef.py").toString(),
             '''
             # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_meta_key_ref_AttributeRef as AttributeRef
+            from test._bundle import test_generated_syntax_metadata_AttributeRef as AttributeRef
 
             # EOF''')
     }
@@ -88,10 +92,10 @@ class PythonMetaKeysGeneratorTest {
     def void testRootProxy() {
         val python = getPython()
         testUtils.assertStringInString(
-            python.get("src/test/generated_syntax/meta_key_ref/Root.py").toString(),
+            python.get("src/test/generated_syntax/metadata/Root.py").toString(),
             '''
             # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_meta_key_ref_Root as Root
+            from test._bundle import test_generated_syntax_metadata_Root as Root
 
             # EOF''')
     }
@@ -108,9 +112,9 @@ class PythonMetaKeysGeneratorTest {
         val generatedBundle = python.get("src/test/_bundle.py").toString()
         val expectedA = 
         '''
-        class test_generated_syntax_meta_key_ref_A(BaseDataClass):
+        class test_generated_syntax_metadata_A(BaseDataClass):
             _ALLOWED_METADATA = {'@key', '@key:external'}
-            _FQRTN = 'test.generated_syntax.meta_key_ref.A'
+            _FQRTN = 'test.generated_syntax.metadata.A'
             fieldA: str = Field(..., description='')
         '''
         testUtils.assertStringInString(generatedBundle, expectedA)
@@ -122,8 +126,8 @@ class PythonMetaKeysGeneratorTest {
         val generatedBundle = python.get("src/test/_bundle.py").toString()
         val expectedAttributeRef = 
         '''
-        class test_generated_syntax_meta_key_ref_AttributeRef(BaseDataClass):
-            _FQRTN = 'test.generated_syntax.meta_key_ref.AttributeRef'
+        class test_generated_syntax_metadata_AttributeRef(BaseDataClass):
+            _FQRTN = 'test.generated_syntax.metadata.AttributeRef'
             dateField: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@key', '@key:external'))]] = Field(None, description='')
             dateReference: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]] = Field(None, description='')
             
@@ -141,10 +145,10 @@ class PythonMetaKeysGeneratorTest {
         val generatedBundle = python.get("src/test/_bundle.py").toString()
         val expectedNodeRef = 
         '''
-        class test_generated_syntax_meta_key_ref_NodeRef(BaseDataClass):
-            _FQRTN = 'test.generated_syntax.meta_key_ref.NodeRef'
-            typeA: Optional[Annotated[test_generated_syntax_meta_key_ref_A, test_generated_syntax_meta_key_ref_A.serializer(), test_generated_syntax_meta_key_ref_A.validator()]] = Field(None, description='')
-            aReference: Optional[Annotated[test_generated_syntax_meta_key_ref_A, test_generated_syntax_meta_key_ref_A.serializer(), test_generated_syntax_meta_key_ref_A.validator(('@ref', '@ref:external'))]] = Field(None, description='')
+        class test_generated_syntax_metadata_NodeRef(BaseDataClass):
+            _FQRTN = 'test.generated_syntax.metadata.NodeRef'
+            typeA: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]] = Field(None, description='')
+            aReference: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@ref', '@ref:external'))]] = Field(None, description='')
             
             _KEY_REF_CONSTRAINTS = {
                 'aReference': {'@ref', '@ref:external'}
@@ -159,11 +163,25 @@ class PythonMetaKeysGeneratorTest {
         val generatedBundle = python.get("src/test/_bundle.py").toString()
         val expectedRoot = 
         '''
-        class test_generated_syntax_meta_key_ref_Root(BaseDataClass):
-            _FQRTN = 'test.generated_syntax.meta_key_ref.Root'
-            nodeRef: Optional[Annotated[test_generated_syntax_meta_key_ref_NodeRef, test_generated_syntax_meta_key_ref_NodeRef.serializer(), test_generated_syntax_meta_key_ref_NodeRef.validator()]] = Field(None, description='')
-            attributeRef: Optional[Annotated[test_generated_syntax_meta_key_ref_AttributeRef, test_generated_syntax_meta_key_ref_AttributeRef.serializer(), test_generated_syntax_meta_key_ref_AttributeRef.validator()]] = Field(None, description='')
+        class test_generated_syntax_metadata_Root(BaseDataClass):
+            _FQRTN = 'test.generated_syntax.metadata.Root'
+            nodeRef: Optional[Annotated[test_generated_syntax_metadata_NodeRef, test_generated_syntax_metadata_NodeRef.serializer(), test_generated_syntax_metadata_NodeRef.validator()]] = Field(None, description='')
+            attributeRef: Optional[Annotated[test_generated_syntax_metadata_AttributeRef, test_generated_syntax_metadata_AttributeRef.serializer(), test_generated_syntax_metadata_AttributeRef.validator()]] = Field(None, description='')
         '''
         testUtils.assertStringInString(generatedBundle, expectedRoot)
+    }
+
+    @Test
+    def void testExpectedBundleScheme() {
+        val python = getPython()
+        val generatedBundle = python.get("src/test/_bundle.py").toString()
+        val expectedScheme = 
+        '''
+        class test_generated_syntax_metadata_SchemeTest(BaseDataClass):
+            _ALLOWED_METADATA = {'@scheme'}
+            _FQRTN = 'test.generated_syntax.metadata.SchemeTest'
+            a: str = Field(..., description='')
+        '''
+        testUtils.assertStringInString(generatedBundle, expectedScheme)
     }
 }
