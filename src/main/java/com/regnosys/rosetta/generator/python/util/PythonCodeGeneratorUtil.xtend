@@ -1,27 +1,34 @@
 package com.regnosys.rosetta.generator.python.util
 
 import com.regnosys.rosetta.types.RAttribute
+import com.regnosys.rosetta.rosetta.RosettaModel;
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-class PythonModelGeneratorUtil {
+class PythonCodeGeneratorUtil {
 
     static def fileComment(String version) {
-        return '''# This file is auto-generated from the Rune Python Generator, do not edit.
-    # Version: «version»
+        return 
+        '''
+        # This file is auto-generated from the Rune Python Generator, do not edit.
+        # Version: «version»
         
-    '''
+        '''
     }
-    static def comment(String definition) '''
+    static def comment(String definition) {
+        return
+        '''
         «IF definition !==null && !definition.isEmpty »
             # 
             # «definition»
             #
         «ENDIF»
-    '''
+        '''
+    }
 
     static def classComment(String definition, Iterable<RAttribute> attributes) {
+        return
         '''
             «IF definition !==null && !definition.isEmpty »
                 #
@@ -36,7 +43,8 @@ class PythonModelGeneratorUtil {
     }
 
     static def String createImports(String name) {
-        val imports = '''
+        val imports = 
+        '''
             # pylint: disable=line-too-long, invalid-name, missing-function-docstring
             # pylint: disable=bad-indentation, trailing-whitespace, superfluous-parens
             # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import
@@ -57,11 +65,12 @@ class PythonModelGeneratorUtil {
             __all__ = [«"'"+name+"'"»]
             
         '''
-        imports
+        return imports
     }
 
     static def String createImports() {
-        val imports = '''
+        val imports = 
+        '''
             # pylint: disable=line-too-long, invalid-name, missing-function-docstring
             # pylint: disable=bad-indentation, trailing-whitespace, superfluous-parens
             # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import
@@ -79,11 +88,12 @@ class PythonModelGeneratorUtil {
             from rune.runtime.conditions import *
             from rune.runtime.func_proxy import *
         '''
-        imports
+        return imports
     }
 
     static def String createImportsFunc(String name) {
-        val imports = '''
+        val imports = 
+        '''
             # pylint: disable=line-too-long, invalid-name, missing-function-docstring, missing-module-docstring, superfluous-parens
             # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import, wildcard-import, wrong-import-order, missing-class-docstring
             from __future__ import annotations
@@ -97,7 +107,7 @@ class PythonModelGeneratorUtil {
             from rune.runtime.conditions import *
             from rune.runtime.func_proxy import *
         '''
-        imports
+        return imports
     }
 
     static def String toFileName(String namespace, String fileName) {
@@ -122,6 +132,9 @@ class PythonModelGeneratorUtil {
                            "version_str = '" + version + "-0'\n" +
                            "__version__ = '" + version + "'\n" + 
                            "__build_time__ = '" + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'"
+    }
+    static def String getNamespace(RosettaModel rm) {
+    	return rm.name.split("\\.").get(0)
     }
 
     static def String createPYProjectTomlFile(String namespace, String version) {

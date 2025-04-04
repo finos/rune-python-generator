@@ -1,16 +1,18 @@
 package com.regnosys.rosetta.generator.python;
-// TODO: fix unit tests
-// TODO: ensure that imports are collected as a set rather than an array
-// TODO: re-engineer type generation to use an object that has the features carried throughout the generation (meta data, imports, etc.)
+// TODO: collect imports as a set rather than an array
+// TODO: re-engineer type generation to use an object that has the features carried throughout the generation (imports, etc.)
 // TODO: function support
+// TODO: review and consolidate unit tests
+// TODO: review migrating choice alias processor to PythonModelObjectGenerator
+
+
 import com.google.inject.Inject;
 import com.regnosys.rosetta.generator.external.AbstractExternalGenerator;
 import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.func.PythonFunctionGenerator;
 import com.regnosys.rosetta.generator.python.object.PythonModelObjectGenerator;
-import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 
-import com.regnosys.rosetta.generator.python.util.Util;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaModel;
@@ -103,11 +105,11 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         result.putAll(generateInits(subfolders));
 
         if (namespace == null && !models.isEmpty()) {
-            namespace = Util.getNamespace(models.iterator().next());
+            namespace = PythonCodeGeneratorUtil.getNamespace(models.iterator().next());
         }
 
         if (namespace != null) {
-            result.put("pyproject.toml", PythonModelGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
+            result.put("pyproject.toml", PythonCodeGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
         }
         result.putAll(pojoGenerator.afterAllGenerate(namespace, objects));
         return result;
@@ -135,11 +137,11 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         Map<String, String> result = new HashMap<>();
 
         for (String workspace : workspaces) {
-            result.put(PythonModelGeneratorUtil.toPyFileName(workspace, "__init__"),
-                    PythonModelGeneratorUtil.createTopLevelInitFile(version));
-            result.put(PythonModelGeneratorUtil.toPyFileName(workspace, "version"),
-                    PythonModelGeneratorUtil.createVersionFile(version));
-            result.put(PythonModelGeneratorUtil.toFileName(workspace, "py.typed"), "");
+            result.put(PythonCodeGeneratorUtil.toPyFileName(workspace, "__init__"),
+                    PythonCodeGeneratorUtil.createTopLevelInitFile(version));
+            result.put(PythonCodeGeneratorUtil.toPyFileName(workspace, "version"),
+                    PythonCodeGeneratorUtil.createVersionFile(version));
+            result.put(PythonCodeGeneratorUtil.toFileName(workspace, "py.typed"), "");
         }
 
         return result;
@@ -152,7 +154,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             String[] parts = subfolder.split("\\.");
             for (int i = 1; i < parts.length; i++) {
                 String key = String.join(".", Arrays.copyOfRange(parts, 0, i + 1));
-                result.putIfAbsent(PythonModelGeneratorUtil.toPyFileName(key, "__init__"), " ");
+                result.putIfAbsent(PythonCodeGeneratorUtil.toPyFileName(key, "__init__"), " ");
             }
         }
 

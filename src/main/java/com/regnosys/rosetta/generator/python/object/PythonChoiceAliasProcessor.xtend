@@ -16,7 +16,12 @@ class PythonChoiceAliasProcessor {
 	
     @Inject extension DeepFeatureCallUtil
 
-    def Map<String, ArrayList<String>> generateChoiceAliases(RDataType choiceType) {
+    def generateChoiceAliasesAsString (RDataType choiceType) {
+        val choiceAliases = generateChoiceAliases(choiceType);
+        return (choiceAliases === null) ? '' : '_CHOICE_ALIAS_MAP ={' + toString (choiceAliases) + '}';
+    }
+
+    private def Map<String, ArrayList<String>> generateChoiceAliases(RDataType choiceType) {
         // 
         // generate aliases for choice types (needed for deep path)
         //
@@ -78,12 +83,8 @@ class PythonChoiceAliasProcessor {
         )
         return (choiceAlias.isEmpty()) ? null : choiceAlias
     }
-
-    def toString(Map<String, ArrayList<String>> choiceAliases) {
+    private def toString(Map<String, ArrayList<String>> choiceAliases) {
         return (choiceAliases === null) ? '' : choiceAliases.entrySet.map[e|e.key + ":" + e.value.toString].join(",")
     }
-    def generateChoiceAliasesAsString (RDataType choiceType) {
-        val choiceAliases = generateChoiceAliases(choiceType);
-        return (choiceAliases === null) ? '' : '_CHOICE_ALIAS_MAP ={' + toString (choiceAliases) + '}';
-    }
+
 }

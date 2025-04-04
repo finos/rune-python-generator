@@ -2,7 +2,7 @@ package com.regnosys.rosetta.generator.python.func
 
 import com.google.inject.Inject
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator
-import com.regnosys.rosetta.generator.python.util.PythonModelGeneratorUtil
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper
 import com.regnosys.rosetta.rosetta.RosettaEnumeration
 import com.regnosys.rosetta.rosetta.RosettaModel
@@ -43,8 +43,8 @@ class PythonFunctionGenerator {
                 val namespace = tr.name
                 try {
                     val funcs = func.generateFunctions(version)
-                    result.put(PythonModelGeneratorUtil::toPyFunctionFileName(namespace, func.name),
-                        PythonModelGeneratorUtil::createImportsFunc(func.name) + funcs);
+                    result.put(PythonCodeGeneratorUtil::toPyFunctionFileName(namespace, func.name),
+                        PythonCodeGeneratorUtil::createImportsFunc(func.name) + funcs);
                 } catch (Exception ex) {
                     LOGGER.error("Exception occurred generating func {}", func.name, ex)
                 }

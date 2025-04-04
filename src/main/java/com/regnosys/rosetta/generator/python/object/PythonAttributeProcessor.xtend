@@ -27,7 +27,7 @@ class PythonAttributeProcessor {
     @Inject extension RObjectFactory
     @Inject TypeSystem typeSystem;
 
-    def CharSequence generateAllAttributes(Data rosettaClass, Map<String, String> metaDataItems, Map<String, List<String>> keyRefConstraints) {
+    def CharSequence generateAllAttributes(Data rosettaClass, Map<String, List<String>> keyRefConstraints) {
         // generate Python for all the attributes in this class
         val allAttributes = rosettaClass.buildRDataType.getOwnAttributes
         // it is an empty class if there are no attribute and no conditions
@@ -43,11 +43,11 @@ class PythonAttributeProcessor {
             } else {
                 _builder.appendImmediate("", "");
             }
-            _builder.append(generateAttribute(rosettaClass, ra, metaDataItems, keyRefConstraints));
+            _builder.append(generateAttribute(rosettaClass, ra, keyRefConstraints));
         }
         return _builder.toString();
     }
-    def generateAttribute(Data rosettaClass, RAttribute ra, Map<String, String> metaDataItems, Map<String, List<String>> keyRefConstraints) {
+    private def generateAttribute(Data rosettaClass, RAttribute ra, Map<String, List<String>> keyRefConstraints) {
         /*
          * generate Python representation of attribute
          */
@@ -69,12 +69,11 @@ class PythonAttributeProcessor {
         val attrProp = processProperties(rt)
         val cardinalityMap = processCardinality(ra)
         // process meta data
-        val validators = processMetaDataAttributes(ra, attrTypeName, metaDataItems, keyRefConstraints)
+        val validators = processMetaDataAttributes(ra, attrTypeName, keyRefConstraints)
         return createAttributeString (
             ra, 
             attrTypeName, 
             rt,
-            metaDataItems, 
             validators, 
             attrProp, 
             cardinalityMap
@@ -84,7 +83,6 @@ class PythonAttributeProcessor {
         RAttribute ra, 
         String attrTypeNameIn, 
         RType rt, 
-        Map<String, String> metaDataItems,
         ArrayList<String> validators, 
         HashMap<String, String> attrProp, 
         HashMap<String, String> cardinalityMap
@@ -94,7 +92,7 @@ class PythonAttributeProcessor {
         var attrName = RuneToPythonMapper.mangleName(ra.getName()) // mangle the attribute name if it is a Python keyword
         var metaPrefix = "";
         var metaSuffix = "";
-        val attrTypeName = (!validators.isEmpty() && !metaDataItems.containsKey(attrTypeNameIn)) ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn) : attrTypeNameIn;
+        val attrTypeName = (!validators.isEmpty()) ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn) : attrTypeNameIn;
         val attrTypeNameOut = (isRosettaBasicType || rt instanceof REnumType) ? attrTypeName : attrTypeName.replace('.', '_')
         if (!validators.isEmpty()) {
             metaPrefix = getMetaDataPrefix(validators)
@@ -189,26 +187,15 @@ class PythonAttributeProcessor {
     private def ArrayList<String> processMetaDataAttributes(
         RAttribute ra, 
         String attrTypeName, 
-        Map<String, String> metaDataItems, 
         Map<String, List<String>> keyRefConstraints
     ) {
         /*
-         * Attribute metadata generation rules: attributes are annotated according to their metadata and that
-         * of their containing Type.  Note that a Type can only have "key" related metadata
-         * 1. If the containing Type has metadata, an attribute gets annotated with the metadata of its containing Type
-         * 2. Attributes get annotated with their metadata and the metadata of its containing Type
-         * 3. If the containing Type and the attribute have no metadata, there are no annotations
+         * Attribute metadata generation rules: attributes are annotated according to their metadata.
          */
 
         val attrRMAT = ra.getRMetaAnnotatedType
         val validators = new ArrayList<String>
         val otherMeta = new ArrayList<String>()
-
-        // containing Type has metadata
-        if (metaDataItems.containsKey(attrTypeName)) {
-            validators.add("@key")
-            validators.add("@key:external")
-        }
 
         // process attribute metadata
         if (attrRMAT.hasMeta) {
