@@ -22,7 +22,7 @@ class PythonExpressionGeneratorTest {
     def void testGenerateSwitch() {
         testUtils.assertBundleContainsExpectedString(
             '''type FooTest:
-            a int (1..1)
+            a int (1..1) <"Test field a">
             condition Test:
                 a switch
                     1 then True,
@@ -30,25 +30,30 @@ class PythonExpressionGeneratorTest {
                     default False
             ''',
             '''
-class com_rosetta_test_model_FooTest(BaseDataClass):
-    _FQRTN = 'com.rosetta.test.model.FooTest'
-    a: int = Field(..., description='')
+            class com_rosetta_test_model_FooTest(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.FooTest'
+                a: int = Field(..., description='Test field a')
+                """
+                Test field a
+                """
 
-    @rune_condition
-    def condition_0_Test(self):
-        item = self
-        def _then_1():
-            return True
-        def _then_2():
-            return True
-        def _then_default():
-            return False
-        switchAttribute= rune_resolve_attr(self, "a")
-                if (switchAttribute == 1):
-                    return _then_1()
-                        elif (switchAttribute == 2):
-                    return _then_2()
-    else : return _then_default()'''
+                @rune_condition
+                def condition_0_Test(self):
+                    item = self
+                    def _then_1():
+                        return True
+                    def _then_2():
+                        return True
+                    def _then_default():
+                        return False
+                    switchAttribute = rune_resolve_attr(self, "a")
+                    if switchAttribute == 1:
+                        return _then_1()
+                    elif switchAttribute == 2:
+                        return _then_2()
+                    else:
+                        return _then_default()
+            '''
         )
     }
 
