@@ -17,7 +17,7 @@ class PythonExpressionGeneratorTest {
 
     @Inject PythonGeneratorTestUtils testUtils
 
-    @Disabled
+
     @Test
     def void testGenerateSwitch() {
         testUtils.assertBundleContainsExpectedString(
@@ -36,7 +36,7 @@ class PythonExpressionGeneratorTest {
                 """
                 Test field a
                 """
-
+                
                 @rune_condition
                 def condition_0_Test(self):
                     item = self
