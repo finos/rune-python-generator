@@ -296,7 +296,10 @@ class PythonExpressionGenerator {
     var enumName = ""
     if (argSymbol instanceof Attribute) {
         if (argSymbol.typeCall.type instanceof RosettaEnumeration) {
-            enumName = argSymbol.typeCall.type.name
+            var enumContainer= argSymbol.typeCall.type.eContainer as RosettaModel
+            val value= argSymbol.typeCall.type.name;
+            val modelName= enumContainer.getName() + "." + value;
+            enumName= modelName + "." + value;
         }
     }
 
