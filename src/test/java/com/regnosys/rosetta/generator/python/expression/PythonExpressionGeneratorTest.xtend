@@ -18,6 +18,39 @@ class PythonExpressionGeneratorTest {
     @Inject PythonGeneratorTestUtils testUtils
 
     @Test
+    def void testArithmeticOperator () {
+        val pythonString = testUtils.generatePythonFromString (
+            '''
+            type ArithmeticTest:
+                a int (1..1)
+                b int (1..1)
+                condition Test:
+                    if a + b = 3 then True
+                    else False
+            '''
+            ).toString()
+        testUtils.assertStringInString (
+            pythonString, 
+            '''
+            class com_rosetta_test_model_ArithmeticTest(BaseDataClass):
+                _FQRTN = 'com.rosetta.test.model.ArithmeticTest'
+                a: int = Field(..., description='')
+                b: int = Field(..., description='')
+                
+                @rune_condition
+                def condition_0_Test(self):
+                    item = self
+                    def _then_fn0():
+                        return True
+                    
+                    def _else_fn0():
+                        return False
+                    
+                    return if_cond_fn(rune_all_elements((rune_resolve_attr(self, "a") + rune_resolve_attr(self, "b")), "=", 3), _then_fn0, _else_fn0)
+            '''
+        )
+    }
+    @Test
     def void testGenerateSwitch() {
         testUtils.assertBundleContainsExpectedString(
             '''type FooTest:
