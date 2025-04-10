@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*
 import java.util.ArrayList
 import org.junit.jupiter.api.Disabled
 
-
+// TODO: add generated unit tests for number operations with arithmetic operators -,*,/ and for number and string operations with +
 /*
  * File based unit tests 
  * 
