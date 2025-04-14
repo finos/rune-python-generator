@@ -51,6 +51,7 @@ import com.regnosys.rosetta.rosetta.simple.Condition
 import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl
+import org.eclipse.xtend2.lib.StringConcatenation
 import java.util.ArrayList
 import java.util.List
 
@@ -277,9 +278,10 @@ class PythonExpressionGenerator {
         }
     }
 
-    private def getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda, String enumName){
-    	if (caseGuard.getEnumGuard!==null){
-    		return '''switchAttribute == rune_resolve_attr(«enumName»,"«caseGuard.getEnumGuard.getName()»")'''
+    private def getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda){
+        val enumGuard= caseGuard.getEnumGuard
+    	if (enumGuard!==null){
+    		return '''switchAttribute == rune_resolve_attr(«generateEnumString(enumGuard)»,"«caseGuard.getEnumGuard.getName()»")'''
     	}
     	if (caseGuard.getChoiceOptionGuard!==null){
     		return '''rune_resolve_attr(switchAttribute,"«caseGuard.getChoiceOptionGuard.getName()»")'''
@@ -289,36 +291,22 @@ class PythonExpressionGenerator {
 		}
     }
     
-    private def String resolveEnumName (RosettaSymbolReference arg){
-        val argSymbol= arg.symbol
-        if (argSymbol instanceof Attribute) {
-            var typeCallType= argSymbol.typeCall.type
-            if ( typeCallType instanceof RosettaEnumeration) {
-                var enumContainer= typeCallType.eContainer as RosettaModel
-                val value= typeCallType.name;
-                val modelName= enumContainer.getName() + "." + value;
-                return modelName + "." + value;
-            }
-        }
-        return "";
-    }
+    
 
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
     val attr = generateExpression(expr.argument, 0, isLambda)
     val arg = expr.argument as RosettaSymbolReference
-    var enumName = resolveEnumName(arg);
     
     var funcNames = new ArrayList<String>()
-    var funcCounter = 1
     
     for (thenExpr : expr.cases) {
         val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
-        val funcName = '''_then_«funcCounter»'''
-        funcCounter += 1
+        val funcName = '''_then_«funcNames.size()+1»'''
         funcNames.add(funcName)
-        val block_then = '''
-        def «funcName»():
-            return «thenExprDef»
+        val block_then = 
+        '''
+            def «funcName»():
+                return «thenExprDef»
         '''
         switchCondBlocks.add(block_then)
     }
@@ -327,34 +315,56 @@ class PythonExpressionGenerator {
     val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
     val defaultFuncName = '''_then_default'''
     funcNames.add(defaultFuncName)
-    val block_default_then = '''
+    val block_default_then = 
+    '''
         def «defaultFuncName»():
             return «defaultExprDef»
-        '''
+    '''
     switchCondBlocks.add(block_default_then)
+    
+   var _builder = new StringConcatenation()
+   
+    // Generate switch logic
+    val indent="    "
+    _builder.append("switchAttribute = ")
+    _builder.append(attr)
+    _builder.newLine()
+    // Append each conditional
+    for (i : 0 ..< expr.cases.size) {
+        val guard = expr.cases.get(i).getGuard()
+        val isFirst = i == 0
 
-    '''switchAttribute = «attr»
-«FOR i : 0 ..< expr.cases.length»
-«val guard = expr.cases.get(i).getGuard()»
-«IF guard.getLiteralGuard() !== null»
-«IF i === 0»    if switchAttribute == «generateExpression(guard.getLiteralGuard(), 0, isLambda)»:
-        return «funcNames.get(i)»()
-«ELSE»    elif switchAttribute == «generateExpression(guard.getLiteralGuard(), 0, isLambda)»:
-        return «funcNames.get(i)»()
-«ENDIF»
-«ELSE»
-«IF i === 0»    if «getGuardExpression(guard, isLambda, enumName)»:
-        return «funcNames.get(i)»()
-«ELSE»    elif «getGuardExpression(guard, isLambda, enumName)»:
-        return «funcNames.get(i)»()
-«ENDIF»
-«ENDIF»
-«ENDFOR»
-    else:
-        return «funcNames.get(funcNames.size - 1)»()'''
-}
+        val prefix = if (isFirst) "if " else "elif "
+        _builder.append(indent)
+        _builder.append(prefix)
+        if (guard.getLiteralGuard() !== null) {
+            val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
+            _builder.append("switchAttribute == ")
+            _builder.append(guardExpr)
+        } else {
+            val guardExpr = getGuardExpression(guard, isLambda)
+            _builder.append(guardExpr)
+        }
+        _builder.append(":")
+        _builder.newLine()
+        _builder.append(indent)
+        _builder.append("    return ")
+        _builder.append(funcNames.get(i))
+        _builder.append("()")
+        _builder.newLine()
+    }
 
+    // Default else
+    _builder.append(indent)
+    _builder.append("else:")
+    _builder.newLine()
+    _builder.append(indent)
+    _builder.append("    return ")
+    _builder.append(funcNames.last)
+    _builder.append("()")
 
+    return _builder.toString
+    }
 
     private def String generateReference(RosettaReference expr, int ifLevel, boolean isLambda) {
         switch (expr) {
