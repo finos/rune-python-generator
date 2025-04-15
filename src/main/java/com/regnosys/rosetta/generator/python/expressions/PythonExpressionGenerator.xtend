@@ -332,9 +332,8 @@ class PythonExpressionGenerator {
         // Append each conditional
         for (i : 0 ..< expr.cases.size) {
             val guard = expr.cases.get(i).getGuard()
-            val isFirst = i == 0
     
-            val prefix = if (isFirst) "if " else "elif "
+            val prefix = (i == 0) ? "if " : "elif "
             _builder.append(indent)
             _builder.append(prefix)
             if (guard.getLiteralGuard() !== null) {
