@@ -8,11 +8,11 @@ type SwitchTestLiteral:
             2 then True,
             3 then True,
             default False
-			
+            
 choice CollateralCriteria: <"Test choice class">
-                AllCriteria <"">
-                AnyCriteria <"">
-                NegativeCriteria <"">
+    AllCriteria <"">
+    AnyCriteria <"">
+    NegativeCriteria <"">
             
 type AllCriteria: <"">
     allCriteria int (0..*)
@@ -27,11 +27,11 @@ type SwitchTestChoice:
     inputCriteria CollateralCriteria (1..1)
     condition ChoiceGuardTest:
         inputCriteria switch
-		    AllCriteria then True,
-		    AnyCriteria then True,
-		    NegativeCriteria then True,
-		    default False
-		    
+            AllCriteria then True,
+            AnyCriteria then True,
+            NegativeCriteria then True,
+            default False
+            
 enum DayCountFractionEnum:
     ACT_360 displayName "ACT/360" <"">
     ACT_365L displayName "ACT/365L" <"">
