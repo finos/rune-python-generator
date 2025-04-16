@@ -303,29 +303,28 @@ class PythonExpressionGenerator {
             val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
             val funcName = '''_then_«funcNames.size()+1»'''
             funcNames.add(funcName)
-            val block_then = 
-            '''
-                def «funcName»():
-                    return «thenExprDef»
-            '''
-            switchCondBlocks.add(block_then)
+            switchCondBlocks.add(
+                '''
+                    def «funcName»():
+                        return «thenExprDef»
+                '''
+            )
         }
         
         //default case
         val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
         val defaultFuncName = '''_then_default'''
         funcNames.add(defaultFuncName)
-        val block_default_then = 
-        '''
-            def «defaultFuncName»():
-                return «defaultExprDef»
-        '''
-        switchCondBlocks.add(block_default_then)
-        
+        switchCondBlocks.add(
+            '''
+                def «defaultFuncName»():
+                    return «defaultExprDef»
+            '''
+        )        
         var _builder = new StringConcatenation()
        
         // Generate switch logic
-        val indent="    "
+        val indent = "    "
         _builder.append("switchAttribute = ")
         _builder.append(attr)
         _builder.newLine()
