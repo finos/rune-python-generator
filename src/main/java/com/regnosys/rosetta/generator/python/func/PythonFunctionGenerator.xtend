@@ -353,7 +353,7 @@ class PythonFunctionGenerator {
 
         val feature = path.getFeature();
         if (feature instanceof RosettaTyped) {
-        	return '''_get_rosetta_object('«feature.typeCall.type.name»', «getNextPathElementName(path.next)», «buildObject(expression, path.next)»)'''
+        	return '''_get_rune_object('«feature.typeCall.type.name»', «getNextPathElementName(path.next)», «buildObject(expression, path.next)»)'''
         }
         throw new IllegalArgumentException("Cannot build object for feature " + feature.getName() + " of type " + feature.class.simpleName)
     }
@@ -366,10 +366,10 @@ class PythonFunctionGenerator {
         val attr = features.head
         val remainingAttrs = features.tail.toList
 
-        val nextPath = if (remainingAttrs.isEmpty) '''rosetta_resolve_attr(self, «root»)''' else generateFullPath(
+        val nextPath = if (remainingAttrs.isEmpty) '''rune_resolve_attr(self, «root»)''' else generateFullPath(
                 remainingAttrs, root)
 
-        return '''rosetta_resolve_attr(«nextPath», '«attr.name»')'''
+        return '''rune_resolve_attr(«nextPath», '«attr.name»')'''
     }
 
     private def getReversedFeatures(Segment segment) {
