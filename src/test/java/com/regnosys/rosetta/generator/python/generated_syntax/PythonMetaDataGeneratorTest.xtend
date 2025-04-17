@@ -55,7 +55,7 @@ class PythonMetaDataGeneratorTest {
     @Test
     def void testAProxy() {
         val python = getPython()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/metadata/A.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -67,7 +67,7 @@ class PythonMetaDataGeneratorTest {
     @Test
     def void testNodeRefProxy() {
         val python = getPython()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/metadata/NodeRef.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -79,7 +79,7 @@ class PythonMetaDataGeneratorTest {
     @Test
     def void testAttributeRefProxy() {
         val python = getPython()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/metadata/AttributeRef.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -91,7 +91,7 @@ class PythonMetaDataGeneratorTest {
     @Test
     def void testRootProxy() {
         val python = getPython()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/metadata/Root.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -117,7 +117,7 @@ class PythonMetaDataGeneratorTest {
             _FQRTN = 'test.generated_syntax.metadata.A'
             fieldA: str = Field(..., description='')
         '''
-        testUtils.assertStringInString(generatedBundle, expectedA)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedA)
     }
 
     @Test
@@ -136,7 +136,7 @@ class PythonMetaDataGeneratorTest {
                 'dateReference': {'@ref', '@ref:external'}
             }
         '''
-        testUtils.assertStringInString(generatedBundle, expectedAttributeRef)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedAttributeRef)
     }
 
     @Test
@@ -154,7 +154,7 @@ class PythonMetaDataGeneratorTest {
                 'aReference': {'@ref', '@ref:external'}
             }
         '''
-        testUtils.assertStringInString(generatedBundle, expectedNodeRef)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedNodeRef)
     }
 
     @Test
@@ -168,7 +168,7 @@ class PythonMetaDataGeneratorTest {
             nodeRef: Optional[Annotated[test_generated_syntax_metadata_NodeRef, test_generated_syntax_metadata_NodeRef.serializer(), test_generated_syntax_metadata_NodeRef.validator()]] = Field(None, description='')
             attributeRef: Optional[Annotated[test_generated_syntax_metadata_AttributeRef, test_generated_syntax_metadata_AttributeRef.serializer(), test_generated_syntax_metadata_AttributeRef.validator()]] = Field(None, description='')
         '''
-        testUtils.assertStringInString(generatedBundle, expectedRoot)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedRoot)
     }
 
     @Test
@@ -182,6 +182,6 @@ class PythonMetaDataGeneratorTest {
             _FQRTN = 'test.generated_syntax.metadata.SchemeTest'
             a: str = Field(..., description='')
         '''
-        testUtils.assertStringInString(generatedBundle, expectedScheme)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedScheme)
     }
 }

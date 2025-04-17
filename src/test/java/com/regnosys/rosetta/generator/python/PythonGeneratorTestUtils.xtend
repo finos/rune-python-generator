@@ -211,7 +211,7 @@ class PythonGeneratorTestUtils {
         val python = generatePythonFromString (model);
         return python.get("src/com/_bundle.py").toString()
     }
-    def assertStringInString (String generated, String expectedString) {
+    def assertGeneratedContainsExpectedString (String generated, String expectedString) {
         assertTrue(generated.contains(expectedString), 
                     '''
                     generated Python does not match expected
@@ -223,6 +223,6 @@ class PythonGeneratorTestUtils {
     def assertBundleContainsExpectedString(String model, String expectedString) {
         // Generate the bundle using the existing function
         val generatedBundle = generatePythonAndExtractBundle(model)
-        assertStringInString(generatedBundle, expectedString)
+        assertGeneratedContainsExpectedString(generatedBundle, expectedString)
     }
 }

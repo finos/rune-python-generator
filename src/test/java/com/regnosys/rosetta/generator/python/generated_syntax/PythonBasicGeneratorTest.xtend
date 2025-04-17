@@ -59,7 +59,7 @@ class PythonBasicGeneratorTest {
     def void testBasicSingleProxy () {
         val python = getPython (); 
         // check proxies
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/basic/BasicSingle.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -71,7 +71,7 @@ class PythonBasicGeneratorTest {
     def void testBasicListProxy () {
         val python = getPython (); 
         // check proxies
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/basic/BasicList.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -83,7 +83,7 @@ class PythonBasicGeneratorTest {
     def void testRootProxy () {
         val python = getPython (); 
         // check proxies
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/basic/Root.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -112,7 +112,7 @@ class PythonBasicGeneratorTest {
             stringType: str = Field(..., description='')
             timeType: datetime.time = Field(..., description='')
         '''
-        testUtils.assertStringInString(generatedBundle, expectedBasicSingle)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedBasicSingle)
     }
     @Test
     def void testExpectedBundleList () {
@@ -129,7 +129,7 @@ class PythonBasicGeneratorTest {
             stringTypes: list[str] = Field(..., description='', min_length=1)
             timeTypes: list[datetime.time] = Field(..., description='', min_length=1)
         '''
-        testUtils.assertStringInString(generatedBundle, expectedBasicList)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedBasicList)
     }
     @Test
     def void testExpectedBundleRoot () {
@@ -142,6 +142,6 @@ class PythonBasicGeneratorTest {
             basicSingle: Optional[Annotated[test_generated_syntax_basic_BasicSingle, test_generated_syntax_basic_BasicSingle.serializer(), test_generated_syntax_basic_BasicSingle.validator()]] = Field(None, description='')
             basicList: Optional[Annotated[test_generated_syntax_basic_BasicList, test_generated_syntax_basic_BasicList.serializer(), test_generated_syntax_basic_BasicList.validator()]] = Field(None, description='')
         '''
-        testUtils.assertStringInString(generatedBundle, expectedRoot)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedRoot)
     }
 }

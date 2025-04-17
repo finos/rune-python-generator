@@ -53,10 +53,10 @@ class PythonObjectInheritanceTest {
             _FQRTN = 'com.rosetta.test.model.D'
             dd: Optional[str] = Field(None, description='')
         '''
-        testUtils.assertStringInString(pythonString, expectedA)
-        testUtils.assertStringInString(pythonString, expectedB)
-        testUtils.assertStringInString(pythonString, expectedC)
-        testUtils.assertStringInString(pythonString, expectedD)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedA)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedB)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedC)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedD)
     }
     @Test
     def testSuperClasses() {
@@ -93,9 +93,9 @@ class PythonObjectInheritanceTest {
             pass
         '''
 
-        testUtils.assertStringInString(pythonString, expectedBaz)
-        testUtils.assertStringInString(pythonString, expectedBar)
-        testUtils.assertStringInString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBaz)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBar)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
     }
 
     @Test
@@ -139,8 +139,8 @@ class PythonObjectInheritanceTest {
             FOO_1 = "foo1"
         '''
 
-        testUtils.assertStringInString(pythonString, expectedBar)
-        testUtils.assertStringInString(pythonString, expectedBaz)
-        testUtils.assertStringInString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBar)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBaz)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
     }    
 }

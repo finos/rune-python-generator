@@ -160,7 +160,7 @@ class PythonObjectGeneratorTest {
                 s string (1..*)
             '''
         ).toString()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_A(com_rosetta_test_model_B):
@@ -168,7 +168,7 @@ class PythonObjectGeneratorTest {
                 c: list[Annotated[com_rosetta_test_model_C, com_rosetta_test_model_C.serializer(), com_rosetta_test_model_C.validator()]] = Field(..., description='', min_length=1)
             '''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_B(BaseDataClass):
@@ -176,7 +176,7 @@ class PythonObjectGeneratorTest {
                 pass
             '''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_C(BaseDataClass):
@@ -184,7 +184,7 @@ class PythonObjectGeneratorTest {
                 one: Optional[int] = Field(None, description='')
                 list: list[int] = Field(..., description='', min_length=1)'''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_D(BaseDataClass):
@@ -294,7 +294,7 @@ class PythonObjectGeneratorTest {
                         or (intValue2 exists and intValue1 exists and intValue1 is absent)
             '''
         ).toString()
-        testUtils.assertStringInString (
+        testUtils.assertGeneratedContainsExpectedString (
             pythonString, 
             '''
             class com_rosetta_test_model_A(BaseDataClass):
@@ -307,7 +307,7 @@ class PythonObjectGeneratorTest {
                     item = self
                     return rune_check_one_of(self, 'a0', 'a1', necessity=True)'''
         )
-        testUtils.assertStringInString (
+        testUtils.assertGeneratedContainsExpectedString (
             pythonString, 
             '''
             class com_rosetta_test_model_B(BaseDataClass):
@@ -360,7 +360,7 @@ class PythonObjectGeneratorTest {
                 TestEnumValue2 <"Test enum value 2">
             '''
         ).toString()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_TestType(BaseDataClass):
@@ -389,7 +389,7 @@ class PythonObjectGeneratorTest {
                 Optional test enum
                 """'''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_TestType2(BaseDataClass):
@@ -425,7 +425,7 @@ class PythonObjectGeneratorTest {
                 multiplierUnit UnitType (0..1) <"Qualifies the multiplier with the applicable unit.  For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).">
             '''
         ).toString();
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_MeasureBase(BaseDataClass):
@@ -443,7 +443,7 @@ class PythonObjectGeneratorTest {
                 """
             '''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_UnitType(BaseDataClass):
@@ -457,7 +457,7 @@ class PythonObjectGeneratorTest {
                 """
             '''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_Quantity(com_rosetta_test_model_MeasureBase):
@@ -494,7 +494,7 @@ class PythonObjectGeneratorTest {
                 TestType4Value2 int (1..*) <"Test int">
             '''
         ).toString()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_TestType(com_rosetta_test_model_TestType2):
@@ -508,7 +508,7 @@ class PythonObjectGeneratorTest {
                 Test int
                 """'''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_TestType2(com_rosetta_test_model_TestType3):
@@ -522,7 +522,7 @@ class PythonObjectGeneratorTest {
                 Test date
                 """'''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_TestType3(BaseDataClass):
@@ -551,7 +551,7 @@ class PythonObjectGeneratorTest {
                         required choice field1, field2
             '''
         ).toString()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_TestType(BaseDataClass):
@@ -662,7 +662,7 @@ class PythonObjectGeneratorTest {
                         or (intValue2 exists and intValue1 exists and intValue1 is absent)
             '''
         ).toString();
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_A(BaseDataClass):
@@ -676,7 +676,7 @@ class PythonObjectGeneratorTest {
                     return rune_check_one_of(self, 'a0', 'a1', necessity=True)
             '''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_B(BaseDataClass):

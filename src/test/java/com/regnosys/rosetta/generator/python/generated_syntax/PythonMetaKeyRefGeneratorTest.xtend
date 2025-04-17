@@ -37,7 +37,7 @@ class PythonMetaKeyRefGeneratorTest {
         if (proxyKeyRef === null) {
             fail ('src/test/generated_syntax/meta_key_ref/KeyRef.py was not found')
         }
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             proxyKeyRef.toString(),
             '''
             # pylint: disable=unused-import
@@ -48,7 +48,7 @@ class PythonMetaKeyRefGeneratorTest {
         if (proxyScopedKeyRef === null) {
             fail ('src/test/generated_syntax/meta_key_ref/proxyScopedKeyRef.py was not found')
         }
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -69,7 +69,7 @@ class PythonMetaKeyRefGeneratorTest {
                 'fieldA': {'@key', '@key:external', '@ref', '@ref:external'}
             }
         '''
-        testUtils.assertStringInString(generatedBundle, expectedKeyRef)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedKeyRef)
         val expectedScopedKeyRef = 
         '''
         class test_generated_syntax_meta_key_ref_ScopedKeyRef(BaseDataClass):
@@ -80,6 +80,6 @@ class PythonMetaKeyRefGeneratorTest {
                 'fieldA': {'@key:scoped', '@ref:scoped'}
             }
         '''
-        testUtils.assertStringInString(generatedBundle, expectedScopedKeyRef)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedScopedKeyRef)
     }
 }

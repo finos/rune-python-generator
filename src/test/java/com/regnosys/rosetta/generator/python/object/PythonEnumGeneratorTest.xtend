@@ -83,7 +83,7 @@ class PythonEnumGeneratorTest {
                 item = self
                 return rune_all_elements(rune_resolve_attr(self, "periodMultiplier"), ">", 0)
         '''        
-        testUtils.assertStringInString (generatedBundle, expected)
+        testUtils.assertGeneratedContainsExpectedString (generatedBundle, expected)
 
     }
     @Test
@@ -120,7 +120,7 @@ class PythonEnumGeneratorTest {
             Rolls on the 1st day of the month.
             """
         '''
-        testUtils.assertStringInString (pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString (pythonString, expected)
     }
 
     @Test

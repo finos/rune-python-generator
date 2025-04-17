@@ -492,7 +492,7 @@ class PythonFunctionsTest {
             
             return result
         '''
-        testUtils.assertStringInString (generatedFunction, expected)
+        testUtils.assertGeneratedContainsExpectedString (generatedFunction, expected)
     }
      
     @Test

@@ -35,7 +35,7 @@ class PythonObjectGenerationTest {
             multiline
             definition
             """'''
-        testUtils.assertStringInString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
     }
     
     @Test
@@ -104,8 +104,8 @@ class PythonObjectGenerationTest {
                 """
                 item = self
                 return ((rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "a0")) or (rune_attr_exists(rune_resolve_attr(self, "intValue2")) and (not rune_attr_exists(rune_resolve_attr(self, "intValue1"))))) or (rune_attr_exists(rune_resolve_attr(self, "intValue1")) and (not rune_attr_exists(rune_resolve_attr(self, "intValue2")))))'''
-        testUtils.assertStringInString(pythonString, expectedA)
-        testUtils.assertStringInString(pythonString, expectedB)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedA)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedB)
     }
 
     @Test
@@ -187,9 +187,9 @@ class PythonObjectGenerationTest {
             """
             Test enum value 2
             """'''
-        testUtils.assertStringInString(pythonString, expectedTestType)
-        testUtils.assertStringInString(pythonString, expectedTestType2)
-        testUtils.assertStringInString(pythonString, expectedTestEnum)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestEnum)
     }
     
     @Test
@@ -245,9 +245,9 @@ class PythonObjectGenerationTest {
             """
             Test int
             """'''
-        testUtils.assertStringInString(pythonString, expectedTestType)
-        testUtils.assertStringInString(pythonString, expectedTestType2)
-        testUtils.assertStringInString(pythonString, expectedTestType3)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3)
     }
 
     @Test
@@ -294,7 +294,7 @@ class PythonObjectGenerationTest {
                 """
                 item = self
                 return rune_check_one_of(self, 'field1', 'field2', necessity=True)'''
-        testUtils.assertStringInString(pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
 
     @Test
@@ -348,7 +348,7 @@ class PythonObjectGenerationTest {
                     return True
                 
                 return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "field1")), _then_fn0, _else_fn0)'''
-        testUtils.assertStringInString(pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
 
     @Test
@@ -403,7 +403,7 @@ class PythonObjectGenerationTest {
                     return rune_all_elements(rune_resolve_attr(self, "field4"), ">", 0)
                 
                 return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "field1")), _then_fn0, _else_fn0)'''
-        testUtils.assertStringInString(pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
 
     @Test
@@ -442,7 +442,7 @@ class PythonObjectGenerationTest {
                 """
                 item = self
                 return rune_all_elements(rune_resolve_attr(self, "startDate"), "<=", rune_resolve_attr(self, "endDate"))'''
-        testUtils.assertStringInString(pythonString, expectedCondition)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedCondition)
     }
 
     @Test
@@ -518,8 +518,8 @@ class PythonObjectGenerationTest {
                 item = self
                 return ((rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "a0")) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and rune_attr_exists(rune_resolve_attr(self, "intValue1")))) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and (not rune_attr_exists(rune_resolve_attr(self, "intValue1")))))'''
         
-        testUtils.assertStringInString(pythonString, expectedA)
-        testUtils.assertStringInString(pythonString, expectedB)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedA)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedB)
     }
 
     @Test
@@ -580,9 +580,9 @@ class PythonObjectGenerationTest {
             """
             Qualifies the multiplier with the applicable unit.  For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).
             """'''
-        testUtils.assertStringInString(pythonString, expectedMeasureBase)
-        testUtils.assertStringInString(pythonString, expectedUnitType)
-        testUtils.assertStringInString(pythonString, expectedQuantity)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedMeasureBase)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedUnitType)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuantity)
     }
 
     @Disabled("testGenerateTypes3")
@@ -694,11 +694,11 @@ class PythonObjectGenerationTest {
             """
             A number used primarily for work-related calls. Includes home office numbers used primarily for work purposes.
             """'''
-        testUtils.assertStringInString(pythonString, expectedTestType1)
-        testUtils.assertStringInString(pythonString, expectedTestType2)
-        testUtils.assertStringInString(pythonString, expectedTestType3)
-        testUtils.assertStringInString(pythonString, expectedTestType4)
-        testUtils.assertStringInString(pythonString, expectedTestType5)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType4)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType5)
     }
 
     @Disabled("testGenerateTypesExtends2")
@@ -864,12 +864,12 @@ class PythonObjectGenerationTest {
             Denotes Billion Cubic Feet as a standard unit.
             """'''
 
-        testUtils.assertStringInString(pythonString, expectedTestType1)
-        testUtils.assertStringInString(pythonString, expectedTestType2)
-        testUtils.assertStringInString(pythonString, expectedTestType3)
-        testUtils.assertStringInString(pythonString, expectedTestType4)
-        testUtils.assertStringInString(pythonString, expectedTestType5)
-        testUtils.assertStringInString(pythonString, expectedTestType6)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType4)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType5)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType6)
     }
     // TODO: tests disabled to align to new meta data support - add them back
     @Disabled("testGenerateTypes2")
@@ -961,9 +961,9 @@ class PythonObjectGenerationTest {
         Denotes a Barrel as a standard unit.
         """'''
 
-        testUtils.assertStringInString(pythonString, expectedTestType)
-        testUtils.assertStringInString(pythonString, expectedTestType2)
-        testUtils.assertStringInString(pythonString, expectedTestType3)
-        testUtils.assertStringInString(pythonString, expectedTestType4)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType4)
     }
 }

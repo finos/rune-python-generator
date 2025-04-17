@@ -30,7 +30,7 @@ class PythonExpressionGeneratorTest {
                     else False
             '''
             ).toString()
-        testUtils.assertStringInString (
+        testUtils.assertGeneratedContainsExpectedString (
             pythonString, 
             '''
             class com_rosetta_test_model_ArithmeticTest(BaseDataClass):
@@ -378,8 +378,8 @@ class PythonExpressionGeneratorTest {
                         return True
                     
                     return if_cond_fn(rune_all_elements(rune_get_only_element(rune_resolve_attr(self, "field1")), "=", com.rosetta.test.model.TestEnum.TestEnum.TEST_ENUM_VALUE_1), _then_fn0, _else_fn0)'''
-            testUtils.assertStringInString (pythonString, expectedTestEnum)
-            testUtils.assertStringInString (pythonString, expectedTest1)
+            testUtils.assertGeneratedContainsExpectedString (pythonString, expectedTestEnum)
+            testUtils.assertGeneratedContainsExpectedString (pythonString, expectedTest1)
     }
 
     @Test
@@ -397,7 +397,7 @@ class PythonExpressionGeneratorTest {
                         then aValue -> field1 only exists
             '''
         ).toString();
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_Test(BaseDataClass):
@@ -424,7 +424,7 @@ class PythonExpressionGeneratorTest {
                     
                     return if_cond_fn(rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), _then_fn0, _else_fn0)'''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_A(BaseDataClass):
@@ -458,7 +458,7 @@ class PythonExpressionGeneratorTest {
                     else False
             '''
             ).toString()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_Test(BaseDataClass):
@@ -486,7 +486,7 @@ class PythonExpressionGeneratorTest {
                     return if_cond_fn(rune_any_elements(rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), "<>", rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field2"))), _then_fn0, _else_fn0)
             '''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_A(BaseDataClass):
@@ -573,7 +573,7 @@ class PythonExpressionGeneratorTest {
                     else field3=1
             '''
         ).toString()
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_Test(BaseDataClass):
@@ -604,7 +604,7 @@ class PythonExpressionGeneratorTest {
                     
                     return if_cond_fn(rune_all_elements(rune_count(set(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1"))), "=", 1), _then_fn0, _else_fn0)'''
         )
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             pythonString,
             '''
             class com_rosetta_test_model_A(BaseDataClass):
@@ -716,10 +716,10 @@ class PythonExpressionGeneratorTest {
                     return True
                 
                 return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", True), _then_fn0, _else_fn0)'''
-        testUtils.assertStringInString (pythonString, expectedC)
-        testUtils.assertStringInString (pythonString, expectedA)
-        testUtils.assertStringInString (pythonString, expectedB)
-        testUtils.assertStringInString (pythonString, expectedTest)
+        testUtils.assertGeneratedContainsExpectedString (pythonString, expectedC)
+        testUtils.assertGeneratedContainsExpectedString (pythonString, expectedA)
+        testUtils.assertGeneratedContainsExpectedString (pythonString, expectedB)
+        testUtils.assertGeneratedContainsExpectedString (pythonString, expectedTest)
     }
     
     @Test
@@ -810,7 +810,7 @@ class PythonExpressionGeneratorTest {
                 item = self
                 return rune_all_elements([1, 2, 3], "=", (lambda item: rune_flatten_list(item))(list(map(lambda item: rune_resolve_attr(item, "numbers"), rune_resolve_attr(self, "bars")))))
         '''
-        testUtils.assertStringInString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
     }
 
     @Disabled

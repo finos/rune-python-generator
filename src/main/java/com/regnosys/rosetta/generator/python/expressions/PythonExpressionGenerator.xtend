@@ -290,8 +290,6 @@ class PythonExpressionGenerator {
             return '''rune_resolve_attr(switchAttribute,"«caseGuard.getSymbolGuard.getName()»")'''
         }
     }
-    
-    
 
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
         val attr = generateExpression(expr.argument, 0, isLambda)

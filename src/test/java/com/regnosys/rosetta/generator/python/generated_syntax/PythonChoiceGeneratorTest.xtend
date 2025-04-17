@@ -27,7 +27,7 @@ class PythonChoiceGeneratorTest {
                 condition Choice: one-of
             ''')
         // check proxies
-        testUtils.assertStringInString(
+        testUtils.assertGeneratedContainsExpectedString(
             python.get("src/test/generated_syntax/semantic/Choice.py").toString(),
             '''
             # pylint: disable=unused-import
@@ -47,6 +47,6 @@ class PythonChoiceGeneratorTest {
                 item = self
                 return rune_check_one_of(self, 'intType', 'stringType', necessity=True)
         '''
-        testUtils.assertStringInString(generatedBundle, expectedChoice)
+        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedChoice)
     }
 }

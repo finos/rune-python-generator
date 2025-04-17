@@ -51,7 +51,7 @@ class PythonDataRuleGeneratorTest {
                     return if_cond_fn((rune_all_elements(rune_resolve_attr(self, "bar"), "=", "I") or rune_all_elements(rune_resolve_attr(self, "bar"), "=", "N")), _then_fn1, _else_fn1)
                 
                 return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "bar"), "=", "Y"), _then_fn0, _else_fn0)'''
-        testUtils.assertStringInString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
     }
 
     @Test
@@ -97,7 +97,7 @@ class PythonDataRuleGeneratorTest {
                     return True
                 
                 return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "bar")), _then_fn0, _else_fn0)'''
-        testUtils.assertStringInString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
     }
 
     @Test
@@ -139,8 +139,8 @@ class PythonDataRuleGeneratorTest {
             bidPrice: Optional[Decimal] = Field(None, description='')
             offerPrice: Optional[Decimal] = Field(None, description='')'''
         
-        testUtils.assertStringInString(pythonString, expectedQuote)
-        testUtils.assertStringInString(pythonString, expectedQuotePrice)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuote)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuotePrice)
     }
 
     @Test
@@ -188,8 +188,8 @@ class PythonDataRuleGeneratorTest {
             price2: Optional[Decimal] = Field(None, description='')
             price3: Optional[Decimal] = Field(None, description='')'''
         
-        testUtils.assertStringInString(pythonString, expectedQuote)
-        testUtils.assertStringInString(pythonString, expectedQuotePrice)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuote)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuotePrice)
     }
 
     @Test
@@ -229,8 +229,8 @@ class PythonDataRuleGeneratorTest {
             _FQRTN = 'com.rosetta.test.model.QuotePrice'
             bidPrice: Optional[Decimal] = Field(None, description='')'''
         
-        testUtils.assertStringInString(pythonString, expectedQuote)
-        testUtils.assertStringInString(pythonString, expectedQuotePrice)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuote)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuotePrice)
     }
     
     @Test
@@ -268,7 +268,7 @@ class PythonDataRuleGeneratorTest {
                 
                 return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "price")), _then_fn0, _else_fn0)'''
 
-        testUtils.assertStringInString(pythonString, expectedQuote)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuote)
     }
 
     @Test
@@ -307,7 +307,7 @@ class PythonDataRuleGeneratorTest {
                 
                 return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "price")), _then_fn0, _else_fn0)'''
 
-        testUtils.assertStringInString(pythonString, expectedQuote)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuote)
     }
     
     @Test
@@ -342,7 +342,7 @@ class PythonDataRuleGeneratorTest {
                 
                 return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "head"), "=", True), _then_fn0, _else_fn0)'''
         
-        testUtils.assertStringInString(pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
 
     @Test
@@ -376,7 +376,7 @@ class PythonDataRuleGeneratorTest {
                 
                 return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "tail"), "=", True), _then_fn0, _else_fn0)'''
         
-        testUtils.assertStringInString(pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
     
     @Test
@@ -410,7 +410,7 @@ class PythonDataRuleGeneratorTest {
                 
                 return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "tail"), "=", False), _then_fn0, _else_fn0)'''
         
-        testUtils.assertStringInString(pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
 
     @Test
@@ -434,7 +434,7 @@ class PythonDataRuleGeneratorTest {
             def condition_0_(self):
                 item = self
                 return rune_all_elements(rune_count(rune_resolve_attr(self, "multiAttr")), ">=", 0)'''
-        testUtils.assertStringInString(pythonString, expected)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
 
     @Test
@@ -478,8 +478,8 @@ class PythonDataRuleGeneratorTest {
                 item = self
                 return rune_attr_exists(rune_resolve_attr(self, "y"))'''
 
-        testUtils.assertStringInString(pythonString, expectedFoo)
-        testUtils.assertStringInString(pythonString, expectedBar)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBar)
     }
 
     @Test
@@ -523,7 +523,7 @@ class PythonDataRuleGeneratorTest {
                 item = self
                 return rune_attr_exists(rune_resolve_attr(self, "y"))'''
         
-        testUtils.assertStringInString(pythonString, expectedFoo)
-        testUtils.assertStringInString(pythonString, expectedBar)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo)
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBar)
     }
 }
