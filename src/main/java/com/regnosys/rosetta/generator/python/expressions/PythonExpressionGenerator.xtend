@@ -280,15 +280,15 @@ class PythonExpressionGenerator {
 
     private def getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda){
         val enumGuard= caseGuard.getEnumGuard
-    	if (enumGuard!==null){
-    		return '''switchAttribute == rune_resolve_attr(«generateEnumString(enumGuard)»,"«caseGuard.getEnumGuard.getName()»")'''
-    	}
-    	if (caseGuard.getChoiceOptionGuard!==null){
-    		return '''rune_resolve_attr(switchAttribute,"«caseGuard.getChoiceOptionGuard.getName()»")'''
-    	}
-    	if (caseGuard.getSymbolGuard!==null){
-    		return '''rune_resolve_attr(switchAttribute,"«caseGuard.getSymbolGuard.getName()»")'''
-		}
+        if (enumGuard!==null){
+            return '''switchAttribute == rune_resolve_attr(«generateEnumString(enumGuard)»,"«caseGuard.getEnumGuard.getName()»")'''
+        }
+        if (caseGuard.getChoiceOptionGuard!==null){
+            return '''rune_resolve_attr(switchAttribute,"«caseGuard.getChoiceOptionGuard.getName()»")'''
+        }
+        if (caseGuard.getSymbolGuard!==null){
+            return '''rune_resolve_attr(switchAttribute,"«caseGuard.getSymbolGuard.getName()»")'''
+        }
     }
     
     
@@ -400,15 +400,15 @@ class PythonExpressionGenerator {
         }
     }
 
-	private def String generateEnumString (RosettaEnumValue rev) {
-		// translate the enum value to a fully qualified name as long as the value is not None
-		
-		val value = EnumHelper.convertValue(rev)
-		val parent = rev.getEnumeration()
-		val parentName = parent.getName()
-		val modelName = parent.getModel().getName()
+    private def String generateEnumString (RosettaEnumValue rev) {
+        // translate the enum value to a fully qualified name as long as the value is not None
+        
+        val value = EnumHelper.convertValue(rev)
+        val parent = rev.getEnumeration()
+        val parentName = parent.getName()
+        val modelName = parent.getModel().getName()
         return '''«modelName».«parentName».«parentName».«value»'''
-	} 
+    } 
 
     private def String generateCallableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr, int ifLevel, boolean isLambda) {
         if (s instanceof FunctionImpl)
