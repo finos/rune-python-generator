@@ -45,11 +45,13 @@ import com.regnosys.rosetta.rosetta.expression.RosettaDeepFeatureCall
 import com.regnosys.rosetta.rosetta.expression.MinOperation
 import com.regnosys.rosetta.rosetta.expression.MaxOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchOperation
+import com.regnosys.rosetta.rosetta.expression.SwitchCaseGuard
 import com.regnosys.rosetta.rosetta.simple.Attribute
 import com.regnosys.rosetta.rosetta.simple.Condition
 import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl
+import org.eclipse.xtend2.lib.StringConcatenation
 import java.util.ArrayList
 import java.util.List
 
@@ -276,38 +278,90 @@ class PythonExpressionGenerator {
         }
     }
 
+    private def getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda){
+        val enumGuard= caseGuard.getEnumGuard
+    	if (enumGuard!==null){
+    		return '''switchAttribute == rune_resolve_attr(«generateEnumString(enumGuard)»,"«caseGuard.getEnumGuard.getName()»")'''
+    	}
+    	if (caseGuard.getChoiceOptionGuard!==null){
+    		return '''rune_resolve_attr(switchAttribute,"«caseGuard.getChoiceOptionGuard.getName()»")'''
+    	}
+    	if (caseGuard.getSymbolGuard!==null){
+    		return '''rune_resolve_attr(switchAttribute,"«caseGuard.getSymbolGuard.getName()»")'''
+		}
+    }
+    
+    
+
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
         val attr = generateExpression(expr.argument, 0, isLambda)
+        val arg = expr.argument as RosettaSymbolReference
+        
         var funcNames = new ArrayList<String>()
+        
         for (thenExpr : expr.cases) {
             val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
-            val funcName = '''_then_«generateExpression(thenExpr.getGuard().getLiteralGuard(),0,isLambda)»'''
+            val funcName = '''_then_«funcNames.size()+1»'''
             funcNames.add(funcName)
-            val blockThen = '''
-                def «funcName»():
-                    return «thenExprDef»
-            '''
-            switchCondBlocks.add(blockThen)
+            switchCondBlocks.add(
+                '''
+                    def «funcName»():
+                        return «thenExprDef»
+                '''
+            )
         }
+        
+        //default case
         val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
         val defaultFuncName = '''_then_default'''
         funcNames.add(defaultFuncName)
-        val blockDefaultThen = 
-        '''
-            def «defaultFuncName»():
-                return «defaultExprDef»
-        '''
-        switchCondBlocks.add(blockDefaultThen)
-        return
-        '''
-        match «attr»:
-                «FOR i : 0 ..< expr.cases.length»
-                case «generateExpression(expr.cases.get(i).getGuard().getLiteralGuard(), 0, isLambda)»:
-                    return «funcNames.get(i)»()
-                «ENDFOR»
-                case _:
-                    return «funcNames.get(funcNames.size - 1)»()
-        '''        
+        switchCondBlocks.add(
+            '''
+                def «defaultFuncName»():
+                    return «defaultExprDef»
+            '''
+        )        
+        var _builder = new StringConcatenation()
+       
+        // Generate switch logic
+        val indent = "    "
+        _builder.append("switchAttribute = ")
+        _builder.append(attr)
+        _builder.newLine()
+        // Append each conditional
+        for (i : 0 ..< expr.cases.size) {
+            val guard = expr.cases.get(i).getGuard()
+    
+            val prefix = (i == 0) ? "if " : "elif "
+            _builder.append(indent)
+            _builder.append(prefix)
+            if (guard.getLiteralGuard() !== null) {
+                val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
+                _builder.append("switchAttribute == ")
+                _builder.append(guardExpr)
+            } else {
+                val guardExpr = getGuardExpression(guard, isLambda)
+                _builder.append(guardExpr)
+            }
+            _builder.append(":")
+            _builder.newLine()
+            _builder.append(indent)
+            _builder.append("    return ")
+            _builder.append(funcNames.get(i))
+            _builder.append("()")
+            _builder.newLine()
+        }
+    
+        // Default else
+        _builder.append(indent)
+        _builder.append("else:")
+        _builder.newLine()
+        _builder.append(indent)
+        _builder.append("    return ")
+        _builder.append(funcNames.last)
+        _builder.append("()")
+    
+        return _builder.toString
     }
 
     private def String generateReference(RosettaReference expr, int ifLevel, boolean isLambda) {

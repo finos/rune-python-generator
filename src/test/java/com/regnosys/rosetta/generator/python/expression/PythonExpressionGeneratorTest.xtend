@@ -17,6 +17,7 @@ class PythonExpressionGeneratorTest {
 
     @Inject PythonGeneratorTestUtils testUtils
 
+
     @Test
     def void testArithmeticOperator () {
         val pythonString = testUtils.generatePythonFromString (
@@ -54,7 +55,7 @@ class PythonExpressionGeneratorTest {
     def void testGenerateSwitch() {
         testUtils.assertBundleContainsExpectedString(
             '''type FooTest:
-            a int (1..1)
+            a int (1..1) <"Test field a">
             condition Test:
                 a switch
                     1 then True,
@@ -64,7 +65,10 @@ class PythonExpressionGeneratorTest {
             '''
             class com_rosetta_test_model_FooTest(BaseDataClass):
                 _FQRTN = 'com.rosetta.test.model.FooTest'
-                a: int = Field(..., description='')
+                a: int = Field(..., description='Test field a')
+                """
+                Test field a
+                """
                 
                 @rune_condition
                 def condition_0_Test(self):
@@ -75,13 +79,14 @@ class PythonExpressionGeneratorTest {
                         return True
                     def _then_default():
                         return False
-                    match rune_resolve_attr(self, "a"):
-                        case 1:
-                            return _then_1()
-                        case 2:
-                            return _then_2()
-                        case _:
-                            return _then_default()'''
+                    switchAttribute = rune_resolve_attr(self, "a")
+                    if switchAttribute == 1:
+                        return _then_1()
+                    elif switchAttribute == 2:
+                        return _then_2()
+                    else:
+                        return _then_default()
+            '''
         )
     }
 
