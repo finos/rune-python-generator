@@ -12,10 +12,6 @@ import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.rosetta.simple.Function
 import com.regnosys.rosetta.rosetta.simple.Operation
 import com.regnosys.rosetta.rosetta.simple.Segment
-import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration
-import com.regnosys.rosetta.rosetta.simple.Condition
-import com.regnosys.rosetta.rosetta.RosettaFeature
-import com.regnosys.rosetta.rosetta.RosettaTyped
 import java.util.ArrayList
 import java.util.Collections
 import java.util.HashMap
@@ -287,7 +283,7 @@ class PythonFunctionGenerator {
     private def generateAddOperation(AssignPathRoot root, Operation operation, Function function, String expression) {
         val lineSeparator = System.getProperty("line.separator")
         val attribute = root as Attribute
-        val fullPath = generateFullPath(operation.getPath().getReversedFeatures(), root.name)
+        val fullPath = generateFullPath(operation.getPath().getReversedAttributes, root.name)
 
         var result = ""
         if (attribute.typeCall.type instanceof RosettaEnumeration) {
@@ -328,7 +324,7 @@ class PythonFunctionGenerator {
         var result = new StringBuilder()
         result.append("'")
         while (currentPath !== null) {
-            result.append(currentPath.getFeature().name)
+            result.append(currentPath.getAttribute().name)
             if (currentPath.next !== null) {
                 result.append("->")
             }
@@ -340,8 +336,8 @@ class PythonFunctionGenerator {
 
     private def getNextPathElementName(Segment path) {
         if (path !== null) {
-            val feature = path.getFeature()
-            return "'" + feature.name + "'"
+            val attribute = path.getAttribute()
+            return "'" + attribute.name + "'"
         }
         return null
     }
@@ -351,39 +347,36 @@ class PythonFunctionGenerator {
             return expression;
         }
 
-        val feature = path.getFeature();
-        if (feature instanceof RosettaTyped) {
-        	return '''_get_rosetta_object('«feature.typeCall.type.name»', «getNextPathElementName(path.next)», «buildObject(expression, path.next)»)'''
-        }
-        throw new IllegalArgumentException("Cannot build object for feature " + feature.getName() + " of type " + feature.class.simpleName)
+        val attribute = path.getAttribute();
+        return '''_get_rune_object('«attribute.typeCall.type.name»', «getNextPathElementName(path.next)», «buildObject(expression, path.next)»)'''
     }
 
-    private def String generateFullPath(Iterable<RosettaFeature> features, String root) {
-        if (features.isEmpty) {
+    private def String generateFullPath(Iterable<Attribute> attrs, String root) {
+        if (attrs.isEmpty) {
             return "self"
         }
 
-        val attr = features.head
-        val remainingAttrs = features.tail.toList
+        val attr = attrs.head
+        val remainingAttrs = attrs.tail.toList
 
-        val nextPath = if (remainingAttrs.isEmpty) '''rosetta_resolve_attr(self, «root»)''' else generateFullPath(
+        val nextPath = if (remainingAttrs.isEmpty) '''rune_resolve_attr(self, «root»)''' else generateFullPath(
                 remainingAttrs, root)
 
-        return '''rosetta_resolve_attr(«nextPath», '«attr.name»')'''
+        return '''rune_resolve_attr(«nextPath», '«attr.name»')'''
     }
 
-    private def getReversedFeatures(Segment segment) {
-        val features = new ArrayList<RosettaFeature>();
+    private def getReversedAttributes(Segment segment) {
+        val attributes = new ArrayList<Attribute>();
         var current = segment;
 
         while (current !== null) {
-            features.add(current.getFeature());
+            attributes.add(current.getAttribute());
             current = current.getNext();
         }
 
-        Collections.reverse(features);
+        Collections.reverse(attributes);
 
-        return features;
+        return attributes;
     }
 
     def addImportsFromConditions(String variable, String namespace) {

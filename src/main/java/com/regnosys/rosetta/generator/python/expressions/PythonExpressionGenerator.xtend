@@ -71,7 +71,7 @@ class PythonExpressionGenerator {
             if (cond.isConstraintCondition)
                 result += generateConstraintCondition(cls, cond)
             else
-                result += generateExpressionCondition(cond)
+                result += generateIfThenElseOrSwitch(cond)
             nConditions++
         }
         return result
@@ -82,7 +82,7 @@ class PythonExpressionGenerator {
         var result = '';
         for (Condition cond : conditions) {
             result += generateFunctionConditionBoilerPlate(cond, nConditions, condition_type)
-            result += generateExpressionCondition(cond)
+            result += generateIfThenElseOrSwitch(cond)
             nConditions++
         }
 
@@ -196,23 +196,17 @@ class PythonExpressionGenerator {
         '''
     }
 
-    private def generateExpressionCondition(Condition c) {
+    private def generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear()
-        switchCondBlocks = new ArrayList<String>()
+        switchCondBlocks.clear()
         var expr = generateExpression(c.expression, 0, false)
-        var blocks = ""
-        var switch_blocks = ""
-        if (!ifCondBlocks.isEmpty()) {
-            blocks = '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
-        }
         if (!switchCondBlocks.isEmpty()) {
-            switch_blocks = '''    «FOR arg : switchCondBlocks»«arg»«ENDFOR»'''
+            var switchBlocks = '''    «FOR arg : switchCondBlocks»«arg»«ENDFOR»'''
+            return '''«switchBlocks»    «expr»'''
         }
-        if (switch_blocks.equals(""))
-            return '''«blocks»    return «expr»
-            '''
-        else
-            return '''«switch_blocks»    «expr»'''
+        var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
+        return '''«blocks»    return «expr»
+        '''
     }
 
     private def String generateConditionalExpression(RosettaConditionalExpression expr, int ifLevel, boolean isLambda) {
@@ -292,6 +286,7 @@ class PythonExpressionGenerator {
     }
 
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
+        // translate switch into a series of if / elif statements
         val attr = generateExpression(expr.argument, 0, isLambda)
         val arg = expr.argument as RosettaSymbolReference
         
