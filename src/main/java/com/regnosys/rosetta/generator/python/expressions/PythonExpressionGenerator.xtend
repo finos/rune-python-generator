@@ -292,7 +292,8 @@ class PythonExpressionGenerator {
         
         var funcNames = new ArrayList<String>()
         
-        for (thenExpr : expr.cases) {
+        for (i : 0 ..< expr.cases.size-1) {
+            val thenExpr= expr.cases.get(i)
             val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
             val funcName = '''_then_«funcNames.size()+1»'''
             funcNames.add(funcName)
@@ -322,7 +323,7 @@ class PythonExpressionGenerator {
         _builder.append(attr)
         _builder.newLine()
         // Append each conditional
-        for (i : 0 ..< expr.cases.size) {
+        for (i : 0 ..< expr.cases.size-1) {
             val guard = expr.cases.get(i).getGuard()
     
             val prefix = (i == 0) ? "if " : "elif "
