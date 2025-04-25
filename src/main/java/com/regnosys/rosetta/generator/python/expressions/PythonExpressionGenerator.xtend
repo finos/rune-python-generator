@@ -292,29 +292,33 @@ class PythonExpressionGenerator {
         
         var funcNames = new ArrayList<String>()
         
-        for (i : 0 ..< expr.cases.size-1) {
-            val thenExpr= expr.cases.get(i)
-            val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
-            val funcName = '''_then_«funcNames.size()+1»'''
-            funcNames.add(funcName)
-            switchCondBlocks.add(
-                '''
-                    def «funcName»():
-                        return «thenExprDef»
-                '''
-            )
+        for (i : 0 ..< expr.cases.size) {
+            if(expr.cases.get(i).isDefault()){
+                 //default case
+                 val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
+                 val defaultFuncName = '''_then_default'''
+                 funcNames.add(defaultFuncName)
+                 switchCondBlocks.add(
+                    '''
+                        def «defaultFuncName»():
+                            return «defaultExprDef»
+                    '''
+                    )}
+            else{
+                val thenExpr= expr.cases.get(i)
+                val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
+                val funcName = '''_then_«funcNames.size()+1»'''
+                funcNames.add(funcName)
+                switchCondBlocks.add(
+                    '''
+                        def «funcName»():
+                            return «thenExprDef»
+                    '''
+                )
+            }
         }
         
-        //default case
-        val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
-        val defaultFuncName = '''_then_default'''
-        funcNames.add(defaultFuncName)
-        switchCondBlocks.add(
-            '''
-                def «defaultFuncName»():
-                    return «defaultExprDef»
-            '''
-        )        
+               
         var _builder = new StringConcatenation()
        
         // Generate switch logic
@@ -323,37 +327,40 @@ class PythonExpressionGenerator {
         _builder.append(attr)
         _builder.newLine()
         // Append each conditional
-        for (i : 0 ..< expr.cases.size-1) {
-            val guard = expr.cases.get(i).getGuard()
-    
-            val prefix = (i == 0) ? "if " : "elif "
-            _builder.append(indent)
-            _builder.append(prefix)
-            if (guard.getLiteralGuard() !== null) {
-                val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
-                _builder.append("switchAttribute == ")
-                _builder.append(guardExpr)
-            } else {
-                val guardExpr = getGuardExpression(guard, isLambda)
-                _builder.append(guardExpr)
+        for (i : 0 ..< expr.cases.size) {
+            if(expr.cases.get(i).isDefault()){
+                 // Default else
+                _builder.append(indent)
+                _builder.append("else:")
+                _builder.newLine()
+                _builder.append(indent)
+                _builder.append("    return ")
+                _builder.append(funcNames.last)
+                _builder.append("()")
             }
-            _builder.append(":")
-            _builder.newLine()
-            _builder.append(indent)
-            _builder.append("    return ")
-            _builder.append(funcNames.get(i))
-            _builder.append("()")
-            _builder.newLine()
+            else{
+                val guard = expr.cases.get(i).getGuard()
+        
+                val prefix = (i == 0) ? "if " : "elif "
+                _builder.append(indent)
+                _builder.append(prefix)
+                if (guard.getLiteralGuard() !== null) {
+                    val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
+                    _builder.append("switchAttribute == ")
+                    _builder.append(guardExpr)
+                } else {
+                    val guardExpr = getGuardExpression(guard, isLambda)
+                    _builder.append(guardExpr)
+                }
+                _builder.append(":")
+                _builder.newLine()
+                _builder.append(indent)
+                _builder.append("    return ")
+                _builder.append(funcNames.get(i))
+                _builder.append("()")
+                _builder.newLine()
+            }
         }
-    
-        // Default else
-        _builder.append(indent)
-        _builder.append("else:")
-        _builder.newLine()
-        _builder.append(indent)
-        _builder.append("    return ")
-        _builder.append(funcNames.last)
-        _builder.append("()")
     
         return _builder.toString
     }
