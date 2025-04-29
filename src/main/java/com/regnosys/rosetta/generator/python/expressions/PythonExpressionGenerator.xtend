@@ -61,7 +61,7 @@ class PythonExpressionGenerator {
 
     public var List<String> importsFound
     public var ifCondBlocks = new ArrayList<String>()
-    public var switchCondBlocks = new ArrayList<String>()
+    public var switchCond = false
 
     def String generateConditions(Data cls) {
         var nConditions = 0;
@@ -198,12 +198,10 @@ class PythonExpressionGenerator {
 
     private def generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear()
-        switchCondBlocks.clear()
+        switchCond=false
         var expr = generateExpression(c.expression, 0, false)
-        if (!switchCondBlocks.isEmpty()) {
-            var switchBlocks = '''    «FOR arg : switchCondBlocks»«arg»«ENDFOR»'''
-            return '''«switchBlocks»    «expr»'''
-        }
+        if (switchCond) return expr
+        
         var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
         return '''«blocks»    return «expr»
         '''
@@ -286,82 +284,72 @@ class PythonExpressionGenerator {
     }
 
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
-        // translate switch into a series of if / elif statements
         val attr = generateExpression(expr.argument, 0, isLambda)
-        val arg = expr.argument as RosettaSymbolReference
         
-        var funcNames = new ArrayList<String>()
+        var switchCases= expr.cases
         
-        for (i : 0 ..< expr.cases.size) {
-            if(expr.cases.get(i).isDefault()){
-                 //default case
-                 val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
-                 val defaultFuncName = '''_then_default'''
-                 funcNames.add(defaultFuncName)
-                 switchCondBlocks.add(
-                    '''
-                        def «defaultFuncName»():
-                            return «defaultExprDef»
-                    '''
-                    )}
-            else{
-                val thenExpr= expr.cases.get(i)
-                val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
-                val funcName = '''_then_«funcNames.size()+1»'''
-                funcNames.add(funcName)
-                switchCondBlocks.add(
-                    '''
-                        def «funcName»():
-                            return «thenExprDef»
-                    '''
-                )
-            }
-        }
+        var _thenFuncsBuilder = new StringConcatenation()
+        var _switchLogicBuilder= new StringConcatenation()
         
-               
-        var _builder = new StringConcatenation()
-       
-        // Generate switch logic
         val indent = "    "
-        _builder.append("switchAttribute = ")
-        _builder.append(attr)
-        _builder.newLine()
-        // Append each conditional
-        for (i : 0 ..< expr.cases.size) {
-            if(expr.cases.get(i).isDefault()){
+        switchCond=true
+        
+        for (i : 0 ..< switchCases.size) {
+            val funcName= if (switchCases.get(i).isDefault()) "_then_default" else "_then_"+ (i+1)
+            val thenExprDef= if (switchCases.get(i).isDefault()) 
+                generateExpression(expr.getDefault(), 0, isLambda)
+            else 
+                generateExpression(switchCases.get(i).getExpression(), ifLevel + 1, isLambda)
+            
+            _thenFuncsBuilder.append(indent)
+            _thenFuncsBuilder.append("def "+funcName + "():")
+            _thenFuncsBuilder.newLine
+            _thenFuncsBuilder.append(indent)
+            _thenFuncsBuilder.append("    return "+ thenExprDef)
+            _thenFuncsBuilder.newLine
+            
+            if(switchCases.get(i).isDefault()){
                  // Default else
-                _builder.append(indent)
-                _builder.append("else:")
-                _builder.newLine()
-                _builder.append(indent)
-                _builder.append("    return ")
-                _builder.append(funcNames.last)
-                _builder.append("()")
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append("else:")
+                _switchLogicBuilder.newLine()
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append("    return ")
+                _switchLogicBuilder.append(funcName)
+                _switchLogicBuilder.append("()")
             }
             else{
-                val guard = expr.cases.get(i).getGuard()
+                val guard =switchCases.get(i).getGuard()
         
                 val prefix = (i == 0) ? "if " : "elif "
-                _builder.append(indent)
-                _builder.append(prefix)
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append(prefix)
                 if (guard.getLiteralGuard() !== null) {
                     val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
-                    _builder.append("switchAttribute == ")
-                    _builder.append(guardExpr)
+                    _switchLogicBuilder.append("switchAttribute == ")
+                    _switchLogicBuilder.append(guardExpr)
                 } else {
                     val guardExpr = getGuardExpression(guard, isLambda)
-                    _builder.append(guardExpr)
+                    _switchLogicBuilder.append(guardExpr)
                 }
-                _builder.append(":")
-                _builder.newLine()
-                _builder.append(indent)
-                _builder.append("    return ")
-                _builder.append(funcNames.get(i))
-                _builder.append("()")
-                _builder.newLine()
+                _switchLogicBuilder.append(":")
+                _switchLogicBuilder.newLine()
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append("    return ")
+                _switchLogicBuilder.append(funcName)
+                _switchLogicBuilder.append("()")
+                _switchLogicBuilder.newLine()
             }
         }
-    
+
+        val _builder= new StringConcatenation
+        _builder.append(_thenFuncsBuilder.toString)
+        _builder.append(indent)
+        _builder.append("switchAttribute = ")
+        _builder.append(attr)
+        _builder.newLine
+        _builder.append(_switchLogicBuilder.toString)
+
         return _builder.toString
     }
 
