@@ -46,6 +46,7 @@ import com.regnosys.rosetta.rosetta.expression.MinOperation
 import com.regnosys.rosetta.rosetta.expression.MaxOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchCaseGuard
+import com.regnosys.rosetta.rosetta.expression.SwitchCaseOrDefault
 import com.regnosys.rosetta.rosetta.simple.Attribute
 import com.regnosys.rosetta.rosetta.simple.Condition
 import com.regnosys.rosetta.rosetta.simple.Data
@@ -61,7 +62,7 @@ class PythonExpressionGenerator {
 
     public var List<String> importsFound
     public var ifCondBlocks = new ArrayList<String>()
-    public var switchCond = false
+    public var isSwitchCond = false
 
     def String generateConditions(Data cls) {
         var nConditions = 0;
@@ -198,12 +199,12 @@ class PythonExpressionGenerator {
 
     private def generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear()
-        switchCond=false
+        isSwitchCond=false
+        
         var expr = generateExpression(c.expression, 0, false)
-        if (switchCond) return expr
         
         var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
-        return '''«blocks»    return «expr»
+        return isSwitchCond ? expr : '''«blocks»    return «expr»
         '''
     }
 
@@ -286,20 +287,16 @@ class PythonExpressionGenerator {
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
         val attr = generateExpression(expr.argument, 0, isLambda)
         
-        var switchCases= expr.cases
-        
         var _thenFuncsBuilder = new StringConcatenation()
         var _switchLogicBuilder= new StringConcatenation()
         
         val indent = "    "
-        switchCond=true
+        isSwitchCond=true
         
-        for (i : 0 ..< switchCases.size) {
-            val funcName= if (switchCases.get(i).isDefault()) "_then_default" else "_then_"+ (i+1)
-            val thenExprDef= if (switchCases.get(i).isDefault()) 
-                generateExpression(expr.getDefault(), 0, isLambda)
-            else 
-                generateExpression(switchCases.get(i).getExpression(), ifLevel + 1, isLambda)
+        for (pair : expr.cases.indexed) {
+            val currentCase = pair.value as SwitchCaseOrDefault
+            val funcName= (currentCase.isDefault()) ? "_then_default" : "_then_"+ (pair.key+1)
+            val thenExprDef= (currentCase.isDefault()) ? generateExpression(expr.getDefault(), 0, isLambda) : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda)
             
             _thenFuncsBuilder.append(indent)
             _thenFuncsBuilder.append("def "+funcName + "():")
@@ -308,7 +305,7 @@ class PythonExpressionGenerator {
             _thenFuncsBuilder.append("    return "+ thenExprDef)
             _thenFuncsBuilder.newLine
             
-            if(switchCases.get(i).isDefault()){
+            if(currentCase.isDefault()){
                  // Default else
                 _switchLogicBuilder.append(indent)
                 _switchLogicBuilder.append("else:")
@@ -319,9 +316,9 @@ class PythonExpressionGenerator {
                 _switchLogicBuilder.append("()")
             }
             else{
-                val guard =switchCases.get(i).getGuard()
+                val guard =currentCase.getGuard()
         
-                val prefix = (i == 0) ? "if " : "elif "
+                val prefix = (pair.key == 0) ? "if " : "elif "
                 _switchLogicBuilder.append(indent)
                 _switchLogicBuilder.append(prefix)
                 if (guard.getLiteralGuard() !== null) {
