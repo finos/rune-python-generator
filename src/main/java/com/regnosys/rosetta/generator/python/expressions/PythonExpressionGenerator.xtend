@@ -202,9 +202,9 @@ class PythonExpressionGenerator {
         isSwitchCond=false
         
         var expr = generateExpression(c.expression, 0, false)
-        
+        if (isSwitchCond) return expr
         var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
-        return isSwitchCond ? expr : '''«blocks»    return «expr»
+        return '''«blocks»    return «expr»
         '''
     }
 
