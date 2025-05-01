@@ -184,6 +184,7 @@ class PythonExpressionGenerator {
     }
 
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
+        // translate switch into a series of if / elif statements
         val attr = generateExpression(expr.argument, 0, isLambda)
         
         var _thenFuncsBuilder = new StringConcatenation()
