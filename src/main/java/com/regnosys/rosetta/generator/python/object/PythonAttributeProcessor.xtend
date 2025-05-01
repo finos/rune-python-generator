@@ -219,7 +219,7 @@ class PythonAttributeProcessor {
                         validators.add("@ref:scoped")
                     }
                     default: {
-                        println("---- unprocessed meta ... name: " + ma.name)
+                        throw new IllegalStateException("Unsupported metadata attribute: " + ma.name)
                     }
                 }
             ]

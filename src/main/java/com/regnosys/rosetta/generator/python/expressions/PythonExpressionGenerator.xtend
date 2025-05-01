@@ -46,6 +46,7 @@ import com.regnosys.rosetta.rosetta.expression.MinOperation
 import com.regnosys.rosetta.rosetta.expression.MaxOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchCaseGuard
+import com.regnosys.rosetta.rosetta.expression.SwitchCaseOrDefault
 import com.regnosys.rosetta.rosetta.simple.Attribute
 import com.regnosys.rosetta.rosetta.simple.Condition
 import com.regnosys.rosetta.rosetta.simple.Data
@@ -61,44 +62,7 @@ class PythonExpressionGenerator {
 
     public var List<String> importsFound
     public var ifCondBlocks = new ArrayList<String>()
-    public var switchCondBlocks = new ArrayList<String>()
-
-    def String generateConditions(Data cls) {
-        var nConditions = 0;
-        var result = '';
-        for (Condition cond : cls.conditions) {
-            result += generateConditionBoilerPlate(cond, nConditions)
-            if (cond.isConstraintCondition)
-                result += generateConstraintCondition(cls, cond)
-            else
-                result += generateIfThenElseOrSwitch(cond)
-            nConditions++
-        }
-        return result
-    }
-
-    def generateFunctionConditions(List<Condition> conditions, String condition_type) {
-        var nConditions = 0;
-        var result = '';
-        for (Condition cond : conditions) {
-            result += generateFunctionConditionBoilerPlate(cond, nConditions, condition_type)
-            result += generateIfThenElseOrSwitch(cond)
-            nConditions++
-        }
-
-        return result
-    }
-
-    def generateExpressionThenElse(RosettaExpression expr, List<Integer> ifLevel) {
-        ifCondBlocks.clear()
-        generateExpression(expr, ifLevel.get(0), false)
-        var blocks = ""
-        if (!ifCondBlocks.isEmpty()) {
-            ifLevel.set(0, ifLevel.get(0) + 1)
-            blocks = '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
-        }
-        return '''«blocks»'''
-    }
+    public var isSwitchCond = false
 
     def String generateExpression(RosettaExpression expr, int ifLevel, boolean isLambda) {
         switch (expr) {
@@ -141,72 +105,6 @@ class PythonExpressionGenerator {
                 throw new UnsupportedOperationException("Unsupported expression type of " + expr?.class?.simpleName)
             }
         }
-    }
-
-    private def boolean isConstraintCondition(Condition cond) {
-        return isOneOf(cond) || isChoice(cond)
-    }
-
-    private def boolean isOneOf(Condition cond) {
-        return cond.expression instanceof OneOfOperation
-    }
-
-    private def boolean isChoice(Condition cond) {
-        return cond.expression instanceof ChoiceOperation
-    }
-
-    private def generateConditionBoilerPlate(Condition cond, int nConditions) {
-        '''
-            
-            @rune_condition
-            def condition_«nConditions»_«cond.name»(self):
-                «IF cond.definition!==null»
-                    """
-                    «cond.definition»
-                    """
-                «ENDIF»
-                item = self
-        '''
-    }
-
-    private def generateFunctionConditionBoilerPlate(Condition cond, int nConditions, String condition_type) {
-        '''
-            
-            @rune_local_condition(«condition_type»)
-            def condition_«nConditions»_«cond.name»(self):
-                «IF cond.definition!==null»
-                    """
-                    «cond.definition»
-                    """
-                «ENDIF»
-        '''
-    }
-
-    private def generateConstraintCondition(Data cls, Condition cond) {
-        val expression = cond.expression
-        var attributes = cls.attributes
-        var necessity = "necessity=True"
-        if (expression instanceof ChoiceOperation) {
-            attributes = expression.attributes
-            if (expression.necessity == Necessity.OPTIONAL) {
-                necessity = "necessity=False"
-            }
-        }
-        '''    return rune_check_one_of(self, «FOR a : attributes SEPARATOR ", "»'«a.name»'«ENDFOR», «necessity»)
-        '''
-    }
-
-    private def generateIfThenElseOrSwitch(Condition c) {
-        ifCondBlocks.clear()
-        switchCondBlocks.clear()
-        var expr = generateExpression(c.expression, 0, false)
-        if (!switchCondBlocks.isEmpty()) {
-            var switchBlocks = '''    «FOR arg : switchCondBlocks»«arg»«ENDFOR»'''
-            return '''«switchBlocks»    «expr»'''
-        }
-        var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
-        return '''«blocks»    return «expr»
-        '''
     }
 
     private def String generateConditionalExpression(RosettaConditionalExpression expr, int ifLevel, boolean isLambda) {
@@ -288,72 +186,67 @@ class PythonExpressionGenerator {
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
         // translate switch into a series of if / elif statements
         val attr = generateExpression(expr.argument, 0, isLambda)
-        val arg = expr.argument as RosettaSymbolReference
         
-        var funcNames = new ArrayList<String>()
+        var _thenFuncsBuilder = new StringConcatenation()
+        var _switchLogicBuilder= new StringConcatenation()
         
-        for (thenExpr : expr.cases) {
-            val thenExprDef = generateExpression(thenExpr.getExpression(), ifLevel + 1, isLambda)
-            val funcName = '''_then_«funcNames.size()+1»'''
-            funcNames.add(funcName)
-            switchCondBlocks.add(
-                '''
-                    def «funcName»():
-                        return «thenExprDef»
-                '''
-            )
-        }
-        
-        //default case
-        val defaultExprDef = generateExpression(expr.getDefault(), 0, isLambda)
-        val defaultFuncName = '''_then_default'''
-        funcNames.add(defaultFuncName)
-        switchCondBlocks.add(
-            '''
-                def «defaultFuncName»():
-                    return «defaultExprDef»
-            '''
-        )        
-        var _builder = new StringConcatenation()
-       
-        // Generate switch logic
         val indent = "    "
+        isSwitchCond=true
+        
+        for (pair : expr.cases.indexed) {
+            val currentCase = pair.value as SwitchCaseOrDefault
+            val funcName= (currentCase.isDefault()) ? "_then_default" : "_then_"+ (pair.key+1)
+            val thenExprDef= (currentCase.isDefault()) ? generateExpression(expr.getDefault(), 0, isLambda) : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda)
+            
+            _thenFuncsBuilder.append(indent)
+            _thenFuncsBuilder.append("def "+funcName + "():")
+            _thenFuncsBuilder.newLine
+            _thenFuncsBuilder.append(indent)
+            _thenFuncsBuilder.append("    return "+ thenExprDef)
+            _thenFuncsBuilder.newLine
+            
+            if(currentCase.isDefault()){
+                 // Default else
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append("else:")
+                _switchLogicBuilder.newLine()
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append("    return ")
+                _switchLogicBuilder.append(funcName)
+                _switchLogicBuilder.append("()")
+            }
+            else{
+                val guard =currentCase.getGuard()
+        
+                val prefix = (pair.key == 0) ? "if " : "elif "
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append(prefix)
+                if (guard.getLiteralGuard() !== null) {
+                    val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
+                    _switchLogicBuilder.append("switchAttribute == ")
+                    _switchLogicBuilder.append(guardExpr)
+                } else {
+                    val guardExpr = getGuardExpression(guard, isLambda)
+                    _switchLogicBuilder.append(guardExpr)
+                }
+                _switchLogicBuilder.append(":")
+                _switchLogicBuilder.newLine()
+                _switchLogicBuilder.append(indent)
+                _switchLogicBuilder.append("    return ")
+                _switchLogicBuilder.append(funcName)
+                _switchLogicBuilder.append("()")
+                _switchLogicBuilder.newLine()
+            }
+        }
+
+        val _builder= new StringConcatenation
+        _builder.append(_thenFuncsBuilder.toString)
+        _builder.append(indent)
         _builder.append("switchAttribute = ")
         _builder.append(attr)
-        _builder.newLine()
-        // Append each conditional
-        for (i : 0 ..< expr.cases.size) {
-            val guard = expr.cases.get(i).getGuard()
-    
-            val prefix = (i == 0) ? "if " : "elif "
-            _builder.append(indent)
-            _builder.append(prefix)
-            if (guard.getLiteralGuard() !== null) {
-                val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
-                _builder.append("switchAttribute == ")
-                _builder.append(guardExpr)
-            } else {
-                val guardExpr = getGuardExpression(guard, isLambda)
-                _builder.append(guardExpr)
-            }
-            _builder.append(":")
-            _builder.newLine()
-            _builder.append(indent)
-            _builder.append("    return ")
-            _builder.append(funcNames.get(i))
-            _builder.append("()")
-            _builder.newLine()
-        }
-    
-        // Default else
-        _builder.append(indent)
-        _builder.append("else:")
-        _builder.newLine()
-        _builder.append(indent)
-        _builder.append("    return ")
-        _builder.append(funcNames.last)
-        _builder.append("()")
-    
+        _builder.newLine
+        _builder.append(_switchLogicBuilder.toString)
+
         return _builder.toString
     }
 
@@ -432,6 +325,107 @@ class PythonExpressionGenerator {
                 default: '''(«generateExpression(expr.left, ifLevel, isLambda)» «expr.operator» «generateExpression(expr.right, ifLevel, isLambda)»)'''
             }
         }
+    }
+
+    def String generateTypeOrFunctionConditions(Data cls) {
+        var nConditions = 0;
+        var result = '';
+        for (Condition cond : cls.conditions) {
+            result += generateConditionBoilerPlate(cond, nConditions)
+            if (cond.isConstraintCondition)
+                result += generateConstraintCondition(cls, cond)
+            else
+                result += generateIfThenElseOrSwitch(cond)
+            nConditions++
+        }
+        return result
+    }
+
+    def generateFunctionConditions(List<Condition> conditions, String condition_type) {
+        var nConditions = 0;
+        var result = '';
+        for (Condition cond : conditions) {
+            result += generateFunctionConditionBoilerPlate(cond, nConditions, condition_type)
+            result += generateIfThenElseOrSwitch(cond)
+            nConditions++
+        }
+
+        return result
+    }
+
+    def generateThenElseForFunction(RosettaExpression expr, List<Integer> ifLevel) {
+        ifCondBlocks.clear()
+        generateExpression(expr, ifLevel.get(0), false)
+        var blocks = ""
+        if (!ifCondBlocks.isEmpty()) {
+            ifLevel.set(0, ifLevel.get(0) + 1)
+            blocks = '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
+        }
+        return '''«blocks»'''
+    }
+
+    private def boolean isConstraintCondition(Condition cond) {
+        return isOneOf(cond) || isChoice(cond)
+    }
+
+    private def boolean isOneOf(Condition cond) {
+        return cond.expression instanceof OneOfOperation
+    }
+
+    private def boolean isChoice(Condition cond) {
+        return cond.expression instanceof ChoiceOperation
+    }
+
+    private def generateConditionBoilerPlate(Condition cond, int nConditions) {
+        '''
+            
+            @rune_condition
+            def condition_«nConditions»_«cond.name»(self):
+                «IF cond.definition!==null»
+                    """
+                    «cond.definition»
+                    """
+                «ENDIF»
+                item = self
+        '''
+    }
+
+    private def generateFunctionConditionBoilerPlate(Condition cond, int nConditions, String condition_type) {
+        '''
+            
+            @rune_local_condition(«condition_type»)
+            def condition_«nConditions»_«cond.name»(self):
+                «IF cond.definition!==null»
+                    """
+                    «cond.definition»
+                    """
+                «ENDIF»
+        '''
+    }
+
+    private def generateConstraintCondition(Data cls, Condition cond) {
+        val expression = cond.expression
+        var attributes = cls.attributes
+        var necessity = "necessity=True"
+        if (expression instanceof ChoiceOperation) {
+            attributes = expression.attributes
+            if (expression.necessity == Necessity.OPTIONAL) {
+                necessity = "necessity=False"
+            }
+        }
+        '''    return rune_check_one_of(self, «FOR a : attributes SEPARATOR ", "»'«a.name»'«ENDFOR», «necessity»)
+        '''
+    }
+
+    private def generateIfThenElseOrSwitch(Condition c) {
+        ifCondBlocks.clear()
+        isSwitchCond=false
+        
+        var expr = generateExpression(c.expression, 0, false)
+        if (isSwitchCond) return expr
+        var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
+        return '''«blocks»    return «expr»
+        '''
     }
 
     def addImportsFromConditions(String variable, String namespace) {

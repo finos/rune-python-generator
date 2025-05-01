@@ -26,98 +26,99 @@ class PythonFunctionsTest {
 
     @Test
     def void testSimpleSet() {
-        val python = 
-        '''
-        func Abs: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
-            inputs:
-                arg number (1..1)
-            output:
-                result number (1..1)
-            set result:
-                if arg < 0 then -1 * arg else arg
-        '''.generatePython
+        val pythonString = testUtils.generatePythonFromString(
+            '''
+            func Abs: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
+                inputs:
+                    arg number (1..1)
+                output:
+                    result number (1..1)
+                set result:
+                    if arg < 0 then -1 * arg else arg
+            '''
+            ).toString()
         
         val expected = 
-        '''
-        @replaceable
-        def Abs(arg: Decimal) -> Decimal:
-            """
-            Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
-            
-            Parameters 
-            ----------
-            arg : number
-            
-            Returns
-            -------
-            result : number
-            
-            """
-            self = inspect.currentframe()
-            
-            
-            def _then_fn0():
-                return (-1 * rune_resolve_attr(self, "arg"))
-            
-            def _else_fn0():
-                return rune_resolve_attr(self, "arg")
-            
-            result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0)
-            
-            
-            return result
-        '''
-        assertTrue(python.toString.contains(expected))
+            '''
+            @replaceable
+            def Abs(arg: Decimal) -> Decimal:
+                """
+                Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
+                
+                Parameters 
+                ----------
+                arg : number
+                
+                Returns
+                -------
+                result : number
+                
+                """
+                self = inspect.currentframe()
+                
+                
+                def _then_fn0():
+                    return (-1 * rune_resolve_attr(self, "arg"))
+                
+                def _else_fn0():
+                    return rune_resolve_attr(self, "arg")
+                
+                result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0)
+                
+                
+                return result
+            '''
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
     
     @Test
     def void testSimpleAdd() {
-        val python = 
-        '''
-        func AppendToVector: <"Append a single value to a vector (list of numbers).">
-            inputs:
-                vector number (0..*) <"Input vector.">
-                value number (1..1) <"Value to add to the vector.">
-            output:
-                resultVector number (0..*) <"Resulting vector.">
-        
-            add resultVector: vector
-            add resultVector: value
-        '''.generatePython
+        val pythonString = testUtils.generatePythonFromString(
+            '''
+            func AppendToVector: <"Append a single value to a vector (list of numbers).">
+                inputs:
+                    vector number (0..*) <"Input vector.">
+                    value number (1..1) <"Value to add to the vector.">
+                output:
+                    resultVector number (0..*) <"Resulting vector.">
+            
+                add resultVector: vector
+                add resultVector: value
+            '''
+            ).toString()
         
         val expected =
-        '''
-        @replaceable
-        def AppendToVector(vector: list[Decimal] | None, value: Decimal) -> Decimal:
-            """
-            Append a single value to a vector (list of numbers).
+            '''
+            @replaceable
+            def AppendToVector(vector: list[Decimal] | None, value: Decimal) -> Decimal:
+                """
+                Append a single value to a vector (list of numbers).
+                
+                Parameters 
+                ----------
+                vector : number
+                Input vector.
+                
+                value : number
+                Value to add to the vector.
+                
+                Returns
+                -------
+                resultVector : number
+                
+                """
+                self = inspect.currentframe()
+                
+                
+                resultVector = rune_resolve_attr(self, "vector")
+                resultVector.add_rune_attr(self, rune_resolve_attr(self, "value"))
+                
+                
+                return resultVector
             
-            Parameters 
-            ----------
-            vector : number
-            Input vector.
-            
-            value : number
-            Value to add to the vector.
-            
-            Returns
-            -------
-            resultVector : number
-            
-            """
-            self = inspect.currentframe()
-            
-            
-            resultVector = rune_resolve_attr(self, "vector")
-            resultVector.add_rune_attr(self, rune_resolve_attr(self, "value"))
-            
-            
-            return resultVector
-        
-        sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-        '''
-        assertTrue(python.toString.contains(expected))
-          
+            sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
+            '''
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
     
     //Test set with a basemodel output
@@ -271,68 +272,68 @@ class PythonFunctionsTest {
     //Test add and set in the same function with basemodel output
     @Test
     def void testAddAndSet() {
-        val python = 
-        '''
-        func ResolvePerformanceReset: <"Defines how to resolve the reset value for a performance payout.">
-            inputs:
-                observation Observation (1..1) <"Represents the observation that will be used to compute the reset value.">
-                date date (1..1) <"Specifies the date of the reset.">
-            output:
-                reset Reset (1..1)
-            set reset -> resetValue: <"Assigns the observed value to the reset value.">
-                observation -> observedValue
-            set reset -> resetDate:
-                date
-            add reset -> observations: <"Assigns the observation required to compute the rest value as audit.">
-                observation
-        type Reset: <"Defines the reset value or fixing value produced in cashflow calculations, during the life-cycle of a financial instrument. The reset process defined in Create_Reset function joins product definition details with observations to compute the reset value.">
-            [metadata key]
-            resetValue Price (1..1) <"Specifies the reset or fixing value. The fixing value could be a cash price, interest rate, or other value.">
-            resetDate date (1..1) <"Specifies the date on which the reset occurred.">
-            observations Observation (1..*)
-        type Price : 
-            price int(1..1)
-        
-        type Observation: <"Defines a single, numerical value that was observed in the marketplace. Observations of market data are made independently to business events or trade life-cycle events, so data instances of Observation can be created independently of any other model type, hence it is annotated as a root type. Observations will be broadly reused in many situations, so references to Observation are supported via the 'key' annotation.">
-            [rootType]
-            [metadata key]
-            observedValue Price (1..1) <"Specifies the observed value as a number.">
-        '''.generatePython
+        val pythonString = testUtils.generatePythonFromString (
+            '''
+            func ResolvePerformanceReset: <"Defines how to resolve the reset value for a performance payout.">
+                inputs:
+                    observation Observation (1..1) <"Represents the observation that will be used to compute the reset value.">
+                    date date (1..1) <"Specifies the date of the reset.">
+                output:
+                    reset Reset (1..1)
+                set reset -> resetValue: <"Assigns the observed value to the reset value.">
+                    observation -> observedValue
+                set reset -> resetDate:
+                    date
+                add reset -> observations: <"Assigns the observation required to compute the rest value as audit.">
+                    observation
+            type Reset: <"Defines the reset value or fixing value produced in cashflow calculations, during the life-cycle of a financial instrument. The reset process defined in Create_Reset function joins product definition details with observations to compute the reset value.">
+                [metadata key]
+                resetValue Price (1..1) <"Specifies the reset or fixing value. The fixing value could be a cash price, interest rate, or other value.">
+                resetDate date (1..1) <"Specifies the date on which the reset occurred.">
+                observations Observation (1..*)
+            type Price : 
+                price int(1..1)
+            
+            type Observation: <"Defines a single, numerical value that was observed in the marketplace. Observations of market data are made independently to business events or trade life-cycle events, so data instances of Observation can be created independently of any other model type, hence it is annotated as a root type. Observations will be broadly reused in many situations, so references to Observation are supported via the 'key' annotation.">
+                [rootType]
+                [metadata key]
+                observedValue Price (1..1) <"Specifies the observed value as a number.">
+            '''
+        ).toString()
         
         val expected = 
-        '''
-        @replaceable
-        def ResolvePerformanceReset(observation: Observation, date: datetime.date) -> Reset:
-            """
-            Defines how to resolve the reset value for a performance payout.
+            '''
+            @replaceable
+            def ResolvePerformanceReset(observation: Observation, date: datetime.date) -> Reset:
+                """
+                Defines how to resolve the reset value for a performance payout.
+                
+                Parameters 
+                ----------
+                observation : Observation
+                Represents the observation that will be used to compute the reset value.
+                
+                date : date
+                Specifies the date of the reset.
+                
+                Returns
+                -------
+                reset : Reset
+                
+                """
+                self = inspect.currentframe()
+                
+                
+                reset = _get_rune_object('Reset', 'resetValue', rune_resolve_attr(rune_resolve_attr(self, "observation"), "observedValue"))
+                reset = set_rune_attr(rune_resolve_attr(self, 'reset'), 'resetDate', rune_resolve_attr(self, "date"))
+                reset.add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, reset), 'observations'), rune_resolve_attr(self, "observation"))
+                
+                
+                return reset
             
-            Parameters 
-            ----------
-            observation : Observation
-            Represents the observation that will be used to compute the reset value.
-            
-            date : date
-            Specifies the date of the reset.
-            
-            Returns
-            -------
-            reset : Reset
-            
-            """
-            self = inspect.currentframe()
-            
-            
-            reset = _get_rune_object('Reset', 'resetValue', rune_resolve_attr(rune_resolve_attr(self, "observation"), "observedValue"))
-            reset = set_rune_attr(rune_resolve_attr(self, 'reset'), 'resetDate', rune_resolve_attr(self, "date"))
-            reset.add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, reset), 'observations'), rune_resolve_attr(self, "observation"))
-            
-            
-            return reset
-        
-        sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-        '''
-        assertTrue(python.toString.contains(expected))
-        
+            sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
+            '''
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
     }
     
     @Test
@@ -670,76 +671,76 @@ class PythonFunctionsTest {
     @Test
     def void testComplexSetConstructors() {
         
-        val python =
-        '''
-        type InterestRatePayout: <" A class to specify all of the terms necessary to define and calculate a cash flow based on a fixed, a floating or an inflation index rate. The interest rate payout can be applied to interest rate swaps and FRA (which both have two associated interest rate payouts), credit default swaps (to represent the fee leg when subject to periodic payments) and equity swaps (to represent the funding leg). The associated globalKey denotes the ability to associate a hash value to the InterestRatePayout instantiations for the purpose of model cross-referencing, in support of functionality such as the event effect and the lineage.">
-            [metadata key]
-            rateSpecification RateSpecification (0..1) <"The specification of the rate value(s) applicable to the contract using either a floating rate calculation, a single fixed rate, a fixed rate schedule, or an inflation rate calculation.">
-        
-        type RateSpecification: <" A class to specify the fixed interest rate, floating interest rate or inflation rate.">
-            floatingRate FloatingRateSpecification (0..1) <"The floating interest rate specification, which includes the definition of the floating rate index. the tenor, the initial value, and, when applicable, the spread, the rounding convention, the averaging method and the negative interest rate treatment.">
-        
-        type FloatingRateSpecification: <"A class defining a floating interest rate through the specification of the floating rate index, the tenor, the multiplier schedule, the spread, the qualification of whether a specific rate treatment and/or a cap or floor apply.">
-            [metadata key]
-        
-            rateOption FloatingRateOption (0..1)
-        
-        type FloatingRateOption: <"Specification of a floating rate option as a floating rate index and tenor.">
-            value int(1..1)
-        
-        type ObservationIdentifier: <"Defines the parameters needed to uniquely identify a piece of data among the population of all available market data.">
-            observable Observable (1..1) <"Represents the asset or rate to which the observation relates.">
-            observationDate date (1..1) <"Specifies the date value to use when resolving the market data.">
-        
-        type Observable: <"Specifies the object to be observed for a price, it could be an asset or a reference.">
-            [metadata key]
-        
-            rateOption FloatingRateOption (0..1) <"Specifies a floating rate index and tenor.">
+        val pythonString = testUtils.generatePythonFromString (
+            '''
+            type InterestRatePayout: <" A class to specify all of the terms necessary to define and calculate a cash flow based on a fixed, a floating or an inflation index rate. The interest rate payout can be applied to interest rate swaps and FRA (which both have two associated interest rate payouts), credit default swaps (to represent the fee leg when subject to periodic payments) and equity swaps (to represent the funding leg). The associated globalKey denotes the ability to associate a hash value to the InterestRatePayout instantiations for the purpose of model cross-referencing, in support of functionality such as the event effect and the lineage.">
+                [metadata key]
+                rateSpecification RateSpecification (0..1) <"The specification of the rate value(s) applicable to the contract using either a floating rate calculation, a single fixed rate, a fixed rate schedule, or an inflation rate calculation.">
             
-        func ResolveInterestRateObservationIdentifiers: <"Defines which attributes on the InterestRatePayout should be used to locate and resolve the underlier's price, for example for the reset process.">
-            inputs:
-                payout InterestRatePayout (1..1)
-                date date (1..1)
-            output:
-                identifiers ObservationIdentifier (1..1)
-        
-            set identifiers -> observable -> rateOption:
-                payout -> rateSpecification -> floatingRate -> rateOption
-            set identifiers -> observationDate:
-                date
-        '''.generatePython
-        
+            type RateSpecification: <" A class to specify the fixed interest rate, floating interest rate or inflation rate.">
+                floatingRate FloatingRateSpecification (0..1) <"The floating interest rate specification, which includes the definition of the floating rate index. the tenor, the initial value, and, when applicable, the spread, the rounding convention, the averaging method and the negative interest rate treatment.">
+            
+            type FloatingRateSpecification: <"A class defining a floating interest rate through the specification of the floating rate index, the tenor, the multiplier schedule, the spread, the qualification of whether a specific rate treatment and/or a cap or floor apply.">
+                [metadata key]
+            
+                rateOption FloatingRateOption (0..1)
+            
+            type FloatingRateOption: <"Specification of a floating rate option as a floating rate index and tenor.">
+                value int(1..1)
+            
+            type ObservationIdentifier: <"Defines the parameters needed to uniquely identify a piece of data among the population of all available market data.">
+                observable Observable (1..1) <"Represents the asset or rate to which the observation relates.">
+                observationDate date (1..1) <"Specifies the date value to use when resolving the market data.">
+            
+            type Observable: <"Specifies the object to be observed for a price, it could be an asset or a reference.">
+                [metadata key]
+            
+                rateOption FloatingRateOption (0..1) <"Specifies a floating rate index and tenor.">
+                
+            func ResolveInterestRateObservationIdentifiers: <"Defines which attributes on the InterestRatePayout should be used to locate and resolve the underlier's price, for example for the reset process.">
+                inputs:
+                    payout InterestRatePayout (1..1)
+                    date date (1..1)
+                output:
+                    identifiers ObservationIdentifier (1..1)
+            
+                set identifiers -> observable -> rateOption:
+                    payout -> rateSpecification -> floatingRate -> rateOption
+                set identifiers -> observationDate:
+                    date
+            '''
+            ).toString()
 
         val expected = 
-        '''
-        @replaceable
-        def ResolveInterestRateObservationIdentifiers(payout: InterestRatePayout, date: datetime.date) -> ObservationIdentifier:
-            """
-            Defines which attributes on the InterestRatePayout should be used to locate and resolve the underlier's price, for example for the reset process.
+            '''
+            @replaceable
+            def ResolveInterestRateObservationIdentifiers(payout: InterestRatePayout, date: datetime.date) -> ObservationIdentifier:
+                """
+                Defines which attributes on the InterestRatePayout should be used to locate and resolve the underlier's price, for example for the reset process.
+                
+                Parameters 
+                ----------
+                payout : InterestRatePayout
+                
+                date : date
+                
+                Returns
+                -------
+                identifiers : ObservationIdentifier
+                
+                """
+                self = inspect.currentframe()
+                
+                
+                identifiers = _get_rune_object('ObservationIdentifier', 'observable', _get_rune_object('Observable', 'rateOption', rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "payout"), "rateSpecification"), "floatingRate"), "rateOption")))
+                identifiers = set_rune_attr(rune_resolve_attr(self, 'identifiers'), 'observationDate', rune_resolve_attr(self, "date"))
+                
+                
+                return identifiers
             
-            Parameters 
-            ----------
-            payout : InterestRatePayout
-            
-            date : date
-            
-            Returns
-            -------
-            identifiers : ObservationIdentifier
-            
-            """
-            self = inspect.currentframe()
-            
-            
-            identifiers = _get_rune_object('ObservationIdentifier', 'observable', _get_rune_object('Observable', 'rateOption', rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "payout"), "rateSpecification"), "floatingRate"), "rateOption")))
-            identifiers = set_rune_attr(rune_resolve_attr(self, 'identifiers'), 'observationDate', rune_resolve_attr(self, "date"))
-            
-            
-            return identifiers
-        
-        sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-        '''
-        assertTrue(python.toString.contains(expected))
+            sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
+            '''
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expected)
         
     }
     
