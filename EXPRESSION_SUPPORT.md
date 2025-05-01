@@ -6,7 +6,7 @@
 
 | Feature                                | Handled |
 |----------------------------------------|---------|
-| ArithmeticOperation                    | ?       |
+| ArithmeticOperation                    | ✓       |
 | AsKeyOperation                         | ✓       |
 | CanHandleListOfLists                   |         |
 | ChoiceOperation                        | ✓       |
