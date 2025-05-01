@@ -241,7 +241,7 @@ class PythonModelObjectGenerator {
             «IF !keyRefConstraints.isEmpty()»
                 «keyRefConstraintsToString(keyRefConstraints)»
             «ENDIF»
-            «expressionGenerator.generateConditions(rosettaClass)»
+            «expressionGenerator.generateTypeOrFunctionConditions(rosettaClass)»
         '''
     }
 }

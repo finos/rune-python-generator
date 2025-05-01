@@ -74,7 +74,7 @@ class PythonFunctionGenerator {
                 «ENDIF»
                 self = inspect.currentframe()
                 
-                «generateConditions(function)»
+                «generateTypeOrFunctionConditions(function)»
                 
             «generateIfBlocks(function)»
                 «generateAlias(function)»
@@ -211,15 +211,15 @@ class PythonFunctionGenerator {
 
         ''' 
             «FOR shortcut : function.shortcuts»
-                «expressionGenerator.generateExpressionThenElse(shortcut.expression, levelList)»
+                «expressionGenerator.generateThenElseForFunction(shortcut.expression, levelList)»
             «ENDFOR»
             «FOR operation : function.operations»
-                «expressionGenerator.generateExpressionThenElse(operation.expression, levelList)»
+                «expressionGenerator.generateThenElseForFunction(operation.expression, levelList)»
             «ENDFOR»
         '''
     }
 
-    private def generateConditions(Function function) {
+    private def generateTypeOrFunctionConditions(Function function) {
         '''     
             «IF function.conditions.size>0»
                 # conditions

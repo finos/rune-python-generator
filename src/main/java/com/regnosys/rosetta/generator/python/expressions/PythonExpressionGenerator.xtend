@@ -64,43 +64,6 @@ class PythonExpressionGenerator {
     public var ifCondBlocks = new ArrayList<String>()
     public var isSwitchCond = false
 
-    def String generateConditions(Data cls) {
-        var nConditions = 0;
-        var result = '';
-        for (Condition cond : cls.conditions) {
-            result += generateConditionBoilerPlate(cond, nConditions)
-            if (cond.isConstraintCondition)
-                result += generateConstraintCondition(cls, cond)
-            else
-                result += generateIfThenElseOrSwitch(cond)
-            nConditions++
-        }
-        return result
-    }
-
-    def generateFunctionConditions(List<Condition> conditions, String condition_type) {
-        var nConditions = 0;
-        var result = '';
-        for (Condition cond : conditions) {
-            result += generateFunctionConditionBoilerPlate(cond, nConditions, condition_type)
-            result += generateIfThenElseOrSwitch(cond)
-            nConditions++
-        }
-
-        return result
-    }
-
-    def generateExpressionThenElse(RosettaExpression expr, List<Integer> ifLevel) {
-        ifCondBlocks.clear()
-        generateExpression(expr, ifLevel.get(0), false)
-        var blocks = ""
-        if (!ifCondBlocks.isEmpty()) {
-            ifLevel.set(0, ifLevel.get(0) + 1)
-            blocks = '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
-        }
-        return '''«blocks»'''
-    }
-
     def String generateExpression(RosettaExpression expr, int ifLevel, boolean isLambda) {
         switch (expr) {
             // literals
@@ -142,70 +105,6 @@ class PythonExpressionGenerator {
                 throw new UnsupportedOperationException("Unsupported expression type of " + expr?.class?.simpleName)
             }
         }
-    }
-
-    private def boolean isConstraintCondition(Condition cond) {
-        return isOneOf(cond) || isChoice(cond)
-    }
-
-    private def boolean isOneOf(Condition cond) {
-        return cond.expression instanceof OneOfOperation
-    }
-
-    private def boolean isChoice(Condition cond) {
-        return cond.expression instanceof ChoiceOperation
-    }
-
-    private def generateConditionBoilerPlate(Condition cond, int nConditions) {
-        '''
-            
-            @rune_condition
-            def condition_«nConditions»_«cond.name»(self):
-                «IF cond.definition!==null»
-                    """
-                    «cond.definition»
-                    """
-                «ENDIF»
-                item = self
-        '''
-    }
-
-    private def generateFunctionConditionBoilerPlate(Condition cond, int nConditions, String condition_type) {
-        '''
-            
-            @rune_local_condition(«condition_type»)
-            def condition_«nConditions»_«cond.name»(self):
-                «IF cond.definition!==null»
-                    """
-                    «cond.definition»
-                    """
-                «ENDIF»
-        '''
-    }
-
-    private def generateConstraintCondition(Data cls, Condition cond) {
-        val expression = cond.expression
-        var attributes = cls.attributes
-        var necessity = "necessity=True"
-        if (expression instanceof ChoiceOperation) {
-            attributes = expression.attributes
-            if (expression.necessity == Necessity.OPTIONAL) {
-                necessity = "necessity=False"
-            }
-        }
-        '''    return rune_check_one_of(self, «FOR a : attributes SEPARATOR ", "»'«a.name»'«ENDFOR», «necessity»)
-        '''
-    }
-
-    private def generateIfThenElseOrSwitch(Condition c) {
-        ifCondBlocks.clear()
-        isSwitchCond=false
-        
-        var expr = generateExpression(c.expression, 0, false)
-        if (isSwitchCond) return expr
-        var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
-        return '''«blocks»    return «expr»
-        '''
     }
 
     private def String generateConditionalExpression(RosettaConditionalExpression expr, int ifLevel, boolean isLambda) {
@@ -425,6 +324,107 @@ class PythonExpressionGenerator {
                 default: '''(«generateExpression(expr.left, ifLevel, isLambda)» «expr.operator» «generateExpression(expr.right, ifLevel, isLambda)»)'''
             }
         }
+    }
+
+    def String generateTypeOrFunctionConditions(Data cls) {
+        var nConditions = 0;
+        var result = '';
+        for (Condition cond : cls.conditions) {
+            result += generateConditionBoilerPlate(cond, nConditions)
+            if (cond.isConstraintCondition)
+                result += generateConstraintCondition(cls, cond)
+            else
+                result += generateIfThenElseOrSwitch(cond)
+            nConditions++
+        }
+        return result
+    }
+
+    def generateFunctionConditions(List<Condition> conditions, String condition_type) {
+        var nConditions = 0;
+        var result = '';
+        for (Condition cond : conditions) {
+            result += generateFunctionConditionBoilerPlate(cond, nConditions, condition_type)
+            result += generateIfThenElseOrSwitch(cond)
+            nConditions++
+        }
+
+        return result
+    }
+
+    def generateThenElseForFunction(RosettaExpression expr, List<Integer> ifLevel) {
+        ifCondBlocks.clear()
+        generateExpression(expr, ifLevel.get(0), false)
+        var blocks = ""
+        if (!ifCondBlocks.isEmpty()) {
+            ifLevel.set(0, ifLevel.get(0) + 1)
+            blocks = '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
+        }
+        return '''«blocks»'''
+    }
+
+    private def boolean isConstraintCondition(Condition cond) {
+        return isOneOf(cond) || isChoice(cond)
+    }
+
+    private def boolean isOneOf(Condition cond) {
+        return cond.expression instanceof OneOfOperation
+    }
+
+    private def boolean isChoice(Condition cond) {
+        return cond.expression instanceof ChoiceOperation
+    }
+
+    private def generateConditionBoilerPlate(Condition cond, int nConditions) {
+        '''
+            
+            @rune_condition
+            def condition_«nConditions»_«cond.name»(self):
+                «IF cond.definition!==null»
+                    """
+                    «cond.definition»
+                    """
+                «ENDIF»
+                item = self
+        '''
+    }
+
+    private def generateFunctionConditionBoilerPlate(Condition cond, int nConditions, String condition_type) {
+        '''
+            
+            @rune_local_condition(«condition_type»)
+            def condition_«nConditions»_«cond.name»(self):
+                «IF cond.definition!==null»
+                    """
+                    «cond.definition»
+                    """
+                «ENDIF»
+        '''
+    }
+
+    private def generateConstraintCondition(Data cls, Condition cond) {
+        val expression = cond.expression
+        var attributes = cls.attributes
+        var necessity = "necessity=True"
+        if (expression instanceof ChoiceOperation) {
+            attributes = expression.attributes
+            if (expression.necessity == Necessity.OPTIONAL) {
+                necessity = "necessity=False"
+            }
+        }
+        '''    return rune_check_one_of(self, «FOR a : attributes SEPARATOR ", "»'«a.name»'«ENDFOR», «necessity»)
+        '''
+    }
+
+    private def generateIfThenElseOrSwitch(Condition c) {
+        ifCondBlocks.clear()
+        isSwitchCond=false
+        
+        var expr = generateExpression(c.expression, 0, false)
+        if (isSwitchCond) return expr
+        var blocks = (ifCondBlocks.isEmpty()) ? "" : '''    «FOR arg : ifCondBlocks»«arg»«ENDFOR»'''
+        return '''«blocks»    return «expr»
+        '''
     }
 
     def addImportsFromConditions(String variable, String namespace) {
