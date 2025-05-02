@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=62.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test_helper"
+version = "0.0.0"
+requires-python = ">= 3.11"
+dependencies = []
+[tool.setuptools.packages.find]
+where = ["test_helper"]

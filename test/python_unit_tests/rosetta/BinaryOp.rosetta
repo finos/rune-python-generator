@@ -1,0 +1,37 @@
+namespace rosetta_dsl.test.semantic.binary_op : <"generate Python unit tests from Rosetta.">
+
+type EqualsTest: <"    Test equals operation condition">
+    aValue int (1..1)
+    target int (1..1)
+    condition TestCond: <"Test condition">
+        if aValue = target
+        then True
+        else 
+            False
+
+type NotEqualsTest: <"    Test not equals operation condition">
+    aValue int (1..1)
+    target int (1..1)
+    condition TestCond: <"Test condition">
+        if aValue <> target
+        then True
+        else 
+            False
+            
+type ContainsTest: <"    Test contains operation condition">
+    aValue string (1..*)
+    target string (1..1)
+    condition TestCond: <"Test condition">
+        if aValue contains target
+        then True
+        else 
+            False
+            
+type DisjointTest: <"    Test disjoint operation condition">
+    aValue string (1..*)
+    target string (1..*)
+    condition TestCond: <"Test condition">
+        if target disjoint aValue
+        then True
+        else 
+            False

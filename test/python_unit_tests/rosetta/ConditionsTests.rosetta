@@ -1,0 +1,25 @@
+namespace rosetta_dsl.test.semantic.conditions : <"generate Python unit tests from Rosetta.">
+
+type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
+    currency string (0..1) <"Defines the currency to be used as a unit for a price, quantity, or other purpose.">
+    test string(0..1)
+
+    condition UnitType: <"Requires that a unit type must be set.">
+
+        one-of
+
+type Frequency: <"A class for defining a date frequency, e.g. one day, three months, through the combination of an integer value and a standardized period value that is specified as part of an enumeration.">
+
+    periodMultiplier int (1..1) <"A time period multiplier, e.g. 1, 2, or 3. If the period value is T (Term) then period multiplier must contain the value 1.">
+
+    condition PositivePeriodMultiplier: <"FpML specifies periodMultiplier as a positive integer.">
+        periodMultiplier > 0
+
+
+type NonNegativeQuantity: <"Specifies a quantity as a non-negative number, which condition is enforced through a data rule that only applies to the extending class.">
+
+    value number (0..1) <"Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.">
+    frequency Frequency (0..1) <"Defines the frequency to be used when defining a quantity. For example a quantity may be specified as a number of barrels of oil per day, which needs multiplying by the number of days in the relevant period to get the total quantity as a number of barrels.">
+
+    condition NonNegativeQuantity_amount: <"For a non-negative quantity, the amount attribute must be positive.">
+        value exists and value >= 0.0
