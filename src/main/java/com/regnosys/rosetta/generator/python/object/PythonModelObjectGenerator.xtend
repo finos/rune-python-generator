@@ -1,6 +1,5 @@
 package com.regnosys.rosetta.generator.python.object
 
-// TODO: fix unit tests
 import com.google.inject.Inject
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil

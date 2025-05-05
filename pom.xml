@@ -42,12 +42,11 @@
 
     <developers>
         <developer>
-            <id>minesh-s-patel</id>
-            <name>Minesh Patel</name>
-            <email>infra@regnosys.com</email>
-            <url>http://github.com/minesh-s-patel</url>
-            <organization>REGnosys</organization>
-            <organizationUrl>https://regnosys.com</organizationUrl>
+            <id>plamen-neykov</id>
+            <name>Plamen Neykov</name>
+            <email>info@cdmflow.io</email>
+            <url>http://github.com/plamen-neykov</url>
+            <organization>CDMFLow</organization>
             <timezone>+1</timezone>
             <roles>
                 <role>Maintainer</role>
@@ -55,13 +54,12 @@
             </roles>
         </developer>
         <developer>
-            <id>hugohills-regnosys</id>
-            <name>Hugo Hills</name>
-            <email>infra@regnosys.com</email>
-            <url>http://github.com/hugohills-regnosys</url>
-            <organization>REGnosys</organization>
-            <organizationUrl>https://regnosys.com</organizationUrl>
-            <timezone>+1</timezone>
+            <id>dschwartznyc</id>
+            <name>Daniel Schwartz</name>
+            <email>info@cdmflow.io</email>
+            <url>http://github.com/dschwartznyc</url>
+            <organization>CDMFlow</organization>
+            <timezone>+5</timezone>
             <roles>
                 <role>Maintainer</role>
                 <role>Developer</role>
@@ -156,10 +154,11 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>10</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.49.1</rosetta.dsl.version>
-        <rosetta.bundle.version>11.59.1</rosetta.bundle.version>
+        <rosetta.dsl.version>9.50.0</rosetta.dsl.version>   
+        <rosetta.bundle.version>11.60.0</rosetta.bundle.version>
 
-        <xtext.version>2.27.0</xtext.version>
+        <xtext.version>2.38.0</xtext.version>
+        <guice.version>6.0.0</guice.version>
 
         <slf4j.version>2.0.13</slf4j.version>
         <logback.version>1.5.6</logback.version>
@@ -205,6 +204,11 @@
                 <version>${apache.commons.text.version}</version>
             </dependency>
             <!-- xtext START -->
+            <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>${guice.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.eclipse.xtext</groupId>
                 <artifactId>xtext-dev-bom</artifactId>

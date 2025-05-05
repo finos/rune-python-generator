@@ -12,8 +12,6 @@ import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.rosetta.simple.Function
 import com.regnosys.rosetta.rosetta.simple.Operation
 import com.regnosys.rosetta.rosetta.simple.Segment
-import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration
-import com.regnosys.rosetta.rosetta.simple.Condition
 import com.regnosys.rosetta.rosetta.RosettaFeature
 import com.regnosys.rosetta.rosetta.RosettaTyped
 import java.util.ArrayList
@@ -25,11 +23,7 @@ import java.util.Set
 import org.eclipse.emf.ecore.EObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-/*
-import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration
-import com.regnosys.rosetta.rosetta.simple.Condition
-import org.eclipse.emf.common.util.EList
- */
+
 class PythonFunctionGenerator {
 
     static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator);

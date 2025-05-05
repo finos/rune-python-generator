@@ -12,7 +12,6 @@ import com.regnosys.rosetta.rosetta.expression.DistinctOperation
 import com.regnosys.rosetta.rosetta.expression.FilterOperation
 import com.regnosys.rosetta.rosetta.expression.FirstOperation
 import com.regnosys.rosetta.rosetta.expression.FlattenOperation
-// import com.regnosys.rosetta.rosetta.expression.InlineFunction
 import com.regnosys.rosetta.rosetta.expression.LastOperation
 import com.regnosys.rosetta.rosetta.expression.ListLiteral
 import com.regnosys.rosetta.rosetta.expression.MapOperation
