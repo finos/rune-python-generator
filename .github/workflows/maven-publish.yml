@@ -49,3 +49,6 @@ jobs:
         asset_path: ./target/*.jar
         asset_name: my-application-${{ github.ref_name }}.jar
         asset_content_type: application/java-archive
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
+  
