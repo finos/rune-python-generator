@@ -31,7 +31,7 @@ jobs:
       run: mvn -B -U -DskipTests clean package --file pom.xml
 
     - name: List target directory
-      run: ls -la target/*.jar
+      run: ls -la target
 
     - name: Create GitHub Release
       id: create_release
