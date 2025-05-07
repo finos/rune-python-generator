@@ -177,7 +177,7 @@ class PythonGeneratorTestUtils {
             .flatMap[contents.filter(RosettaModel)]
             .toList as Collection<RosettaModel>
         LOGGER.info("generatePythonFromDSLFiles ... created {} rosetta models", rosettaModels.length.toString())                  
-        val m = rosettaModels.head() as RosettaModel
+        val m = rosettaModels.head()
         val version = m.version
         val generatedFiles = newHashMap
 

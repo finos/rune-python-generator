@@ -107,7 +107,7 @@ class PythonModelObjectGenerator {
                     _stubContents.append("._bundle import ")
                     _stubContents.append(name.replace('.', '_'))
                     _stubContents.append(" as ")
-                    _stubContents.append(parsedName.last())
+                    _stubContents.append(parsedName.lastOrNull())
                     _stubContents.newLine()
                     _stubContents.newLine()
                     _stubContents.append("# EOF")

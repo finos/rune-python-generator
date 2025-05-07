@@ -152,7 +152,7 @@
         <!-- Release -->
         <gpg.keyname>configured-by-release-profile</gpg.keyname>
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
-        <stagingTimeoutInMinutes>10</stagingTimeoutInMinutes>
+        <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
         <rosetta.dsl.version>9.50.0</rosetta.dsl.version>   
         <rosetta.bundle.version>11.60.0</rosetta.bundle.version>
@@ -169,6 +169,7 @@
 
         <!-- plugin -->
         <maven-enforcer-plugin.version>3.2.1</maven-enforcer-plugin.version>
+        <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>

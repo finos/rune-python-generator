@@ -45,7 +45,6 @@ import com.regnosys.rosetta.rosetta.expression.MinOperation
 import com.regnosys.rosetta.rosetta.expression.MaxOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchOperation
 import com.regnosys.rosetta.rosetta.expression.SwitchCaseGuard
-import com.regnosys.rosetta.rosetta.expression.SwitchCaseOrDefault
 import com.regnosys.rosetta.rosetta.simple.Attribute
 import com.regnosys.rosetta.rosetta.simple.Condition
 import com.regnosys.rosetta.rosetta.simple.Data
@@ -193,7 +192,7 @@ class PythonExpressionGenerator {
         isSwitchCond=true
         
         for (pair : expr.cases.indexed) {
-            val currentCase = pair.value as SwitchCaseOrDefault
+            val currentCase = pair.value
             val funcName= (currentCase.isDefault()) ? "_then_default" : "_then_"+ (pair.key+1)
             val thenExprDef= (currentCase.isDefault()) ? generateExpression(expr.getDefault(), 0, isLambda) : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda)
             
