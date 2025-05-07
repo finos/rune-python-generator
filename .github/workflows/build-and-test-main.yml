@@ -46,6 +46,6 @@ jobs:
     - name: Run Python Unit Tests
       run: |
         chmod +x build/setup_python_env.sh
-        chomd +x test/setup_unit_tests.sh
+        chmod +x test/setup_unit_tests.sh
         chmod +x test/python_unit_tests/run_python_unit_tests.sh
         test/python_unit_tests/run_python_unit_tests.sh
