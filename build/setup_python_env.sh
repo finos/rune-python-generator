@@ -40,8 +40,8 @@ rm -rf "${VENV_PATH}/${VENV_NAME}"
 ${PYEXE} -m venv --clear "${VENV_PATH}/${VENV_NAME}" || error
 source "${VENV_PATH}/${VENV_NAME}/${PY_SCRIPTS}/activate" || error
 ${PYEXE} -m pip install --upgrade pip || error
-${PYEXE} -m pip install "setuptools>=62.0" || error
-echo "***** Install Runtime"
+${PYEXE} -m pip install -r requirements.txt || error
+echo "***** Get and Install Runtime"
 RUNTIMEURL="https://api.github.com/repos/CloudRisk/rune-python-runtime/releases/latest"
 # Fetch the latest release data from the GitHub API
 release_data=$(curl -s $RUNTIMEURL)
@@ -58,6 +58,5 @@ else
 fi
 ${PYEXE} -m pip install rune_runtime*-py3-*.whl --force-reinstall || error
 rm rune_runtime*-py3-*.whl
-${PYEXE} -m pip install pytest || error
 deactivate
  
