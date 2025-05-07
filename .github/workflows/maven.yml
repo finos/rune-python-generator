@@ -33,6 +33,7 @@ jobs:
   test-python:
 
     runs-on: ubuntu-latest
+    needs: build  # Ensure this job runs after the build job
 
     steps:
     - uses: actions/checkout@v4
