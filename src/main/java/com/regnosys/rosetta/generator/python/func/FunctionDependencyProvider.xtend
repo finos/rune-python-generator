@@ -1,5 +1,6 @@
 package com.regnosys.rosetta.generator.python.func;
 
+import com.google.inject.Inject
 import com.regnosys.rosetta.rosetta.RosettaEnumValueReference
 import com.regnosys.rosetta.rosetta.RosettaEnumeration
 import com.regnosys.rosetta.rosetta.RosettaExternalFunction
@@ -25,7 +26,6 @@ import com.regnosys.rosetta.types.RFunction
 import com.regnosys.rosetta.types.RObjectFactory
 import java.util.HashSet
 import java.util.Set
-import javax.inject.Inject
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.xtext.EcoreUtil2
 

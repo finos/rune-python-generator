@@ -65,7 +65,6 @@ class PythonFilesGeneratorTest {
     /*
      * generate Python Unit Tests from Rosetta files.
      */
-//    @Disabled
     @Test
     def void generatePythonUnitTests() {
         try {
@@ -96,7 +95,6 @@ class PythonFilesGeneratorTest {
     /*
      * generate Serialization Python Unit Tests from Rosetta files.
      */
-//    @Disabled
     @Test
     def void generatePythonSerializationUnitTests() {
         try {
