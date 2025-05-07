@@ -1,15 +1,17 @@
 # _Build and testing instructions_
 
+## Setup
+
+1. Clone the repo to your local directory
+2. Change to the installation directory
+
 ## To build the generator and run the JUnit tests
 
 ```sh
 mvn clean install
 ```
 
-There are two types of JUnit tests to confirm that generated code matches expectations.
-
-1. In memory string comparisons of generated Python to expected results.
-2. Generated Python written to the file system (see the target directory) compared to expected results read from the file system (see the directory test/compare_generated_syntax/expected).
+The JUnit tests conduct string comparisons of Python generated from Rune samples expected results.
 
 All tests should pass.
 
