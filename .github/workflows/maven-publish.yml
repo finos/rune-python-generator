@@ -31,10 +31,7 @@ jobs:
       run: mvn -B -U -DskipTests clean package --file pom.xml
 
     - name: List target directory
-      run: ls -la target
-
-    - name: List root/target directory
-      run: ls -la /target
+      run: ls -la target/*.jar
 
     - name: Create GitHub Release
       id: create_release
@@ -52,7 +49,7 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: target/*.jar
-        asset_name: my-application-${{ github.ref_name }}.jar
+        asset_name: python-generator-${{ github.ref_name }}.jar
         asset_content_type: application/java-archive
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
