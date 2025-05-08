@@ -27,22 +27,12 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
-
-  test-python:
-
-    runs-on: ubuntu-latest
-    needs: build  # Ensure this job runs after the build job
-
-    steps:
-    - uses: actions/checkout@v4
-
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
     - name: Run Python Unit Tests
       run: |
         chmod +x build/setup_python_env.sh
