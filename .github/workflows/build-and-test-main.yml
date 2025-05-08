@@ -47,5 +47,7 @@ jobs:
       run: |
         chmod +x build/setup_python_env.sh
         chmod +x test/python_unit_tests/setup_unit_test_env.sh
+        pwd
+        ls -la
         chmod +x test/python_unit_tests/run_python_unit_tests.sh
         test/python_unit_tests/run_python_unit_tests.sh
