@@ -13,7 +13,7 @@
 
     <groupId>com.regnosys.rosetta.code-generators</groupId>
     <artifactId>python-generator</artifactId>
-    <version>${project.version}</version>
+    <version>0.0.0.main-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>code-gen-python</name>
 
@@ -148,7 +148,6 @@
     </profiles>
 
     <properties>
-        <project.version>0.0.0.main-SNAPSHOT</project.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.enforced.version>[17,18)</java.enforced.version>
         <maven.compiler.release>11</maven.compiler.release>
