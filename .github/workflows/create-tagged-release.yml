@@ -31,11 +31,13 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
+          const tag = context.ref.replace('refs/tags/', '');
+          let release;
           try {
-            const release = await github.rest.repos.getReleaseByTag({
+            release = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: context.ref.replace('refs/tags/', '')
+              tag
             });
             core.setOutput('release_id', release.data.id);
           } catch (error) {
@@ -53,6 +55,7 @@ jobs:
               throw error;
             }
           }
+          core.setOutput('upload_url', release.data.upload_url);
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
