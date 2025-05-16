@@ -29,20 +29,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B -U -DskipTests clean package --file pom.xml
 
-    - name: Check for Existing Release
-      id: check_release
-      run: |
-        if gh release view ${{ github.ref_name }}; then
-          echo "release_exists=true" >> $GITHUB_ENV
-        else
-          echo "release_exists=false" >> $GITHUB_ENV
-        fi
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Create GitHub Release
       id: create_release
-      if: env.release_exists == 'false'
       uses: actions/create-release@v1
       with:
         tag_name: ${{ github.ref_name }}
@@ -53,13 +41,32 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload JAR to Release
-      if: env.release_exists == 'false'
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: target/python-generator-${{ github.ref_name }}.jar
         asset_name: python-generator-${{ github.ref_name }}.jar
         asset_content_type: application/java-archive
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Source Code Zip
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ github.workspace }}.zip
+        asset_name: source-${{ github.ref_name }}.zip
+        asset_content_type: application/zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Source Code Tar.gz
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ github.workspace }}.tar.gz
+        asset_name: source-${{ github.ref_name }}.tar.gz
+        asset_content_type: application/gzip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
