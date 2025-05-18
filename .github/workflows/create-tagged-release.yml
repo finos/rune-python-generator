@@ -1,15 +1,9 @@
-# This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
-# For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
-
-# This workflow will build a package using Maven and then publish it to GitHub packages when a release is created
-# For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#apache-maven-with-a-settings-path
-
 name: Maven Package
 
 on:
   push:
     tags:
-      - '**'  # Trigger on tags like v1.0.0, v2.1.3, etc.
+      - '**'
 
 jobs:
   build:
@@ -29,20 +23,39 @@ jobs:
         server-id: github
         settings-path: ${{ github.workspace }}
 
-    - name: Set Maven Version
-      run: mvn versions:set -DnewVersion=${{ github.ref_name }}
-
     - name: Build with Maven
-      run: mvn -B -U -DskipTests clean package --file pom.xml
+      run: mvn versions:set -DnewVersion=${{ github.ref_name }} -B -U -DskipTests clean package --file pom.xml
 
     - name: Create GitHub Release
       id: create_release
-      uses: actions/create-release@v1
+      uses: actions/github-script@v6
       with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
+        script: |
+          const tag = context.ref.replace('refs/tags/', '');
+          let release;
+          try {
+            release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            core.setOutput('release_id', release.data.id);
+          } catch (error) {
+            if (error.status === 404) {
+              const release = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: context.ref.replace('refs/tags/', ''),
+                name: `Release ${context.ref.replace('refs/tags/', '')}`,
+                draft: false,
+                prerelease: false
+              });
+              core.setOutput('release_id', release.data.id);
+            } else {
+              throw error;
+            }
+          }
+          core.setOutput('upload_url', release.data.upload_url);
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -56,5 +69,31 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Create Source Code Zip
+      run: git archive -o source-${{ github.ref_name }}.zip HEAD
+
+    - name: Upload Source Code Zip
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: source-${{ github.ref_name }}.zip
+        asset_name: source-${{ github.ref_name }}.zip
+        asset_content_type: application/zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Source Code Tar.gz
+      run: git archive -o source-${{ github.ref_name }}.tar.gz --format=tar.gz HEAD
+
+    - name: Upload Source Code Tar.gz
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: source-${{ github.ref_name }}.tar.gz
+        asset_name: source-${{ github.ref_name }}.tar.gz
+        asset_content_type: application/gzip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Reset POM
-      run: git checkout -- pom.xml        
+      run: git checkout -- pom.xml
