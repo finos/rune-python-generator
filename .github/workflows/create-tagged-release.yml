@@ -34,12 +34,8 @@ jobs:
         TAG_NAME=${GITHUB_REF#refs/tags/}
         JAR_NAME="python-generator-$TAG_NAME.jar"
         mv target/python-generator-*.jar target/$JAR_NAME
+        ls target/*.jar
 
     - name: Revert POM changes
       run: git checkout -- pom.xml
 
-    - name: Upload JAR
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact
-        path: target/*.jar
