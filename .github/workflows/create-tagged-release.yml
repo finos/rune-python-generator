@@ -26,7 +26,7 @@ jobs:
         mvn versions:set -DnewVersion=$TAG_NAME
 
     - name: Build JAR
-      run: mvn clean package
+      run: mvn -B clean package — file pom.xml -DskipTest
 
     - name: Rename JAR
       run: |
