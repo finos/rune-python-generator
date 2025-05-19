@@ -39,7 +39,7 @@ jobs:
       run: git checkout -- pom.xml
 
     - name: Upload JAR
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: my-artifact
         path: target/*.jar
