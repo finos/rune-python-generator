@@ -21,22 +21,20 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'  # Matches the enforced version in the POM
-    - name: Update POM version
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Build with Maven
       run: |
         TAG_NAME=${GITHUB_REF#refs/tags/}
         echo "Updating POM version to $TAG_NAME"
         mvn versions:set -DnewVersion=$TAG_NAME
-    - name: Build with Maven
-      run: |
         mvn -B package --file pom.xml -DskipTests
-        ls target/*.jar
-
-    - name: Rename JAR
-      run: |
-        TAG_NAME=${GITHUB_REF#refs/tags/}
-        JAR_NAME="python-generator-$TAG_NAME.jar"
-        mv target/python-generator-*.jar target/$JAR_NAME
-        ls target/*.jar
 
     - name: Revert POM changes
       run: git checkout -- pom.xml
