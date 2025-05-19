@@ -27,7 +27,9 @@ jobs:
         echo "Updating POM version to $TAG_NAME"
         mvn versions:set -DnewVersion=$TAG_NAME
     - name: Build with Maven
-      run: mvn -B package --file pom.xml -DskipTest
+      run: |
+        mvn -B package --file pom.xml -DskipTests
+        ls target/*.jar
 
     - name: Rename JAR
       run: |
