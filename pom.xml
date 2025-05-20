@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.regnosys.rosetta.code-generators</groupId>
-    <artifactId>python-generator</artifactId>
+    <artifactId>rune-python-generator</artifactId>
     <version>0.0.0.main-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>code-gen-python</name>
