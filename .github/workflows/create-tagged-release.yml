@@ -20,7 +20,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '17'  # Matches the enforced version in the POM
+        java-version: '21'  # Matches the enforced version in the POM
         cache: maven
 
     - name: Cache Maven dependencies
