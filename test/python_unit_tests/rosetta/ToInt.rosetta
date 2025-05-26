@@ -1,0 +1,7 @@
+namespace rosetta_dsl.test.semantic.toIntOp : <"generate Python unit tests from Rosetta.">
+
+type TestToIntOp:
+    a string (1..1)
+    b int (0..1)
+    condition Test:
+        b = a to-int

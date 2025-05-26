@@ -1,0 +1,7 @@
+namespace rosetta_dsl.test.semantic.toDateTimeOp : <"generate Python unit tests from Rosetta.">
+
+type TestDateTimeOp:
+    a string (1..1)
+    b dateTime (0..1)
+    condition Test:
+        b = a to-date-time
