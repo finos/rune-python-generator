@@ -36,7 +36,7 @@ jobs:
         TAG_NAME=${GITHUB_REF#refs/tags/}
         echo "Updating POM version to $TAG_NAME"
         mvn -B versions:set -DnewVersion=$TAG_NAME
-        mvn -B package --file pom.xml -DskipTests
+        mvn -B package --file pom.xml
 
     - name: Revert POM changes
       run: git checkout -- pom.xml
