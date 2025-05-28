@@ -68,7 +68,7 @@ This project implements https://community.finos.org/docs/governance/#open-source
 
 ## License
 
-Copyright 2019 Fintech Open Source Foundation
+Copyright 2023-2025 CLOUDRISK Limited and FT Advisory LLC
 
 Distributed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
