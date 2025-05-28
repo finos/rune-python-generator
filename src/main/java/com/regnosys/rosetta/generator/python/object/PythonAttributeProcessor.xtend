@@ -1,6 +1,6 @@
 package com.regnosys.rosetta.generator.python.object
 
-import com.google.inject.Inject
+import jakarta.inject.Inject
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper
 import com.regnosys.rosetta.rosetta.simple.Data
 import com.regnosys.rosetta.types.RType

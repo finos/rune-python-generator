@@ -1,6 +1,6 @@
 package com.regnosys.rosetta.generator.python.func
 
-import com.google.inject.Inject
+import jakarta.inject.Inject
 import com.regnosys.rosetta.tests.RosettaInjectorProvider
 import com.regnosys.rosetta.tests.util.ModelHelper
 

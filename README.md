@@ -5,6 +5,8 @@
 # Rune Python Generator
 
 This repository creates a generator that will produce Python from a model developed using [Rune](https://github.com/finos/rune-dsl).  The generated Python relies upon the [RunePythonRuntime]() library.
+
+The generator supports creation of Python for the full Rune type syntax, and, as described in [EXPRESSION_SUPPORT.md](./EXPRESSION_SUPPORT.md), expression coverage is comprehensive.  The generator does not yet fully implement function generation.
  
 The Python package requires Python version 3.11+.
 

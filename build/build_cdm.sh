@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# utility script - builds CDM using PythonFilesGeneratorTest::generateCDMPythonFromRosetta
+# to use:
+# 1. remove disabled test by commenting @Disabled
+# 2. specify which version of CDM to pull in get_cdm.sh
+# 3. run this script
+#
 function error
 {
     echo

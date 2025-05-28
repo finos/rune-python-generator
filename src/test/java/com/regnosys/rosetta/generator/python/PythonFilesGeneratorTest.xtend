@@ -1,6 +1,6 @@
 package com.regnosys.rosetta.generator.python
 
-import com.google.inject.Inject
+import jakarta.inject.Inject
 import org.eclipse.xtext.testing.InjectWith
 import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.junit.jupiter.api.Test
