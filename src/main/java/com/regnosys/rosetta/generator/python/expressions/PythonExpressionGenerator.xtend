@@ -55,6 +55,7 @@ import java.util.ArrayList
 import java.util.List
 
 // TODO: update missing operators
+// TODO: evaluate use of ExpressionSwitch
 
 class PythonExpressionGenerator {
 
