@@ -39,13 +39,13 @@
 | SumOperation                           | ✓       |
 | SwitchOperation                        | ✓       |
 | ThenOperation                          | ✓       |
-| ToDateOperation                        |         |
-| ToDateTimeOperation                    |         |
+| ToDateOperation                        | ✓       |
+| ToDateTimeOperation                    | ✓       |
 | ToEnumOperation                        | ✓       |
-| ToIntOperation                         |         |
+| ToIntOperation                         | ✓       |
 | ToStringOperation                      | ✓       |
-| ToTimeOperation                        |         |
-| ToZonedDateTimeOperation               |         |
+| ToTimeOperation                        | ✓       |
+| ToZonedDateTimeOperation               | ✓       |
 | UnaryFunctionalOperation               |         |
 | RosettaAbsentOperation                 | ✓       |
 | RosettaBinaryOperation                 | ✓       |
