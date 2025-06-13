@@ -12,8 +12,6 @@ The generated Python relies upon the [RunePythonRuntime](https://github.com/regn
 ## Release Notes
 The features of the current version can be found in the [release notes](./RELEASE.md)
 
-**Continuous Integration:** 
-
 ## Repository Organization
 
 - `README.md` - this file, for documentation purposes
@@ -28,7 +26,7 @@ The features of the current version can be found in the [release notes](./RELEAS
 ## Development setup
 
 ### Setup for developers
-This guide is meant for everyone who wants to contribute to the Rune Pyhton Generator and needs to get things up and running.
+This guide is meant for everyone who wants to contribute to the Rune Python Generator and needs to get things up and running.
 
 Detailed build and testing instructions can be found in [BUILDANDTEST.md](./BUILDANDTEST.md)
 
@@ -69,7 +67,12 @@ To use a different version of CDM, update CDM_VERSION in the script.
 
 ## Roadmap
 
-The roadmap follows the roadmap for the [Rune-DSL](https://github.com/finos/rune-dsl/)
+The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/) and [CDM](https://github.com/finos/common-domain-model/blob/master/ROADMAP.md) roadmaps.
+
+## Contributors
+- [CLOUDRISK Limited](https://www.cloudrisk.uk), email: info@cloudrisk.com
+- [FT Advisory LLC](https://www.ftadvisory.co), email: info@ftadvisory.co
+- [TradeHeader SL](https://www.tradeheader.com), email: info@tradeheader.com
 
 ## Contributing
 For any questions, bugs or feature requests please open an [issue](https://github.com/regnosys/rune-python-generator/issues)
@@ -89,7 +92,7 @@ Unsure if you are covered under an existing CCLA? Email help@finos.org*
 
 ## Get in touch with the Rune Python Generator Team
 
- Get in touch with the Rune team by creating a [GitHub issue](https://github.com/REGnosys/rune-python-dsl/issues/new) and labelling it with "help wanted".
+ Get in touch with the Rune team by creating a [GitHub issue](https://github.com/REGnosys/rune-python-generator/issues/new) and labelling it with "help wanted".
 
  We encourage the community to get in touch via the [FINOS Slack](https://www.finos.org/blog/finos-announces-new-community-slack).
 
