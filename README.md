@@ -4,13 +4,14 @@
 
 # Rune Python Generator
 
-This repository creates a generator that will produce Python from a model developed using [Rune](https://github.com/finos/rune-dsl).  The generated Python relies upon the [RunePythonRuntime]() library.
+*Rune Python Generator* - the generator enables creation of Python from [Rune](https://github.com/finos/rune-dsl).  It supports the full Rune type syntax, and, as described in [EXPRESSION_SUPPORT.md](./EXPRESSION_SUPPORT.md), expression coverage is comprehensive.  The generator does not yet fully implement function generation.
+
+The generated Python relies upon the [RunePythonRuntime](https://github.com/regnosys/rune-python-runtime) library and requires Python version 3.11+.
+
+## Release Notes
+The features of the current version can be found in the [release notes](./RELEASE.md)
 
 **Continuous Integration:** 
-
-*Rune Python Generator* - the generator supports creation of Python for the full Rune type syntax, and, as described in [EXPRESSION_SUPPORT.md](./EXPRESSION_SUPPORT.md), expression coverage is comprehensive.  The generator does not yet fully implement function generation.
- 
-The Python package requires Python version 3.11+.
 
 ## Repository Organization
 
@@ -39,7 +40,8 @@ Our project runs with Java 21. Make sure that your Maven also uses this version 
 
 To build the project, run `mvn clean install`.
 
-All the tests should pass.
+#### UNIT Testing
+Building the project using Maven will run JUNIT-based unit tests.  All tests should pass.  To run the Python unit tests follow the instructions in [BUILDANDTEST.md](./BUILDANDTEST.md)
 
 ### 2. Setting things up in Eclipse
 #### Install Eclipse IDE for Java and DSL Developers
