@@ -22,7 +22,7 @@
             this file does work
       	    ]]></notes>
             <cve>CVE-2020-36471</cve>
-            <filePath>.*rune-python-generator-0.0.0.main-SNAPSHOT-javadoc\.jar</filePath>
+            <filePath>rune-python-generator-0.0.0.main-SNAPSHOT-javadoc.jar</filePath>
 	</suppress>
 	<suppress>
       	    <notes><![CDATA[
