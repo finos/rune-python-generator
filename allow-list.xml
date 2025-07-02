@@ -16,11 +16,19 @@
   -->
 
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    	<suppress>
+            <notes><![CDATA[
+      	    This CVE incorrectly identifies a risk in the javadocs produced from the build.  Exclusion of
+            this file does work
+      	    ]]></notes>
+            <cve>CVE-2020-36471</cve>
+            <filePath>.*rune-python-generator-0.0.0.main-SNAPSHOT-javadoc\.jar</filePath>
+	</suppress>
 	<suppress>
-      	<notes><![CDATA[
-      	This CVE only affects projects fetching p2 repo's over HTTP, but we use HTTPS.
-      	]]></notes>
-      	<cve>CVE-2021-41033</cve>
+      	    <notes><![CDATA[
+      	    This CVE only affects projects fetching p2 repo's over HTTP, but we use HTTPS.
+      	    ]]></notes>
+      	    <cve>CVE-2021-41033</cve>
 	</suppress>
 	<suppress>
 	   <notes><![CDATA[
