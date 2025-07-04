@@ -154,7 +154,7 @@
 
         <apache.commons.lang.version>3.13.0</apache.commons.lang.version>
         <apache.commons.text.version>1.11.0</apache.commons.text.version>
-        <commons-io.version>2.11.0</commons-io.version>
+        <commons-io.version>2.19.0</commons-io.version>
         <guava.version>32.0.1-jre</guava.version>
 
         <!-- Release -->
@@ -163,7 +163,7 @@
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
         <rosetta.dsl.version>9.54.0</rosetta.dsl.version>   
-        <rosetta.bundle.version>11.63.1</rosetta.bundle.version>
+        <rosetta.bundle.version>11.64.0</rosetta.bundle.version>
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>
@@ -387,18 +387,14 @@
             <artifactId>org.eclipse.emf.codegen.ecore</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-model</artifactId>
-            <version>3.3.9</version>
+            <version>3.9.10</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
-            <version>2.8.0</version>
+            <version>2.12.0</version>
         </dependency>
         <!-- migrated from Python POM: end -->
     </dependencies>

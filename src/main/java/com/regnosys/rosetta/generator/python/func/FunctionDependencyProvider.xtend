@@ -1,6 +1,6 @@
 package com.regnosys.rosetta.generator.python.func;
 
-import com.google.inject.Inject
+import jakarta.inject.Inject
 import com.regnosys.rosetta.rosetta.RosettaEnumValueReference
 import com.regnosys.rosetta.rosetta.RosettaEnumeration
 import com.regnosys.rosetta.rosetta.RosettaExternalFunction

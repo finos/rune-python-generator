@@ -1,7 +1,7 @@
 package com.regnosys.rosetta.generator.python.expression
 
 // todo fix enum tests
-import com.google.inject.Inject
+import jakarta.inject.Inject
 import com.regnosys.rosetta.tests.RosettaInjectorProvider
 import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils
 import org.eclipse.xtext.testing.InjectWith

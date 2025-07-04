@@ -6,7 +6,7 @@ package com.regnosys.rosetta.generator.python;
 // TODO: review migrating choice alias processor to PythonModelObjectGenerator
 
 
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 import com.regnosys.rosetta.generator.external.AbstractExternalGenerator;
 import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.func.PythonFunctionGenerator;

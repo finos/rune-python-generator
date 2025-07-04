@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# utility script - pulls the version of CDM specified by CDM_VERSION 
+# supports build_cdm.sh
+#
+
 function error
 {
     echo
