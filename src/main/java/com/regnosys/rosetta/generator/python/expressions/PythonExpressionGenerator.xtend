@@ -39,6 +39,11 @@ import com.regnosys.rosetta.rosetta.expression.SortOperation
 import com.regnosys.rosetta.rosetta.expression.SumOperation
 import com.regnosys.rosetta.rosetta.expression.ThenOperation
 import com.regnosys.rosetta.rosetta.expression.ToStringOperation
+import com.regnosys.rosetta.rosetta.expression.ToDateOperation
+import com.regnosys.rosetta.rosetta.expression.ToDateTimeOperation
+import com.regnosys.rosetta.rosetta.expression.ToIntOperation
+import com.regnosys.rosetta.rosetta.expression.ToTimeOperation
+import com.regnosys.rosetta.rosetta.expression.ToZonedDateTimeOperation
 import com.regnosys.rosetta.rosetta.expression.ToEnumOperation
 import com.regnosys.rosetta.rosetta.expression.RosettaDeepFeatureCall
 import com.regnosys.rosetta.rosetta.expression.MinOperation
@@ -86,6 +91,11 @@ class PythonExpressionGenerator {
             SwitchOperation: generateSwitchOperation(expr, ifLevel, isLambda)
             ToEnumOperation: '''«expr.enumeration.name»(«generateExpression(expr.argument, ifLevel, isLambda)»)'''
             ToStringOperation: '''rune_str(«generateExpression(expr.argument, ifLevel, isLambda)»)'''
+            ToDateOperation: '''datetime.datetime.strptime(«generateExpression(expr.argument, ifLevel, isLambda)», "%Y-%m-%d").date()'''
+            ToDateTimeOperation: '''datetime.datetime.strptime(«generateExpression(expr.argument, ifLevel, isLambda)», "%Y-%m-%d %H:%M:%S")'''
+            ToIntOperation: '''int(«generateExpression(expr.argument, ifLevel, isLambda)»)'''
+            ToTimeOperation: '''datetime.datetime.strptime(«generateExpression(expr.argument, ifLevel, isLambda)», "%H:%M:%S").time()'''
+            ToZonedDateTimeOperation:'''datetime.datetime.strptime(«generateExpression(expr.argument, ifLevel, isLambda)», "%Y-%m-%d %H:%M:%S %z %Z")'''
             // Rune Operations
             RosettaAbsentExpression: '''(not rune_attr_exists(«generateExpression(expr.argument, ifLevel, isLambda)»))'''
             RosettaBinaryOperation: generateBinaryExpression(expr, ifLevel, isLambda)
@@ -247,6 +257,7 @@ class PythonExpressionGenerator {
 
         return _builder.toString
     }
+             
 
     private def String generateReference(RosettaReference expr, int ifLevel, boolean isLambda) {
         switch (expr) {
