@@ -42,7 +42,7 @@ source "${VENV_PATH}/${VENV_NAME}/${PY_SCRIPTS}/activate" || error
 ${PYEXE} -m pip install --upgrade pip || error
 ${PYEXE} -m pip install -r requirements.txt || error
 echo "***** Get and Install Runtime"
-RUNTIMEURL="https://api.github.com/repos/CloudRisk/rune-python-runtime/releases/latest"
+RUNTIMEURL="https://api.github.com/repos/finos/rune-python-runtime/releases/latest"
 # Fetch the latest release data from the GitHub API
 release_data=$(curl -s $RUNTIMEURL)
 # Extract the download URL of the first asset
