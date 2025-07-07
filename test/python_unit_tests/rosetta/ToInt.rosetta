@@ -1,6 +1,6 @@
-namespace rosetta_dsl.test.semantic.toIntOp : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.semantic.int_operator : <"generate Python unit tests from Rosetta.">
 
-type TestToIntOp:
+type IntOperatorTest:
     a string (1..1)
     b int (0..1)
     condition Test:

@@ -162,8 +162,8 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.54.0</rosetta.dsl.version>   
-        <rosetta.bundle.version>11.64.0</rosetta.bundle.version>
+        <rosetta.dsl.version>9.56.0</rosetta.dsl.version>
+        <rosetta.bundle.version>11.68.3</rosetta.bundle.version>
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>
@@ -285,7 +285,6 @@
                 <artifactId>logback-core</artifactId>
                 <version>${logback.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.regnosys.rosetta</groupId>
                 <artifactId>com.regnosys.rosetta</artifactId>
@@ -379,7 +378,7 @@
         <dependency>
             <groupId>org.jgrapht</groupId>
             <artifactId>jgrapht-core</artifactId>
-            <version>1.5.2</version>        
+            <version>1.5.2</version>
         </dependency>
         <!-- extra dependencies -->
         <dependency>
@@ -574,28 +573,65 @@
                 <artifactId>xtend-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                    <id>Generate xtend sources</id>
-                    <phase>generate-sources</phase>
-                    <goals>
-                        <goal>compile</goal>
-                    </goals>
-                    <configuration>
-                        <outputDirectory>${project.basedir}/target/main/generated/xtend</outputDirectory>
-                    </configuration>
+                        <id>Generate xtend sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}/target/main/generated/xtend</outputDirectory>
+                        </configuration>
                     </execution>
                     <execution>
-                    <id>Generate xtend test sources</id>
-                    <phase>generate-test-sources</phase>
-                    <goals>
-                        <goal>testCompile</goal>
-                    </goals>
-                    <configuration>
-                        <testOutputDirectory>${project.basedir}/target/test/generated/xtend</testOutputDirectory>
-                    </configuration>
+                        <id>Generate xtend test sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <testOutputDirectory>${project.basedir}/target/test/generated/xtend</testOutputDirectory>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
             <!--- migrated from PYTHON POM: end -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>${maven-install-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>install-python-default-version</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.build.finalName}.jar</file>
+                            <groupId>com.regnosys.rosetta.code-generators</groupId>
+                            <artifactId>python</artifactId>
+                            <version>${project.version}</version>
+                            <packaging>jar</packaging>
+                            <generatePom>true</generatePom>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-python-bundle-version</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.build.finalName}.jar</file>
+                            <groupId>com.regnosys.rosetta.code-generators</groupId>
+                            <artifactId>python</artifactId>
+                            <version>${rosetta.bundle.version}</version>
+                            <packaging>jar</packaging>
+                            <generatePom>true</generatePom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
