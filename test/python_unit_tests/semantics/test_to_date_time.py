@@ -4,14 +4,16 @@ import datetime
 
 import pytest
 
-from rosetta_dsl.test.semantic.toDateTimeOp.TestDateTimeOp import TestDateTimeOp
+from rosetta_dsl.test.semantic.date_time_operator.DateTimeOperatorTest import DateTimeOperatorTest
 
 def test_to_date_time_passes():
-    to_date_time_test= TestDateTimeOp(a="2025-05-26 14:30:00",b=datetime.datetime(2025, 5, 26,14,30,0))
+    '''no doc'''
+    to_date_time_test= DateTimeOperatorTest(a="2025-05-26 14:30:00",b=datetime.datetime(2025, 5, 26,14,30,0))
     to_date_time_test.validate_model()
 
 def test_to_date_time_fails():
-    to_date_time_test=TestDateTimeOp(a="2025-05-26 14-30-00",b=datetime.datetime(2025, 5, 26,14,30,0))
+    '''no doc'''
+    to_date_time_test=DateTimeOperatorTest(a="2025-05-26 14-30-00",b=datetime.datetime(2025, 5, 26,14,30,0))
     with pytest.raises(Exception):
         to_date_time_test.validate_model()
         

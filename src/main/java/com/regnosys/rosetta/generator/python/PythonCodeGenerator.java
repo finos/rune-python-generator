@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class PythonCodeGenerator extends AbstractExternalGenerator {
@@ -36,20 +35,16 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
     @Inject private PythonEnumGenerator enumGenerator;
     
     private List<String> subfolders;
-    private AtomicReference<String> previousNamespace;
-    private String namespace;
-    private Map<String, CharSequence> objects = null;
+    private Map<String, Map<String, CharSequence>> objects = null; // Python code for types by namespace, by type name
 
 
     public PythonCodeGenerator() {
-        super("PythonCodeGenerator");
+        super("python");
     }
 
     @Override
     public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set, Collection<? extends RosettaModel> models, String version) {
         subfolders = new ArrayList<>();
-        previousNamespace = new AtomicReference<>("");
-        namespace = null;
         pojoGenerator.beforeAllGenerate();
         objects = new HashMap<>();
         return Collections.emptyMap();
@@ -74,20 +69,25 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         List<Function> rosettaFunctions = model.getElements().stream().filter(Function.class::isInstance)
                 .map(Function.class::cast).collect(Collectors.toList());
 
-        if (!rosettaClasses.isEmpty() || !metaDataItems.isEmpty() || !rosettaEnums.isEmpty()
-                || !rosettaFunctions.isEmpty()) {
+        if (!rosettaClasses.isEmpty() ||
+        	!metaDataItems.isEmpty() ||
+        	!rosettaEnums.isEmpty() || 
+        	!rosettaFunctions.isEmpty()) {
             addSubfolder(model.getName());
             if (!rosettaFunctions.isEmpty()) {
                 addSubfolder(model.getName() + ".functions");
             }
         }
 
-        if (!model.getName().equals(previousNamespace.get())) {
-            previousNamespace.set(model.getName());
-            LOGGER.debug("Processing module: {}", model.getName());
-        }
+        LOGGER.debug("Processing module: {}", model.getName());
 
-        objects.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion));
+        String namespace = PythonCodeGeneratorUtil.getNamespace(model);
+        Map<String, CharSequence> currentObject = objects.get(namespace);
+        if (currentObject == null) {
+        	currentObject = new HashMap<String, CharSequence>();
+        	objects.put(namespace, currentObject);
+        }
+        currentObject.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion));
         result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
         result.putAll(funcGenerator.generate(rosettaFunctions, cleanVersion));
 
@@ -95,8 +95,10 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
     }
 
     @Override
-    public Map<String, ? extends CharSequence> afterAllGenerate(ResourceSet set,
-        Collection<? extends RosettaModel> models, String version) {
+    public Map<String, ? extends CharSequence> afterAllGenerate(
+    		ResourceSet set,
+    		Collection<? extends RosettaModel> models, 
+    		String version) {
         String cleanVersion = cleanVersion(version);
         Map<String, CharSequence> result = new HashMap<>();
 
@@ -104,14 +106,13 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         result.putAll(generateWorkspaces(workspaces, cleanVersion));
         result.putAll(generateInits(subfolders));
 
-        if (namespace == null && !models.isEmpty()) {
-            namespace = PythonCodeGeneratorUtil.getNamespace(models.iterator().next());
+        for (String namespace : objects.keySet()) {
+            Map<String, CharSequence> currentObject = objects.get(namespace);
+            if (currentObject != null && !currentObject.isEmpty()) {
+                result.put("pyproject.toml", PythonCodeGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
+                result.putAll (pojoGenerator.afterAllGenerate(namespace, currentObject));
+            }
         }
-
-        if (namespace != null) {
-            result.put("pyproject.toml", PythonCodeGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
-        }
-        result.putAll(pojoGenerator.afterAllGenerate(namespace, objects));
         return result;
     }
 

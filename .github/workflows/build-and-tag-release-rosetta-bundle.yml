@@ -1,0 +1,82 @@
+name: Build and Tag with Rosetta Bundle Version
+
+on:
+  workflow_dispatch:
+  # Optionally, you can trigger on push to main or other events
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+        cache: maven
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Download external POM
+      run: |
+        curl -L -o cdm-pom.xml https://raw.githubusercontent.com/finos/common-domain-model/main/pom.xml
+
+    - name: Extract rosetta.bundle.version from external POM
+      id: extract_version
+      run: |
+        # Try to extract from <properties> first, fallback to profile if needed
+        version=$(xmllint --xpath "string(//properties/rosetta.bundle.version)" cdm-pom.xml)
+        if [ -z "$version" ]; then
+          version=$(xmllint --xpath "string(//profile/properties/rosetta.bundle.version)" cdm-pom.xml)
+        fi
+        echo "rosetta.bundle.version=$version"
+        echo "version=$version" >> $GITHUB_OUTPUT
+
+    - name: Override rosetta.bundle.version in local pom.xml
+      run: |
+        version="${{ steps.extract_version.outputs.version }}"
+        # Replace in <properties>
+        sed -i "s|<rosetta.bundle.version>.*</rosetta.bundle.version>|<rosetta.bundle.version>${version}</rosetta.bundle.version>|" pom.xml
+        # Replace in <profile> (if present)
+        sed -i "s|<rosetta.bundle.version>.*</rosetta.bundle.version>|<rosetta.bundle.version>${version}</rosetta.bundle.version>|" pom.xml
+
+    - name: Set POM version to rosetta.bundle.version
+      run: |
+        version="${{ steps.extract_version.outputs.version }}"
+        echo "Setting POM version to $version"
+        mvn -B versions:set -DnewVersion=$version
+
+    - name: Build with Maven
+      run: mvn -B package
+
+    - name: Revert POM changes
+      run: git checkout -- pom.xml
+
+    - name: Upload JAR files
+      uses: actions/upload-artifact@v4
+      with:
+        name: jar-files
+        path: target/*.jar
+
+    - name: Create GitHub Tag and Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.extract_version.outputs.version }}
+        name: Release ${{ steps.extract_version.outputs.version }}
+        files: target/*.jar
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
