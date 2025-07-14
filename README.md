@@ -1,4 +1,4 @@
-[![FINOS - Incubating](https://cdn.jsdelivr.net/gh/finos/contrib-toolbox@master/images/badge-incubating.svg)](https://community.finos.org/docs/governance/Software-Projects/stages/incubating)[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10725/badge)](https://www.bestpractices.dev/projects/10725)[![Maven CI](https://github.com/regnosys/rune-python-generator/actions/workflows/cve-scanning.yml/badge.svg)](https://github.com/regnosys/rune-python-generator/actions/workflows/cve-scanning.yml)
+[![FINOS - Incubating](https://cdn.jsdelivr.net/gh/finos/contrib-toolbox@master/images/badge-incubating.svg)](https://community.finos.org/docs/governance/Software-Projects/stages/incubating)[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10725/badge)](https://www.bestpractices.dev/projects/10725)[![Maven CI](https://github.com/finos/rune-python-generator/actions/workflows/cve-scanning.yml/badge.svg)](https://github.com/finos/rune-python-generator/actions/workflows/cve-scanning.yml)
 
 
 <img align="right" width="15%" src="https://www.finos.org/hubfs/FINOS/finos-logo/FINOS_Icon_Wordmark_Name_RGB_horizontal.png">
@@ -7,7 +7,7 @@
 
 *Rune Python Generator* - the generator enables creation of Python from [Rune](https://github.com/finos/rune-dsl).  It supports the full Rune type syntax, and, as described in [EXPRESSION_SUPPORT.md](./EXPRESSION_SUPPORT.md), expression coverage is comprehensive.  The generator does not yet fully implement function generation.
 
-The generated Python relies upon the [RunePythonRuntime](https://github.com/regnosys/rune-python-runtime) library and requires Python version 3.11+.
+The generated Python relies upon the [RunePythonRuntime](https://github.com/finos/rune-python-runtime) library and requires Python version 3.11+.
 
 ## Release Notes
 The features of the current version can be found in the [release notes](./RELEASE.md)
@@ -33,7 +33,7 @@ Detailed build and testing instructions can be found in [BUILDANDTEST.md](./BUIL
 If this guide does not work for you, be sure to raise an issue. This way we can help you figure out what the problem is and update this guide to prevent the same problem for future users.
 
 ### 1. Building with Maven
-Start by cloning the project: `git clone https://github.com/regnosys/rune-python-generator`
+Start by cloning the project: `git clone https://github.com/finos/rune-python-generator`
 
 Our project runs with Java 21. Make sure that your Maven also uses this version of Java by running `mvn -v`.
 
@@ -47,7 +47,7 @@ Building the project using Maven will run JUNIT-based unit tests.  All tests sho
 Install version `2025-06` of the "Eclipse IDE for Java and DSL Developers" using the [Eclipse Installer](https://www.eclipse.org/downloads/packages/installer). You might have to enable "Advanced Mode" in the settings of the Eclipse Installer to install a specific version.
 
 #### Configure Eclipse with the right version of Java
-Xtend files cannot be build with any Java version later than 21. In Eclipse, go to Settings... > Java > Installed JREs and make sure the checked JRE points to a Java version of 21.
+Xtend files cannot be built with any Java version later than 21. In Eclipse, go to Settings... > Java > Installed JREs and make sure the checked JRE points to a Java version of 21.
 
 #### Install the Checkstyle plugin
 We use [Checkstyle](https://checkstyle.sourceforge.io/) for enforcing good coding practices. The Eclipse plugin for Checkstyle can be found here: [https://checkstyle.org/eclipse-cs/#!/](https://checkstyle.org/eclipse-cs/#!/).
@@ -69,17 +69,12 @@ To use a different version of CDM, update CDM_VERSION in the script.
 
 The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/) and [CDM](https://github.com/finos/common-domain-model/blob/master/ROADMAP.md) roadmaps.
 
-## Contributors
-- [CLOUDRISK Limited](https://www.cloudrisk.uk), email: info@cloudrisk.com
-- [FT Advisory LLC](https://www.ftadvisory.co), email: info@ftadvisory.co
-- [TradeHeader SL](https://www.tradeheader.com), email: info@tradeheader.com
-
 ## Contributing
-For any questions, bugs or feature requests please open an [issue](https://github.com/regnosys/rune-python-generator/issues)
+For any questions, bugs or feature requests please open an [issue](https://github.com/finos/rune-python-generator/issues)
 For anything else please send an email to {project mailing list}.
 
 To submit a contribution:
-1. Fork it (<https://github.com/regnosys/rune-python-generator/fork>)
+1. Fork it (<https://github.com/finos/rune-python-generator/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
 4. Commit your changes (`git commit -am 'Add some fooBar'`)
@@ -92,7 +87,7 @@ Unsure if you are covered under an existing CCLA? Email help@finos.org*
 
 ## Get in touch with the Rune Python Generator Team
 
- Get in touch with the Rune team by creating a [GitHub issue](https://github.com/REGnosys/rune-python-generator/issues/new) and labelling it with "help wanted".
+ Get in touch with the Rune team by creating a [GitHub issue](https://github.com/finos/rune-python-generator/issues/new) and labelling it with "help wanted".
 
  We encourage the community to get in touch via the [FINOS Slack](https://www.finos.org/blog/finos-announces-new-community-slack).
 
