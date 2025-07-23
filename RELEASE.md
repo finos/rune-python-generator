@@ -4,7 +4,11 @@ _What is being released?_
 
 This release adds support for meta data and for serialization / deserialization consistent with the [serialization specifications in CDM issue #3236](https://github.com/finos/common-domain-model/issues/3236)
 
-Also included is support for circular dependencies and increased testing of operators.
+Also included is support for:
+
+- circular Type definitions
+- increased testing of operators
+- generating Python across multiple namespaces
 
 # Reading From and Writing To a String
 
