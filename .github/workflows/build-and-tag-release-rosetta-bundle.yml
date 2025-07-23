@@ -2,7 +2,6 @@ name: Build and Tag with Rosetta Bundle Version
 
 on:
   workflow_dispatch:
-  # Optionally, you can trigger on push to main or other events
 
 jobs:
   build:
@@ -35,24 +34,17 @@ jobs:
       run: |
         curl -L -o cdm-pom.xml https://raw.githubusercontent.com/finos/common-domain-model/main/pom.xml
 
-    - name: Extract rosetta.bundle.version from external POM
+    - name: Extract rosetta.bundle.version from external POM using Maven
       id: extract_version
       run: |
-        # Try to extract from <properties> first, fallback to profile if needed
-        version=$(xmllint --xpath "string(//properties/rosetta.bundle.version)" cdm-pom.xml)
-        if [ -z "$version" ]; then
-          version=$(xmllint --xpath "string(//profile/properties/rosetta.bundle.version)" cdm-pom.xml)
-        fi
+        version=$(mvn -f cdm-pom.xml help:evaluate -Dexpression=rosetta.bundle.version -q -DforceStdout)
         echo "rosetta.bundle.version=$version"
         echo "version=$version" >> $GITHUB_OUTPUT
 
-    - name: Override rosetta.bundle.version in local pom.xml
+    - name: Update all rosetta.bundle.version properties in local pom.xml using Maven
       run: |
         version="${{ steps.extract_version.outputs.version }}"
-        # Replace in <properties>
-        sed -i "s|<rosetta.bundle.version>.*</rosetta.bundle.version>|<rosetta.bundle.version>${version}</rosetta.bundle.version>|" pom.xml
-        # Replace in <profile> (if present)
-        sed -i "s|<rosetta.bundle.version>.*</rosetta.bundle.version>|<rosetta.bundle.version>${version}</rosetta.bundle.version>|" pom.xml
+        mvn versions:set-property -Dproperty=rosetta.bundle.version -DnewVersion=$version -DprocessAllModules=true
 
     - name: Set POM version to rosetta.bundle.version
       run: |
@@ -63,8 +55,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package
 
-    - name: Revert POM changes
-      run: git checkout -- pom.xml
+    - name: Revert POM property changes
+      run: mvn versions:revert
 
     - name: Upload JAR files
       uses: actions/upload-artifact@v4
