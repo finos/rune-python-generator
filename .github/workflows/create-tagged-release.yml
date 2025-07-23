@@ -1,4 +1,5 @@
-name: Build JAR on Tag
+name: Create Tagged Release
+# Build JAR and create tagged release
 
 on:
   push:

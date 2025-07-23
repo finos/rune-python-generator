@@ -190,7 +190,7 @@
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
         <!-- Used by the Python generator -->
-        <cdm.rosetta.source.path>[path to rosetta files]</cdm.rosetta.source.path>
+        <cdm.rosetta.source.path>build/common-domain-model/rosetta-source/src/main/rosetta</cdm.rosetta.source.path>
         <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
         <unittest.rosetta.source.path>test/python_unit_tests/rosetta</unittest.rosetta.source.path>
         <unittest.python.output.path>target/python-tests/unit_tests</unittest.python.output.path>
@@ -606,43 +606,6 @@
                 </executions>
             </plugin>
             <!--- migrated from PYTHON POM: end -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>${maven-install-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>install-python-default-version</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                        <configuration>
-                            <file>${project.build.directory}/${project.build.finalName}.jar</file>
-                            <groupId>com.regnosys.rosetta.code-generators</groupId>
-                            <artifactId>python</artifactId>
-                            <version>${project.version}</version>
-                            <packaging>jar</packaging>
-                            <generatePom>true</generatePom>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>install-python-bundle-version</id>
-                        <phase>install</phase>
-                        <goals>
-                            <goal>install-file</goal>
-                        </goals>
-                        <configuration>
-                            <file>${project.build.directory}/${project.build.finalName}.jar</file>
-                            <groupId>com.regnosys.rosetta.code-generators</groupId>
-                            <artifactId>python</artifactId>
-                            <version>${rosetta.bundle.version}</version>
-                            <packaging>jar</packaging>
-                            <generatePom>true</generatePom>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>
