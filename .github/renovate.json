@@ -3,6 +3,7 @@
   "repositories": ["dschwartznyc/rune-python-generator"],
   "extends": ["config:base"],
   "ignoreDeps": [":*"],
+  "prConcurrentLimit": 10,
   "packageRules": [
     {
       "groupName": "Rosetta DSL packages",
