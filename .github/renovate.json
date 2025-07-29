@@ -9,7 +9,8 @@
         "com.regnosys.rosetta",
         "com.regnosys.rosetta.lib",
         "com.regnosys.rosetta.tests"
-      ]
+      ],
+      "enabled": true
     }
   ]
 }
