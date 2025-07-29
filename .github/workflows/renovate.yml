@@ -1,15 +1,15 @@
 # .github/workflows/renovate.yml
 name: Renovate
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'
-  workflow_dispatch:
+
 jobs:
   renovate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Renovate
         uses: renovatebot/github-action@v40.1.11
         with:
