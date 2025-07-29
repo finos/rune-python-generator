@@ -1,3 +1,15 @@
 {
-  "repositories": ["dschwartznyc/rune-python-generator"]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "repositories": ["dschwartznyc/rune-python-generator"],
+  "extends": ["config:base"],
+  "packageRules": [
+    {
+      "groupName": "Rosetta DSL packages",
+      "matchPackageNames": [
+        "com.regnosys.rosetta",
+        "com.regnosys.rosetta.lib",
+        "com.regnosys.rosetta.tests"
+      ]
+    }
+  ]
 }
