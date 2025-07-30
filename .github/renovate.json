@@ -12,6 +12,15 @@
         "rosetta.dsl.version"
       ],
       "enabled": true
+    },
+    {
+      "description": "Disable all that are not maven AND not those names",
+      "matchManagers": ["maven"],
+      "excludePackageNames": [
+        "com.regnosys.rosetta:com.regnosys.rosetta",
+        "rosetta.dsl.version"
+      ],
+      "enabled": false
     }
   ]
 }
