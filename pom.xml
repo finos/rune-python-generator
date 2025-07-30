@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.finos</groupId>
         <artifactId>finos</artifactId>
-        <version>5</version>
+        <version>7</version>
     </parent>
 
     <groupId>com.regnosys.rosetta.code-generators</groupId>
