@@ -3,7 +3,6 @@
   "extends": ["config:base"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
-{
   "packageRules": [
     {
       "description": "Update the Maven property rosetta.dsl.version to match the latest version of the com.regnosys.rosetta:com.regnosys.rosetta artifact",
