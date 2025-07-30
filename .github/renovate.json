@@ -3,14 +3,16 @@
   "extends": ["config:base"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
+{
   "packageRules": [
     {
       "description": "Update the Maven property rosetta.dsl.version to match the latest version of the com.regnosys.rosetta:com.regnosys.rosetta artifact",
       "matchManagers": ["maven"],
-      "matchDepTypes": ["properties"],
-      "matchDepNames": ["rosetta.dsl.version"],
+      "matchDepTypes": ["property"],
+      "matchPackageNames": ["rosetta.dsl.version"],     // <-- the property name
       "datasource": "maven",
-      "lookupName": "com.regnosys.rosetta:com.regnosys.rosetta"
+      "lookupName": "com.regnosys.rosetta:com.regnosys.rosetta",
+      "enabled": true
     },
     {
       "description": "Disable all other dependency updates",
