@@ -1,7 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base"],
-  "ignoreDeps": [":*"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
   "packageRules": [
@@ -13,6 +12,10 @@
         "com.regnosys.rosetta.tests"
       ],
       "enabled": true
+    },
+    {
+      "matchPackagePatterns": [".*"],
+      "enabled": false
     }
   ]
 }
