@@ -7,7 +7,10 @@
     {
       "description": "Update the Maven property rosetta.dsl.version when com.regnosys.rosetta releases a new version",
       "matchManagers": ["maven"],
-      "matchPackageNames": ["com.regnosys.rosetta:com.regnosys.rosetta"],
+      "matchPackageNames": [
+        "com.regnosys.rosetta:com.regnosys.rosetta",
+        "rosetta.dsl.version"
+      ],
       "enabled": true
     },
     {
