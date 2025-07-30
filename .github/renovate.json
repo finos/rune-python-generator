@@ -12,11 +12,6 @@
         "rosetta.dsl.version"
       ],
       "enabled": true
-    },
-    {
-      "description": "Disable all other dependency updates",
-      "matchPackagePatterns": [".*"],
-      "enabled": false
     }
   ]
 }
