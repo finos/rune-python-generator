@@ -35,3 +35,5 @@ jobs:
         env:
           # Use 'debug' for verbose logging, which is helpful for troubleshooting.
           LOG_LEVEL: 'debug'
+          RENOVATE_REPOSITORIES: ${{ github.repository }} # This tells Renovate to scan the current repo
+
