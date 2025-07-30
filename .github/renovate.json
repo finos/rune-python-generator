@@ -10,20 +10,7 @@
       "matchDatasources": ["maven"],
       "matchDepTypes": ["property"],
       "matchPackageNames": ["com.regnosys.rosetta"],
-      "matchPackagePrefixes": ["com.regnosys.rosetta"],
-      "matchPaths": [
-        "pom.xml"
-      ],
-      "enabled": true,
-      "groupName": "Rosetta DSL version"
-    },
-    {
-      "matchPackageNames": [
-        "com.regnosys.rosetta.lib",
-        "com.regnosys.rosetta.tests"
-      ],
-      "enabled": true,
-      "groupName": "Rosetta DSL version"
+      "enabled": true
     },
     {
       "matchPackagePatterns": [".*"],
