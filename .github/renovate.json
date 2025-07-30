@@ -5,13 +5,25 @@
   "prHourlyLimit": 20,
   "packageRules": [
     {
-      "groupName": "Rosetta DSL packages",
+      "description": "Update the Maven property rosetta.dsl.version when com.regnosys.rosetta releases a new version",
+      "matchManagers": ["maven"],
+      "matchDatasources": ["maven"],
+      "matchDepTypes": ["property"],
+      "matchPackageNames": ["com.regnosys.rosetta"],
+      "matchPackagePrefixes": ["com.regnosys.rosetta"],
+      "matchPaths": [
+        "pom.xml"
+      ],
+      "enabled": true,
+      "groupName": "Rosetta DSL version"
+    },
+    {
       "matchPackageNames": [
-        "com.regnosys.rosetta",
         "com.regnosys.rosetta.lib",
         "com.regnosys.rosetta.tests"
       ],
-      "enabled": true
+      "enabled": true,
+      "groupName": "Rosetta DSL version"
     },
     {
       "matchPackagePatterns": [".*"],
