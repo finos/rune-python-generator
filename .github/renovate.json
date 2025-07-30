@@ -4,6 +4,7 @@
   "extends": ["config:base"],
   "ignoreDeps": [":*"],
   "prConcurrentLimit": 10,
+  "prHourlyLimit": 10,
   "packageRules": [
     {
       "groupName": "Rosetta DSL packages",
