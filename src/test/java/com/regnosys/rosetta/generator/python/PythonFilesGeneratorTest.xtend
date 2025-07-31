@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Disabled
  * includes support for the generation of Python from CDM and other Rune definitions
  * 
  */
-// TODO: move source rune test code to the test directory
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RosettaInjectorProvider)
