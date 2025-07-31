@@ -82,7 +82,8 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.61.0</rosetta.dsl.version>
+        <rosetta.dsl.version>9.63.0</rosetta.dsl.version>
+        <rosetta.bundle.version>11.75.0</rosetta.bundle.version>
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>
@@ -153,6 +154,11 @@
                 <version>${xtext.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.xtext</groupId>
+                <artifactId>org.eclipse.xtext.ecore</artifactId>
+                <version>${xtext.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.xtend</groupId>
@@ -264,12 +270,12 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
+            <!-- REMOVED: <scope>test</scope> to include Logback in the final JAR -->
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <scope>test</scope>
+            <!-- REMOVED: <scope>test</scope> to include Logback in the final JAR -->
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -288,6 +294,11 @@
             <groupId>com.regnosys.rosetta</groupId>
             <artifactId>com.regnosys.rosetta.tests</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.regnosys</groupId>
+            <artifactId>rosetta-common</artifactId>
+            <version>${rosetta.bundle.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -319,6 +330,12 @@
             <version>2.12.0</version>
         </dependency>
         <!-- migrated from Python POM: end -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>13.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -352,24 +369,10 @@
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>${maven-deploy-plugin.version}</version>
                 </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>${maven-gpg-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>sign-artifacts</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>sign</goal>
-                            </goals>
-                            <configuration>
-                                <keyname>${gpg.keyname}</keyname>
-                                <passphraseServerId>${gpg.keyname}</passphraseServerId>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
+                <!--
+                    The maven-gpg-plugin was moved from here to the <plugins> section below
+                    to ensure it is executed as part of the build lifecycle.
+                -->
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -518,6 +521,60 @@
                 </executions>
             </plugin>
             <!--- migrated from PYTHON POM: end -->
+            <!-- === ADD THIS PLUGIN FOR THE UBER JAR === -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.regnosys.rosetta.generator.python.PythonCodeGenCLI</mainClass>
+                                </transformer>
+                            </transformers>
+                            <!-- ADDED: Exclude signature files from dependencies to prevent invalid signatures -->
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- === END UBER JAR PLUGIN === -->
+            <!-- === ADDED: maven-gpg-plugin to sign the shaded JAR === -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>${maven-gpg-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                            <keyname>${gpg.keyname}</keyname>
+                            <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- === END ADDED PLUGIN === -->
         </plugins>
     </build>
 </project>

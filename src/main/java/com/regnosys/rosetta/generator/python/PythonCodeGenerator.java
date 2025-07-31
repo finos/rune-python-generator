@@ -27,7 +27,50 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * PythonCodeGenerator is an external generator for the Rosetta DSL that produces Python code
+ * from Rosetta model definitions. It supports the generation of Python classes, enums, and functions
+ * based on the structure and semantics of the input Rosetta models.
+ * <p>
+ * This generator is designed to be used as part of the Rosetta code generation pipeline and is
+ * typically invoked by the Rosetta build tools or CLI. It processes Rosetta models and outputs
+ * Python source files, including project metadata such as <code>pyproject.toml</code>.
+ * </p>
+ *
+ * <h2>Features</h2>
+ * <ul>
+ *   <li>Generates Python classes from Rosetta Data types</li>
+ *   <li>Generates Python enums from Rosetta enumerations</li>
+ *   <li>Generates Python functions from Rosetta function definitions</li>
+ *   <li>Handles Rosetta model namespaces and organizes output into appropriate Python packages</li>
+ *   <li>Produces project files for Python packaging (e.g., <code>pyproject.toml</code>)</li>
+ * </ul>
+ *
+ * <h2>Usage</h2>
+ * <p>
+ * Typically, this class is not used directly, but is invoked by the Rosetta code generation
+ * infrastructure. It can be integrated into build pipelines or called from a CLI tool.
+ * </p>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>
+ * This class is not thread-safe and should be used in a single-threaded context.
+ * </p>
+ *
+ * <h2>Extensibility</h2>
+ * <p>
+ * The generator is designed to be extensible. Additional features or customizations can be
+ * implemented by extending this class or its collaborators.
+ * </p>
+ *
+ * @author Plamen Neykov
+ * @author Daniel Schwartz
+ * @see com.regnosys.rosetta.generator.external.AbstractExternalGenerator
+ * @see com.regnosys.rosetta.generator.python.PythonCodeGenCLI
+ */
+
 public class PythonCodeGenerator extends AbstractExternalGenerator {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenerator.class);
 
     @Inject private PythonModelObjectGenerator pojoGenerator;
