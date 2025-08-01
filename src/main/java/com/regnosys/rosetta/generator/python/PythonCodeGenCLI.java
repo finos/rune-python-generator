@@ -65,8 +65,6 @@ import java.util.stream.Stream;
  */
 
 public class PythonCodeGenCLI {
-//    java -cp <your-jar-or-classpath> com.regnosys.rosetta.generator.python.PythonCodeGenCLI -s <source-dir> -t <target-dir>
-//    java -cp <your-jar-or-classpath> com.regnosys.rosetta.generator.python.PythonCodeGenCLI -f <source-file> -t <target-dir>
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenCLI.class);
 
     public static void main(String[] args) {
@@ -171,7 +169,7 @@ public class PythonCodeGenCLI {
             return;
         }
         XtextResourceSet resourceSet = modelLoader.getResourceSet();
-        String version = models.get(0).getVersion();
+        String version = models.getFirst().getVersion();
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
