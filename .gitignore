@@ -58,3 +58,4 @@ __pycache__
 **/build/common-domain-model
 **/build/resources/serialization
 src/generated/
+*.todo
