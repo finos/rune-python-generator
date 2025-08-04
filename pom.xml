@@ -270,12 +270,10 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <!-- REMOVED: <scope>test</scope> to include Logback in the final JAR -->
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <!-- REMOVED: <scope>test</scope> to include Logback in the final JAR -->
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
