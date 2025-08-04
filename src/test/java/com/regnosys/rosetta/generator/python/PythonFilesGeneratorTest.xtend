@@ -18,6 +18,9 @@ import java.util.ArrayList
 import org.junit.jupiter.api.Disabled
 
 // TODO: add generated unit tests for number operations with arithmetic operators -,*,/ and for number and string operations with +
+// TODO: refactor Python-based unit tests to use the CLI to generate the tests
+// TODO: refactor CDM generator to use the CLI
+
 /*
  * File based unit tests 
  * 
