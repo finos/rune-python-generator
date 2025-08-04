@@ -66,7 +66,7 @@ import java.util.stream.Collectors;
  * @author Plamen Neykov
  * @author Daniel Schwartz
  * @see com.regnosys.rosetta.generator.external.AbstractExternalGenerator
- * @see com.regnosys.rosetta.generator.python.PythonCodeGenCLI
+ * @see com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI
  */
 
 public class PythonCodeGenerator extends AbstractExternalGenerator {

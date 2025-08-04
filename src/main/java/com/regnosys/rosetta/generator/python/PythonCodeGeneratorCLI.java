@@ -37,8 +37,8 @@ import java.util.stream.Stream;
  *
  * <h2>Usage</h2>
  * <pre>
- *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGenCLI -s &lt;source-dir&gt; -t &lt;target-dir&gt;
- *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGenCLI -f &lt;source-file&gt; -t &lt;target-dir&gt;
+ *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s &lt;source-dir&gt; -t &lt;target-dir&gt;
+ *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -f &lt;source-file&gt; -t &lt;target-dir&gt;
  * </pre>
  * <ul>
  *   <li><b>-s, --dir &lt;source-dir&gt;</b>: Source directory containing Rosetta files (all <code>.rosetta</code> files will be processed)</li>
@@ -64,8 +64,8 @@ import java.util.stream.Stream;
  * @see PythonCodeGenerator
  */
 
-public class PythonCodeGenCLI {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenCLI.class);
+public class PythonCodeGeneratorCLI {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
 
     public static void main(String[] args) {
         Options options = new Options();
@@ -105,7 +105,7 @@ public class PythonCodeGenCLI {
 
     private static void printUsage(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("PythonCodeGenCLI", options, true);
+        formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
     private static void translateFromSourceDir(String srcDir, String tgtDir) {
