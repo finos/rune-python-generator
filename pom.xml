@@ -252,11 +252,6 @@
                 <version>${hamcrest.version}</version>
                 <scope>test</scope>
             </dependency>
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>${commons-io.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -513,7 +508,6 @@
                                 </goals>
                                 <configuration>
                                     <keyname>${gpg.keyname}</keyname>
-                                    <!-- No passphraseServerId (deprecated) -->
                                     <!-- Use gpg-agent or env variable for passphrase -->
                                 </configuration>
                             </execution>
