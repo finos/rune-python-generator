@@ -12,13 +12,10 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 import org.apache.commons.cli.*;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.eclipse.xtext.resource.XtextResourceSet;
 import org.eclipse.emf.common.util.URI;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.inject.Inject;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -205,8 +202,7 @@ public class PythonCodeGeneratorCLI {
     // --- Helper classes for model loading and Guice setup ---
 
     static class PythonModelLoader {
-        @Inject Provider<XtextResourceSet> resourceSetProvider;
-        
+
         public List<RosettaModel> getRosettaModels(List<Resource> resources) {
             return resources.stream()
                     .filter(Objects::nonNull)
@@ -215,25 +211,6 @@ public class PythonCodeGeneratorCLI {
                     .filter(r -> r instanceof RosettaModel)
                     .map(r -> (RosettaModel) r)
                     .collect(Collectors.toList());
-        }
-        public XtextResourceSet getResourceSet() {
-            return resourceSetProvider.get();
-        }
-
-        private static String url(@NotNull java.net.URL c) {
-            try {
-                return c.toURI().toURL().toURI().toASCIIString();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private static Resource getResource(ResourceSet resourceSet, String f) {
-            try {
-                return resourceSet.getResource(org.eclipse.emf.common.util.URI.createURI(f, true), true);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
