@@ -2,13 +2,19 @@
 
 _What is being released?_
 
-This release adds support for meta data and for serialization / deserialization consistent with the [serialization specifications in CDM issue #3236](https://github.com/finos/common-domain-model/issues/3236)
+This release adds support for metadata and for serialization / deserialization consistent with the [serialization specifications in CDM issue #3236](https://github.com/finos/common-domain-model/issues/3236)
 
 Also included is support for:
 
 - circular Type definitions
 - increased testing of operators
 - generating Python across multiple namespaces
+- Command line (CLI) generation of Python from a Rune source file or directory.  To execute the CLI (assuming
+the default process wherein the JAR is built in the target directory): 
+
+```bash
+ java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s [rune source files] -t [target directory for generated Python]
+```
 
 ## Reading From and Writing To a String
 

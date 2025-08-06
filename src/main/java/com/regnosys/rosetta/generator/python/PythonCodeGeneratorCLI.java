@@ -6,13 +6,10 @@ import com.google.inject.Provider;
 import com.regnosys.rosetta.RosettaRuntimeModule;
 import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
-import com.regnosys.rosetta.common.util.ClassPathUtils;
-import com.regnosys.rosetta.common.util.UrlUtils;
 import com.regnosys.rosetta.generator.external.ExternalGenerator;
 import com.regnosys.rosetta.generator.external.ExternalGenerators;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.xtext.resource.XtextResourceSet;
@@ -22,12 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Command-line interface for generating Python code from Rosetta models.
@@ -92,7 +87,6 @@ public class PythonCodeGeneratorCLI {
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
                 translateFromSourceDir(srcDir, tgtDir);
-                translateFromSourceDir2(srcDir, tgtDir + "-2");
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
                 translateFromSourceFile(srcFile, tgtDir);
@@ -111,132 +105,79 @@ public class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    private static void translateFromSourceDir(String srcDir, String tgtDir) {
-        LOGGER.info("Reading from directory: {} and writing to: {}", srcDir, tgtDir);
+    private static void translateFromSourceDir (String srcDir, String tgtDir) {
+        // Find all .rosetta files in a directory
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
-            System.err.println("Source directory does not exist: " + srcDir);
-            return;
+            LOGGER.error("Source directory does not exist: {}", srcDir);
+            System.exit(1);
         }
         if (!Files.isDirectory(srcDirPath)) {
-            System.err.println("Source directory is not a directory: " + srcDir);
-            return;
+            LOGGER.error("Source directory is not a directory: {}", srcDir);
+            System.exit(1);
         }
-        List<Path> rosettaFiles = new ArrayList<>();
-        try (Stream<Path> paths = Files.walk(srcDirPath)) {
-            paths.filter(Files::isRegularFile)
+        try {
+            List<Path> rosettaFiles = Files.walk(srcDirPath)
+                    .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
-                    .forEach(rosettaFiles::add);
+                    .collect(Collectors.toList());
+            processRosettaFiles(rosettaFiles, tgtDir);
         } catch (IOException e) {
-            System.err.println("Error reading source directory: " + e.getMessage());
-            return;
+            LOGGER.error("Failed to process source directory: {}", srcDir, e);
         }
-        LOGGER.info("Found {} .rosetta files in directory {}", rosettaFiles.size(), srcDir);
-        translateRosetta(rosettaFiles, tgtDir);
     }
+    private static void translateFromSourceFile (String srcFile, String tgtDir) {
+        Path srcFilePath = Paths.get(srcFile);
+        if (!Files.exists(srcFilePath)) {
+            LOGGER.error("Source file does not exist: {}", srcFile);
+            System.exit(1);
+        }
+        if (Files.isDirectory(srcFilePath)) {
+            LOGGER.error("Source file is a directory: {}", srcFile);
+            System.exit(1);
+        }
+        if (!srcFilePath.toString().endsWith(".rosetta")) {
+            LOGGER.error("Source file does not end with .rosetta: {}", srcFile);
+            System.exit(1);
+        }
+        List<Path> rosettaFiles = List.of(srcFilePath);
+        processRosettaFiles(rosettaFiles, tgtDir);
+    }
+    // Common processing function
+    private static void processRosettaFiles(List<Path> rosettaFiles, String tgtDir) {
+        LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
-    private static void translateFromSourceDir2(String srcDir, String tgtDir) {
-        LOGGER.info("translateFromSourceDir2 ... Reading from directory: {} and writing to: {}", srcDir, tgtDir);
-        Path srcDirPath = Paths.get(srcDir);
-        if (!Files.exists(srcDirPath)) {
-            System.err.println("Source directory does not exist: " + srcDir);
-            return;
+        if (rosettaFiles.isEmpty()) {
+            System.err.println("No .rosetta files found to process.");
+            System.exit(1);
         }
-        if (!Files.isDirectory(srcDirPath)) {
-            System.err.println("Source directory is not a directory: " + srcDir);
-            return;
-        }
+
         Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
-        PythonCodeGenerator pythonCodeGenerator = injector.getInstance(PythonCodeGenerator.class);
-        PythonModelLoader modelLoader = injector.getInstance(PythonModelLoader.class);
         ResourceSet resourceSet = injector.getInstance(ResourceSet.class);
-
         List<Resource> resources = new LinkedList<>();
-
         RosettaBuiltinsService builtins = injector.getInstance(RosettaBuiltinsService.class);
         resources.add (resourceSet.getResource(builtins.basicTypesURI, true));
         resources.add (resourceSet.getResource(builtins.annotationsURI, true));
-        try {
-            // Find all .rosetta files in the directory and load them from disk
-            Files.walk(srcDirPath)
-                    .filter(path -> path.toString().endsWith(".rosetta"))
-                    .map(file -> resourceSet.getResource(URI.createFileURI(file.toString()), true))
-                    .forEach(resources::add);
-        } catch (IOException e) {
-            System.err.println("Error reading source directory: " + e.getMessage());
-            return;
-        }
-        LOGGER.info("translateFromSourceDir2 ... Found {} .rosetta files in directory {}", resources.size(), srcDir);
+        rosettaFiles.stream()
+                .map(path -> resourceSet.getResource(URI.createFileURI(path.toString()), true))
+                .forEach(resources::add);
 
-
-        List<RosettaModel> models = modelLoader.rosettaModels2(resources);
-        if (models.isEmpty()) {
-            System.err.println("No valid Rosetta models found.");
-            return;
-        }
-        String version = models.get(0).getVersion();
-
-        LOGGER.info("translateFromSourceDir2 ... Processing {} models, version: {}", models.size(), version);
-
-        Map<String, CharSequence> generatedPython = new HashMap<>();
-        pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
-        for (RosettaModel model : models) {
-            System.out.println("translateFromSourceDir2 ... processing: " + model.getName());
-            generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
-            generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
-            generatedPython.putAll(pythonCodeGenerator.afterGenerate(model.eResource(), model, version));
-        }
-        generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
-
-        writePythonFiles(generatedPython, tgtDir);
-    }
-
-
-    private static void translateFromSourceFile(String srcFile, String tgtDir) {
-        LOGGER.info("Reading from file: {} and writing to: {}", srcFile, tgtDir);
-        Path srcFilePath = Paths.get(srcFile);
-        if (!Files.exists(srcFilePath)) {
-            System.err.println("Source file does not exist: " + srcFile);
-            return;
-        }
-        if (Files.isDirectory(srcFilePath)) {
-            System.err.println("Source file is a directory: " + srcFile);
-            return;
-        }
-        translateRosetta(Collections.singletonList(srcFilePath), tgtDir);
-    }
-
-    private static void translateRosetta(List<Path> rosettaFiles, String tgtDir) {
-        LOGGER.info("Cleaning target directory: {}", tgtDir);
-        File directory = new File(tgtDir);
-        try {
-            if (directory.exists() && directory.isDirectory()) {
-                FileUtils.cleanDirectory(directory);
-            }
-        } catch (IOException e) {
-            System.err.println("Failed to clean the directory: " + e.getMessage());
-            return;
-        }
-
-        Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
         PythonCodeGenerator pythonCodeGenerator = injector.getInstance(PythonCodeGenerator.class);
         PythonModelLoader modelLoader = injector.getInstance(PythonModelLoader.class);
 
-        List<Path> staticRosettaFilePaths = ClassPathUtils.findStaticRosettaFilePaths();
-        List<RosettaModel> models = modelLoader.rosettaModels(staticRosettaFilePaths, rosettaFiles);
+        List<RosettaModel> models = modelLoader.getRosettaModels(resources);
         if (models.isEmpty()) {
-            System.err.println("No valid Rosetta models found.");
-            return;
+            LOGGER.error("No valid Rosetta models found.");
+            System.exit(1);
         }
-        XtextResourceSet resourceSet = modelLoader.getResourceSet();
-        String version = models.get(0).getVersion();
+        String version = models.getFirst().getVersion();
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
         Map<String, CharSequence> generatedPython = new HashMap<>();
         pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
         for (RosettaModel model : models) {
-            System.out.println("translateRosetta ... processing: " + model.getName());
+            System.out.println("Processing: " + model.getName());
             generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.afterGenerate(model.eResource(), model, version));
@@ -261,27 +202,12 @@ public class PythonCodeGeneratorCLI {
         }
         LOGGER.info("Wrote {} files to {}", generatedPython.size(), tgtDir);
     }
-
     // --- Helper classes for model loading and Guice setup ---
 
     static class PythonModelLoader {
         @Inject Provider<XtextResourceSet> resourceSetProvider;
-
-        public List<RosettaModel> rosettaModels(List<Path> statics, List<Path> sourceFiles) {
-            XtextResourceSet resourceSet = resourceSetProvider.get();
-            return Stream.concat(statics.stream(), sourceFiles.stream())
-                    .map(UrlUtils::toUrl)
-                    .map(PythonModelLoader::url)
-                    .map(f -> getResource(resourceSet, f))
-                    .filter(Objects::nonNull)
-                    .map(Resource::getContents)
-                    .flatMap(Collection::stream)
-                    .filter(r -> r instanceof RosettaModel)
-                    .map(r -> (RosettaModel) r)
-                    .collect(Collectors.toList());
-        }
-
-        public List<RosettaModel> rosettaModels2(List<Resource> resources) {
+        
+        public List<RosettaModel> getRosettaModels(List<Resource> resources) {
             return resources.stream()
                     .filter(Objects::nonNull)
                     .map(Resource::getContents)
