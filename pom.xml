@@ -98,7 +98,6 @@
         <maven-enforcer-plugin.version>3.3.0</maven-enforcer-plugin.version>
         <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
-        <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
@@ -477,9 +476,24 @@
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <exclude>META-INF/LICENSE*</exclude>
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/eclipse.inf</exclude>
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF.versions.9.module-info</exclude>
+                                        <exclude>META-INF/services/com.fasterxml.jackson.databind.Module</exclude>
+                                        <exclude>about_files/LICENSE-2.0.txt</exclude>
+                                        <exclude>about.html</exclude>
+                                        <exclude>about.ini</exclude>
+                                        <exclude>about.mappings</exclude>
+                                        <exclude>about.properties</exclude>
+                                        <exclude>plugin.xml</exclude>
+                                        <exclude>modeling32.png</exclude>
+                                        <exclude>.options</exclude>
+                                        <exclude>.api_description</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

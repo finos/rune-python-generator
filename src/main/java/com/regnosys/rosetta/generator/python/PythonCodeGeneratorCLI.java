@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provider;
 import com.regnosys.rosetta.RosettaRuntimeModule;
 import com.regnosys.rosetta.RosettaStandaloneSetup;
+import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
 import com.regnosys.rosetta.common.util.ClassPathUtils;
 import com.regnosys.rosetta.common.util.UrlUtils;
 import com.regnosys.rosetta.generator.external.ExternalGenerator;
@@ -15,6 +16,7 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.xtext.resource.XtextResourceSet;
+import org.eclipse.emf.common.util.URI;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +92,7 @@ public class PythonCodeGeneratorCLI {
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
                 translateFromSourceDir(srcDir, tgtDir);
+                translateFromSourceDir2(srcDir, tgtDir + "-2");
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
                 translateFromSourceFile(srcFile, tgtDir);
@@ -132,6 +135,63 @@ public class PythonCodeGeneratorCLI {
         translateRosetta(rosettaFiles, tgtDir);
     }
 
+    private static void translateFromSourceDir2(String srcDir, String tgtDir) {
+        LOGGER.info("translateFromSourceDir2 ... Reading from directory: {} and writing to: {}", srcDir, tgtDir);
+        Path srcDirPath = Paths.get(srcDir);
+        if (!Files.exists(srcDirPath)) {
+            System.err.println("Source directory does not exist: " + srcDir);
+            return;
+        }
+        if (!Files.isDirectory(srcDirPath)) {
+            System.err.println("Source directory is not a directory: " + srcDir);
+            return;
+        }
+        Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
+        PythonCodeGenerator pythonCodeGenerator = injector.getInstance(PythonCodeGenerator.class);
+        PythonModelLoader modelLoader = injector.getInstance(PythonModelLoader.class);
+        ResourceSet resourceSet = injector.getInstance(ResourceSet.class);
+
+        List<Resource> resources = new LinkedList<>();
+
+        RosettaBuiltinsService builtins = injector.getInstance(RosettaBuiltinsService.class);
+        resources.add (resourceSet.getResource(builtins.basicTypesURI, true));
+        resources.add (resourceSet.getResource(builtins.annotationsURI, true));
+        try {
+            // Find all .rosetta files in the directory and load them from disk
+            Files.walk(srcDirPath)
+                    .filter(path -> path.toString().endsWith(".rosetta"))
+                    .map(file -> resourceSet.getResource(URI.createFileURI(file.toString()), true))
+                    .forEach(resources::add);
+        } catch (IOException e) {
+            System.err.println("Error reading source directory: " + e.getMessage());
+            return;
+        }
+        LOGGER.info("translateFromSourceDir2 ... Found {} .rosetta files in directory {}", resources.size(), srcDir);
+
+
+        List<RosettaModel> models = modelLoader.rosettaModels2(resources);
+        if (models.isEmpty()) {
+            System.err.println("No valid Rosetta models found.");
+            return;
+        }
+        String version = models.get(0).getVersion();
+
+        LOGGER.info("translateFromSourceDir2 ... Processing {} models, version: {}", models.size(), version);
+
+        Map<String, CharSequence> generatedPython = new HashMap<>();
+        pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
+        for (RosettaModel model : models) {
+            System.out.println("translateFromSourceDir2 ... processing: " + model.getName());
+            generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
+            generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
+            generatedPython.putAll(pythonCodeGenerator.afterGenerate(model.eResource(), model, version));
+        }
+        generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
+
+        writePythonFiles(generatedPython, tgtDir);
+    }
+
+
     private static void translateFromSourceFile(String srcFile, String tgtDir) {
         LOGGER.info("Reading from file: {} and writing to: {}", srcFile, tgtDir);
         Path srcFilePath = Paths.get(srcFile);
@@ -169,13 +229,14 @@ public class PythonCodeGeneratorCLI {
             return;
         }
         XtextResourceSet resourceSet = modelLoader.getResourceSet();
-        String version = models.getFirst().getVersion();
+        String version = models.get(0).getVersion();
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
         Map<String, CharSequence> generatedPython = new HashMap<>();
         pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
         for (RosettaModel model : models) {
+            System.out.println("translateRosetta ... processing: " + model.getName());
             generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.afterGenerate(model.eResource(), model, version));
@@ -220,6 +281,15 @@ public class PythonCodeGeneratorCLI {
                     .collect(Collectors.toList());
         }
 
+        public List<RosettaModel> rosettaModels2(List<Resource> resources) {
+            return resources.stream()
+                    .filter(Objects::nonNull)
+                    .map(Resource::getContents)
+                    .flatMap(Collection::stream)
+                    .filter(r -> r instanceof RosettaModel)
+                    .map(r -> (RosettaModel) r)
+                    .collect(Collectors.toList());
+        }
         public XtextResourceSet getResourceSet() {
             return resourceSetProvider.get();
         }
