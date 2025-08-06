@@ -22,7 +22,7 @@ The generated Python code can deserialize and serialize an object.
 
 ### Deserializing from a string
 
-To deserialize from a string and create a object of the model specified in the string invoke the function:
+To deserialize from a string and create an object of the model specified in the string invoke the function:
 
 `BaseDataClass.rune_deserialize` with the following parameters
 
