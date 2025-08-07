@@ -82,7 +82,6 @@
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
         <rosetta.dsl.version>9.63.0</rosetta.dsl.version>
-        <rosetta.bundle.version>11.75.0</rosetta.bundle.version>
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>
@@ -98,7 +97,6 @@
         <maven-enforcer-plugin.version>3.3.0</maven-enforcer-plugin.version>
         <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.1.0</maven-clean-plugin.version>
-        <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
@@ -108,6 +106,7 @@
         <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <!-- Used by the Python generator -->
         <cdm.rosetta.source.path>build/common-domain-model/rosetta-source/src/main/rosetta</cdm.rosetta.source.path>
         <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
@@ -252,11 +251,6 @@
                 <version>${hamcrest.version}</version>
                 <scope>test</scope>
             </dependency>
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>${commons-io.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -290,11 +284,6 @@
             <groupId>com.regnosys.rosetta</groupId>
             <artifactId>com.regnosys.rosetta.tests</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.regnosys</groupId>
-            <artifactId>rosetta-common</artifactId>
-            <version>${rosetta.bundle.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -482,9 +471,24 @@
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <exclude>META-INF/LICENSE*</exclude>
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/eclipse.inf</exclude>
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF.versions.9.module-info</exclude>
+                                        <exclude>META-INF/services/com.fasterxml.jackson.databind.Module</exclude>
+                                        <exclude>about_files/LICENSE-2.0.txt</exclude>
+                                        <exclude>about.html</exclude>
+                                        <exclude>about.ini</exclude>
+                                        <exclude>about.mappings</exclude>
+                                        <exclude>about.properties</exclude>
+                                        <exclude>plugin.xml</exclude>
+                                        <exclude>modeling32.png</exclude>
+                                        <exclude>.options</exclude>
+                                        <exclude>.api_description</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
@@ -492,6 +496,23 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${maven-javadoc-plugin.version}</version>
+            <configuration>
+                <failOnError>false</failOnError>
+            </configuration>
+            <executions>
+                <execution>
+                <id>attach-javadocs</id>
+                <phase>package</phase>
+                <goals>
+                    <goal>jar</goal>
+                </goals>
+                </execution>
+            </executions>
             </plugin>
         </plugins>
     </build>
@@ -513,7 +534,6 @@
                                 </goals>
                                 <configuration>
                                     <keyname>${gpg.keyname}</keyname>
-                                    <!-- No passphraseServerId (deprecated) -->
                                     <!-- Use gpg-agent or env variable for passphrase -->
                                 </configuration>
                             </execution>
