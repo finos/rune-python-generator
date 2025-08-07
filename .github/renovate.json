@@ -1,4 +1,5 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
@@ -7,9 +8,19 @@
       "description": "Update the Maven property rosetta.dsl.version when com.regnosys.rosetta releases a new version",
       "matchManagers": ["maven"],
       "matchPackageNames": [
-        "com.regnosys.rosetta:com.regnosys.rosetta"
+        "com.regnosys.rosetta:com.regnosys.rosetta",
+        "rosetta.dsl.version"
       ],
       "enabled": true
+    },
+    {
+      "description": "Disable all that are not maven AND not those names",
+      "matchManagers": ["maven"],
+      "excludePackageNames": [
+        "com.regnosys.rosetta:com.regnosys.rosetta",
+        "rosetta.dsl.version"
+      ],
+      "enabled": false
     }
   ]
 }
