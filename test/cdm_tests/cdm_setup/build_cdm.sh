@@ -27,10 +27,12 @@ if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1;
         exit 1
 fi
 
-BUILD_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-PROJECT_ROOT_PATH=$BUILD_PATH/..
+MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJECT_ROOT_PATH="$MY_PATH/../../.."
+CDM_SOURCE_PATH="$MY_PATH/../common-domain-model/rosetta-source/src/main/rosetta"
 PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
-cd ${BUILD_PATH} || error
+PYTHON_SETUP_PATH="$MY_PATH/../../python_setup"
+cd ${MY_PATH} || error
 
 # Parse command-line arguments for --skip-cdm
 SKIP_CDM=0
@@ -41,13 +43,13 @@ for arg in "$@"; do
 done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
-    source $BUILD_PATH/get_cdm.sh
+    source $MY_PATH/get_cdm.sh
 else
     echo "Skipping get_cdm.sh as requested."
 fi
 
 echo "***** build CDM"
-java -cp $PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $BUILD_PATH//common-domain-model/rosetta-source/src/main/rosetta/ -t $PYTHON_TARGET_PATH
+java -cp $PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
@@ -55,7 +57,7 @@ if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
 fi
 
 echo "***** setting up common environment"
-source $BUILD_PATH/setup_python_env.sh
+source $PYTHON_SETUP_PATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
@@ -69,7 +71,7 @@ $PYEXE -m pip wheel --no-deps --only-binary :all: . || processError
 echo "***** cleanup"
 
 deactivate
-source $BUILD_PATH/cleanup_python_env.sh
+source $PYTHON_SETUP_PATH/cleanup_python_env.sh
 
 echo ""
 echo ""

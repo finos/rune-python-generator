@@ -21,15 +21,15 @@ fi
 
 MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
+PROJECT_ROOT_PATH="$MY_PATH/../.."
+PYTHON_SETUP_PATH="$MY_PATH/../python_setup"
 
 echo "***** setting up common environment"
-BUILDPATH="../../build"
-source $MY_PATH/$BUILDPATH/setup_python_env.sh
+source $PYTHON_SETUP_PATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-PROJECT_ROOT="../.."
-source $MY_PATH/$PROJECT_ROOT/$VENV_NAME/${PY_SCRIPTS}/activate || error
+source $PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
 source $MY_PATH/setup_unit_test_env.sh
 
@@ -41,4 +41,4 @@ $PYEXE -m pytest -p no:cacheprovider $MY_PATH
 echo "***** cleanup"
 
 deactivate
-source $MY_PATH/$BUILDPATH/cleanup_python_env.sh
+source $PYTHON_SETUP_PATH/cleanup_python_env.sh
