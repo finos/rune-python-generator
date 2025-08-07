@@ -1,5 +1,4 @@
 package com.regnosys.rosetta.generator.python
-// TODO: change AssertStringInString to AssertStringContainsString
 import jakarta.inject.Inject
 import com.google.inject.Provider
 import java.io.File

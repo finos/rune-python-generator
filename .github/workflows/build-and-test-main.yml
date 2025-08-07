@@ -32,7 +32,7 @@ jobs:
       with:
         python-version: '3.11'
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B package -Psign-artifacts --file pom.xml
     - name: Run Python Unit Tests
       run: |
         chmod +x build/setup_python_env.sh

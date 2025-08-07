@@ -57,3 +57,5 @@ __pycache__
 **/test/serialization_tests/rune-common
 **/build/common-domain-model
 **/build/resources/serialization
+src/generated/
+*.todo
