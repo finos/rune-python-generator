@@ -29,7 +29,7 @@ ENV_BUILD_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd 
 cd "${ENV_BUILD_PATH}" || error
 echo "***** setup virtual environment in [project_root]/.pyenv"
 VENV_NAME=".pyenv"
-VENV_PATH="../"
+VENV_PATH="../.."
 # Determine the scripts directory
 if [ -z "${WINDIR}" ]; then
     PY_SCRIPTS='bin'
