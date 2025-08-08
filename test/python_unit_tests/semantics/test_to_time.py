@@ -5,14 +5,16 @@ import time
 
 import pytest
 
-from rosetta_dsl.test.semantic.toTimeOp.TestToTimeOp import TestToTimeOp
+from rosetta_dsl.test.semantic.time_operator.TimeOperatorTest import TimeOperatorTest
 
 def test_to_time_passes():
-    to_time_test= TestToTimeOp(a="11:45:23",b=datetime.time(11,45,23))
+    '''no doc'''
+    to_time_test= TimeOperatorTest(a="11:45:23",b=datetime.time(11,45,23))
     to_time_test.validate_model()
 
 def test_to_time_fails():
-    to_date_time_test=TestToTimeOp(a="14-30-00",b=datetime.time(14,30,0))
+    '''no doc'''
+    to_date_time_test=TimeOperatorTest(a="14-30-00",b=datetime.time(14,30,0))
     with pytest.raises(Exception):
         to_date_time_test.validate_model()
         

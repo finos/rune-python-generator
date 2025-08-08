@@ -28,31 +28,50 @@ if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1;
 fi
 
 MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJECT_ROOT_PATH="$MY_PATH/../../.."
+CDM_SOURCE_PATH="$MY_PATH/../common-domain-model/rosetta-source/src/main/rosetta"
+PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
+PYTHON_SETUP_PATH="$MY_PATH/../../python_setup"
 cd ${MY_PATH} || error
 
-source $MY_PATH/../build/get_cdm.sh
+# Parse command-line arguments for --skip-cdm
+SKIP_CDM=0
+for arg in "$@"; do
+  if [[ "$arg" == "--skip-cdm" ]]; then
+    SKIP_CDM=1
+  fi
+done
+
+if [[ $SKIP_CDM -eq 0 ]]; then
+    source $MY_PATH/get_cdm.sh
+else
+    echo "Skipping get_cdm.sh as requested."
+fi
+
 echo "***** build CDM"
-cd $MY_PATH/..
-mvn clean install
+java -cp $PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
+JAVA_EXIT_CODE=$?
+if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
+    echo "Java program returned exit code 1. Stopping script."
+    exit 1
+fi
+
 echo "***** setting up common environment"
-BUILDPATH="../build"
-source $MY_PATH/$BUILDPATH/setup_python_env.sh
+source $PYTHON_SETUP_PATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-VENV_PATH=".."
-source $MY_PATH/$BUILDPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+source $PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
 echo "***** build CDM Python package"
-PYTHONSOURCEDIR=$MY_PATH/"../target/python-cdm"
-cd $PYTHONSOURCEDIR
+cd $PYTHON_TARGET_PATH
 rm python_cdm-*.*.*-py3-none-any.whl
 $PYEXE -m pip wheel --no-deps --only-binary :all: . || processError
 
 echo "***** cleanup"
 
 deactivate
-source $MY_PATH/$BUILDPATH/cleanup_python_env.sh
+source $PYTHON_SETUP_PATH/cleanup_python_env.sh
 
 echo ""
 echo ""

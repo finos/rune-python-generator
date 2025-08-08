@@ -1,6 +1,6 @@
-namespace rosetta_dsl.test.semantic.toDateOp : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.semantic.date_operator : <"generate Python unit tests from Rosetta.">
 
-type TestDateOp:
+type DateOperatorTest:
     a string (1..1)
     b date (0..1)
     condition Test:

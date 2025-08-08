@@ -55,5 +55,6 @@ __pycache__
 **/rune.runtime-*.*.*-py3-none-any.whl
 **/test_helper-0.0.0-py3-none-any.whl
 **/test/serialization_tests/rune-common
-**/build/common-domain-model
-**/build/resources/serialization
+**/test/cdm_tests/common-domain-model/
+src/generated/
+*.todo

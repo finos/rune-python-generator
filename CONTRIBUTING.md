@@ -8,7 +8,7 @@ Before making a contribution, please take the following steps:
 1. Check whether there's already an open issue related to your proposed contribution. If there is, join the discussion and propose your contribution there.
 2. If there isn't already a relevant issue, create one, describing your contribution and the problem you're trying to solve.
 3. Respond to any questions or suggestions raised in the issue by other developers.
-4. Fork the project repository and prepare your proposed contribution.
+4. Fork the project repository and prepare your proposed contribution.  The contribution must include unit tests to confirm that it behaves as expected.
 5. Submit a pull request.
 
 NOTE: All contributors must have a contributor license agreement (CLA) on file with FINOS before their pull requests will be merged. Please review the FINOS [contribution requirements](https://community.finos.org/docs/governance/Software-Projects/contribution-compliance-requirements) and submit (or have your employer submit) the required CLA before submitting a pull request.
