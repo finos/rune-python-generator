@@ -91,7 +91,7 @@ The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/
 
 Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will clarify whether the change succsessfully builds and passes JUNIT and Python unit testing.
 
-Any maintainer can merge changes that successfully build and pass the tests.
+Any maintainer can merge changes that successfully build and pass the tests.  To make the revised generator available to CDM, post merge a new  release tagged with the version # of the updated DSL will be required.
 
 Build or testing failures should be escalated to [@plamen-neykov](https://github.com/plamen-neykov) or [@dschwartznyc](https://github.com/dschwartznyc) for remediation.
 
