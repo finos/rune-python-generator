@@ -12,28 +12,25 @@ on:
 jobs:
   renovate:
     runs-on: ubuntu-latest
-    # This section is crucial. It grants the GITHUB_TOKEN the necessary
-    # permissions for Renovate to read repository content and create pull requests.
+    # Grants the GITHUB_TOKEN the necessary permissions for Renovate to read repository content and create pull requests.
     permissions:
       contents: write
       pull-requests: write
     steps:
-      # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+      # Checks out the repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
-
       # Runs the Renovate GitHub Action
       - name: Renovate
         # Using a slightly newer version of the action
         uses: renovatebot/github-action@v40.2.2
         with:
           # The token is required to create pull requests.
-          # GITHUB_TOKEN is automatically created by Actions and is given
-          # the permissions defined in the `permissions` block above.
           token: ${{ secrets.GITHUB_TOKEN }}
           # Specifies the path to your Renovate configuration file.
           configurationFile: .github/renovate.json
         env:
-          # Use 'debug' for verbose logging, which is helpful for troubleshooting.
-          LOG_LEVEL: 'debug'
           RENOVATE_REPOSITORIES: ${{ github.repository }} # This tells Renovate to scan the current repo
-
+  # Add a build and test job that depends on renovate
+  build_and_test:
+    needs: renovate
+    uses: ./.github/workflows/build-and-test.yml
