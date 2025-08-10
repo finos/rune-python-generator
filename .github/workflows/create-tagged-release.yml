@@ -1,4 +1,5 @@
-name: Build JAR on Tag
+name: Create Tagged Release
+# Build JAR and create tagged release
 
 on:
   push:
@@ -36,7 +37,7 @@ jobs:
         TAG_NAME=${GITHUB_REF#refs/tags/}
         echo "Updating POM version to $TAG_NAME"
         mvn -B versions:set -DnewVersion=$TAG_NAME
-        mvn -B package
+        mvn -B package -Psign-artifacts
 
     - name: Revert POM changes
       run: git checkout -- pom.xml

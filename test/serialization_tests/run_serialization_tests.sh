@@ -22,15 +22,15 @@ fi
 
 MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
+PROJECT_ROOT_PATH="$MY_PATH/../.."
+PYTHON_SETUP_PATH="$MY_PATH/../python_setup"
 
 echo "***** setting up common environment"
-BUILDPATH="../../build"
-source $MY_PATH/$BUILDPATH/setup_python_env.sh
+source $PYTHON_SETUP_PATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-VENV_PATH=".."
-source $MY_PATH/$BUILDPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+source $PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
 echo "***** Build and Install Helper"
 cd $MY_PATH/test_helper
@@ -39,8 +39,8 @@ $PYEXE -m pip install test_helper-0.0.0-py3-none-any.whl
 rm test_helper-0.0.0-py3-none-any.whl
 
 echo "***** Build and Install Generated Unit Tests"
-SERIALIZATIONTESTSDIR="../../target/python-tests/serialization_unit_tests"
-cd $MY_PATH/$SERIALIZATIONTESTSDIR
+SERIALIZATIONTESTSDIR="$PROJECT_ROOT_PATH/target/python-tests/serialization_unit_tests"
+cd $SERIALIZATIONTESTSDIR
 $PYEXE -m pip wheel --no-deps --only-binary :all: . || error
 $PYEXE -m pip install python_*-0.0.0-py3-none-any.whl
 
@@ -52,4 +52,4 @@ $PYEXE -m pytest -p no:cacheprovider .
 echo "***** cleanup"
 
 deactivate
-source $MY_PATH/$BUILDPATH/cleanup_python_env.sh
+source $PYTHON_SETUP_PATH/cleanup_python_env.sh

@@ -2,17 +2,27 @@
 
 _What is being released?_
 
-This release adds support for meta data and for serialization / deserialization consistent with the [serialization specifications in CDM issue #3236](https://github.com/finos/common-domain-model/issues/3236)
+This release adds support for metadata and for serialization / deserialization consistent with the [serialization specifications in CDM issue #3236](https://github.com/finos/common-domain-model/issues/3236)
 
-Also included is support for circular dependencies and increased testing of operators.
+Also included is support for:
 
-# Reading From and Writing To a String
+- circular Type definitions
+- increased testing of operators
+- generating Python across multiple namespaces
+- Command line (CLI) generation of Python from a Rune source file or directory.  To execute the CLI (assuming
+the default process wherein the JAR is built in the target directory): 
+
+```bash
+ java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s [rune source files] -t [target directory for generated Python]
+```
+
+## Reading From and Writing To a String
 
 The generated Python code can deserialize and serialize an object.
 
-## Deserializing from a string
+### Deserializing from a string
 
-To deserialize from a string and create a object of the model specified in the string invoke the function:
+To deserialize from a string and create an object of the model specified in the string invoke the function:
 
 `BaseDataClass.rune_deserialize` with the following parameters
 
@@ -27,9 +37,11 @@ To deserialize from a string and create a object of the model specified in the s
     Returns:
       BaseModel: The Rune model.
 
-To serialize from an object ("[obj]") of a generated class, invoke the function:
+### Serialize to a string
 
-`[obj].rune_serialize` with the following parameters:
+To serialize from a Rune object ("obj"), invoke the function:
+
+`obj.rune_serialize` with the following parameters:
 
     validate_model (bool, optional): Validate that the model passes all Rune defined constraings prior to serialization. Setting to False allows serialization of an invalid Model. Defaults to True.
 
@@ -59,7 +71,5 @@ To serialize from an object ("[obj]") of a generated class, invoke the function:
 
     exclude_none (bool, optional): Determines whether to exclude fields that have a value of `None`. If True, fields set to None will be included.  Defaults to False.
 
-
     Returns:
       A string.
-
