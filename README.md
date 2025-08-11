@@ -40,7 +40,6 @@ Start by cloning the project: `git clone https://github.com/finos/rune-python-ge
 Our project runs with Java 21. Make sure that your Maven also uses this version of Java by running `mvn -v`.
 
 To build the project, run `mvn clean package`.
-To build the project, run `mvn clean package`.
 
 #### UNIT Testing
 
@@ -65,6 +64,7 @@ We use [Checkstyle](https://checkstyle.sourceforge.io/) for enforcing good codin
 Go to Import... > Existing Maven Project, select the right folder, click Finish.
 
 ### Standalone CLI
+
 The generator includes a standalone CLI which can be invoked to generate Python from a single file or from directory.  To invoke the CLI, first build the project and then:
 
 ```sh
@@ -76,7 +76,6 @@ java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.py
 Use this script to generated the Python version of CDM
 
 ```sh
-test/cdm_tests/cdm_setup/build_cdm.sh
 test/cdm_tests/cdm_setup/build_cdm.sh
 ```
 
@@ -90,7 +89,7 @@ The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/
 
 ### Rune-DSL Updates
 
-Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will calrify whether the change succsessfully builds and passes JUNIT and Python unit testing.
+Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will clarify whether the change succsessfully builds and passes JUNIT and Python unit testing.
 
 Any maintainer can merge changes that successfully build and pass the tests.
 
@@ -110,7 +109,7 @@ To submit a contribution:
 5. Push to the branch (`git push origin feature/fooBar`)
 6. Create a new Pull Request
 
-_NOTE:_ Commits and pull requests to FINOS repositories will only be accepted from those contributors with an active, executed Individual Contributor License Agreement (ICLA) with FINOS OR
+*NOTE:_ Commits and pull requests to FINOS repositories will only be accepted from those contributors with an active, executed Individual Contributor License Agreement (ICLA) with FINOS OR
 who are covered under an existing and active Corporate Contribution License Agreement (CCLA) executed with FINOS. Commits from individuals not covered under an ICLA or CCLA will be flagged
 and blocked by the FINOS Clabot tool (or EasyCLA). Please note that some CCLAs require individuals/employees to be explicitly named on the CCLA.
 
