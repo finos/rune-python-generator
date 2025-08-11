@@ -1,4 +1,4 @@
-name: Build and Test JAR
+name: Build and Test JAR on Main Branch
 
 on:
   push:

@@ -1,7 +1,6 @@
 [![FINOS - Incubating](https://cdn.jsdelivr.net/gh/finos/contrib-toolbox@master/images/badge-incubating.svg)](https://community.finos.org/docs/governance/Software-Projects/stages/incubating)[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10725/badge)](https://www.bestpractices.dev/projects/10725)[![Maven CI](https://github.com/finos/rune-python-generator/actions/workflows/cve-scanning.yml/badge.svg)](https://github.com/finos/rune-python-generator/actions/workflows/cve-scanning.yml)
 
-
-<img align="right" width="15%" src="https://www.finos.org/hubfs/FINOS/finos-logo/FINOS_Icon_Wordmark_Name_RGB_horizontal.png">
+<img align="right" width="15%" alt="FINOS" src="https://www.finos.org/hubfs/FINOS/finos-logo/FINOS_Icon_Wordmark_Name_RGB_horizontal.png">
 
 # Rune Python Generator
 
@@ -10,6 +9,7 @@
 The generated Python relies upon the [RunePythonRuntime](https://github.com/finos/rune-python-runtime) library and requires Python version 3.11+.
 
 ## Release Notes
+
 The features of the current version can be found in the [release notes](./RELEASE.md)
 
 ## Repository Organization
@@ -26,6 +26,7 @@ The features of the current version can be found in the [release notes](./RELEAS
 ## Development setup
 
 ### Setup for developers
+
 This guide is meant for everyone who wants to contribute to the Rune Python Generator and needs to get things up and running.
 
 Detailed build and testing instructions can be found in [BUILDANDTEST.md](./BUILDANDTEST.md)
@@ -33,26 +34,34 @@ Detailed build and testing instructions can be found in [BUILDANDTEST.md](./BUIL
 If this guide does not work for you, be sure to raise an issue. This way we can help you figure out what the problem is and update this guide to prevent the same problem for future users.
 
 ### 1. Building with Maven
+
 Start by cloning the project: `git clone https://github.com/finos/rune-python-generator`
 
 Our project runs with Java 21. Make sure that your Maven also uses this version of Java by running `mvn -v`.
 
 To build the project, run `mvn clean package`.
+To build the project, run `mvn clean package`.
 
 #### UNIT Testing
+
 Building the project using Maven will run JUNIT-based unit tests.  All tests should pass.  To run the Python unit tests follow the instructions in [BUILDANDTEST.md](./BUILDANDTEST.md)
 
 ### 2. Setting things up in Eclipse
+
 #### Install Eclipse IDE for Java and DSL Developers
+
 Install version `2025-06` of the "Eclipse IDE for Java and DSL Developers" using the [Eclipse Installer](https://www.eclipse.org/downloads/packages/installer). You might have to enable "Advanced Mode" in the settings of the Eclipse Installer to install a specific version.
 
 #### Configure Eclipse with the right version of Java
+
 Xtend files cannot be built with any Java version later than 21. In Eclipse, go to Settings... > Java > Installed JREs and make sure the checked JRE points to a Java version of 21.
 
 #### Install the Checkstyle plugin
+
 We use [Checkstyle](https://checkstyle.sourceforge.io/) for enforcing good coding practices. The Eclipse plugin for Checkstyle can be found here: [https://checkstyle.org/eclipse-cs/#!/](https://checkstyle.org/eclipse-cs/#!/).
 
 #### Open the project in Eclipse
+
 Go to Import... > Existing Maven Project, select the right folder, click Finish.
 
 ### Standalone CLI
@@ -65,9 +74,12 @@ java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.py
 ### To Generate CDM from Rune
 
 Use this script to generated the Python version of CDM
+
 ```sh
 test/cdm_tests/cdm_setup/build_cdm.sh
+test/cdm_tests/cdm_setup/build_cdm.sh
 ```
+
 The script will use the CDM from the branch specified in the file (E.G. master) of the [FINOS Repo](https://github.com/finos/common-domain-model) and generate a wheel in the project directory `target/python-cdm`
 
 To use a different version of CDM, update CDM_VERSION in the script.
@@ -85,10 +97,12 @@ Any maintainer can merge changes that successfully build and pass the tests.
 Build or testing failures should be escalated to [@plamen-neykov](https://github.com/plamen-neykov) or [@dschwartznyc](https://github.com/dschwartznyc) for remediation.
 
 ## Contributing
+
 For any questions, bugs or feature requests please open an [issue](https://github.com/finos/rune-python-generator/issues)
 For anything else please send an email to {project mailing list}.
 
 To submit a contribution:
+
 1. Fork it (<https://github.com/finos/rune-python-generator/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
@@ -110,7 +124,7 @@ If you are unsure if you are covered under an existing CCLA send an email to hel
 
 ## Governance
 
-This project implements https://community.finos.org/docs/governance/#open-source-software-projects
+This project implements <https://community.finos.org/docs/governance/#open-source-software-projects>
 
 ## License
 
@@ -122,8 +136,8 @@ SPDX-License-Identifier: [Apache-2.0](https://spdx.org/licenses/Apache-2.0)
 
 ## Contributors
 
-- [CLOUDRISK Limited](https://www.cloudrisk.uk), email: info@cloudrisk.com
-- [FT Advisory LLC](https://www.ftadvisory.co), email: info@ftadvisory.co
-- [TradeHeader SL](https://www.tradeheader.com), email: info@tradeheader.com
+- [CLOUDRISK Limited](https://www.cloudrisk.uk), email: <info@cloudrisk.com>
+- [FT Advisory LLC](https://www.ftadvisory.co), email: <info@ftadvisory.co>
+- [TradeHeader SL](https://www.tradeheader.com), email: <info@tradeheader.com>
 
 SPDX-License-Identifier: [Apache-2.0](https://spdx.org/licenses/Apache-2.0)
