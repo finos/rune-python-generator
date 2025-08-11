@@ -3,9 +3,7 @@
 name: Release on DSL Version Change
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   check-dsl-version:
