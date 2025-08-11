@@ -37,7 +37,7 @@ Start by cloning the project: `git clone https://github.com/finos/rune-python-ge
 
 Our project runs with Java 21. Make sure that your Maven also uses this version of Java by running `mvn -v`.
 
-To build the project, run `mvn clean install`.
+To build the project, run `mvn clean package`.
 
 #### UNIT Testing
 Building the project using Maven will run JUNIT-based unit tests.  All tests should pass.  To run the Python unit tests follow the instructions in [BUILDANDTEST.md](./BUILDANDTEST.md)
@@ -55,11 +55,18 @@ We use [Checkstyle](https://checkstyle.sourceforge.io/) for enforcing good codin
 #### Open the project in Eclipse
 Go to Import... > Existing Maven Project, select the right folder, click Finish.
 
+### Standalone CLI
+The generator includes a standalone CLI which can be invoked to generate Python from a single file or from directory.  To invoke the CLI, first build the project and then:
+
+```sh
+java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI
+```
+
 ### To Generate CDM from Rune
 
 Use this script to generated the Python version of CDM
 ```sh
-build/build_cdm.sh
+test/cdm_tests/cdm_setup/build_cdm.sh
 ```
 The script will use the CDM from the branch specified in the file (E.G. master) of the [FINOS Repo](https://github.com/finos/common-domain-model) and generate a wheel in the project directory `target/python-cdm`
 
@@ -68,6 +75,14 @@ To use a different version of CDM, update CDM_VERSION in the script.
 ## Roadmap
 
 The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/) and [CDM](https://github.com/finos/common-domain-model/blob/master/ROADMAP.md) roadmaps.
+
+### Rune-DSL Updates
+
+Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will calrify whether the change succsessfully builds and passes JUNIT and Python unit testing.
+
+Any maintainer can merge changes that successfully build and pass the tests.
+
+Build or testing failures should be escalated to [@plamen-neykov](https://github.com/plamen-neykov) or [@dschwartznyc](https://github.com/dschwartznyc) for remediation.
 
 ## Contributing
 For any questions, bugs or feature requests please open an [issue](https://github.com/finos/rune-python-generator/issues)
@@ -81,9 +96,11 @@ To submit a contribution:
 5. Push to the branch (`git push origin feature/fooBar`)
 6. Create a new Pull Request
 
-_NOTE:_ Commits and pull requests to FINOS repositories will only be accepted from those contributors with an active, executed Individual Contributor License Agreement (ICLA) with FINOS OR who are covered under an existing and active Corporate Contribution License Agreement (CCLA) executed with FINOS. Commits from individuals not covered under an ICLA or CCLA will be flagged and blocked by the FINOS Clabot tool (or EasyCLA). Please note that some CCLAs require individuals/employees to be explicitly named on the CCLA.
+_NOTE:_ Commits and pull requests to FINOS repositories will only be accepted from those contributors with an active, executed Individual Contributor License Agreement (ICLA) with FINOS OR
+who are covered under an existing and active Corporate Contribution License Agreement (CCLA) executed with FINOS. Commits from individuals not covered under an ICLA or CCLA will be flagged
+and blocked by the FINOS Clabot tool (or EasyCLA). Please note that some CCLAs require individuals/employees to be explicitly named on the CCLA.
 
-Unsure if you are covered under an existing CCLA? Email help@finos.org*
+If you are unsure if you are covered under an existing CCLA send an email to help@finos.org
 
 ## Get in touch with the Rune Python Generator Team
 
