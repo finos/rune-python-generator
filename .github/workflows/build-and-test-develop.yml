@@ -8,4 +8,4 @@ on:
 
 jobs:
   build_and_test:
-    uses: ./.github/workflows/build-and-test.yml
+    uses: ./.github/workflows/build-and-test-core.yml

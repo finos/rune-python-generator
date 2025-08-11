@@ -1,0 +1,71 @@
+# .github/workflows/release-on-dsl-version-change.yml
+
+name: Release on DSL Version Change
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-dsl-version:
+    runs-on: ubuntu-latest
+    outputs:
+      dsl_version_changed: ${{ steps.check_dsl.outputs.dsl_version_changed }}
+      current: ${{ steps.get_version.outputs.current }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all tags
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: maven
+
+      - name: Get current DSL version from POM
+        id: get_version
+        run: |
+          CURRENT=$(mvn help:evaluate -Dexpression=rosetta.dsl.version -q -DforceStdout)
+          echo "Current DSL version: $CURRENT"
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+      - name: Get latest rosetta-dsl-v* tag
+        id: get_tag
+        run: |
+          TAG=$(git tag --list 'rosetta-dsl-v*' --sort=-v:refname | head -n 1)
+          if [ -z "$TAG" ]; then
+            TAG_VERSION=""
+          else
+            TAG_VERSION="${TAG#rosetta-dsl-v}"
+          fi
+          echo "Latest tag: $TAG"
+          echo "Latest tag version: $TAG_VERSION"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if DSL version is different from latest tag
+        id: check_dsl
+        run: |
+          CURRENT="${{ steps.get_version.outputs.current }}"
+          TAG_VERSION="${{ steps.get_tag.outputs.tag_version }}"
+          if [ -z "$TAG_VERSION" ]; then
+            echo "No previous tag found. Proceeding with release."
+            echo "dsl_version_changed=true" >> $GITHUB_OUTPUT
+          elif [ "$CURRENT" != "$TAG_VERSION" ]; then
+            echo "DSL version ($CURRENT) is different from latest tag ($TAG_VERSION). Proceeding with release."
+            echo "dsl_version_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "DSL version ($CURRENT) matches latest tag ($TAG_VERSION). Skipping release."
+            echo "dsl_version_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  release:
+    needs: check-dsl-version
+    if: needs.check-dsl-version.outputs.dsl_version_changed == 'true'
+    uses: ./.github/workflows/release-core.yml
+    with:
+      release_version: ${{ needs.check-dsl-version.outputs.current }}
