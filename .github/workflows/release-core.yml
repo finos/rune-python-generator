@@ -40,7 +40,7 @@ jobs:
       - name: Check if tag already exists and create if not
         id: create_tag
         env:
-          RELEASE_TAG: "rosetta-dsl-v${{ inputs.release_version }}"
+          RELEASE_TAG: "${{ inputs.release_version }}"
         run: |
           # Fetch all tags to check for existence
           git fetch --tags
