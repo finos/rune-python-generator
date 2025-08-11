@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Clean up stale submodule config
-        run:  git config --file .git/config --remove-section submodule.build/common-domain-model || true
 
       - name: Set up JDK
         uses: actions/setup-java@v4

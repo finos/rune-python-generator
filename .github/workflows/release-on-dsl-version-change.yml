@@ -19,9 +19,6 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all tags
 
-      - name: Clean up stale submodule config
-        run:  git config --file .git/config --remove-section submodule.build/common-domain-model || true
-
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
