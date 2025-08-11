@@ -91,7 +91,7 @@ The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/
 
 Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will clarify whether the change succsessfully builds and passes JUNIT and Python unit testing.
 
-Any maintainer can merge changes that successfully build and pass the tests.  To make the revised generator available to CDM, post merge a new  release tagged with the version # of the updated DSL will be required.
+Any maintainer can merge changes that successfully build and pass the tests.
 
 Build or testing failures should be escalated to [@plamen-neykov](https://github.com/plamen-neykov) or [@dschwartznyc](https://github.com/dschwartznyc) for remediation.
 
@@ -109,11 +109,11 @@ To submit a contribution:
 5. Push to the branch (`git push origin feature/fooBar`)
 6. Create a new Pull Request
 
-*_NOTE:* Commits and pull requests to FINOS repositories will only be accepted from those contributors with an active, executed Individual Contributor License Agreement (ICLA) with FINOS OR
+*NOTE:_ Commits and pull requests to FINOS repositories will only be accepted from those contributors with an active, executed Individual Contributor License Agreement (ICLA) with FINOS OR
 who are covered under an existing and active Corporate Contribution License Agreement (CCLA) executed with FINOS. Commits from individuals not covered under an ICLA or CCLA will be flagged
 and blocked by the FINOS Clabot tool (or EasyCLA). Please note that some CCLAs require individuals/employees to be explicitly named on the CCLA.
 
-If you are unsure if you are covered under an existing CCLA send an email to <help@finos.org>
+If you are unsure if you are covered under an existing CCLA send an email to help@finos.org
 
 ## Get in touch with the Rune Python Generator Team
 
