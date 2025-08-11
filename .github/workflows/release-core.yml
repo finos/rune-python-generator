@@ -59,7 +59,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          name: Release ${{ env.TAG_NAME }}
+          name: ${{ env.TAG_NAME }}
           files: |
             target/${{ steps.get_artifact_id.outputs.artifact_id }}-${{ inputs.release_version }}.jar
             target/${{ steps.get_artifact_id.outputs.artifact_id }}-${{ inputs.release_version }}-javadoc.jar
