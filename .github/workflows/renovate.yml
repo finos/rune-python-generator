@@ -33,4 +33,4 @@ jobs:
   # Add a build and test job that depends on renovate
   build_and_test:
     needs: renovate
-    uses: ./.github/workflows/build-and-test.yml
+    uses: ./.github/workflows/build-and-test-core.yml
