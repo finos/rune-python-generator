@@ -96,7 +96,7 @@ class PythonExpressionGenerator {
             ToDateTimeOperation: '''datetime.datetime.strptime(«generateExpression(expr.argument, ifLevel, isLambda)», "%Y-%m-%d %H:%M:%S")'''
             ToIntOperation: '''int(«generateExpression(expr.argument, ifLevel, isLambda)»)'''
             ToTimeOperation: '''datetime.datetime.strptime(«generateExpression(expr.argument, ifLevel, isLambda)», "%H:%M:%S").time()'''
-            ToZonedDateTimeOperation:'''datetime.datetime.strptime(«generateExpression(expr.argument, ifLevel, isLambda)», "%Y-%m-%d %H:%M:%S %z %Z")'''
+            ToZonedDateTimeOperation:'''rune_zoned_date_time(«generateExpression(expr.argument, ifLevel, isLambda)»)'''
             // Rune Operations
             RosettaAbsentExpression: '''(not rune_attr_exists(«generateExpression(expr.argument, ifLevel, isLambda)»))'''
             RosettaBinaryOperation: generateBinaryExpression(expr, ifLevel, isLambda)
