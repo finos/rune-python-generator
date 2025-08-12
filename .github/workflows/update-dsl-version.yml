@@ -1,0 +1,30 @@
+# .github/workflows/update-dsl-version.yml
+name: Update DSL Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      dsl-version:
+        description: 'New DSL version'
+        required: true
+        type: string
+
+jobs:
+  update-dsl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update DSL version
+        run: |
+          echo "Updating DSL to ${{ inputs.dsl-version }}"
+          # Insert version bump logic here
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: bump DSL to ${{ inputs.dsl-version }}" || echo "No changes to commit"
+          git push
+
+  test-update:
+    needs: update-dsl
+    uses: ./.github/workflows/build-and-test.yml

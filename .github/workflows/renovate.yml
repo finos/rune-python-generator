@@ -1,3 +1,4 @@
+# .github/workflows/renovate.yml
 # This workflow runs Renovate Bot on a schedule or on demand.
 # It uses the configuration file located at .github/renovate.json
 
@@ -33,4 +34,4 @@ jobs:
   # Add a build and test job that depends on renovate
   build_and_test:
     needs: renovate
-    uses: ./.github/workflows/build-and-test-core.yml
+    uses: ./.github/workflows/build-and-test.yml
