@@ -114,7 +114,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.tag.outputs.tag_name }}
-          name: Release ${{ needs.tag.outputs.tag_name }}
+          name: ${{ needs.tag.outputs.tag_name }}
           body: |
             Automated release for DSL version ${{ needs.tag.outputs.dsl_version }}
           files: |
