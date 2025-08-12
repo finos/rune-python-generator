@@ -1,0 +1,15 @@
+# .github/workflows/ci-renovate.yml
+name: CI on Renovate PR
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - '**/pom.xml'
+      - 'requirements*.txt'
+
+jobs:
+  renovate-ci:
+    uses: ./.github/workflows/build-and-test.yml

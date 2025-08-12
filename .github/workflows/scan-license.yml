@@ -1,3 +1,5 @@
+#workflows/license-scanning-maven.yml
+
 name: License Scanning for Maven
 
 on:
@@ -61,7 +63,7 @@ jobs:
     - name: Install XQ
       run: pip install xq
     - name: Build with Maven
-      run: mvn clean install -Dmaven.test.skip=true
+      run: mvn clean package -Dmaven.test.skip=true
       working-directory: .
     - name: License XML report
       run: mvn org.codehaus.mojo:license-maven-plugin:2.0.0:download-licenses
