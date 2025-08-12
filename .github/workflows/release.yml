@@ -1,37 +1,20 @@
-# .github/workflows/release.yml
 name: Release
 
 on:
-  push:
-    tags:
-      - '*' # Trigger on any tag push
+  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
-
 jobs:
-  # 1. Reuse the core build-and-test workflow
-  build-and-test:
-    uses: ./.github/workflows/build-and-test.yml
-    with:
-      java-version: '21'
-      python-version: '3.11'
-
-  # 2. Release job — runs only if build/test succeeds
-  release:
-    needs: build-and-test
+  tag:
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.set_tag.outputs.tag_name }}
+      dsl_version: ${{ steps.get_dsl_version.outputs.dsl_version }}
+      artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
     steps:
-      - name: Get tag name
-        id: get_tag
-        run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          RELEASE_VERSION=${TAG_NAME#rosetta-dsl-v}
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "release_version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -44,15 +27,98 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Build Release Artifacts
+      - name: Get DSL version from pom.xml
+        id: get_dsl_version
+        run: |
+          DSL_VERSION=$(mvn help:evaluate -Dexpression=rosetta.dsl.version -q -DforceStdout)
+          echo "dsl_version=$DSL_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get artifactId from pom.xml
+        id: get_artifact_id
+        run: |
+          ARTIFACT_ID=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)
+          echo "artifact_id=$ARTIFACT_ID" >> $GITHUB_OUTPUT
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Determine next tag
+        id: set_tag
+        run: |
+          DSL_VERSION="${{ steps.get_dsl_version.outputs.dsl_version }}"
+          TAGS=$(git tag --list "${DSL_VERSION}.*" | sort -V)
+          if [ -z "$TAGS" ]; then
+            NEXT_TAG="${DSL_VERSION}.0"
+          else
+            MAX_N=$(echo "$TAGS" | sed "s/^${DSL_VERSION}\.//" | sort -n | tail -1)
+            NEXT_N=$((MAX_N + 1))
+            NEXT_TAG="${DSL_VERSION}.${NEXT_N}"
+          fi
+          echo "tag_name=$NEXT_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="${{ steps.set_tag.outputs.tag_name }}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Exiting."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+
+  build-and-release:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Save original pom.xml
+        run: cp pom.xml pom.xml.bak
+
+      - name: Update pom.xml version to match tag
+        run: |
+          mvn -B versions:set -DnewVersion=${{ needs.tag.outputs.tag_name }}
+          mvn -B versions:commit
+
+      - name: Build JARs
         run: mvn -B clean package
+
+      - name: Revert pom.xml to original
+        run: mv pom.xml.bak pom.xml
+
+      - name: Archive JARs
+        id: archive
+        run: |
+          ARTIFACT_ID="${{ needs.tag.outputs.artifact_id }}"
+          TAG_NAME="${{ needs.tag.outputs.tag_name }}"
+          JAR="target/${ARTIFACT_ID}-${TAG_NAME}.jar"
+          JAVADOC_JAR="target/${ARTIFACT_ID}-${TAG_NAME}-javadoc.jar"
+          echo "jar_path=$JAR" >> $GITHUB_OUTPUT
+          echo "javadoc_jar_path=$JAVADOC_JAR" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.get_tag.outputs.tag_name }}
-          name: Release ${{ steps.get_tag.outputs.release_version }}
+          tag_name: ${{ needs.tag.outputs.tag_name }}
+          name: Release ${{ needs.tag.outputs.tag_name }}
           body: |
-            Automated release for version ${{ steps.get_tag.outputs.release_version }}
+            Automated release for DSL version ${{ needs.tag.outputs.dsl_version }}
+          files: |
+            ${{ steps.archive.outputs.jar_path }}
+            ${{ steps.archive.outputs.javadoc_jar_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
