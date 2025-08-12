@@ -12,6 +12,20 @@ The generated Python relies upon the [RunePythonRuntime](https://github.com/fino
 
 The features of the current version can be found in the [release notes](./RELEASE.md)
 
+## Releases
+
+Releases are made automatically by invoking the [release workflow](./.github/workflows.yml).  Releases will be sequentially tagged using four semantic elements (x.y.z.n).  Each change of the value of rosetta.dsl.version in the POM resets the fourth digit.  
+
+For example, if the dsl version is 9.64.1, the release will be tagged 9.64.1.0.  Until a new dsl version, each subsequent release will increment the fourth digit (i.e. the next release would be tagged 9.64.1.1).  
+
+Releases should not be manually tagged.
+
+### Rune-DSL Updates
+
+Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will clarify whether the change succsessfully builds and passes JUNIT and Python unit testing.  Any maintainer can merge changes that successfully build and pass the tests.
+
+A PR must be raised for changes to address address build or testing failures.
+
 ## Repository Organization
 
 - `README.md` - this file, for documentation purposes
@@ -20,7 +34,7 @@ The features of the current version can be found in the [release notes](./RELEAS
 - `src/main`  - Java/Xtend code to generate Python from Rune
 - `src/test`  - Java/Xtend code to run JUnit tests on the code generation process
 - `build` - configuration scripts to setup and tear down the Python unit testing environment
-- `build/build_cdm.sh` - used to create a Python package from code generated using CDM Rune definitions
+- `build/build_cdm.sh` - used to create a Python package using CDM Rune definitions
 - `test` - Python unit tests and scripts to run the tests
 
 ## Development setup
@@ -86,14 +100,6 @@ To use a different version of CDM, update CDM_VERSION in the script.
 ## Roadmap
 
 The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/) and [CDM](https://github.com/finos/common-domain-model/blob/master/ROADMAP.md) roadmaps.
-
-### Rune-DSL Updates
-
-Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will clarify whether the change succsessfully builds and passes JUNIT and Python unit testing.
-
-Any maintainer can merge changes that successfully build and pass the tests.
-
-Build or testing failures should be escalated to [@plamen-neykov](https://github.com/plamen-neykov) or [@dschwartznyc](https://github.com/dschwartznyc) for remediation.
 
 ## Contributing
 
