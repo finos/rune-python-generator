@@ -1,0 +1,55 @@
+# .github/workflows/build-and-test.yml
+
+name: Core Build and Test
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        required: false
+        type: string
+        default: '21'
+      python-version:
+        required: false
+        type: string
+        default: '3.11'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Java
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+          cache: maven
+
+      - name: Build & Test (Java)
+        run: mvn -B clean verify
+
+      # Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Run Python Unit Tests
+        run: |
+          chmod +x test/python_setup/setup_python_env.sh
+          chmod +x test/python_setup/cleanup_python_env.sh
+          chmod +x test/python_unit_tests/setup_unit_test_env.sh
+          chmod +x test/python_unit_tests/run_python_unit_tests.sh
+          test/python_unit_tests/run_python_unit_tests.sh
