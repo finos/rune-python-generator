@@ -1,3 +1,5 @@
+# workflows/cve-scanning.yml
+
 name: CVE Scanning for Maven
 
 on:
@@ -7,7 +9,7 @@ on:
 
 # Cancel previous jobs
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: cve-scan-${{ github.ref }}
   cancel-in-progress: true
   
 jobs:

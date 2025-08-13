@@ -70,7 +70,7 @@ class PythonGeneratorTestUtils {
                 LOGGER.error("Failed to delete folder content: " + e.message)
             }
         } else {
-            LOGGER.error(folderPath + " does not exist or is not a directory")
+            LOGGER.info(folderPath + " does not exist or is not a directory")
         }
     }
 

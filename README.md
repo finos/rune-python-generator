@@ -2,15 +2,28 @@
 
 <img align="right" width="15%" alt="FINOS" src="https://www.finos.org/hubfs/FINOS/finos-logo/FINOS_Icon_Wordmark_Name_RGB_horizontal.png">
 
+
 # Rune Python Generator
 
-*Rune Python Generator* - the generator enables creation of Python from [Rune](https://github.com/finos/rune-dsl).  It supports the full Rune type syntax, and, as described in [EXPRESSION_SUPPORT.md](./EXPRESSION_SUPPORT.md), expression coverage is comprehensive.  The generator does not yet fully implement function generation.
+The Rune Python Generator creates Python code from [Rune](https://github.com/finos/rune-dsl).  It fully supports the Rune type syntax and has comprehensive [expression coverage](./EXPRESSION_SUPPORT.md), though function generation is not yet fully implemented.
 
-The generated Python relies upon the [RunePythonRuntime](https://github.com/finos/rune-python-runtime) library and requires Python version 3.11+.
+The generated code requires the [RunePythonRuntime](https://github.com/finos/rune-python-runtime) library and Python 3.11+.
 
-## Release Notes
+## Releases
+
+Releases are [triggered manually](./.github/workflows.yml) and follow a four-part semantic versioning scheme (x.y.z.n). The first three numbers match the **rosetta.dsl.version** in the **pom.xml**, and the fourth number tracks generator changes.
+
+For example, when the DSL version updates to **9.64.1**, the first release will be tagged **9.64.1.0**. Subsequent releases will only increment the fourth digit (e.g., **9.64.1.1**) until the DSL version changes again.
+
+Releases **should** not be manually tagged.
+
+### Release Notes
 
 The features of the current version can be found in the [release notes](./RELEASE.md)
+
+### Rune-DSL Updates
+
+The Renovate bot automatically handles DSL updates by creating a pull request. Maintainers can merge this PR if it passes the automated build and unit tests. Manual changes including a new PR are required if the tests fail.
 
 ## Repository Organization
 
@@ -20,18 +33,18 @@ The features of the current version can be found in the [release notes](./RELEAS
 - `src/main`  - Java/Xtend code to generate Python from Rune
 - `src/test`  - Java/Xtend code to run JUnit tests on the code generation process
 - `build` - configuration scripts to setup and tear down the Python unit testing environment
-- `build/build_cdm.sh` - used to create a Python package from code generated using CDM Rune definitions
+- `build/build_cdm.sh` - used to create a Python package using CDM Rune definitions
 - `test` - Python unit tests and scripts to run the tests
 
 ## Development setup
 
-### Setup for developers
+### For developers
 
 This guide is meant for everyone who wants to contribute to the Rune Python Generator and needs to get things up and running.
 
 Detailed build and testing instructions can be found in [BUILDANDTEST.md](./BUILDANDTEST.md)
 
-If this guide does not work for you, be sure to raise an issue. This way we can help you figure out what the problem is and update this guide to prevent the same problem for future users.
+Troubleshooting: If you run into issues, please open an [issue](https://github.com/finos/rune-python-generator/issues). This helps us improve the guide for everyone.
 
 ### 1. Building with Maven
 
@@ -65,73 +78,58 @@ Go to Import... > Existing Maven Project, select the right folder, click Finish.
 
 ### Standalone CLI
 
-The generator includes a standalone CLI which can be invoked to generate Python from a single file or from directory.  To invoke the CLI, first build the project and then:
+To generate Python code from a single file or directory, after building the project use the standalone CLI by executing the following command:
 
-```sh
+```bash
 java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI
 ```
 
-### To Generate CDM from Rune
+### Generating CDM from Rune
 
-Use this script to generated the Python version of CDM
+To generate the Python version of the Common Domain Model (CDM), use the **build_cdm.sh** script. This script uses the branch specified in the file and creates a wheel in target/python-cdm.
 
-```sh
+```bash
 test/cdm_tests/cdm_setup/build_cdm.sh
 ```
 
-The script will use the CDM from the branch specified in the file (E.G. master) of the [FINOS Repo](https://github.com/finos/common-domain-model) and generate a wheel in the project directory `target/python-cdm`
+To use a different version of CDM, simply update the **CDM_VERSION** variable in the script.
 
-To use a different version of CDM, update CDM_VERSION in the script.
+## Roadmap, Contributing, Getting in Touch, and Governance
 
-## Roadmap
+### Roadmap
 
-The Roadmap will be aligned to the [Rune-DSL](https://github.com/finos/rune-dsl/) and [CDM](https://github.com/finos/common-domain-model/blob/master/ROADMAP.md) roadmaps.
+The project roadmap is aligned with the [Rune-DSL](https://github.com/finos/rune-dsl/) and [CDM](https://github.com/finos/common-domain-model/blob/master/ROADMAP.md) roadmaps.
 
-### Rune-DSL Updates
+### Contributing
 
-Renovate will generate a PR when the version of the DSL has been updated at com.regnosys.rosetta:com.regnosys.rosetta.  The PR will clarify whether the change succsessfully builds and passes JUNIT and Python unit testing.
+We welcome contributions! Please follow these steps to get started:
 
-Any maintainer can merge changes that successfully build and pass the tests.  To make the revised generator available to CDM, post merge a new  release tagged with the version # of the updated DSL will be required.
-
-Build or testing failures should be escalated to [@plamen-neykov](https://github.com/plamen-neykov) or [@dschwartznyc](https://github.com/dschwartznyc) for remediation.
-
-## Contributing
-
-For any questions, bugs or feature requests please open an [issue](https://github.com/finos/rune-python-generator/issues)
-For anything else please send an email to {project mailing list}.
-
-To submit a contribution:
-
-1. Fork it (<https://github.com/finos/rune-python-generator/fork>)
+1. Fork the repository (<https://github.com/finos/rune-python-generator/fork>)
 2. Create your feature branch (`git checkout -b feature/fooBar`)
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
 4. Commit your changes (`git commit -am 'Add some fooBar'`)
 5. Push to the branch (`git push origin feature/fooBar`)
 6. Create a new Pull Request
 
-*_NOTE:* Commits and pull requests to FINOS repositories will only be accepted from those contributors with an active, executed Individual Contributor License Agreement (ICLA) with FINOS OR
-who are covered under an existing and active Corporate Contribution License Agreement (CCLA) executed with FINOS. Commits from individuals not covered under an ICLA or CCLA will be flagged
-and blocked by the FINOS Clabot tool (or EasyCLA). Please note that some CCLAs require individuals/employees to be explicitly named on the CCLA.
+**NOTE: FINOS repositories require an executed and active FINOS Individual Contributor License Agreement (ICLA) or an executed and active FINOS Corporate Contribution License Agreement (CCLA). The FINOS Clabot tool (or EasyCLA) will flag and block commits from individuals not covered. Please note that some CCLAs require individuals/employees to be explicitly named on the CCLA.**
 
 If you are unsure if you are covered under an existing CCLA send an email to <help@finos.org>
 
-## Get in touch with the Rune Python Generator Team
+### Get In Touch
 
- Get in touch with the Rune team by creating a [GitHub issue](https://github.com/finos/rune-python-generator/issues/new) and labelling it with "help wanted".
+Get in touch with the Rune Python Generator team by creating a [GitHub issue](https://github.com/finos/rune-python-generator/issues/new) and labelling it with "help wanted".
 
- We encourage the community to get in touch via the [FINOS Slack](https://www.finos.org/blog/finos-announces-new-community-slack).
+We also encourage the community to get in touch via the [FINOS Slack](https://www.finos.org/blog/finos-announces-new-community-slack).
 
-## Governance
+### Governance
 
-This project implements <https://community.finos.org/docs/governance/#open-source-software-projects>
+This project is governed by the FINOS Open Source Software Project Governance <https://community.finos.org/docs/governance/#open-source-software-projects>
 
-## License
+### License
 
 Copyright 2023-2025 CLOUDRISK Limited and FT Advisory LLC
 
 Distributed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-
-SPDX-License-Identifier: [Apache-2.0](https://spdx.org/licenses/Apache-2.0)
 
 ## Contributors
 

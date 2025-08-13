@@ -1,25 +1,51 @@
-name: Build and Test (Reusable)
+# .github/workflows/build-and-test.yml
+
+name: Core Build and Test
 
 on:
   workflow_call:
+    inputs:
+      java-version:
+        required: false
+        type: string
+        default: '21'
+      python-version:
+        required: false
+        type: string
+        default: '3.11'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build_and_test:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK 21
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
           cache: maven
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+
+      - name: Build & Test (Java)
+        run: mvn -B clean verify
+
+      # Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - name: Build with Maven
-        run: mvn -B package -Psign-artifacts --file pom.xml
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
       - name: Run Python Unit Tests
         run: |
           chmod +x test/python_setup/setup_python_env.sh
