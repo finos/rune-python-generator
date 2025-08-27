@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base"],
+  "extends": ["config:recommended"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
   "packageRules": [
@@ -14,13 +14,13 @@
       "enabled": true
     },
     {
-      "description": "Disable all that are not maven AND not those names",
+      "description": "Disable all Maven dependencies except the specified ones",
       "matchManagers": ["maven"],
-      "excludePackageNames": [
-        "com.regnosys.rosetta:com.regnosys.rosetta",
-        "rosetta.dsl.version"
-      ],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "!com.regnosys.rosetta:com.regnosys.rosetta",
+        "!rosetta.dsl.version"
+      ]
     }
   ]
 }
