@@ -3,6 +3,7 @@
 # It uses the configuration file located at .github/renovate.json
 
 name: Renovate
+
 on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -13,25 +14,26 @@ on:
 jobs:
   renovate:
     runs-on: ubuntu-latest
-    # Grants the GITHUB_TOKEN the necessary permissions for Renovate to read repository content and create pull requests.
+    # 👇 Expanded permissions so Renovate can do everything it needs
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write          # push branches, update files
+      pull-requests: write     # open/update PRs
+      issues: write            # create/update Dependency Dashboard issue
+      security-events: read    # read Dependabot vulnerability alerts
     steps:
-      # Checks out the repository under $GITHUB_WORKSPACE, so your job can access it
+      # Checks out the repository under $GITHUB_WORKSPACE
       - uses: actions/checkout@v4
+
       # Runs the Renovate GitHub Action
       - name: Renovate
-        # Using a slightly newer version of the action
         uses: renovatebot/github-action@v40.2.2
         with:
-          # The token is required to create pull requests.
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # Specifies the path to your Renovate configuration file.
+          token: ${{ secrets.GITHUB_TOKEN }} # required to create PRs/issues
           configurationFile: .github/renovate.json
         env:
-          RENOVATE_REPOSITORIES: ${{ github.repository }} # This tells Renovate to scan the current repo
-  # Add a build and test job that depends on renovate
+          RENOVATE_REPOSITORIES: ${{ github.repository }} # scan current repo
+
+  # Optional: run your build/test workflow after Renovate finishes
   build_and_test:
     needs: renovate
     uses: ./.github/workflows/build-and-test.yml
