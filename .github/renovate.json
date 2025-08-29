@@ -22,8 +22,8 @@
         "rosetta.dsl.version"
       ],
       "labels": ["rosetta"],
-      "prPriority": 1,              // higher priority PRs
-      "automerge": false            // keep manual review
+      "prPriority": 1,
+      "automerge": false
     },
     {
       "description": "Label GitHub Actions updates",
