@@ -5,6 +5,7 @@
   "prHourlyLimit": 20,
   "dependencyDashboard": true,
   "dependencyDashboardApproval": false,
+  "vulnerabilityAlerts": false,
   "packageRules": [
     {
       "description": "Update the Maven property rosetta.dsl.version when com.regnosys.rosetta releases a new version",
