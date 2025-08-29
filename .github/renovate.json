@@ -6,14 +6,11 @@
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
 
-  // Enable the Dependency Dashboard
   "dependencyDashboard": true,
   "dependencyDashboardApproval": false,
 
-  // Disable vulnerability alerts integration (avoids warning)
   "vulnerabilityAlerts": false,
 
-  // Explicitly enable both Maven and GitHub Actions managers
   "enabledManagers": ["maven", "github-actions"],
 
   "packageRules": [
