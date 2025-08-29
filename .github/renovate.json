@@ -5,33 +5,42 @@
   ],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
+
+  // Enable the Dependency Dashboard
   "dependencyDashboard": true,
   "dependencyDashboardApproval": false,
-  "vulnerabilityAlerts": {
-    "enabled": false
-  },
+
+  // Disable vulnerability alerts integration (avoids warning)
+  "vulnerabilityAlerts": false,
+
+  // Explicitly enable both Maven and GitHub Actions managers
+  "enabledManagers": ["maven", "github-actions"],
+
   "packageRules": [
     {
-      "description": "Update the Maven property rosetta.dsl.version when com.regnosys.rosetta releases a new version",
-      "matchManagers": [
-        "maven"
-      ],
+      "description": "Highlight and prioritize rosetta.dsl.version updates",
+      "matchManagers": ["maven"],
       "matchPackageNames": [
         "com.regnosys.rosetta:com.regnosys.rosetta",
         "rosetta.dsl.version"
       ],
-      "enabled": true
+      "labels": ["rosetta"],
+      "prPriority": 1,              // higher priority PRs
+      "automerge": false            // keep manual review
     },
     {
-      "description": "Disable all Maven dependencies except the specified ones",
-      "matchManagers": [
-        "maven"
+      "description": "Label GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "labels": ["github-actions"]
+    },
+    {
+      "description": "Label all other Maven dependency updates",
+      "matchManagers": ["maven"],
+      "excludePackageNames": [
+        "com.regnosys.rosetta:com.regnosys.rosetta",
+        "rosetta.dsl.version"
       ],
-      "enabled": false,
-      "matchPackageNames": [
-        "!com.regnosys.rosetta:com.regnosys.rosetta",
-        "!rosetta.dsl.version"
-      ]
+      "labels": ["maven"]
     }
   ]
 }
