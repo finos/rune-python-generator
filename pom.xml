@@ -507,9 +507,6 @@
                 <version>${maven-javadoc-plugin.version}</version>
                 <configuration combine.self="override">
                     <failOnError>false</failOnError>
-                    <source>${maven.compiler.release}</source>
-                    <additionalOptions/>
-                    <additionalparam></additionalparam>
                 </configuration>
                 <executions>
                     <execution>
