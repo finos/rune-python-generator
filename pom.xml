@@ -505,8 +505,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>${maven-javadoc-plugin.version}</version>
-                <configuration>
+                <configuration combine.self="override">
                     <failOnError>false</failOnError>
+                    <source>${maven.compiler.release}</source>
+                    <additionalOptions/>
+                    <additionalparam></additionalparam>
                 </configuration>
                 <executions>
                     <execution>
