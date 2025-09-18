@@ -180,16 +180,26 @@ class PythonExpressionGenerator {
     }
 
     private def getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda){
-        val enumGuard= caseGuard.getEnumGuard
-        if (enumGuard!==null){
-            return '''switchAttribute == rune_resolve_attr(«generateEnumString(enumGuard)»,"«caseGuard.getEnumGuard.getName()»")'''
+        if (caseGuard === null) {
+            throw new UnsupportedOperationException("Null SwitchCaseGuard")
         }
-        if (caseGuard.getChoiceOptionGuard!==null){
-            return '''rune_resolve_attr(switchAttribute,"«caseGuard.getChoiceOptionGuard.getName()»")'''
+        val literalGuard = caseGuard.getLiteralGuard();
+        if (literalGuard !== null) {
+            return '''switchAttribute == «generateExpression(literalGuard, 0, isLambda)»'''
         }
-        if (caseGuard.getSymbolGuard!==null){
-            return '''rune_resolve_attr(switchAttribute,"«caseGuard.getSymbolGuard.getName()»")'''
+        val enumGuard = caseGuard.getEnumGuard
+        if (enumGuard !== null){
+            return '''switchAttribute == rune_resolve_attr(«generateEnumString(enumGuard)»,"«enumGuard.getName()»")'''
         }
+        val optionGuard = caseGuard.getChoiceOptionGuard
+        if (optionGuard !== null){
+            return '''rune_resolve_attr(switchAttribute,"«optionGuard.getName()»")'''
+        }
+        val dataGuard = caseGuard.getDataGuard
+        if (dataGuard !== null){
+            return '''rune_resolve_attr(switchAttribute,"«dataGuard.getName()»")'''
+        }
+        throw new UnsupportedOperationException("Unsupported SwitchCaseGuard type")
     }
 
     private def String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
@@ -204,8 +214,8 @@ class PythonExpressionGenerator {
         
         for (pair : expr.cases.indexed) {
             val currentCase = pair.value
-            val funcName= (currentCase.isDefault()) ? "_then_default" : "_then_"+ (pair.key+1)
-            val thenExprDef= (currentCase.isDefault()) ? generateExpression(expr.getDefault(), 0, isLambda) : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda)
+            val funcName = (currentCase.isDefault()) ? "_then_default" : "_then_"+ (pair.key+1)
+            val thenExprDef = (currentCase.isDefault()) ? generateExpression(expr.getDefault(), 0, isLambda) : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda)
             
             _thenFuncsBuilder.append(indent)
             _thenFuncsBuilder.append("def "+funcName + "():")
@@ -214,7 +224,7 @@ class PythonExpressionGenerator {
             _thenFuncsBuilder.append("    return "+ thenExprDef)
             _thenFuncsBuilder.newLine
             
-            if(currentCase.isDefault()){
+            if (currentCase.isDefault()) {
                  // Default else
                 _switchLogicBuilder.append(indent)
                 _switchLogicBuilder.append("else:")
@@ -223,21 +233,12 @@ class PythonExpressionGenerator {
                 _switchLogicBuilder.append("    return ")
                 _switchLogicBuilder.append(funcName)
                 _switchLogicBuilder.append("()")
-            }
-            else{
-                val guard =currentCase.getGuard()
-        
+            } else {
+                val guard = currentCase.getGuard()
                 val prefix = (pair.key == 0) ? "if " : "elif "
                 _switchLogicBuilder.append(indent)
                 _switchLogicBuilder.append(prefix)
-                if (guard.getLiteralGuard() !== null) {
-                    val guardExpr = generateExpression(guard.getLiteralGuard(), 0, isLambda)
-                    _switchLogicBuilder.append("switchAttribute == ")
-                    _switchLogicBuilder.append(guardExpr)
-                } else {
-                    val guardExpr = getGuardExpression(guard, isLambda)
-                    _switchLogicBuilder.append(guardExpr)
-                }
+                _switchLogicBuilder.append(getGuardExpression(guard, isLambda))
                 _switchLogicBuilder.append(":")
                 _switchLogicBuilder.newLine()
                 _switchLogicBuilder.append(indent)

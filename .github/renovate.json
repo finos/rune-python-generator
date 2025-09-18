@@ -1,26 +1,56 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base"],
+  "extends": [
+    "config:recommended"
+  ],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 20,
+  "dependencyDashboard": true,
+  "dependencyDashboardApproval": false,
+  "vulnerabilityAlerts": {
+    "enabled": false
+  },
+  "enabledManagers": [
+    "maven",
+    "github-actions"
+  ],
   "packageRules": [
     {
-      "description": "Update the Maven property rosetta.dsl.version when com.regnosys.rosetta releases a new version",
-      "matchManagers": ["maven"],
+      "description": "Highlight and prioritize rosetta.dsl.version updates",
+      "matchManagers": [
+        "maven"
+      ],
       "matchPackageNames": [
         "com.regnosys.rosetta:com.regnosys.rosetta",
         "rosetta.dsl.version"
       ],
-      "enabled": true
+      "labels": [
+        "rosetta"
+      ],
+      "prPriority": 1,
+      "automerge": false
     },
     {
-      "description": "Disable all that are not maven AND not those names",
-      "matchManagers": ["maven"],
-      "excludePackageNames": [
-        "com.regnosys.rosetta:com.regnosys.rosetta",
-        "rosetta.dsl.version"
+      "description": "Label GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
       ],
-      "enabled": false
+      "labels": [
+        "github-actions"
+      ]
+    },
+    {
+      "description": "Label all other Maven dependency updates",
+      "matchManagers": [
+        "maven"
+      ],
+      "labels": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "!com.regnosys.rosetta:com.regnosys.rosetta",
+        "!rosetta.dsl.version"
+      ]
     }
   ]
 }
