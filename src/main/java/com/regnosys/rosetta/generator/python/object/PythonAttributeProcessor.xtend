@@ -29,6 +29,7 @@ class PythonAttributeProcessor {
 
     def CharSequence generateAllAttributes(Data rosettaClass, Map<String, List<String>> keyRefConstraints) {
         // generate Python for all the attributes in this class
+        println('PythonAttributeProcessor::generateAllAttributes for: ' + rosettaClass.getName)
         val allAttributes = rosettaClass.buildRDataType.getOwnAttributes
         // it is an empty class if there are no attribute and no conditions
         if (allAttributes.size() === 0 && rosettaClass.conditions.size() === 0) {
@@ -198,8 +199,10 @@ class PythonAttributeProcessor {
         val otherMeta = new ArrayList<String>()
 
         // process attribute metadata
-        if (attrRMAT.hasMeta) {
+//        if (attrRMAT.hasMeta) {
+        if (attrRMAT.hasAttributeMeta) {
             attrRMAT.getMetaAttributes.forEach [ma |
+                println('ma.getName: ' + ma.getName)
                 switch(ma.getName) {
                     case "key", case "id": {
                         validators.add("@key")
