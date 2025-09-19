@@ -82,6 +82,7 @@
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
         <rosetta.dsl.version>9.65.3</rosetta.dsl.version>
+        
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>

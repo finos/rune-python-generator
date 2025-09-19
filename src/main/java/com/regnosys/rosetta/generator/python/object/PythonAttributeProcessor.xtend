@@ -199,7 +199,6 @@ class PythonAttributeProcessor {
         val otherMeta = new ArrayList<String>()
 
         // process attribute metadata
-//        if (attrRMAT.hasMeta) {
         if (attrRMAT.hasAttributeMeta) {
             attrRMAT.getMetaAttributes.forEach [ma |
                 println('ma.getName: ' + ma.getName)
