@@ -87,7 +87,7 @@
         <guice.version>6.0.0</guice.version>
 
         <slf4j.version>2.0.13</slf4j.version>
-        <logback.version>1.5.6</logback.version>
+        <logback.version>1.5.19</logback.version>
 
         <!-- test -->
         <junit.version>5.13.4</junit.version>
