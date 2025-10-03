@@ -148,10 +148,10 @@ class PythonMetaDataGeneratorTest {
         class test_generated_syntax_metadata_NodeRef(BaseDataClass):
             _FQRTN = 'test.generated_syntax.metadata.NodeRef'
             typeA: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]] = Field(None, description='')
-            aReference: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@ref', '@ref:external'))]] = Field(None, description='')
+            aReference: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]] = Field(None, description='')
             
             _KEY_REF_CONSTRAINTS = {
-                'aReference': {'@ref', '@ref:external'}
+                'aReference': {'@key', '@key:external', '@ref', '@ref:external'}
             }
         '''
         testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedNodeRef)

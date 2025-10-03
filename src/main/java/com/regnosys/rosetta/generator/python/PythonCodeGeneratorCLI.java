@@ -174,7 +174,7 @@ public class PythonCodeGeneratorCLI {
         Map<String, CharSequence> generatedPython = new HashMap<>();
         pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
         for (RosettaModel model : models) {
-            System.out.println("Processing: " + model.getName());
+            LOGGER.info("Processing: " + model.getName());
             generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.afterGenerate(model.eResource(), model, version));
