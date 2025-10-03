@@ -1,0 +1,23 @@
+# .github/workflows/run-build-and-test.yml
+
+name: Run Build and Test (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      java-version:
+        description: Java version (Temurin)
+        required: false
+        default: '21'
+      python-version:
+        description: Python version
+        required: false
+        default: '3.11'
+
+jobs:
+  run-core-build-and-test:
+    uses: ./.github/workflows/build-and-test.yml
+    with:
+      java-version: ${{ inputs.java-version }}
+      python-version: ${{ inputs.python-version }}
+    secrets: inherit
