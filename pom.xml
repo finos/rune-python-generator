@@ -73,7 +73,7 @@
 
         <apache.commons.lang.version>3.13.0</apache.commons.lang.version>
         <apache.commons.text.version>1.11.0</apache.commons.text.version>
-        <commons-io.version>2.19.0</commons-io.version>
+        <commons-io.version>2.20.0</commons-io.version>
         <guava.version>33.3.1-jre</guava.version>
 
         <!-- Release -->
@@ -81,7 +81,7 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.66.0</rosetta.dsl.version>
+        <rosetta.dsl.version>9.67.9</rosetta.dsl.version>
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>
@@ -90,7 +90,7 @@
         <logback.version>1.5.6</logback.version>
 
         <!-- test -->
-        <junit.version>5.13.4</junit.version>
+        <junit.version>6.0.0</junit.version>
         <hamcrest.version>3.0</hamcrest.version>
 
         <!-- plugin -->
