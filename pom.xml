@@ -109,16 +109,6 @@
         <!-- Used by the Python generator -->
         <cdm.rosetta.source.path>build/common-domain-model/rosetta-source/src/main/rosetta</cdm.rosetta.source.path>
         <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
-        <unittest.rosetta.source.path>test/python_unit_tests/rosetta</unittest.rosetta.source.path>
-        <unittest.python.output.path>target/python-tests/unit_tests</unittest.python.output.path>
-        <serialization.test.rune.roundtrip.source.path>
-            test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-round-trip-test
-        </serialization.test.rune.roundtrip.source.path>
-        <serialization.test.rune.shouldfail.source.path>
-            test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-error-handling-test
-        </serialization.test.rune.shouldfail.source.path>
-        <serialization.test.python.output.path>target/python-tests/serialization_unit_tests
-        </serialization.test.python.output.path>
     </properties>
 
     <dependencyManagement>
