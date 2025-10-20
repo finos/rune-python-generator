@@ -59,11 +59,10 @@ echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
 source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
 
-# Ensure generated code is importable
-export PYTHONPATH="$PYTHON_TESTS_TARGET_PATH:$PYTHONPATH"
-
-# Additional unit test env (if any)
-source "$MY_PATH/setup_unit_test_env.sh"
+# package and install generated Python
+cd $PYTHON_TESTS_TARGET_PATH
+$PYEXE -m pip wheel --no-deps --only-binary :all: . || processError
+$PYEXE -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
 
 # run tests
 echo "***** run unit tests"
