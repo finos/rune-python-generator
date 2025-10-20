@@ -18,7 +18,7 @@ import java.util.ArrayList
 import org.junit.jupiter.api.Disabled
 
 // TODO: add generated unit tests for number operations with arithmetic operators -,*,/ and for number and string operations with +
-// TODO: refactor Python-based unit tests to use the CLI to generate the tests.  Start with Serialization tests
+// TODO: refactor Python-based unit tests to use the CLI to generate the tests.  Next - generatePythonUnitTests
 // TODO: refactor CDM generator to use the CLI
 
 /*
@@ -90,51 +90,6 @@ class PythonFilesGeneratorTest {
         }
         catch(Exception e) {
             LOGGER.error('generatePythonUnitTestsFromRosetta ... processing failed with an Exception')
-            LOGGER.error('\n' + e.toString())
-        }
-    }
-
-    /*
-     * generate Serialization Python Unit Tests from Rosetta files.
-     */
-    @Test
-    def void generatePythonSerializationUnitTests() {
-        try {
-            LOGGER.info('generatePythonSerializationUnitTests ... start')
-            // Retrieve properties
-            val rosettaRoundTripSourcePath  = utils.getPropertyOrMessage ('serialization.test.rune.roundtrip.source.path')
-            val rosettaShouldFailSourcePath = utils.getPropertyOrMessage ('serialization.test.rune.shouldfail.source.path')
-            val pythonOutputPath  = utils.getPropertyOrMessage ('serialization.test.python.output.path')
-            if (pythonOutputPath !== null) {
-                var rosettaFiles = new ArrayList<Path>();
-                if (rosettaRoundTripSourcePath !== null) {
-                    rosettaFiles.addAll (utils.getFileListWithRecursion(rosettaRoundTripSourcePath, 'rosetta'))
-                }
-                if (rosettaShouldFailSourcePath !== null) {
-                    rosettaFiles.addAll (utils.getFileListWithRecursion(rosettaShouldFailSourcePath, 'rosetta'))
-                }
-                if (rosettaFiles.length () > 0) {
-                    LOGGER.info('generatePythonSerializationUnitTests ... generate python start')
-                    utils.generatePythonFromDSLFiles(rosettaFiles, pythonOutputPath)
-                    val path = Paths.get(pythonOutputPath + '/__init__.py')
-                    if (!Files.exists(path)) {
-                        Files.createFile(path)
-                    }
-                    LOGGER.info('generatePythonSerializationUnitTests ... generate python end')
-                }
-            }
-            LOGGER.info('generatePythonSerializationUnitTests ... done')
-        } 
-        catch (IOException ioE) {
-            LOGGER.error('generatePythonSerializationUnitTests ... processing failed with an IO Exception')
-            LOGGER.error('\n' + ioE.toString())
-        }
-        catch (ClassCastException ccE) {
-            LOGGER.error('generatePythonSerializationUnitTests ... processing failed with a ClassCastException')
-            LOGGER.error('\n' + ccE.toString())
-        }
-        catch(Exception e) {
-            LOGGER.error('generatePythonSerializationUnitTests ... processing failed with an Exception')
             LOGGER.error('\n' + e.toString())
         }
     }
