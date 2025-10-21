@@ -1,20 +1,16 @@
-# .github/workflows/ci-main.yml
+# .github/workflows/ci-renovate.yml
 
-name: CI - Main
-
+name: CI - Renovate Branches
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
+    push:
+        branches:
+            - 'renovate/**'   # adjust if you changed Renovate's branchPrefix
 concurrency:
-  group: ci-main-${{ github.ref }}
-  cancel-in-progress: true
-
+    group: ci-renovate-${{ github.ref }}
+    cancel-in-progress: true
 jobs:
-  build-and-test:
-    uses: ./.github/workflows/build-and-test.yml
-    with:
-      java-version: '21'
-      python-version: '3.11'
+    build-and-test:
+        uses: ./.github/workflows/build-and-test.yml
+        with:
+            java-version: '21'
+            python-version: '3.11'

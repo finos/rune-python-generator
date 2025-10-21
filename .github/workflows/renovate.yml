@@ -29,6 +29,11 @@ jobs:
       issues: write
       security-events: read
     steps:
+      # Checks out the repository under $GITHUB_WORKSPACE
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
       # Runs the Renovate GitHub Action
       - name: Renovate
         uses: renovatebot/github-action@v43.0.18
@@ -36,3 +41,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           configurationFile: .github/renovate.json
           renovate-version: 43   # pin to a major; bump intentionally when ready
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }} # scan current repo
