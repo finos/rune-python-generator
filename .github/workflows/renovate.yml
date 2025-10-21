@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     # 👇 Expanded permissions so Renovate can do everything it needs
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-      security-events: read
+      contents: write          # push branches, update files
+      pull-requests: write     # open/update PRs
+      issues: write            # create/update Dependency Dashboard issue
+      security-events: read    # read Dependabot vulnerability alerts
     steps:
       # Checks out the repository under $GITHUB_WORKSPACE
       - uses: actions/checkout@v5
@@ -32,7 +32,7 @@ jobs:
       - name: Renovate
         uses: renovatebot/github-action@v43.0.18
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }} # required to create PRs/issues
           configurationFile: .github/renovate.json
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }} # scan current repo
