@@ -190,7 +190,7 @@ jobs:
 
     - name: In dry run - upload build outputs as workflow artifacts
       if: ${{ github.event.inputs.dry_run == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: dry-run-${{ needs.prepare-release.outputs.tag_name }}
         path: |
