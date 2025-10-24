@@ -93,7 +93,7 @@ jobs:
           echo "Next tag computed: $NEXT_TAG"
           echo "tag_name=$NEXT_TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Guard: only allow real release from main
+      - name: Guard only allow real release from main
         if: ${{ github.event.inputs.dry_run != 'true' }}
         shell: bash
         run: |
