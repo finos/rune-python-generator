@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event.inputs.base_ref || 'main' }}" != "main" ]; then
-            echo "Refusing to perform a real release from '${{ github.event.inputs.base_ref }}'. Use main or set dry_run=true."
+            echo "Unable to perform a release from '${{ github.event.inputs.base_ref }}'. Use main or set dry_run=true."
             exit 1
           fi
 
