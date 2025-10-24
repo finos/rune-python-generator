@@ -135,51 +135,80 @@ jobs:
           git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
           git push --atomic origin HEAD:"${BASE_REF}" "${TAG_NAME}"
 
-  build-and-release:
+  build-and-verify-release:
     needs: prepare-release
-    if: ${{ github.event.inputs.dry_run != 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the tag (build exactly what was released)
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          ref: ${{ needs.prepare-release.outputs.tag_name }}
+    - name: Checkout the tag (real release)
+      if: ${{ github.event.inputs.dry_run != 'true' }}
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+        ref: ${{ needs.prepare-release.outputs.tag_name }}
 
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: maven
+    - name: Checkout the base branch (dry run)
+      if: ${{ github.event.inputs.dry_run == 'true' }}
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.inputs.base_ref || 'main' }}
 
-      - name: Build JARs
-        shell: bash
-        run: mvn -B clean package
+    - name: Set up Java
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: 21
+        cache: maven
 
-      - name: Collect artifact paths
-        id: archive
-        shell: bash
-        run: |
-          set -euo pipefail
-          ARTIFACT_ID="${{ needs.prepare-release.outputs.artifact_id }}"
-          TAG_NAME="${{ needs.prepare-release.outputs.tag_name }}"
-          JAR="target/${ARTIFACT_ID}-${TAG_NAME}.jar"
-          JDOC="target/${ARTIFACT_ID}-${TAG_NAME}-javadoc.jar"
-          if [ ! -f "$JAR" ]; then echo "Missing $JAR"; exit 1; fi
-          if [ ! -f "$JDOC" ]; then echo "Missing $JDOC"; exit 1; fi
-          echo "jar_path=$JAR" >> "$GITHUB_OUTPUT"
-          echo "javadoc_jar_path=$JDOC" >> "$GITHUB_OUTPUT"
+    - name: In dry run - set project version to computed tag (no commit)
+      if: ${{ github.event.inputs.dry_run == 'true' }}
+      env:
+        TAG_NAME: ${{ needs.prepare-release.outputs.tag_name }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
+        # No commit; only adjust the working tree so the built artifact names match
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.prepare-release.outputs.tag_name }}
-          name: ${{ needs.prepare-release.outputs.tag_name }}
-          body: |
-            Automated release for DSL version ${{ needs.prepare-release.outputs.dsl_version }}
-          files: |
-            ${{ steps.archive.outputs.jar_path }}
-            ${{ steps.archive.outputs.javadoc_jar_path }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build JARs
+      shell: bash
+      run: mvn -B clean package
+
+    - name: Collect artifact paths
+      id: archive
+      shell: bash
+      run: |
+        set -euo pipefail
+        ARTIFACT_ID="${{ needs.prepare-release.outputs.artifact_id }}"
+        TAG_NAME="${{ needs.prepare-release.outputs.tag_name }}"
+        JAR="target/${ARTIFACT_ID}-${TAG_NAME}.jar"
+        JDOC="target/${ARTIFACT_ID}-${TAG_NAME}-javadoc.jar"
+        if [ ! -f "$JAR" ]; then echo "Missing $JAR"; ls -l target || true; exit 1; fi
+        if [ ! -f "$JDOC" ]; then echo "Missing $JDOC"; ls -l target || true; exit 1; fi
+        echo "jar_path=$JAR" >> "$GITHUB_OUTPUT"
+        echo "javadoc_jar_path=$JDOC" >> "$GITHUB_OUTPUT"
+
+    - name: In dry run - upload build outputs as workflow artifacts
+      if: ${{ github.event.inputs.dry_run == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: dry-run-${{ needs.prepare-release.outputs.tag_name }}
+        path: |
+          ${{ steps.archive.outputs.jar_path }}
+          ${{ steps.archive.outputs.javadoc_jar_path }}
+        retention-days: 3
+
+    - name: Create GitHub Release (real release)
+      if: ${{ github.event.inputs.dry_run != 'true' }}
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.prepare-release.outputs.tag_name }}
+        name: ${{ needs.prepare-release.outputs.tag_name }}
+        body: |
+          Automated release for DSL version ${{ needs.prepare-release.outputs.dsl_version }}
+        files: |
+          ${{ steps.archive.outputs.jar_path }}
+          ${{ steps.archive.outputs.javadoc_jar_path }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
