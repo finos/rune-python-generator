@@ -20,11 +20,12 @@ MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
 
 echo "***** make the directory for the CDM"
-rm -rf common-domain-model
-mkdir common-domain-model
-cd common-domain-model
+rm -rf ../common-domain-model
+mkdir ../common-domain-model
+cd ../common-domain-model
 echo "***** pull CDM rosetta definitions"
-# CDM_VERSION="5.22.1"
+# CDM_VERSION="5.x.x"
+# CDM_VERSION="6.10.0"
 CDM_VERSION="master"
 git init
 git config core.sparseCheckout true

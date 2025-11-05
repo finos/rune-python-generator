@@ -23,13 +23,13 @@ MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
 
 echo "***** setting up common environment"
-BUILDPATH="../../build"
-source $MY_PATH/$BUILDPATH/setup_python_env.sh
+PYTHONSETUPPATH="../python_setup"
+source $MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-VENV_PATH=".."
-source $MY_PATH/$BUILDPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+VENV_PATH="../.."
+source $MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
 
 # install cdm package
 PYTHONCDMDIR="../../target/python-cdm"

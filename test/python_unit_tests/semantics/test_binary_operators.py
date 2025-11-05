@@ -19,3 +19,4 @@ def test_contains():
 def test_disjoint():
     disjointTest=DisjointTest(aValue=["a","b","c"], target=["d","e","f"])
     disjointTest.validate_model()
+#EOF

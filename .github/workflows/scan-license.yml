@@ -1,3 +1,5 @@
+#workflows/license-scanning-maven.yml
+
 name: License Scanning for Maven
 
 on:
@@ -51,9 +53,9 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up JDK 21
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         java-version: 21
         cache: maven
@@ -61,7 +63,7 @@ jobs:
     - name: Install XQ
       run: pip install xq
     - name: Build with Maven
-      run: mvn clean install -Dmaven.test.skip=true
+      run: mvn clean package -Dmaven.test.skip=true
       working-directory: .
     - name: License XML report
       run: mvn org.codehaus.mojo:license-maven-plugin:2.0.0:download-licenses

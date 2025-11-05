@@ -1,0 +1,78 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 20,
+  "dependencyDashboard": true,
+  "dependencyDashboardApproval": false,
+  "vulnerabilityAlerts": {
+    "enabled": false
+  },
+  "enabledManagers": [
+    "maven",
+    "github-actions"
+  ],
+  "packageRules": [
+    {
+      "description": "Highlight and prioritize rosetta.dsl.version updates",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "com.regnosys.rosetta:com.regnosys.rosetta",
+        "rosetta.dsl.version"
+      ],
+      "labels": [
+        "rosetta"
+      ],
+      "prPriority": 1,
+      "automerge": false
+    },
+    {
+      "description": "Label GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "labels": [
+        "github-actions"
+      ]
+    },
+    {
+      "description": "Label all other Maven dependency updates",
+      "matchManagers": [
+        "maven"
+      ],
+      "labels": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "!com.regnosys.rosetta:com.regnosys.rosetta",
+        "!rosetta.dsl.version"
+      ]
+    },
+    {
+      "description": "Always open PRs immediately and prioritize Renovate GitHub Action updates",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["renovatebot/github-action"],
+      "prCreation": "immediate",
+      "prPriority": 100,
+      "stabilityDays": 0,
+      "minimumReleaseAge": "0 days",
+      "schedule": ["at any time"]
+    },
+    {
+      "description": "Automerge safe GitHub Actions patch updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Require dashboard approval for major updates",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}

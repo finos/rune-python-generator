@@ -40,12 +40,15 @@ class PythonModelObjectGenerator {
         imports = new HashSet<String>()
     }
     /**
-     * Generate Python from the collection of Rosetta classes (of type Data)
+     * Generate Python from the collection of Rosetta classes (of type Data).
+     * Note: this function updates the dependency graph used by afterAllGenerate to create the bundle
      * 
      * Inputs:
      * 
      * rosettaClasses - the collection of Rosetta Classes for this model
-     * metaDataItems - a hash map of each "key" type found in meta data found in the classes and attributes of the class
+     * version - the version for this collection of classes
+     * 
+     * Output: a HashMap of all the generated Python indexed by the class name
      */
     def Map<String, ? extends CharSequence> generate(Iterable<Data> rosettaClasses, String version) {
         val result = new HashMap
