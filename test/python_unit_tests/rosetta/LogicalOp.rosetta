@@ -9,3 +9,13 @@ type AndOperatorTest: <"Test And Logical operator">
         then True
         else 
             False
+
+type OrOperatorTest: <"Test OR Logical operator">
+    aValue int (1..1)
+    bValue int (1..1)
+    cValue int (1..1)
+    condition TestCond: <"Test condition">
+        if aValue = bValue or aValue = cValue
+        then True
+        else 
+            False
