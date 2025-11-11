@@ -8,7 +8,7 @@ from rune.runtime.metadata import DateTimeWithMeta
 
 def test_date_serialization():
     '''test date serialization'''
-    dt_in = DateSerializatonTest(dateValue=DateTimeWithMeta(datetime.datetime(2025, 10, 30)))
+    dt_in = DateSerializatonTest(dateValue=datetime.datetime(2025, 10, 30))
     dt_in.validate_model()
     dt_str = dt_in.rune_serialize()
     print('dt_str:', dt_str)
