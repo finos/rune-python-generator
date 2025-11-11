@@ -4,6 +4,9 @@ type A:
     [metadata key]
     aValue int (1..1)
 
-type B:
+type BRef:
     aReference A (1..1) 
         [metadata reference]
+
+type BNoRef:
+    aReference A (1..1) 
