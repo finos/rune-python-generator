@@ -260,7 +260,7 @@ class PythonExpressionGenerator {
         return _builder.toString
     }
              
-    protected def String generateImplicitVariable(RosettaImplicitVariable expr, int ifLevel, boolean isLambda) {
+    private def String generateImplicitVariable(RosettaImplicitVariable expr, int ifLevel, boolean isLambda) {
         '''«expr.name»'''
     }
 
