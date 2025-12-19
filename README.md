@@ -46,6 +46,11 @@ Detailed build and testing instructions can be found in [BUILDANDTEST.md](./BUIL
 
 Troubleshooting: If you run into issues, please open an [issue](https://github.com/finos/rune-python-generator/issues). This helps us improve the guide for everyone.
 
+### Coding Standards
+
+- Indentation: Since Python is sensitive to indentation, ensure your submission uses four spaces for each indentation instead of tabs.
+- Java vs xTend: since the intention is to replace xTend, all new code should be written in Java.  Ideally, changes to existing code will migrate xTend code to Java.
+
 ### 1. Building with Maven
 
 Start by cloning the project: `git clone https://github.com/finos/rune-python-generator`
@@ -109,7 +114,9 @@ We welcome contributions! Please follow these steps to get started:
 3. Read our [contribution guidelines](.github/CONTRIBUTING.md) and [Community Code of Conduct](https://www.finos.org/code-of-conduct)
 4. Commit your changes (`git commit -am 'Add some fooBar'`)
 5. Push to the branch (`git push origin feature/fooBar`)
-6. Create a new Pull Request
+6. Create a new Pull Request: the intention is to ensure that Main is always production ready and matches a release.
+   - Simple / short running changes : the PR should be to Main
+   - Complex / long running changes: the recommendation is to complete all the changes in a staging branch, such as Develop or another branch of your choosing.  Once the change is complete and passes all tests, then raise the PR to main from your staging branch.
 
 **NOTE: FINOS repositories require an executed and active FINOS Individual Contributor License Agreement (ICLA) or an executed and active FINOS Corporate Contribution License Agreement (CCLA). The FINOS Clabot tool (or EasyCLA) will flag and block commits from individuals not covered. Please note that some CCLAs require individuals/employees to be explicitly named on the CCLA.**
 
