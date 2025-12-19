@@ -37,7 +37,8 @@ jobs:
       - name: Depcheck
         uses: dependency-check/Dependency-Check_Action@1.1.0
         id: Depcheck
-        # Environment variables are inferred by the action or setup-java
+        env:
+          JAVA_HOME: /opt/jdk
 
         with:
           project: ${{github.repository}}
