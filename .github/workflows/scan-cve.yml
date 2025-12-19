@@ -11,6 +11,11 @@ on:
 concurrency:
   group: cve-scan-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
   
 jobs:
   depchecktest:
@@ -28,10 +33,10 @@ jobs:
         run: mvn -B clean package -DskipTests
         working-directory: .
       - name: Depcheck
-        uses: dependency-check/Dependency-Check_Action@main
+        uses: dependency-check/Dependency-Check_Action@1.1.0
         id: Depcheck
-        env:
-          JAVA_HOME: /opt/jdk
+        # Environment variables are inferred by the action or setup-java
+
         with:
           project: ${{github.repository}}
           path: '.'
