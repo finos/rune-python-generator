@@ -16,10 +16,12 @@ import org.eclipse.emf.common.util.URI;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 
 /**
  * Command-line interface for generating Python code from Rosetta models.
@@ -174,7 +176,7 @@ public class PythonCodeGeneratorCLI {
         Map<String, CharSequence> generatedPython = new HashMap<>();
         pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
         for (RosettaModel model : models) {
-            System.out.println("Processing: " + model.getName());
+            LOGGER.info("Processing: " + model.getName());
             generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.afterGenerate(model.eResource(), model, version));
@@ -185,6 +187,22 @@ public class PythonCodeGeneratorCLI {
     }
 
     private static void writePythonFiles(Map<String, CharSequence> generatedPython, String tgtDir) {
+        Path targetRoot = Paths.get(tgtDir);
+        File targetDirFile = targetRoot.toFile();
+        // Remove existing target directory (if any), then (re)create it
+        try {
+            if (targetDirFile.exists()) {
+                if (targetDirFile.isDirectory()) {
+                    FileUtils.deleteDirectory(targetDirFile);
+                } else {
+                    FileUtils.forceDelete(targetDirFile);
+                }
+            }
+            FileUtils.forceMkdir(targetDirFile);
+        } catch (IOException e) {
+            LOGGER.error("Failed to reset target directory {}: {}", targetRoot, e.getMessage(), e);
+            return;
+        }
         for (Map.Entry<String, CharSequence> entry : generatedPython.entrySet()) {
             String filePath = entry.getKey();
             CharSequence content = entry.getValue();

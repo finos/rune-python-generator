@@ -71,9 +71,9 @@
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>21</maven.compiler.release>
 
-        <apache.commons.lang.version>3.13.0</apache.commons.lang.version>
+        <apache.commons.lang.version>3.19.0</apache.commons.lang.version>
         <apache.commons.text.version>1.11.0</apache.commons.text.version>
-        <commons-io.version>2.19.0</commons-io.version>
+        <commons-io.version>2.21.0</commons-io.version>
         <guava.version>33.3.1-jre</guava.version>
 
         <!-- Release -->
@@ -81,28 +81,27 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.65.3</rosetta.dsl.version>
+        <rosetta.dsl.version>9.68.0</rosetta.dsl.version>
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>
 
-        <slf4j.version>2.0.13</slf4j.version>
-        <logback.version>1.5.6</logback.version>
+        <slf4j.version>2.0.17</slf4j.version>
+        <logback.version>1.5.21</logback.version>
 
         <!-- test -->
-        <junit.version>5.13.4</junit.version>
+        <junit.version>6.0.1</junit.version>
         <hamcrest.version>3.0</hamcrest.version>
 
         <!-- plugin -->
-        <maven-enforcer-plugin.version>3.6.1</maven-enforcer-plugin.version>
+        <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
-        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
         <maven-install-plugin.version>3.1.4</maven-install-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
-        <maven-javadoc-plugin.version>3.11.3</maven-javadoc-plugin.version>
         <maven-dependency-plugin.version>3.1.1</maven-dependency-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
@@ -110,16 +109,6 @@
         <!-- Used by the Python generator -->
         <cdm.rosetta.source.path>build/common-domain-model/rosetta-source/src/main/rosetta</cdm.rosetta.source.path>
         <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
-        <unittest.rosetta.source.path>test/python_unit_tests/rosetta</unittest.rosetta.source.path>
-        <unittest.python.output.path>target/python-tests/unit_tests</unittest.python.output.path>
-        <serialization.test.rune.roundtrip.source.path>
-            test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-round-trip-test
-        </serialization.test.rune.roundtrip.source.path>
-        <serialization.test.rune.shouldfail.source.path>
-            test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-error-handling-test
-        </serialization.test.rune.shouldfail.source.path>
-        <serialization.test.python.output.path>target/python-tests/serialization_unit_tests
-        </serialization.test.python.output.path>
     </properties>
 
     <dependencyManagement>
@@ -307,7 +296,7 @@
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-model</artifactId>
-            <version>3.9.10</version>
+            <version>3.9.11</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -454,7 +443,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.1</version>
                 <configuration>
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                 </configuration>
@@ -504,7 +493,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven-javadoc-plugin.version}</version>
                 <configuration combine.self="override">
                     <failOnError>false</failOnError>
                 </configuration>

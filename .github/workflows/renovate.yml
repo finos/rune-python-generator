@@ -4,12 +4,16 @@
 
 name: Renovate
 
-on:
+on: 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
   # Runs the workflow on a schedule (e.g., every day at 2 AM)
   schedule:
     - cron: '0 2 * * *'
+  push:
+    paths:
+      - .github/renovate.json
+      - .github/workflows/renovate.yml
 
 jobs:
   renovate:
@@ -26,14 +30,9 @@ jobs:
 
       # Runs the Renovate GitHub Action
       - name: Renovate
-        uses: renovatebot/github-action@v43.0.12
+        uses: renovatebot/github-action@v43.0.18
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # required to create PRs/issues
           configurationFile: .github/renovate.json
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }} # scan current repo
-
-  # Optional: run your build/test workflow after Renovate finishes
-  build_and_test:
-    needs: renovate
-    uses: ./.github/workflows/build-and-test.yml

@@ -14,9 +14,7 @@ on:
         type: string
         default: '3.11'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+
 
 jobs:
   build-and-test:
@@ -39,6 +37,8 @@ jobs:
       - name: Build & Test (Java)
         run: mvn -B clean verify
 
+
+
       # Python
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -48,8 +48,6 @@ jobs:
 
       - name: Run Python Unit Tests
         run: |
-          chmod +x test/python_setup/setup_python_env.sh
-          chmod +x test/python_setup/cleanup_python_env.sh
-          chmod +x test/python_unit_tests/setup_unit_test_env.sh
-          chmod +x test/python_unit_tests/run_python_unit_tests.sh
           test/python_unit_tests/run_python_unit_tests.sh
+
+

@@ -3,7 +3,7 @@ from rune.runtime.base_data_class import BaseDataClass
 from rune.runtime.metadata import *
 from rune.runtime.utils import *
 from rune.runtime.conditions import *
-from rosetta_dsl.test.model.ClassMemberAccess import ClassMemberAccess
+from rosetta_dsl.test.model.class_member_access.ClassMemberAccess import ClassMemberAccess
  
 class_member_access = ClassMemberAccess(one=42, three=[1, 2, 3])
 
