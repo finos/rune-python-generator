@@ -3,6 +3,7 @@
 name: Core Build and Test
 
 on:
+  push:
   workflow_call:
     inputs:
       java-version:
