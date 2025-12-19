@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Do not push/tag or create a GitHub Release"
+        description: "DRY RUN: Do not push/tag or create a GitHub Release"
         type: boolean
-        default: true
+        default: false
       base_ref:
         description: "Branch to release from (for testing)"
         type: string
