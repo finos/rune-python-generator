@@ -32,7 +32,6 @@ import com.regnosys.rosetta.rosetta.expression.RosettaIntLiteral
 import com.regnosys.rosetta.rosetta.expression.RosettaNumberLiteral
 import com.regnosys.rosetta.rosetta.expression.RosettaOnlyElement
 import com.regnosys.rosetta.rosetta.expression.RosettaOnlyExistsExpression
-import com.regnosys.rosetta.rosetta.expression.RosettaReference
 import com.regnosys.rosetta.rosetta.expression.RosettaStringLiteral
 import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference
 import com.regnosys.rosetta.rosetta.expression.SortOperation
@@ -109,7 +108,8 @@ class PythonExpressionGenerator {
             RosettaFeatureCall: generateFeatureCall(expr, ifLevel, isLambda)
             RosettaOnlyElement: '''rune_get_only_element(«generateExpression(expr.argument, ifLevel, isLambda)»)'''
             RosettaOnlyExistsExpression: '''rune_check_one_of(self, «generateExpression(expr.getArgs().get(0), ifLevel, isLambda)»)'''
-            RosettaReference: generateReference(expr, ifLevel, isLambda)
+            RosettaSymbolReference: generateSymbolReference(expr, ifLevel, isLambda)
+            RosettaImplicitVariable: generateImplicitVariable(expr, ifLevel, isLambda)
             default:{
                 throw new UnsupportedOperationException("Unsupported expression type of " + expr?.class?.simpleName)
             }
@@ -260,12 +260,8 @@ class PythonExpressionGenerator {
         return _builder.toString
     }
              
-
-    private def String generateReference(RosettaReference expr, int ifLevel, boolean isLambda) {
-        switch (expr) {
-            RosettaImplicitVariable: '''«expr.name»'''
-            RosettaSymbolReference:  generateSymbolReference(expr, ifLevel, isLambda)
-        }
+    private def String generateImplicitVariable(RosettaImplicitVariable expr, int ifLevel, boolean isLambda) {
+        '''«expr.name»'''
     }
 
     private def String generateSymbolReference(RosettaSymbolReference expr, int ifLevel, boolean isLambda) {
