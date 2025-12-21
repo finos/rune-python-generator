@@ -30,7 +30,7 @@ jobs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
     steps:
       - name: Checkout base branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.base_ref || 'main' }}
@@ -141,14 +141,14 @@ jobs:
     steps:
     - name: Checkout the tag (real release)
       if: ${{ github.event.inputs.dry_run != 'true' }}
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         ref: ${{ needs.prepare-release.outputs.tag_name }}
 
     - name: Checkout the base branch (dry run)
       if: ${{ github.event.inputs.dry_run == 'true' }}
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         ref: ${{ github.event.inputs.base_ref || 'main' }}
@@ -190,7 +190,7 @@ jobs:
 
     - name: In dry run - upload build outputs as workflow artifacts
       if: ${{ github.event.inputs.dry_run == 'true' }}
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: dry-run-${{ needs.prepare-release.outputs.tag_name }}
         path: |

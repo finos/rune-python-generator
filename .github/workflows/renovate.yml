@@ -26,11 +26,11 @@ jobs:
       security-events: read    # read Dependabot vulnerability alerts
     steps:
       # Checks out the repository under $GITHUB_WORKSPACE
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # Runs the Renovate GitHub Action
       - name: Renovate
-        uses: renovatebot/github-action@v43.0.18
+        uses: renovatebot/github-action@v44.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # required to create PRs/issues
           configurationFile: .github/renovate.json
