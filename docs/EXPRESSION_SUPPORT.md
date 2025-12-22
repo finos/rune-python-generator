@@ -66,3 +66,24 @@
 | RosettaOnlyElement                     | ✓       | Unary list operation asserting the only element |[RosettaExpression.xcore#L300](https://github.com/finos/rune-dsl/blob/38dd20e8f3f8145588de7a9586972c84caa23951/rosetta-lang/model/RosettaExpression.xcore#L300) |
 | RosettaOnlyExistsExpression            | ✓       | Checks that only the listed expressions exist |[RosettaExpression.xcore#L247](https://github.com/finos/rune-dsl/blob/38dd20e8f3f8145588de7a9586972c84caa23951/rosetta-lang/model/RosettaExpression.xcore#L247) |
 | RosettaReference                       | ✓       | Abstract base for reference expressions |[RosettaExpression.xcore#L123](https://github.com/finos/rune-dsl/blob/38dd20e8f3f8145588de7a9586972c84caa23951/rosetta-lang/model/RosettaExpression.xcore#L123) |
+
+## Proposed Changes to ExpressionGeneration
+
+The following changes are proposed to enhance the `ExpressionGeneration` functionality and address identified gaps:
+
+1.  **Direct Function Calling Support**: Implement support for `RosettaCallableWithArgs` to allow direct execution of other Rosetta functions within an expression.
+2.  **Date/Time & Math Standards**:  Create explicit tests and potentially refine implementation for `ToDate`, `ToDateTime`, `Min`, `Max`, `Sort`, and `Reverse` operations to ensure full compatibility with Python's standard library.
+3.  **List Operations**: Add comprehensive tests for `JoinOperation` and `ReverseOperation`.
+4.  **Refined Existence Logic**:  Investigate and correctly implement/test the `single exists` and `multiple exists` operators if present in the Rosetta DSL, ensuring they map correctly to Python logic (possibly extending `rune_attr_exists` or `rune_count`).
+5.  **Clean up `RosettaExistsExpressionTest`**:  Enable the disabled tests, add assertions, and migrate relevant test cases to the main test suite if they represent core functionality.
+
+## Evaluation of Current Testing
+
+### PythonExpressionGeneratorTest
+-   **Coverage**:  Strong coverage for arithmetic, boolean logic, basic list operations (`count`, `flatten`), `if-then-else`, and `switch`.
+-   **Gaps**:  Missing specific tests for `To*` conversions (Date/Time), `Min/Max/Sort`, and nested function calls.
+
+### RosettaExistsExpressionTest
+-   **Status**:  Currently disabled (`@Disabled`) and non-functional (no assertions).
+-   **Analysis**:  Contains valuable DSL examples for complex `exists` logic (`only exists`, `single exists`, `multiple exists` combined with `or`/`and`).
+-   **Plan**:  Migrate valid DSL cases to `PythonExpressionGeneratorTest`. Specifically, the complex boolean logic combinations should be asserted against expected Python output to verify that `rune_attr_exists` interacts correctly with Python's `and`/`or` operators. The `single/multiple` exists concepts need to be verified against the `PythonExpressionGenerator` implementation (or lack thereof) to decide if they are supported features or need implementation.

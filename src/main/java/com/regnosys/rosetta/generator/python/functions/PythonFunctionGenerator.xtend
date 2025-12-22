@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.generator.python.func
+package com.regnosys.rosetta.generator.python.functions
 
 import jakarta.inject.Inject
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator
