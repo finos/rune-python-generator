@@ -8,7 +8,7 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
 import static org.junit.Assert.assertTrue;
-import java.util.HashMap
+import java.util.Map
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RosettaInjectorProvider)
@@ -17,9 +17,9 @@ class PythonBasicGeneratorTest {
 
     @Inject PythonGeneratorTestUtils testUtils
 
-    var HashMap<String, CharSequence> python = null;
+    var Map<String, CharSequence> python = null;
     
-    def HashMap<String, CharSequence> getPython () {
+    def Map<String, CharSequence> getPython () {
         if (python === null) {
             python = testUtils.generatePythonFromString (
                 '''
