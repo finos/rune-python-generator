@@ -347,6 +347,32 @@
                     <artifactId>xtend-maven-plugin</artifactId>
                     <version>${xtext.version}</version>
                 </plugin>
+                <!-- This is to fix the "Plugin execution not covered by lifecycle configuration" error in Eclipse/m2e -->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.eclipse.xtend</groupId>
+                                        <artifactId>xtend-maven-plugin</artifactId>
+                                        <versionRange>[${xtext.version},)</versionRange>
+                                        <goals>
+                                            <goal>compile</goal>
+                                            <goal>testCompile</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
