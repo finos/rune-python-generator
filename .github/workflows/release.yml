@@ -116,15 +116,8 @@ jobs:
             exit 0
           fi
 
-          mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "Release ${TAG_NAME}: set project version to ${TAG_NAME}"
-          else
-            echo "No changes to commit (version already ${TAG_NAME})."
-          fi
+           # We skip committing changes to the repo. Use versions:set only in the build step ephemerally.
+           echo "Skipping persistent version bump in pom.xml to avoid branch protection issues."
 
           git fetch --prune --tags origin
           if git rev-parse "${TAG_NAME}" >/dev/null 2>&1; then
@@ -160,15 +153,13 @@ jobs:
         java-version: 21
         cache: maven
 
-    - name: In dry run - set project version to computed tag (no commit)
-      if: ${{ github.event.inputs.dry_run == 'true' }}
+    - name: Set project version for build (ephemeral)
       env:
         TAG_NAME: ${{ needs.prepare-release.outputs.tag_name }}
       shell: bash
       run: |
         set -euo pipefail
         mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
-        # No commit; only adjust the working tree so the built artifact names match
 
     - name: Build JARs
       shell: bash
