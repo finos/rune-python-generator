@@ -119,6 +119,8 @@ jobs:
            # We skip committing changes to the repo. Use versions:set only in the build step ephemerally.
            echo "Skipping persistent version bump in pom.xml to avoid branch protection issues."
 
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git fetch --prune --tags origin
           if git rev-parse "${TAG_NAME}" >/dev/null 2>&1; then
             echo "Tag ${TAG_NAME} already exists. Exiting."
