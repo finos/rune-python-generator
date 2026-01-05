@@ -30,7 +30,7 @@ jobs:
 
       # Runs the Renovate GitHub Action
       - name: Renovate
-        uses: renovatebot/github-action@v44.1.0
+        uses: renovatebot/github-action@v44.2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # required to create PRs/issues
           configurationFile: .github/renovate.json
