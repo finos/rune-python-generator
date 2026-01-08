@@ -54,12 +54,17 @@
     },
     {
       "description": "Always open PRs immediately for Renovate GitHub Action updates",
-      "matchManagers": ["github-actions"],
-        "matchPackageNames": ["renovatebot/github-action"],
-        "prCreation": "immediate",
-        "stabilityDays": 0,
-        "minimumReleaseAge": "0 days",
-        "schedule": ["at any time"]
-    }    
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "renovatebot/github-action"
+      ],
+      "prCreation": "immediate",
+      "minimumReleaseAge": "0 days",
+      "schedule": [
+        "at any time"
+      ]
+    }
   ]
 }
