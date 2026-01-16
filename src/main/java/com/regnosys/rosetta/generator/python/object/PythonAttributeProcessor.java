@@ -99,48 +99,47 @@ public class PythonAttributeProcessor {
                 ? ""
                 : ra.getDefinition().replaceAll("\\s+", " ").replace("'", "\\'");
 
-        // Write the attribute line
-        writer.appendIndent();
-        writer.append(attrName);
-        writer.append(": ");
+        StringBuilder lineBuilder = new StringBuilder();
+        lineBuilder.append(attrName).append(": ");
 
         if (!attrProp.isEmpty() && !cardinalityMap.isEmpty() && cardinalityMap.get("cardinalityString").length() > 0) {
-            writer.append(cardinalityMap.get("cardinalityPrefix"));
-            writer.append("Annotated[");
-            writer.append(attrTypeNameOut);
-            writer.append(", Field(");
-            writer.append(propString);
+            lineBuilder.append(cardinalityMap.get("cardinalityPrefix"));
+            lineBuilder.append("Annotated[");
+            lineBuilder.append(attrTypeNameOut);
+            lineBuilder.append(", Field(");
+            lineBuilder.append(propString);
             if (!metaSuffix.isEmpty()) {
-                writer.append(metaSuffix);
+                lineBuilder.append(metaSuffix);
             } else {
-                writer.append(")]");
+                lineBuilder.append(")]");
             }
-            writer.append(cardinalityMap.get("cardinalitySuffix"));
-            writer.append(" = Field(");
-            writer.append(cardinalityMap.get("fieldDefault"));
-            writer.append(", description='");
-            writer.append(attrDesc);
-            writer.append("'");
-            writer.append(cardinalityMap.get("cardinalityString"));
-            writer.append(")\n");
+            lineBuilder.append(cardinalityMap.get("cardinalitySuffix"));
+            lineBuilder.append(" = Field(");
+            lineBuilder.append(cardinalityMap.get("fieldDefault"));
+            lineBuilder.append(", description='");
+            lineBuilder.append(attrDesc);
+            lineBuilder.append("'");
+            lineBuilder.append(cardinalityMap.get("cardinalityString"));
+            lineBuilder.append(")");
         } else {
-            writer.append(cardinalityMap.get("cardinalityPrefix"));
-            writer.append(metaPrefix);
-            writer.append(attrTypeNameOut);
-            writer.append(metaSuffix);
-            writer.append(cardinalityMap.get("cardinalitySuffix"));
-            writer.append(" = Field(");
-            writer.append(cardinalityMap.get("fieldDefault"));
-            writer.append(", description='");
-            writer.append(attrDesc);
-            writer.append("'");
-            writer.append(cardinalityMap.get("cardinalityString"));
+            lineBuilder.append(cardinalityMap.get("cardinalityPrefix"));
+            lineBuilder.append(metaPrefix);
+            lineBuilder.append(attrTypeNameOut);
+            lineBuilder.append(metaSuffix);
+            lineBuilder.append(cardinalityMap.get("cardinalitySuffix"));
+            lineBuilder.append(" = Field(");
+            lineBuilder.append(cardinalityMap.get("fieldDefault"));
+            lineBuilder.append(", description='");
+            lineBuilder.append(attrDesc);
+            lineBuilder.append("'");
+            lineBuilder.append(cardinalityMap.get("cardinalityString"));
             if (!propString.isEmpty()) {
-                writer.append(", ");
-                writer.append(propString);
+                lineBuilder.append(", ");
+                lineBuilder.append(propString);
             }
-            writer.append(")\n");
+            lineBuilder.append(")");
         }
+        writer.appendLine(lineBuilder.toString());
 
         if (ra.getDefinition() != null) {
             writer.appendLine("\"\"\"");

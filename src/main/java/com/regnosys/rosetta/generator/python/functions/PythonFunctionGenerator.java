@@ -59,8 +59,8 @@ public class PythonFunctionGenerator {
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendBlock(generateImports(dependencies, function));
-        writer.newLine();
-        writer.newLine();
+        writer.appendLine("");
+        writer.appendLine("");
 
         writer.appendLine("@replaceable");
         writer.appendLine("def " + function.getName() + generatesInputs(function) + ":");
@@ -82,10 +82,10 @@ public class PythonFunctionGenerator {
 
         writer.appendBlock(generateTypeOrFunctionConditions(function));
 
-        writer.appendBlock(generateIfBlocks(function));
-        writer.appendBlock(generateAlias(function));
-        writer.appendBlock(generateOperations(function));
-        writer.appendBlock(generatesOutput(function));
+        generateIfBlocks(writer, function);
+        generateAlias(writer, function);
+        generateOperations(writer, function);
+        generatesOutput(writer, function);
 
         writer.unindent();
         writer.newLine();
@@ -96,32 +96,29 @@ public class PythonFunctionGenerator {
     }
 
     private String generateImports(Iterable<EObject> dependencies, Function function) {
-        StringBuilder sb = new StringBuilder();
+        PythonCodeWriter writer = new PythonCodeWriter();
 
         for (EObject dependency : dependencies) {
             RosettaModel tr = (RosettaModel) dependency.eContainer();
             String importPath = tr.getName();
             if (dependency instanceof Function func) {
-                sb.append("from ").append(importPath).append(".functions.").append(func.getName()).append(" import ")
-                        .append(func.getName()).append("\n");
+                writer.appendLine("from " + importPath + ".functions." + func.getName() + " import " + func.getName());
             } else if (dependency instanceof RosettaEnumeration enumeration) {
-                sb.append("from ").append(importPath).append(".").append(enumeration.getName()).append(" import ")
-                        .append(enumeration.getName()).append("\n");
+                writer.appendLine(
+                        "from " + importPath + "." + enumeration.getName() + " import " + enumeration.getName());
             } else if (dependency instanceof Data data) {
-                sb.append("from ").append(importPath).append(".").append(data.getName()).append(" import ")
-                        .append(data.getName()).append("\n");
+                writer.appendLine("from " + importPath + "." + data.getName() + " import " + data.getName());
             }
         }
-        sb.append("\n");
-        sb.append("__all__ = ['").append(function.getName()).append("']");
+        writer.newLine();
+        writer.appendLine("__all__ = ['" + function.getName() + "']");
 
-        return sb.toString();
+        return writer.toString();
     }
 
-    private String generatesOutput(Function function) {
+    private void generatesOutput(PythonCodeWriter writer, Function function) {
         Attribute output = function.getOutput();
         if (output != null) {
-            PythonCodeWriter writer = new PythonCodeWriter();
             if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty()) {
                 writer.appendLine(output.getName() + " = rune_resolve_attr(self, \"" + output.getName() + "\")");
             }
@@ -135,9 +132,7 @@ public class PythonFunctionGenerator {
                 writer.appendLine("");
             }
             writer.appendLine("return " + output.getName());
-            return writer.toString();
         }
-        return "";
     }
 
     private String generatesInputs(Function function) {
@@ -229,16 +224,14 @@ public class PythonFunctionGenerator {
         return dependencies;
     }
 
-    private String generateIfBlocks(Function function) {
+    private void generateIfBlocks(PythonCodeWriter writer, Function function) {
         List<Integer> levelList = new ArrayList<>(Collections.singletonList(0));
-        StringBuilder sb = new StringBuilder();
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
-            sb.append(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList));
+            writer.appendBlock(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList));
         }
         for (Operation operation : function.getOperations()) {
-            sb.append(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList));
+            writer.appendBlock(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList));
         }
-        return sb.toString();
     }
 
     private String generateTypeOrFunctionConditions(Function function) {
@@ -268,8 +261,7 @@ public class PythonFunctionGenerator {
         return "";
     }
 
-    private String generateAlias(Function function) {
-        StringBuilder result = new StringBuilder();
+    private void generateAlias(PythonCodeWriter writer, Function function) {
         int level = 0;
 
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
@@ -278,14 +270,11 @@ public class PythonFunctionGenerator {
             if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
                 level += 1;
             }
-            result.append(shortcut.getName()).append(" = ").append(expression).append("\n");
+            writer.appendLine(shortcut.getName() + " = " + expression);
         }
-
-        return result.toString();
     }
 
-    private String generateOperations(Function function) {
-        StringBuilder result = new StringBuilder();
+    private void generateOperations(PythonCodeWriter writer, Function function) {
         int level = 0;
         if (function.getOutput() != null) {
             List<String> setNames = new ArrayList<>();
@@ -296,64 +285,61 @@ public class PythonFunctionGenerator {
                     level += 1;
                 }
                 if (operation.isAdd()) {
-                    result.append(generateAddOperation(root, operation, function, expression, setNames)).append("\n");
+                    generateAddOperation(writer, root, operation, function, expression, setNames);
                 } else {
-                    result.append(generateSetOperation(root, operation, function, expression, setNames)).append("\n");
+                    generateSetOperation(writer, root, operation, function, expression, setNames);
                 }
             }
         }
-        return result.toString();
     }
 
-    private String generateAddOperation(AssignPathRoot root, Operation operation, Function function,
-            String expression, List<String> setNames) {
+    private void generateAddOperation(PythonCodeWriter writer, AssignPathRoot root, Operation operation,
+            Function function, String expression, List<String> setNames) {
         Attribute attribute = (Attribute) root;
 
         if (attribute.getTypeCall().getType() instanceof RosettaEnumeration) {
-            StringBuilder sb = new StringBuilder();
             if (!setNames.contains(root.getName())) {
                 setNames.add(root.getName());
-                sb.append(root.getName()).append(" = []\n");
+                writer.appendLine(root.getName() + " = []");
             }
-            sb.append(root.getName()).append(".extend(").append(expression).append(")");
-            return sb.toString();
+            writer.appendLine(root.getName() + ".extend(" + expression + ")");
         } else {
             if (!setNames.contains(root.getName())) {
                 setNames.add(root.getName());
                 String spacer = (expression.startsWith("if_cond_fn") || root.getName().equals("result")) ? " =  "
                         : " = ";
-                return root.getName() + spacer + expression;
+                writer.appendLine(root.getName() + spacer + expression);
             } else {
                 if (operation.getPath() == null) {
-                    return root.getName() + ".add_rune_attr(self, " + expression + ")";
+                    writer.appendLine(root.getName() + ".add_rune_attr(self, " + expression + ")");
                 } else {
                     String path = generateAttributesPath(operation.getPath());
-                    return root.getName() + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, " + root.getName()
-                            + "), " + path + "), " + expression + ")";
+                    writer.appendLine(root.getName() + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
+                            + root.getName() + "), " + path + "), " + expression + ")");
                 }
             }
         }
     }
 
-    private String generateSetOperation(AssignPathRoot root, Operation operation, Function function, String expression,
-            List<String> setNames) {
+    private void generateSetOperation(PythonCodeWriter writer, AssignPathRoot root, Operation operation,
+            Function function, String expression, List<String> setNames) {
         Attribute attributeRoot = (Attribute) root;
         String name = attributeRoot.getName();
         String spacer = (expression.startsWith("if_cond_fn") || name.equals("result")) ? " =  " : " = ";
         if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
-            return attributeRoot.getName() + spacer + expression;
+            writer.appendLine(attributeRoot.getName() + spacer + expression);
         } else {
             if (!setNames.contains(attributeRoot.getName())) {
                 setNames.add(attributeRoot.getName());
-                return attributeRoot.getName() + spacer + "_get_rune_object('"
+                writer.appendLine(attributeRoot.getName() + spacer + "_get_rune_object('"
                         + attributeRoot.getTypeCall().getType().getName() + "', " +
                         getNextPathElementName(operation.getPath()) + ", "
-                        + buildObject(expression, operation.getPath()) + ")";
+                        + buildObject(expression, operation.getPath()) + ")");
             } else {
-                return attributeRoot.getName() + spacer + "set_rune_attr(rune_resolve_attr(self, '"
+                writer.appendLine(attributeRoot.getName() + spacer + "set_rune_attr(rune_resolve_attr(self, '"
                         + attributeRoot.getName()
                         + "'), " +
-                        generateAttributesPath(operation.getPath()) + ", " + expression + ")";
+                        generateAttributesPath(operation.getPath()) + ", " + expression + ")");
             }
         }
     }

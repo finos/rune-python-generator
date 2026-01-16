@@ -8,6 +8,7 @@ import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
+import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -234,8 +235,7 @@ public class PythonExpressionGenerator {
 
     private String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
         String attr = generateExpression(expr.getArgument(), 0, isLambda);
-        StringBuilder thenFuncsBuilder = new StringBuilder();
-        StringBuilder switchLogicBuilder = new StringBuilder();
+        PythonCodeWriter writer = new PythonCodeWriter();
         isSwitchCond = true;
 
         var cases = expr.getCases();
@@ -245,26 +245,29 @@ public class PythonExpressionGenerator {
             String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), 0, isLambda)
                     : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda);
 
-            thenFuncsBuilder.append("def ").append(funcName).append("():\n");
-            thenFuncsBuilder.append("    return ").append(thenExprDef).append("\n");
+            writer.appendLine("def " + funcName + "():");
+            writer.indent();
+            writer.appendLine("return " + thenExprDef);
+            writer.unindent();
+        }
 
+        writer.appendLine("switchAttribute = " + attr);
+
+        for (int i = 0; i < cases.size(); i++) {
+            var currentCase = cases.get(i);
+            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
             if (currentCase.isDefault()) {
-                switchLogicBuilder.append("else:\n");
-                switchLogicBuilder.append("    return ").append(funcName).append("()\n");
+                writer.appendLine("else:");
             } else {
                 SwitchCaseGuard guard = currentCase.getGuard();
                 String prefix = (i == 0) ? "if " : "elif ";
-                switchLogicBuilder.append(prefix).append(getGuardExpression(guard, isLambda))
-                        .append(":\n");
-                switchLogicBuilder.append("    return ").append(funcName).append("()\n");
+                writer.appendLine(prefix + getGuardExpression(guard, isLambda) + ":");
             }
+            writer.indent();
+            writer.appendLine("return " + funcName + "()");
+            writer.unindent();
         }
-
-        StringBuilder builder = new StringBuilder();
-        builder.append(thenFuncsBuilder);
-        builder.append("switchAttribute = ").append(attr).append("\n");
-        builder.append(switchLogicBuilder);
-        return builder.toString();
+        return writer.toString();
     }
 
     private String generateSymbolReference(RosettaSymbolReference expr, int ifLevel, boolean isLambda) {
@@ -384,15 +387,15 @@ public class PythonExpressionGenerator {
     public String generateThenElseForFunction(RosettaExpression expr, List<Integer> ifLevel) {
         ifCondBlocks.clear();
         generateExpression(expr, ifLevel.get(0), false);
-        StringBuilder blocks = new StringBuilder();
+        PythonCodeWriter writer = new PythonCodeWriter();
         if (!ifCondBlocks.isEmpty()) {
             ifLevel.set(0, ifLevel.get(0) + 1);
             for (String arg : ifCondBlocks) {
-                arg.lines().forEach(line -> blocks.append(line).append("\n"));
-                blocks.append("\n");
+                writer.appendBlock(arg);
+                writer.newLine();
             }
         }
-        return blocks.toString();
+        return writer.toString();
     }
 
     private boolean isConstraintCondition(Condition cond) {
@@ -408,26 +411,34 @@ public class PythonExpressionGenerator {
     }
 
     private String generateConditionBoilerPlate(Condition cond, int nConditions) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n@rune_condition\n");
+        PythonCodeWriter writer = new PythonCodeWriter();
+        writer.newLine();
+        writer.appendLine("@rune_condition");
         String name = cond.getName() != null ? cond.getName() : "";
-        sb.append("def condition_").append(nConditions).append("_").append(name).append("(self):\n");
+        writer.appendLine("def condition_" + nConditions + "_" + name + "(self):");
+        writer.indent();
         if (cond.getDefinition() != null) {
-            sb.append("    \"\"\"\n    ").append(cond.getDefinition()).append("\n    \"\"\"\n");
+            writer.appendLine("\"\"\"");
+            writer.appendLine(cond.getDefinition());
+            writer.appendLine("\"\"\"");
         }
-        sb.append("    item = self\n");
-        return sb.toString();
+        writer.appendLine("item = self");
+        return writer.toString();
     }
 
     private String generateFunctionConditionBoilerPlate(Condition cond, int nConditions, String condition_type) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n@rune_local_condition(").append(condition_type).append(")\n");
+        PythonCodeWriter writer = new PythonCodeWriter();
+        writer.newLine();
+        writer.appendLine("@rune_local_condition(" + condition_type + ")");
         String name = cond.getName() != null ? cond.getName() : "";
-        sb.append("def condition_").append(nConditions).append("_").append(name).append("(self):\n");
+        writer.appendLine("def condition_" + nConditions + "_" + name + "(self):");
+        writer.indent();
         if (cond.getDefinition() != null) {
-            sb.append("    \"\"\"\n    ").append(cond.getDefinition()).append("\n    \"\"\"\n");
+            writer.appendLine("\"\"\"");
+            writer.appendLine(cond.getDefinition());
+            writer.appendLine("\"\"\"");
         }
-        return sb.toString();
+        return writer.toString();
     }
 
     private String generateConstraintCondition(Data cls, Condition cond) {
@@ -441,25 +452,30 @@ public class PythonExpressionGenerator {
             }
         }
         String attrs = attributes.stream().map(a -> "'" + a.getName() + "'").collect(Collectors.joining(", "));
-        return "    return rune_check_one_of(self, " + attrs + ", " + necessity + ")\n";
+        PythonCodeWriter writer = new PythonCodeWriter();
+        writer.indent();
+        writer.appendLine("return rune_check_one_of(self, " + attrs + ", " + necessity + ")");
+        return writer.toString();
     }
 
     private String generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear();
         isSwitchCond = false;
         String expr = generateExpression(c.getExpression(), 0, false);
-        StringBuilder result = new StringBuilder();
+        PythonCodeWriter writer = new PythonCodeWriter();
+        writer.indent();
         if (isSwitchCond) {
-            expr.lines().forEach(line -> result.append("    ").append(line).append("\n"));
-            return result.toString();
+            writer.appendBlock(expr);
+            return writer.toString();
         }
         if (!ifCondBlocks.isEmpty()) {
             for (String arg : ifCondBlocks) {
-                arg.lines().forEach(line -> result.append("    ").append(line).append("\n"));
-                result.append("    \n");
+                writer.appendBlock(arg);
+                writer.appendLine("");
             }
         }
-        return result.toString() + "    return " + expr + "\n";
+        writer.appendLine("return " + expr);
+        return writer.toString();
     }
 
     public void addImportsFromConditions(String variable, String namespace) {

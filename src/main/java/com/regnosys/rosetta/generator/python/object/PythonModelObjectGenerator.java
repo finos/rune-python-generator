@@ -58,8 +58,8 @@ public class PythonModelObjectGenerator {
             RosettaModel model = (RosettaModel) rosettaClass.eContainer();
             String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
 
-            // Generate Python for the class and ensure 4-space indentation
-            String pythonClass = generateClass(rosettaClass, nameSpace, version).replace("\t", "    ");
+            // Generate Python for the class
+            String pythonClass = generateClass(rosettaClass, nameSpace, version);
 
             // use "." as a delimiter to preserve the use of "_" in the name
             String className = model.getName() + "." + rosettaClass.getName();
@@ -160,25 +160,26 @@ public class PythonModelObjectGenerator {
     private String getClassMetaDataString(Data rosettaClass) {
         // generate _ALLOWED_METADATA string for the type
         RDataType rcRData = rObjectFactory.buildRDataType(rosettaClass);
-        StringBuilder builder = new StringBuilder();
+        PythonCodeWriter writer = new PythonCodeWriter();
         boolean first = true;
 
         for (var metaData : rcRData.getMetaAttributes()) {
             if (first) {
                 first = false;
-                builder.append("_ALLOWED_METADATA = {");
+                writer.append("_ALLOWED_METADATA = {");
             } else {
-                builder.append(", ");
+                writer.append(", ");
             }
             switch (metaData.getName()) {
-                case "key" -> builder.append("'@key', '@key:external'");
-                case "scheme" -> builder.append("'@scheme'");
+                case "key" -> writer.append("'@key', '@key:external'");
+                case "scheme" -> writer.append("'@scheme'");
             }
         }
         if (!first) {
-            builder.append("}\n");
+            writer.append("}");
+            writer.newLine();
         }
-        return builder.toString();
+        return writer.toString();
     }
 
     private String keyRefConstraintsToString(Map<String, List<String>> keyRefConstraints) {
@@ -220,7 +221,6 @@ public class PythonModelObjectGenerator {
 
     private String generateBody(Data rosettaClass) {
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rosettaClass);
-        String choiceAliases = pythonChoiceAliasProcessor.generateChoiceAliasesAsString(rosettaDataType);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
         PythonCodeWriter writer = new PythonCodeWriter();
@@ -237,9 +237,7 @@ public class PythonModelObjectGenerator {
             writer.appendBlock(metaData);
         }
 
-        if (!choiceAliases.isEmpty()) {
-            writer.appendLine(choiceAliases);
-        }
+        pythonChoiceAliasProcessor.generateChoiceAliases(writer, rosettaDataType);
 
         if (rosettaClass.getDefinition() != null) {
             writer.appendLine("\"\"\"");

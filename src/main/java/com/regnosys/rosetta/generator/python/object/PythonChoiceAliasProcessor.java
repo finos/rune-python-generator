@@ -27,11 +27,9 @@ public class PythonChoiceAliasProcessor {
      * @return The formatted string or an empty string if no aliases.
      */
     public String generateChoiceAliasesAsString(RDataType choiceType) {
-        Map<String, List<String>> choiceAliases = calculateChoiceAliases(choiceType);
-        if (choiceAliases == null || choiceAliases.isEmpty()) {
-            return "";
-        }
-        return "_CHOICE_ALIAS_MAP ={" + toString(choiceAliases) + "}";
+        PythonCodeWriter writer = new PythonCodeWriter();
+        generateChoiceAliases(writer, choiceType);
+        return writer.toString().trim();
     }
 
     /**
@@ -46,10 +44,7 @@ public class PythonChoiceAliasProcessor {
             return;
         }
 
-        writer.appendIndent();
-        writer.append("_CHOICE_ALIAS_MAP ={");
-        writer.append(toString(choiceAliases));
-        writer.append("}\n");
+        writer.appendLine("_CHOICE_ALIAS_MAP ={" + toString(choiceAliases) + "}");
     }
 
     private Map<String, List<String>> calculateChoiceAliases(RDataType choiceType) {

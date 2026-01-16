@@ -31,16 +31,15 @@ public class PythonCodeGeneratorUtil {
         if (definition == null || definition.isEmpty()) {
             return "";
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append("    #\n");
-        sb.append("    # ").append(definition).append("\n");
-        sb.append("    #\n");
+        PythonCodeWriter writer = new PythonCodeWriter();
+        writer.appendLine("#");
+        writer.appendLine("# " + definition);
+        writer.appendLine("#");
         for (RAttribute attribute : attributes) {
-            sb.append("     # @param ").append(attribute.getName()).append(" ").append(attribute.getDefinition())
-                    .append("\n");
+            writer.appendLine("# @param " + attribute.getName() + " " + attribute.getDefinition());
         }
-        sb.append("    #\n");
-        return sb.toString();
+        writer.appendLine("#");
+        return writer.toString();
     }
 
     public static String createImports(String name) {
