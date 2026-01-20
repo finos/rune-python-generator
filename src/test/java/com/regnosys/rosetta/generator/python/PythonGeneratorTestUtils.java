@@ -1,40 +1,23 @@
 package com.regnosys.rosetta.generator.python;
 
-import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.tests.util.ModelHelper;
-import jakarta.inject.Inject;
-import org.apache.commons.io.FileUtils;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PythonGeneratorTestUtils {
+import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.tests.util.ModelHelper;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PythonGeneratorTestUtils.class);
+import jakarta.inject.Inject;
+
+public class PythonGeneratorTestUtils {
 
     @Inject
     private ModelHelper modelHelper;
     @Inject
     private PythonCodeGenerator generator;
-
-    public void cleanFolder(String folderPath) {
-        File folder = new File(folderPath + File.separator + "src");
-        if (folder.exists() && folder.isDirectory()) {
-            try {
-                FileUtils.cleanDirectory(folder);
-            } catch (IOException e) {
-                LOGGER.error("Failed to delete folder content: " + e.getMessage());
-            }
-        } else {
-            LOGGER.info("{} does not exist or is not a directory", folderPath);
-        }
-    }
 
     public Map<String, CharSequence> generatePythonFromRosettaModel(RosettaModel m, ResourceSet resourceSet) {
         String version = m.getVersion();
@@ -45,7 +28,7 @@ public class PythonGeneratorTestUtils {
         return result;
     }
 
-    public Map<String, CharSequence> generatePythonFromString(String modelContent) throws Exception {
+    public Map<String, CharSequence> generatePythonFromString(String modelContent) {
         // model.parseRosettaWithNoErrors in Xtend ->
         // modelHelper.parseRosettaWithNoErrors(modelContent)
         RosettaModel m = modelHelper.parseRosettaWithNoErrors(modelContent);
@@ -61,7 +44,7 @@ public class PythonGeneratorTestUtils {
         return result;
     }
 
-    public String generatePythonAndExtractBundle(String model) throws Exception {
+    public String generatePythonAndExtractBundle(String model) {
         Map<String, CharSequence> python = generatePythonFromString(model);
         return python.get("src/com/_bundle.py").toString();
     }
@@ -77,7 +60,7 @@ public class PythonGeneratorTestUtils {
         assertTrue(generated.contains(expectedString), msg);
     }
 
-    public void assertBundleContainsExpectedString(String model, String expectedString) throws Exception {
+    public void assertBundleContainsExpectedString(String model, String expectedString) {
         // Generate the bundle using the existing function
         String generatedBundle = generatePythonAndExtractBundle(model);
         assertGeneratedContainsExpectedString(generatedBundle, expectedString);
