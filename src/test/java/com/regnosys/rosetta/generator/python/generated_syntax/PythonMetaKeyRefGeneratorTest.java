@@ -7,7 +7,7 @@ import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Map;
 
 @ExtendWith(InjectionExtension.class)
@@ -36,9 +36,7 @@ public class PythonMetaKeyRefGeneratorTest {
 
         // check proxies
         CharSequence proxyKeyRef = python.get("src/test/generated_syntax/meta_key_ref/KeyRef.py");
-        if (proxyKeyRef == null) {
-            fail("src/test/generated_syntax/meta_key_ref/KeyRef.py was not found");
-        }
+        assertNotNull(proxyKeyRef, "src/test/generated_syntax/meta_key_ref/KeyRef.py was not found");
         testUtils.assertGeneratedContainsExpectedString(
                 proxyKeyRef.toString(),
                 """
@@ -49,9 +47,7 @@ public class PythonMetaKeyRefGeneratorTest {
                         """);
 
         CharSequence proxyScopedKeyRef = python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py");
-        if (proxyScopedKeyRef == null) {
-            fail("src/test/generated_syntax/meta_key_ref/proxyScopedKeyRef.py was not found");
-        }
+        assertNotNull(proxyScopedKeyRef, "src/test/generated_syntax/meta_key_ref/proxyScopedKeyRef.py was not found");
         testUtils.assertGeneratedContainsExpectedString(
                 python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py").toString(),
                 """
@@ -62,9 +58,7 @@ public class PythonMetaKeyRefGeneratorTest {
                         """);
 
         String generatedBundle = python.get("src/test/_bundle.py").toString();
-        if (generatedBundle == null) {
-            fail("src/test/_bundle.py was not found");
-        }
+        assertNotNull(generatedBundle, "src/test/_bundle.py was not found");
 
         String expectedKeyRef = """
                 class test_generated_syntax_meta_key_ref_KeyRef(BaseDataClass):
