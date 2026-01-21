@@ -20,5 +20,5 @@ source $MY_PATH/setup_cdm_test_env.sh || error
 
 # run tests
 $PYEXE -m pip install pytest
-$PYEXE -m pytest -p no:cacheprovider $MYPATH
+$PYEXE -m pytest -p no:cacheprovider $MY_PATH
 rm -rf .pytest
