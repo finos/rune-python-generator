@@ -53,14 +53,11 @@ public class PythonCodeWriter {
     public void appendLine(String line) {
         if (line == null)
             return;
-        // Skip indentation if the line is empty (to avoid trailing whitespace on truly
-        // blank lines)
-        // BUT if we want indented blank lines, we should pass an empty string and
-        // explicitly handle it.
-        // Actually, let's allow appendLine("") to produce indented whitespace for Xtend
-        // compatibility.
-        sb.append(SPACES.repeat(level));
-        sb.append(line).append("\n");
+        if (!line.isEmpty()) {
+            sb.append(SPACES.repeat(level));
+            sb.append(line);
+        }
+        sb.append("\n");
     }
 
     /**

@@ -64,7 +64,7 @@ public class PythonMetaKeyRefGeneratorTest {
                 class test_generated_syntax_meta_key_ref_KeyRef(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.meta_key_ref.KeyRef'
                     fieldA: Annotated[StrWithMeta, StrWithMeta.serializer(), StrWithMeta.validator(('@ref', '@ref:external', '@key', '@key:external'))] = Field(..., description='')
-                \s\s\s\s
+
                     _KEY_REF_CONSTRAINTS = {
                         'fieldA': {'@ref', '@ref:external', '@key', '@key:external'}
                     }
@@ -75,7 +75,7 @@ public class PythonMetaKeyRefGeneratorTest {
                 class test_generated_syntax_meta_key_ref_ScopedKeyRef(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.meta_key_ref.ScopedKeyRef'
                     fieldA: Annotated[StrWithMeta, StrWithMeta.serializer(), StrWithMeta.validator(('@key:scoped', '@ref:scoped'))] = Field(..., description='')
-                \s\s\s\s
+
                     _KEY_REF_CONSTRAINTS = {
                         'fieldA': {'@key:scoped', '@ref:scoped'}
                     }

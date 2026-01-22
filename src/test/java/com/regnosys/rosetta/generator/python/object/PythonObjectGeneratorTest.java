@@ -283,7 +283,7 @@ public class PythonObjectGeneratorTest {
                             _FQRTN = 'com.rosetta.test.model.A'
                             a0: Optional[int] = Field(None, description='')
                             a1: Optional[int] = Field(None, description='')
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_0_(self):
                                 item = self
@@ -296,12 +296,12 @@ public class PythonObjectGeneratorTest {
                             intValue1: Optional[int] = Field(None, description='')
                             intValue2: Optional[int] = Field(None, description='')
                             aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_0_Rule(self):
                                 item = self
                                 return rune_all_elements(rune_resolve_attr(self, "intValue1"), "<", 100)
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_1_OneOrTwo(self):
                                 \"""
@@ -309,7 +309,7 @@ public class PythonObjectGeneratorTest {
                                 \"""
                                 item = self
                                 return rune_check_one_of(self, 'intValue1', 'intValue2', necessity=False)
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_2_SecondOneOrTwo(self):
                                 \"""
@@ -550,7 +550,7 @@ public class PythonObjectGeneratorTest {
                             \"""
                             Test number field 4
                             \"""
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_0_BusinessCentersChoice(self):
                                 \"""
@@ -595,7 +595,7 @@ public class PythonObjectGeneratorTest {
                             \"""
                             Test number field 4
                             \"""
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_0_BusinessCentersChoice(self):
                                 \"""
@@ -604,10 +604,10 @@ public class PythonObjectGeneratorTest {
                                 item = self
                                 def _then_fn0():
                                     return rune_all_elements(rune_resolve_attr(self, "field3"), ">", 0)
-                        \s\s\s\s\s\s\s\s
+
                                 def _else_fn0():
                                     return True
-                        \s\s\s\s\s\s\s\s
+
                                 return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "field1")), _then_fn0, _else_fn0)""");
     }
 
@@ -642,7 +642,7 @@ public class PythonObjectGeneratorTest {
                             _FQRTN = 'com.rosetta.test.model.A'
                             a0: Optional[int] = Field(None, description='')
                             a1: Optional[int] = Field(None, description='')
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_0_(self):
                                 item = self
@@ -656,12 +656,12 @@ public class PythonObjectGeneratorTest {
                             intValue1: Optional[int] = Field(None, description='')
                             intValue2: Optional[int] = Field(None, description='')
                             aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_0_Rule(self):
                                 item = self
                                 return rune_all_elements(rune_resolve_attr(self, "intValue1"), "<", 100)
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_1_OneOrTwo(self):
                                 \"""
@@ -669,7 +669,7 @@ public class PythonObjectGeneratorTest {
                                 \"""
                                 item = self
                                 return rune_check_one_of(self, 'intValue1', 'intValue2', necessity=False)
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_2_ReqOneOrTwo(self):
                                 \"""
@@ -677,7 +677,7 @@ public class PythonObjectGeneratorTest {
                                 \"""
                                 item = self
                                 return rune_check_one_of(self, 'intValue1', 'intValue2', necessity=True)
-                        \s\s\s\s
+
                             @rune_condition
                             def condition_3_SecondOneOrTwo(self):
                                 \"""
