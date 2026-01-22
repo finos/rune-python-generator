@@ -109,16 +109,6 @@
         <!-- Used by the Python generator -->
         <cdm.rosetta.source.path>build/common-domain-model/rosetta-source/src/main/rosetta</cdm.rosetta.source.path>
         <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
-        <unittest.rosetta.source.path>test/python_unit_tests/rosetta</unittest.rosetta.source.path>
-        <unittest.python.output.path>target/python-tests/unit_tests</unittest.python.output.path>
-        <serialization.test.rune.roundtrip.source.path>
-            test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-round-trip-test
-        </serialization.test.rune.roundtrip.source.path>
-        <serialization.test.rune.shouldfail.source.path>
-            test/serialization_tests/rune-common/serialization/src/test/resources/rune-serializer-error-handling-test
-        </serialization.test.rune.shouldfail.source.path>
-        <serialization.test.python.output.path>target/python-tests/serialization_unit_tests
-        </serialization.test.python.output.path>
     </properties>
 
     <dependencyManagement>
@@ -156,11 +146,7 @@
                 <artifactId>org.eclipse.xtext.ecore</artifactId>
                 <version>${xtext.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.eclipse.xtend</groupId>
-                <artifactId>org.eclipse.xtend.lib</artifactId>
-                <version>${xtext.version}</version>
-            </dependency>
+
             <dependency>
                 <groupId>org.eclipse.xtext</groupId>
                 <artifactId>org.eclipse.xtext.xbase.lib</artifactId>
@@ -303,16 +289,7 @@
             <groupId>org.eclipse.emf</groupId>
             <artifactId>org.eclipse.emf.codegen.ecore</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-model</artifactId>
-            <version>3.9.11</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-configuration2</artifactId>
-            <version>2.12.0</version>
-        </dependency>
+
         <!-- migrated from Python POM: end -->
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -352,10 +329,32 @@
                         <configLocation>checkstyle/checkstyle.xml</configLocation>
                     </configuration>
                 </plugin>
+
+                <!-- This is to fix the "Plugin execution not covered by lifecycle configuration" error in Eclipse/m2e -->
                 <plugin>
-                    <groupId>org.eclipse.xtend</groupId>
-                    <artifactId>xtend-maven-plugin</artifactId>
-                    <version>${xtext.version}</version>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-checkstyle-plugin</artifactId>
+                                        <versionRange>[3.0.0,)</versionRange>
+                                        <goals>
+                                            <goal>check</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -421,34 +420,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
-            <!--- migrated from PYTHON POM: start -->
-            <plugin>
-                <groupId>org.eclipse.xtend</groupId>
-                <artifactId>xtend-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>Generate xtend sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.basedir}/target/main/generated/xtend</outputDirectory>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>Generate xtend test sources</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <testOutputDirectory>${project.basedir}/target/test/generated/xtend</testOutputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <!--- migrated from PYTHON POM: end -->
             <!-- Maven Shade Plugin for executable JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
