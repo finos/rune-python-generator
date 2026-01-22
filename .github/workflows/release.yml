@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Do not push/tag or create a GitHub Release"
+        description: "DRY RUN: Do not push/tag or create a GitHub Release"
         type: boolean
-        default: true
+        default: false
       base_ref:
         description: "Branch to release from (for testing)"
         type: string
@@ -30,7 +30,7 @@ jobs:
       artifact_id: ${{ steps.get_artifact_id.outputs.artifact_id }}
     steps:
       - name: Checkout base branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.base_ref || 'main' }}
@@ -116,16 +116,11 @@ jobs:
             exit 0
           fi
 
-          mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "Release ${TAG_NAME}: set project version to ${TAG_NAME}"
-          else
-            echo "No changes to commit (version already ${TAG_NAME})."
-          fi
+           # We skip committing changes to the repo. Use versions:set only in the build step ephemerally.
+           echo "Skipping persistent version bump in pom.xml to avoid branch protection issues."
 
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           git fetch --prune --tags origin
           if git rev-parse "${TAG_NAME}" >/dev/null 2>&1; then
             echo "Tag ${TAG_NAME} already exists. Exiting."
@@ -141,14 +136,14 @@ jobs:
     steps:
     - name: Checkout the tag (real release)
       if: ${{ github.event.inputs.dry_run != 'true' }}
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         ref: ${{ needs.prepare-release.outputs.tag_name }}
 
     - name: Checkout the base branch (dry run)
       if: ${{ github.event.inputs.dry_run == 'true' }}
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         ref: ${{ github.event.inputs.base_ref || 'main' }}
@@ -160,15 +155,13 @@ jobs:
         java-version: 21
         cache: maven
 
-    - name: In dry run - set project version to computed tag (no commit)
-      if: ${{ github.event.inputs.dry_run == 'true' }}
+    - name: Set project version for build (ephemeral)
       env:
         TAG_NAME: ${{ needs.prepare-release.outputs.tag_name }}
       shell: bash
       run: |
         set -euo pipefail
         mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
-        # No commit; only adjust the working tree so the built artifact names match
 
     - name: Build JARs
       shell: bash
@@ -190,7 +183,7 @@ jobs:
 
     - name: In dry run - upload build outputs as workflow artifacts
       if: ${{ github.event.inputs.dry_run == 'true' }}
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: dry-run-${{ needs.prepare-release.outputs.tag_name }}
         path: |

@@ -64,7 +64,7 @@ public class PythonEnumGeneratorTest {
                     \"""
                     A time period, e.g. a day, week, month, year or term of the stream.
                     \"""
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_TermPeriod(self):
                         \"""
@@ -73,12 +73,12 @@ public class PythonEnumGeneratorTest {
                         item = self
                         def _then_fn0():
                             return rune_all_elements(rune_resolve_attr(self, "periodMultiplier"), "=", 1)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "period"), "=", com.rosetta.test.model.PeriodExtendedEnum.PeriodExtendedEnum.T), _then_fn0, _else_fn0)
-                \s\s\s\s
+
                     @rune_condition
                     def condition_1_PositivePeriodMultiplier(self):
                         \"""

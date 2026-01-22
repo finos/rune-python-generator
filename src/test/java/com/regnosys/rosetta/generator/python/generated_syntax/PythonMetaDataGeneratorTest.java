@@ -133,7 +133,7 @@ public class PythonMetaDataGeneratorTest {
                     _FQRTN = 'test.generated_syntax.metadata.AttributeRef'
                     dateField: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@key', '@key:external'))]] = Field(None, description='')
                     dateReference: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]] = Field(None, description='')
-                \s\s\s\s
+
                     _KEY_REF_CONSTRAINTS = {
                         'dateField': {'@key', '@key:external'},
                         'dateReference': {'@ref', '@ref:external'}
@@ -151,7 +151,7 @@ public class PythonMetaDataGeneratorTest {
                     _FQRTN = 'test.generated_syntax.metadata.NodeRef'
                     typeA: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]] = Field(None, description='')
                     aReference: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]] = Field(None, description='')
-                \s\s\s\s
+
                     _KEY_REF_CONSTRAINTS = {
                         'aReference': {'@key', '@key:external', '@ref', '@ref:external'}
                     }

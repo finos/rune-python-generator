@@ -54,24 +54,36 @@
     },
     {
       "description": "Always open PRs immediately and prioritize Renovate GitHub Action updates",
-      "matchManagers": ["github-actions"],
-      "matchPackageNames": ["renovatebot/github-action"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "renovatebot/github-action"
+      ],
       "prCreation": "immediate",
       "prPriority": 100,
       "stabilityDays": 0,
       "minimumReleaseAge": "0 days",
-      "schedule": ["at any time"]
+      "schedule": [
+        "at any time"
+      ]
     },
     {
       "description": "Automerge safe GitHub Actions patch updates",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["patch"],
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "automerge": true,
       "automergeType": "pr"
     },
     {
       "description": "Require dashboard approval for major updates",
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "dependencyDashboardApproval": true
     }
   ]
