@@ -10,7 +10,7 @@ import com.regnosys.rosetta.generator.external.ExternalGenerator;
 import com.regnosys.rosetta.generator.external.ExternalGenerators;
 
 public final class DefaultExternalGeneratorsProvider implements Provider<ExternalGenerators> {
-	
+
 	@Inject
 	private PythonCodeGenerator pythonGenerator;
 

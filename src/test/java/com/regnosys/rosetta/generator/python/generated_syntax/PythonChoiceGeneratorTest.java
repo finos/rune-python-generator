@@ -44,7 +44,7 @@ public class PythonChoiceGeneratorTest {
                     _FQRTN = 'test.generated_syntax.semantic.Choice'
                     intType: Optional[int] = Field(None, description='')
                     stringType: Optional[str] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_Choice(self):
                         item = self

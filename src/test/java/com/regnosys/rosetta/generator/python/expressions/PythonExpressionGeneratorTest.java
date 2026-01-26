@@ -36,16 +36,16 @@ public class PythonExpressionGeneratorTest {
                 _FQRTN = 'com.rosetta.test.model.ArithmeticTest'
                 a: int = Field(..., description='')
                 b: int = Field(..., description='')
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_Test(self):
                     item = self
                     def _then_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return False
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements((rune_resolve_attr(self, "a") + rune_resolve_attr(self, "b")), "=", 3), _then_fn0, _else_fn0)
             """
         );
@@ -69,7 +69,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test field a
                 \"""
-            \s\s\s\s    
+
                 @rune_condition
                 def condition_0_Test(self):
                     item = self
@@ -117,14 +117,14 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test string field 3
                 \"""
-            \s\s\s\s    
+
                 @rune_condition
                 def condition_0_TestChoice(self):
                     item = self
                     return rune_check_one_of(self, 'field1', 'field2', 'field3', necessity=False)"""
         );
     }
-    
+
     @Test
     public void testGenerateOneOfCondition() {
         testUtils.assertBundleContainsExpectedString("""
@@ -143,7 +143,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test string field 1
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_OneOf(self):
                     item = self
@@ -175,7 +175,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test number field 2
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -184,14 +184,14 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field2"), "=", 0)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "field1")), _then_fn0, _else_fn0)"""
         );
     }
-    
+
     @Test
     public void testGenerateIfThenElseCondition() {
         testUtils.assertBundleContainsExpectedString("""
@@ -217,7 +217,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test number field 2
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -226,14 +226,14 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field2"), "=", 0)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field2"), "=", 1)
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "field1")), _then_fn0, _else_fn0)"""
         );
     }
-    
+
     @Test
     public void testGenerateBooleanCondition() {
         testUtils.assertBundleContainsExpectedString("""
@@ -259,7 +259,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test number field 2
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -268,14 +268,14 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field2"), "=", 0)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field2"), "=", 5)
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field1"), "=", True), _then_fn0, _else_fn0)"""
         );
     }
-    
+
     @Test
     public void testGenerateAbsentCondition() {
         testUtils.assertBundleContainsExpectedString("""
@@ -301,7 +301,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test number field 2
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -310,14 +310,14 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field2"), "=", 0)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return (not rune_attr_exists(rune_resolve_attr(self, "field2")))
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field1"), "=", True), _then_fn0, _else_fn0)"""
         );
     }
-    
+
     @Test
     public void testGenerateOnlyElementCondition() {
         String generatedPython = testUtils.generatePythonFromString("""
@@ -360,7 +360,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test number field 2
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -369,10 +369,10 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field2"), "=", 0)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements(rune_get_only_element(rune_resolve_attr(self, "field1")), "=", com.rosetta.test.model.TestEnum.TestEnum.TEST_ENUM_VALUE_1), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTestEnum);
@@ -405,7 +405,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test A type aValue
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -414,10 +414,10 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1"))
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), _then_fn0, _else_fn0)"""
         );
 
@@ -436,7 +436,7 @@ public class PythonExpressionGeneratorTest {
             """
         );
     }
-    
+
     @Test
     public void testGenerateCountCondition() {
         String generatedPython = testUtils.generatePythonFromString("""
@@ -448,7 +448,7 @@ public class PythonExpressionGeneratorTest {
 
             type Test: <"Test count operation condition">
                 aValue A (1..*) <"Test A type aValue">
-                
+
                 condition TestCond: <"Test condition">
                     if aValue -> field1 count <> aValue -> field2 count 
                         then True
@@ -467,7 +467,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test A type aValue
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -476,10 +476,10 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return False
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_any_elements(rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), "<>", rune_count(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field2"))), _then_fn0, _else_fn0)
             """
         );
@@ -511,7 +511,7 @@ public class PythonExpressionGeneratorTest {
             """
         );
     }
-    
+
     @Test
     public void testGenerateAnyCondition() {
         testUtils.assertBundleContainsExpectedString("""
@@ -536,7 +536,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test boolean field2
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -545,21 +545,21 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_all_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2"))
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field1"), "=", "A"), _then_fn0, _else_fn0)"""
         );
     }
-    
+
     @Test
     public void testGenerateDistinctCondition() {
         String generatedPython = testUtils.generatePythonFromString("""
             type A: <"Test type">
                 field1 int (1..*) <"Test int field 1">
                 field2 int (1..*) <"Test int field 2">
-                    
+
             type Test: <"Test distinct operation condition">
                 aValue A (1..*) <"Test A type aValue">
                 field3 number (1..1)<"Test number field 3">
@@ -585,7 +585,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test number field 3
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -594,10 +594,10 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field3"), "=", 0)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return rune_all_elements(rune_resolve_attr(self, "field3"), "=", 1)
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements(rune_count(set(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1"))), "=", 1), _then_fn0, _else_fn0)"""
         );
 
@@ -620,7 +620,7 @@ public class PythonExpressionGeneratorTest {
             """
         );
     }
-    
+
     @Test
     public void testGenerateBinContainsCondition() {
         String generatedPython = testUtils.generatePythonFromString("""
@@ -702,7 +702,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test bool type field3
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -711,10 +711,10 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn0():
                         return rune_contains(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bValue"), "aValue"), "cValue"), com.rosetta.test.model.C.C.FIELD_4)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", True), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedC);
@@ -722,7 +722,7 @@ public class PythonExpressionGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedB);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTest);
     }
-    
+
     @Test
     public void testGenerateBinDisjointCondition() {
         testUtils.assertBundleContainsExpectedString("""
@@ -753,7 +753,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 Test boolean field3
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCond(self):
                     \"""
@@ -762,16 +762,16 @@ public class PythonExpressionGeneratorTest {
                     item = self
                     def _then_fn1():
                         return rune_all_elements(rune_resolve_attr(self, "field3"), "=", True)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn1():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     def _then_fn0():
                         return if_cond_fn((rune_all_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2")) and rune_disjoint(["A"], rune_resolve_attr(self, "field1"))), _then_fn1, _else_fn1)
-            \s\s\s\s\s\s\s\s
+
                     def _else_fn0():
                         return True
-            \s\s\s\s\s\s\s\s
+
                     return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", False), _then_fn0, _else_fn0)"""
         );
     }
@@ -800,7 +800,7 @@ public class PythonExpressionGeneratorTest {
                 \"""
                 test bar
                 \"""
-            \s\s\s\s
+
                 @rune_condition
                 def condition_0_TestCondition(self):
                     \"""

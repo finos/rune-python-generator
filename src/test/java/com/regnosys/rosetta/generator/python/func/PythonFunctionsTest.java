@@ -35,28 +35,28 @@ public class PythonFunctionsTest {
                 def Abs(arg: Decimal) -> Decimal:
                     \"""
                     Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     arg : number
-                \s\s\s\s
+
                     Returns
                     -------
                     result : number
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     def _then_fn0():
                         return (-1 * rune_resolve_attr(self, "arg"))
-                \s\s\s\s
+
                     def _else_fn0():
                         return rune_resolve_attr(self, "arg")
-                \s\s\s\s
+
                     result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0)
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(generatedFunction, expected);
@@ -82,27 +82,27 @@ public class PythonFunctionsTest {
                 def AppendToVector(vector: list[Decimal] | None, value: Decimal) -> Decimal:
                     \"""
                     Append a single value to a vector (list of numbers).
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     vector : number
                     Input vector.
-                \s\s\s\s
+
                     value : number
                     Value to add to the vector.
-                \s\s\s\s
+
                     Returns
                     -------
                     resultVector : number
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     resultVector = rune_resolve_attr(self, "vector")
                     resultVector.add_rune_attr(self, rune_resolve_attr(self, "value"))
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return resultVector
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -224,33 +224,33 @@ public class PythonFunctionsTest {
                 def Create_UnitType(currency: str | None, financialUnit: FinancialUnitEnum | None) -> UnitType:
                     \"""
                     Create UnitType with given currency or financial unit.
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     currency : string
-                \s\s\s\s
+
                     financialUnit : FinancialUnitEnum
-                \s\s\s\s
+
                     Returns
                     -------
                     unitType : UnitType
-                \s\s\s\s
+
                     \"""
                     _pre_registry = {}
                     self = inspect.currentframe()
-                \s\s\s\s
+
                     # conditions
-                \s\s\s\s
+
                     @rune_local_condition(_pre_registry)
                     def condition_0_CurrencyOrFinancialUnitExists(self):
                         return (rune_attr_exists(rune_resolve_attr(self, "currency")) or rune_attr_exists(rune_resolve_attr(self, "financialUnit")))
                     # Execute all registered conditions
                     execute_local_conditions(_pre_registry, 'Pre-condition')
-                \s\s\s\s
+
                     unitType = _get_rune_object('UnitType', 'currency', rune_resolve_attr(self, "currency"))
                     unitType = set_rune_attr(rune_resolve_attr(self, 'unitType'), 'financialUnit', rune_resolve_attr(self, "financialUnit"))
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return unitType
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -295,28 +295,28 @@ public class PythonFunctionsTest {
                 def ResolvePerformanceReset(observation: Observation, date: datetime.date) -> Reset:
                     \"""
                     Defines how to resolve the reset value for a performance payout.
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     observation : Observation
                     Represents the observation that will be used to compute the reset value.
-                \s\s\s\s
+
                     date : date
                     Specifies the date of the reset.
-                \s\s\s\s
+
                     Returns
                     -------
                     reset : Reset
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     reset = _get_rune_object('Reset', 'resetValue', rune_resolve_attr(rune_resolve_attr(self, "observation"), "observedValue"))
                     reset = set_rune_attr(rune_resolve_attr(self, 'reset'), 'resetDate', rune_resolve_attr(self, "date"))
                     reset.add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, reset), 'observations'), rune_resolve_attr(self, "observation"))
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return reset
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -351,26 +351,26 @@ public class PythonFunctionsTest {
                 def FilterQuantity(quantities: list[Quantity] | None, unit: UnitType) -> Quantity:
                     \"""
                     Filter list of quantities based on unit type.
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     quantities : Quantity
                     List of quantities to filter.
-                \s\s\s\s
+
                     unit : UnitType
                     Currency unit type.
-                \s\s\s\s
+
                     Returns
                     -------
                     filteredQuantities : Quantity
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     filteredQuantities = rune_filter(rune_resolve_attr(self, "quantities"), lambda item: rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "quantities"), "unit"), "=", rune_resolve_attr(self, "unit")))
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return filteredQuantities
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -421,62 +421,62 @@ public class PythonFunctionsTest {
                 @replaceable
                 def ArithmeticOperation(n1: Decimal, op: ArithmeticOperationEnum, n2: Decimal) -> Decimal:
                     \"""
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     n1 : number
-                \s\s\s\s
+
                     op : ArithmeticOperationEnum
-                \s\s\s\s
+
                     n2 : number
-                \s\s\s\s
+
                     Returns
                     -------
                     result : number
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     def _then_fn5():
                         return Min(rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2"))
-                \s\s\s\s
+
                     def _else_fn5():
                         return True
-                \s\s\s\s
+
                     def _then_fn4():
                         return Max(rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2"))
-                \s\s\s\s
+
                     def _else_fn4():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MIN), _then_fn5, _else_fn5)
-                \s\s\s\s
+
                     def _then_fn3():
                         return (rune_resolve_attr(self, "n1") / rune_resolve_attr(self, "n2"))
-                \s\s\s\s
+
                     def _else_fn3():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MAX), _then_fn4, _else_fn4)
-                \s\s\s\s
+
                     def _then_fn2():
                         return (rune_resolve_attr(self, "n1") * rune_resolve_attr(self, "n2"))
-                \s\s\s\s
+
                     def _else_fn2():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.DIVIDE), _then_fn3, _else_fn3)
-                \s\s\s\s
+
                     def _then_fn1():
                         return (rune_resolve_attr(self, "n1") - rune_resolve_attr(self, "n2"))
-                \s\s\s\s
+
                     def _else_fn1():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MULTIPLY), _then_fn2, _else_fn2)
-                \s\s\s\s
+
                     def _then_fn0():
                         return (rune_resolve_attr(self, "n1") + rune_resolve_attr(self, "n2"))
-                \s\s\s\s
+
                     def _else_fn0():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.SUBTRACT), _then_fn1, _else_fn1)
-                \s\s\s\s
+
                     result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.ADD), _then_fn0, _else_fn0)
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(generatedFunction, expected);
@@ -508,23 +508,23 @@ public class PythonFunctionsTest {
                 def FilterQuantityByCurrencyExists(quantities: list[QuantitySchedule] | None) -> QuantitySchedule:
                     \"""
                     Filter list of quantities based on unit type.
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     quantities : QuantitySchedule
                     List of quantities to filter.
-                \s\s\s\s
+
                     Returns
                     -------
                     filteredQuantities : QuantitySchedule
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     filteredQuantities = rune_filter(rune_resolve_attr(self, "quantities"), lambda item: rune_attr_exists(rune_resolve_attr(rune_resolve_attr(item, "unit"), "currency")))
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return filteredQuantities
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -555,31 +555,31 @@ public class PythonFunctionsTest {
                 @replaceable
                 def testAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
                     \"""
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     inp1 : number
-                \s\s\s\s
+
                     inp2 : number
-                \s\s\s\s
+
                     Returns
                     -------
                     result : number
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     def _then_fn0():
                         return rune_resolve_attr(self, "inp1")
-                \s\s\s\s
+
                     def _else_fn0():
                         return True
-                \s\s\s\s
+
                     Alias = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "inp1"), "<", 0), _then_fn0, _else_fn0)
                     result =  rune_resolve_attr(self, "Alias")
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return result
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -621,26 +621,26 @@ public class PythonFunctionsTest {
                 @replaceable
                 def testAlias(a: A, b: B) -> C:
                     \"""
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     a : A
-                \s\s\s\s
+
                     b : B
-                \s\s\s\s
+
                     Returns
                     -------
                     c : C
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     Alias1 = rune_resolve_attr(rune_resolve_attr(self, "a"), "valueA")
                     Alias2 = rune_resolve_attr(rune_resolve_attr(self, "b"), "valueB")
                     c = _get_rune_object('C', 'valueC', (rune_resolve_attr(self, "Alias1") * rune_resolve_attr(self, "Alias2")))
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return c
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -698,25 +698,25 @@ public class PythonFunctionsTest {
                 def ResolveInterestRateObservationIdentifiers(payout: InterestRatePayout, date: datetime.date) -> ObservationIdentifier:
                     \"""
                     Defines which attributes on the InterestRatePayout should be used to locate and resolve the underlier's price, for example for the reset process.
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     payout : InterestRatePayout
-                \s\s\s\s
+
                     date : date
-                \s\s\s\s
+
                     Returns
                     -------
                     identifiers : ObservationIdentifier
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     identifiers = _get_rune_object('ObservationIdentifier', 'observable', _get_rune_object('Observable', 'rateOption', rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "payout"), "rateSpecification"), "floatingRate"), "rateOption")))
                     identifiers = set_rune_attr(rune_resolve_attr(self, 'identifiers'), 'observationDate', rune_resolve_attr(self, "date"))
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return identifiers
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -747,34 +747,34 @@ public class PythonFunctionsTest {
                 @replaceable
                 def RoundToNearest(value: Decimal, nearest: Decimal, roundingMode: RoundingModeEnum) -> Decimal:
                     \"""
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     value : number
-                \s\s\s\s
+
                     nearest : number
-                \s\s\s\s
+
                     roundingMode : RoundingModeEnum
-                \s\s\s\s
+
                     Returns
                     -------
                     roundedValue : number
-                \s\s\s\s
+
                     \"""
                     _pre_registry = {}
                     self = inspect.currentframe()
-                \s\s\s\s
+
                     # conditions
-                \s\s\s\s
+
                     @rune_local_condition(_pre_registry)
                     def condition_0_PositiveNearest(self):
                         return rune_all_elements(rune_resolve_attr(self, "nearest"), ">", 0)
                     # Execute all registered conditions
                     execute_local_conditions(_pre_registry, 'Pre-condition')
-                \s\s\s\s
+
                     roundedValue = rune_resolve_attr(self, "roundedValue")
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return roundedValue
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -806,38 +806,38 @@ public class PythonFunctionsTest {
                 @replaceable
                 def RoundToNearest(value: Decimal, nearest: Decimal, roundingMode: RoundingModeEnum) -> Decimal:
                     \"""
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     value : number
-                \s\s\s\s
+
                     nearest : number
-                \s\s\s\s
+
                     roundingMode : RoundingModeEnum
-                \s\s\s\s
+
                     Returns
                     -------
                     roundedValue : number
-                \s\s\s\s
+
                     \"""
                     _pre_registry = {}
                     self = inspect.currentframe()
-                \s\s\s\s
+
                     # conditions
-                \s\s\s\s
+
                     @rune_local_condition(_pre_registry)
                     def condition_0_PositiveNearest(self):
                         return rune_all_elements(rune_resolve_attr(self, "nearest"), ">", 0)
-                \s\s\s\s
+
                     @rune_local_condition(_pre_registry)
                     def condition_1_valueNegative(self):
                         return rune_all_elements(rune_resolve_attr(self, "value"), "<", 0)
                     # Execute all registered conditions
                     execute_local_conditions(_pre_registry, 'Pre-condition')
-                \s\s\s\s
+
                     roundedValue = rune_resolve_attr(self, "roundedValue")
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return roundedValue
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -871,24 +871,24 @@ public class PythonFunctionsTest {
                 def NewFloatingPayout(masterConfirmation: EquitySwapMasterConfirmation2018 | None) -> InterestRatePayout:
                     \"""
                     Function specification to create the interest rate (floating) payout part of an Equity Swap according to the 2018 ISDA CDM Equity Confirmation template.
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     masterConfirmation : EquitySwapMasterConfirmation2018
-                \s\s\s\s
+
                     Returns
                     -------
                     interestRatePayout : InterestRatePayout
-                \s\s\s\s
+
                     \"""
                     _post_registry = {}
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     interestRatePayout = rune_resolve_attr(self, "interestRatePayout")
-                \s\s\s\s
+
                     # post-conditions
-                \s\s\s\s
+
                     @rune_local_condition(_post_registry)
                     def condition_0_InterestRatePayoutTerms(self):
                         \"""
@@ -896,14 +896,14 @@ public class PythonFunctionsTest {
                         \"""
                         def _then_fn0():
                             return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "interestRatePayout"), "paymentDates"), "=", rune_resolve_attr(rune_resolve_attr(self, "masterConfirmation"), "equityCashSettlementDates"))
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "masterConfirmation")), _then_fn0, _else_fn0)
                     # Execute all registered post-conditions
                     execute_local_conditions(_post_registry, 'Post-condition')
-                \s\s\s\s
+
                     return interestRatePayout
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
@@ -952,24 +952,24 @@ public class PythonFunctionsTest {
                 @replaceable
                 def DayCountFraction(interestRatePayout: InterestRatePayout, date: datetime.date) -> Decimal:
                     \"""
-                \s\s\s\s
+
                     Parameters\s
                     ----------
                     interestRatePayout : InterestRatePayout
-                \s\s\s\s
+
                     date : date
-                \s\s\s\s
+
                     Returns
                     -------
                     a : number
-                \s\s\s\s
+
                     \"""
                     self = inspect.currentframe()
-                \s\s\s\s
-                \s\s\s\s
+
+
                     a = rune_resolve_attr(self, "a")
-                \s\s\s\s
-                \s\s\s\s
+
+
                     return a""";
 
         testUtils.assertGeneratedContainsExpectedString(python, expected);
