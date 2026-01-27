@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.generator.python.object;
 
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
@@ -40,13 +42,16 @@ public class PythonModelObjectGenerator {
      * @return a Map of all the generated Python indexed by the class name
      */
     public Map<String, String> generate(Iterable<Data> rosettaClasses, String version,
-            Graph<String, DefaultEdge> dependencyDAG, Set<String> enumImports) {
+            PythonCodeGeneratorContext context) {
+        Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
             throw new RuntimeException("Dependency DAG not initialized");
         }
+        Set<String> enumImports = context.getEnumImports();
         if (enumImports == null) {
             throw new RuntimeException("Enum imports not initialized");
         }
+
         Map<String, String> result = new HashMap<>();
 
         for (Data rosettaClass : rosettaClasses) {

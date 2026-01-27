@@ -146,8 +146,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         }
 
         Map<String, CharSequence> currentObject = context.getObjects();
-        currentObject.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion, context.getDependencyDAG(),
-                context.getEnumImports()));
+        currentObject.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion, context));
         result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
         result.putAll(funcGenerator.generate(rosettaFunctions, cleanVersion));
 
