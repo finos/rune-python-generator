@@ -10,9 +10,7 @@ import com.regnosys.rosetta.types.RObjectFactory;
 import jakarta.inject.Inject;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.GraphCycleProhibitedException;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,24 +32,15 @@ public class PythonModelObjectGenerator {
     @Inject
     private PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
-    private Graph<String, DefaultEdge> dependencyDAG = null;
-    private Set<String> enumImports = null;
-
-    public void beforeAllGenerate(Graph<String, DefaultEdge> dependencyDAGIn, Set<String> enumImportsIn) {
-        dependencyDAG = dependencyDAGIn;
-        enumImports = enumImportsIn;
-    }
-
     /**
      * Generate Python from the collection of Rosetta classes (of type Data).
-     * Note: this function updates the dependency graph used by afterAllGenerate to
-     * create the bundle
      * 
      * @param rosettaClasses the collection of Rosetta Classes for this model
      * @param version        the version for this collection of classes
      * @return a Map of all the generated Python indexed by the class name
      */
-    public Map<String, String> generate(Iterable<Data> rosettaClasses, String version) {
+    public Map<String, String> generate(Iterable<Data> rosettaClasses, String version,
+            Graph<String, DefaultEdge> dependencyDAG, Set<String> enumImports) {
         if (dependencyDAG == null) {
             throw new RuntimeException("Dependency DAG not initialized");
         }
@@ -65,7 +54,7 @@ public class PythonModelObjectGenerator {
             String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
 
             // Generate Python for the class
-            String pythonClass = generateClass(rosettaClass, nameSpace, version);
+            String pythonClass = generateClass(rosettaClass, nameSpace, version, enumImports);
 
             // construct the class name using "." as a delimiter
             String className = model.getName() + "." + rosettaClass.getName();
@@ -76,13 +65,14 @@ public class PythonModelObjectGenerator {
                 Data superClass = rosettaClass.getSuperType();
                 RosettaModel superModel = (RosettaModel) superClass.eContainer();
                 String superClassName = superModel.getName() + "." + superClass.getName();
-                addDependency(className, superClassName);
+
+                addDependency(dependencyDAG, className, superClassName);
             }
         }
         return result;
     }
 
-    private void addDependency(String className, String dependencyName) {
+    private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
         dependencyDAG.addVertex(dependencyName);
         if (!className.equals(dependencyName)) {
             try {
@@ -93,10 +83,16 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private String generateClass(Data rosettaClass, String nameSpace, String version) {
+    private String generateClass(Data rosettaClass, String nameSpace, String version, Set<String> enumImports) {
+        if (rosettaClass == null) {
+            throw new RuntimeException("Rosetta class not initialized");
+        }
         if (rosettaClass.getSuperType() != null && rosettaClass.getSuperType().getName() == null) {
             throw new RuntimeException(
                     "The class superType for " + rosettaClass.getName() + " exists but its name is null");
+        }
+        if (enumImports == null) {
+            throw new RuntimeException("Enum imports not initialized");
         }
 
         Set<String> enumImportsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass);

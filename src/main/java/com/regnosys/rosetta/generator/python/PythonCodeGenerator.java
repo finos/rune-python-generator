@@ -1,7 +1,6 @@
 package com.regnosys.rosetta.generator.python;
-// TODO: collect imports as a set rather than an array
-
 // TODO: re-engineer type generation to use an object that has the features carried throughout the generation (imports, etc.)
+
 // TODO: function support
 // TODO: review and consolidate unit tests
 // TODO: review migrating choice alias processor to PythonModelObjectGenerator
@@ -13,6 +12,8 @@ import com.regnosys.rosetta.generator.python.functions.PythonFunctionGenerator;
 import com.regnosys.rosetta.generator.python.object.PythonModelObjectGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
+import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.*;
+
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
+
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.*;
@@ -95,29 +96,35 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenerator.class);
 
-    private List<String> subfolders = null;
-    private Map<String, Map<String, CharSequence>> objects = null; // Python code for types by nameSpace, by type name
-    private Graph<String, DefaultEdge> dependencyDAG = null;
-    private Set<String> enumImports = null;
+    private Map<String, PythonCodeGeneratorContext> contexts = null;
 
     public PythonCodeGenerator() {
-        super("python");
+        super(PYTHON);
     }
 
     @Override
     public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set,
             Collection<? extends RosettaModel> models, String version) {
-        subfolders = new ArrayList<>();
-        objects = new HashMap<>();
-        dependencyDAG = new DirectedAcyclicGraph<>(DefaultEdge.class);
-        enumImports = new HashSet<>();
-        pojoGenerator.beforeAllGenerate(dependencyDAG, enumImports);
+
+        contexts = new HashMap<>();
         return Collections.emptyMap();
     }
 
     @Override
     public Map<String, ? extends CharSequence> generate(Resource resource, RosettaModel model, String version) {
-        String cleanVersion = cleanVersion(version);
+        if (model == null) {
+            throw new IllegalArgumentException("Model is null");
+        }
+        LOGGER.debug("Processing module: {}", model.getName());
+
+        String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
+        PythonCodeGeneratorContext context = contexts.get(nameSpace);
+        if (context == null) {
+            context = new PythonCodeGeneratorContext();
+            contexts.put(nameSpace, context);
+        }
+
+        String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
 
         Map<String, CharSequence> result = new HashMap<>();
 
@@ -132,21 +139,15 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
                 .map(Function.class::cast).collect(Collectors.toList());
 
         if (!rosettaClasses.isEmpty() || !rosettaEnums.isEmpty() || !rosettaFunctions.isEmpty()) {
-            addSubfolder(model.getName());
+            context.addSubfolder(model.getName());
             if (!rosettaFunctions.isEmpty()) {
-                addSubfolder(model.getName() + ".functions");
+                context.addSubfolder(model.getName() + ".functions");
             }
         }
 
-        LOGGER.debug("Processing module: {}", model.getName());
-
-        String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
-        Map<String, CharSequence> currentObject = objects.get(nameSpace);
-        if (currentObject == null) {
-            currentObject = new HashMap<String, CharSequence>();
-            objects.put(nameSpace, currentObject);
-        }
-        currentObject.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion));
+        Map<String, CharSequence> currentObject = context.getObjects();
+        currentObject.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion, context.getDependencyDAG(),
+                context.getEnumImports()));
         result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
         result.putAll(funcGenerator.generate(rosettaFunctions, cleanVersion));
 
@@ -158,26 +159,30 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             ResourceSet set,
             Collection<? extends RosettaModel> models,
             String version) {
-        String cleanVersion = cleanVersion(version);
         Map<String, CharSequence> result = new HashMap<>();
-
-        List<String> workspaces = getWorkspaces(subfolders);
-        result.putAll(generateWorkspaces(workspaces, cleanVersion));
-        result.putAll(generateInits(subfolders));
-
-        for (String nameSpace : objects.keySet()) {
-            Map<String, CharSequence> currentObject = objects.get(nameSpace);
-            if (currentObject != null && !currentObject.isEmpty()) {
-                result.put("pyproject.toml", PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
-                result.putAll(processDAG(nameSpace, currentObject));
-            }
+        String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
+        for (String nameSpace : contexts.keySet()) {
+            PythonCodeGeneratorContext context = contexts.get(nameSpace);
+            List<String> subfolders = context.getSubfolders();
+            result.putAll(generateWorkspaces(getWorkspaces(subfolders), cleanVersion));
+            result.putAll(generateInits(subfolders));
+            result.putAll(processDAG(nameSpace, context, cleanVersion));
         }
         return result;
     }
 
-    private Map<String, CharSequence> processDAG(String nameSpace, Map<String, CharSequence> nameSpaceObjects) {
+    private Map<String, CharSequence> processDAG(String nameSpace, PythonCodeGeneratorContext context,
+            String cleanVersion) {
+        if (nameSpace == null || context == null || cleanVersion == null) {
+            throw new IllegalArgumentException("Invalid arguments");
+        }
         Map<String, CharSequence> result = new HashMap<>();
-        if (dependencyDAG != null) {
+        Map<String, CharSequence> nameSpaceObjects = context.getObjects();
+        Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
+        Set<String> enumImports = context.getEnumImports();
+
+        if (nameSpaceObjects != null && !nameSpaceObjects.isEmpty() && dependencyDAG != null && enumImports != null) {
+            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
             PythonCodeWriter bundleWriter = new PythonCodeWriter();
             TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
                     dependencyDAG);
@@ -205,7 +210,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
                     // create the stub
                     String[] parsedName = name.split("\\.");
-                    String stubFileName = "src/" + String.join("/", parsedName) + ".py";
+                    String stubFileName = SRC + String.join("/", parsedName) + ".py";
 
                     PythonCodeWriter stubWriter = new PythonCodeWriter();
                     stubWriter.appendLine("# pylint: disable=unused-import");
@@ -224,23 +229,9 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             }
             bundleWriter.newLine();
             bundleWriter.appendLine("# EOF");
-            result.put("src/" + nameSpace + "/_bundle.py", bundleWriter.toString());
+            result.put(SRC + nameSpace + "/_bundle.py", bundleWriter.toString());
         }
         return result;
-    }
-
-    private String cleanVersion(String version) {
-        if (version == null || version.equals("${project.version}")) {
-            return "0.0.0";
-        }
-
-        String[] versionParts = version.split("\\.");
-        if (versionParts.length > 2) {
-            String thirdPart = versionParts[2].replaceAll("[^\\d]", "");
-            return versionParts[0] + "." + versionParts[1] + "." + thirdPart;
-        }
-
-        return "0.0.0";
     }
 
     private List<String> getWorkspaces(List<String> subfolders) {
@@ -251,7 +242,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         Map<String, String> result = new HashMap<>();
 
         for (String workspace : workspaces) {
-            result.put(PythonCodeGeneratorUtil.toPyFileName(workspace, "__init__"),
+            result.put(PythonCodeGeneratorUtil.toPyFileName(workspace, INIT),
                     PythonCodeGeneratorUtil.createTopLevelInitFile(version));
             result.put(PythonCodeGeneratorUtil.toPyFileName(workspace, "version"),
                     PythonCodeGeneratorUtil.createVersionFile(version));
@@ -268,16 +259,11 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             String[] parts = subfolder.split("\\.");
             for (int i = 1; i < parts.length; i++) {
                 String key = String.join(".", Arrays.copyOfRange(parts, 0, i + 1));
-                result.putIfAbsent(PythonCodeGeneratorUtil.toPyFileName(key, "__init__"), " ");
+                result.putIfAbsent(PythonCodeGeneratorUtil.toPyFileName(key, INIT), " ");
             }
         }
 
         return result;
     }
 
-    private void addSubfolder(String subfolder) {
-        if (!subfolders.contains(subfolder)) {
-            subfolders.add(subfolder);
-        }
-    }
 }

@@ -150,4 +150,18 @@ public class PythonCodeGeneratorUtil {
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(namespace, version).stripIndent();
     }
+
+    public static String cleanVersion(String version) {
+        if (version == null || version.equals("${project.version}")) {
+            return "0.0.0";
+        }
+
+        String[] versionParts = version.split("\\.");
+        if (versionParts.length > 2) {
+            String thirdPart = versionParts[2].replaceAll("[^\\d]", "");
+            return versionParts[0] + "." + versionParts[1] + "." + thirdPart;
+        }
+
+        return "0.0.0";
+    }
 }
