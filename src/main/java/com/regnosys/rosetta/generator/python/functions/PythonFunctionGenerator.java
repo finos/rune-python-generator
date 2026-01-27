@@ -35,22 +35,22 @@ public class PythonFunctionGenerator {
      * @param version          the version for this collection of functions
      * @return a Map of all the generated Python indexed by the file name
      */
-    public Map<String, String> generate(List<Function> rosettaFunctions, String version) {
+
+    public Map<String, String> generate(Iterable<Function> rosettaFunctions, String version) {
         Map<String, String> result = new HashMap<>();
 
-        if (!rosettaFunctions.isEmpty()) {
-            for (Function func : rosettaFunctions) {
-                RosettaModel tr = (RosettaModel) func.eContainer();
-                String namespace = tr.getName();
-                try {
-                    String funcs = generateFunctions(func, version);
-                    result.put(PythonCodeGeneratorUtil.toPyFunctionFileName(namespace, func.getName()),
-                            PythonCodeGeneratorUtil.createImportsFunc(func.getName()) + funcs);
-                } catch (Exception ex) {
-                    LOGGER.error("Exception occurred generating func {}", func.getName(), ex);
-                }
+        for (Function func : rosettaFunctions) {
+            RosettaModel tr = (RosettaModel) func.eContainer();
+            String namespace = tr.getName();
+            try {
+                String functionAsString = generateFunctions(func, version);
+                result.put(PythonCodeGeneratorUtil.toPyFunctionFileName(namespace, func.getName()),
+                        PythonCodeGeneratorUtil.createImportsFunc(func.getName()) + functionAsString);
+            } catch (Exception ex) {
+                LOGGER.error("Exception occurred generating func {}", func.getName(), ex);
             }
         }
+
         return result;
     }
 

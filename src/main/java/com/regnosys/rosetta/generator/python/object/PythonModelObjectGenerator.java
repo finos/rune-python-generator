@@ -35,11 +35,11 @@ public class PythonModelObjectGenerator {
     private PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
     private Graph<String, DefaultEdge> dependencyDAG = null;
-    private Set<String> imports = null;
+    private Set<String> enumImports = null;
 
-    public void beforeAllGenerate() {
-        dependencyDAG = new DirectedAcyclicGraph<>(DefaultEdge.class);
-        imports = new HashSet<>();
+    public void beforeAllGenerate(Graph<String, DefaultEdge> dependencyDAGIn, Set<String> enumImportsIn) {
+        dependencyDAG = dependencyDAGIn;
+        enumImports = enumImportsIn;
     }
 
     /**
@@ -52,6 +52,12 @@ public class PythonModelObjectGenerator {
      * @return a Map of all the generated Python indexed by the class name
      */
     public Map<String, String> generate(Iterable<Data> rosettaClasses, String version) {
+        if (dependencyDAG == null) {
+            throw new RuntimeException("Dependency DAG not initialized");
+        }
+        if (enumImports == null) {
+            throw new RuntimeException("Enum imports not initialized");
+        }
         Map<String, String> result = new HashMap<>();
 
         for (Data rosettaClass : rosettaClasses) {
@@ -61,74 +67,17 @@ public class PythonModelObjectGenerator {
             // Generate Python for the class
             String pythonClass = generateClass(rosettaClass, nameSpace, version);
 
-            // use "." as a delimiter to preserve the use of "_" in the name
+            // construct the class name using "." as a delimiter
             String className = model.getName() + "." + rosettaClass.getName();
             result.put(className, pythonClass);
 
-            if (dependencyDAG != null) {
-                dependencyDAG.addVertex(className);
-                if (rosettaClass.getSuperType() != null) {
-                    Data superClass = rosettaClass.getSuperType();
-                    RosettaModel superModel = (RosettaModel) superClass.eContainer();
-                    String superClassName = superModel.getName() + "." + superClass.getName();
-                    addDependency(className, superClassName);
-                }
+            dependencyDAG.addVertex(className);
+            if (rosettaClass.getSuperType() != null) {
+                Data superClass = rosettaClass.getSuperType();
+                RosettaModel superModel = (RosettaModel) superClass.eContainer();
+                String superClassName = superModel.getName() + "." + superClass.getName();
+                addDependency(className, superClassName);
             }
-        }
-        return result;
-    }
-
-    public Map<String, String> afterAllGenerate(String namespace, Map<String, ? extends CharSequence> objects) {
-        // create bundle and stub classes
-        Map<String, String> result = new HashMap<>();
-        if (dependencyDAG != null) {
-            PythonCodeWriter bundleWriter = new PythonCodeWriter();
-            TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
-                    dependencyDAG);
-
-            // for each element in the ordered collection add the generated class to the
-            // bundle and add a stub class to the results
-            boolean isFirst = true;
-            while (topologicalOrderIterator.hasNext()) {
-                if (isFirst) {
-                    bundleWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
-                    List<String> sortedImports = new ArrayList<>(imports);
-                    Collections.sort(sortedImports);
-                    for (String imp : sortedImports) {
-                        bundleWriter.appendLine(imp);
-                    }
-                    isFirst = false;
-                }
-                String name = topologicalOrderIterator.next();
-                CharSequence object = objects.get(name);
-                if (object != null) {
-                    // append the class to the bundle
-                    bundleWriter.newLine();
-                    bundleWriter.newLine();
-                    bundleWriter.appendBlock(object.toString());
-
-                    // create the stub
-                    String[] parsedName = name.split("\\.");
-                    String stubFileName = "src/" + String.join("/", parsedName) + ".py";
-
-                    PythonCodeWriter stubWriter = new PythonCodeWriter();
-                    stubWriter.appendLine("# pylint: disable=unused-import");
-                    stubWriter.append("from ");
-                    stubWriter.append(parsedName[0]);
-                    stubWriter.append("._bundle import ");
-                    stubWriter.append(name.replace('.', '_'));
-                    stubWriter.append(" as ");
-                    stubWriter.append(parsedName[parsedName.length - 1]);
-                    stubWriter.newLine();
-                    stubWriter.newLine();
-                    stubWriter.appendLine("# EOF");
-
-                    result.put(stubFileName, stubWriter.toString());
-                }
-            }
-            bundleWriter.newLine();
-            bundleWriter.appendLine("# EOF");
-            result.put("src/" + namespace + "/_bundle.py", bundleWriter.toString());
         }
         return result;
     }
@@ -150,9 +99,9 @@ public class PythonModelObjectGenerator {
                     "The class superType for " + rosettaClass.getName() + " exists but its name is null");
         }
 
-        Set<String> importsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass);
-        imports.addAll(importsFound);
-        expressionGenerator.setImportsFound(new ArrayList<>(importsFound));
+        Set<String> enumImportsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass);
+        enumImports.addAll(enumImportsFound);
+        expressionGenerator.setImportsFound(new ArrayList<>(enumImportsFound));
 
         return generateBody(rosettaClass);
     }

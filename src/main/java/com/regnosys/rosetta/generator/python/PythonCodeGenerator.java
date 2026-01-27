@@ -12,9 +12,8 @@ import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.functions.PythonFunctionGenerator;
 import com.regnosys.rosetta.generator.python.object.PythonModelObjectGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
-
+import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
-import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
@@ -23,6 +22,11 @@ import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,7 +51,7 @@ import java.util.stream.Collectors;
  * <li>Generates Python classes from Rosetta Data types</li>
  * <li>Generates Python enums from Rosetta enumerations</li>
  * <li>Generates Python functions from Rosetta function definitions</li>
- * <li>Handles Rosetta model namespaces and organizes output into appropriate
+ * <li>Handles Rosetta model name spaces and organizes output into appropriate
  * Python packages</li>
  * <li>Produces project files for Python packaging (e.g.,
  * <code>pyproject.toml</code>)</li>
@@ -82,8 +86,6 @@ import java.util.stream.Collectors;
 
 public class PythonCodeGenerator extends AbstractExternalGenerator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenerator.class);
-
     @Inject
     private PythonModelObjectGenerator pojoGenerator;
     @Inject
@@ -91,8 +93,12 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
     @Inject
     private PythonEnumGenerator enumGenerator;
 
-    private List<String> subfolders;
-    private Map<String, Map<String, CharSequence>> objects = null; // Python code for types by namespace, by type name
+    private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenerator.class);
+
+    private List<String> subfolders = null;
+    private Map<String, Map<String, CharSequence>> objects = null; // Python code for types by nameSpace, by type name
+    private Graph<String, DefaultEdge> dependencyDAG = null;
+    private Set<String> enumImports = null;
 
     public PythonCodeGenerator() {
         super("python");
@@ -102,8 +108,10 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
     public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set,
             Collection<? extends RosettaModel> models, String version) {
         subfolders = new ArrayList<>();
-        pojoGenerator.beforeAllGenerate();
         objects = new HashMap<>();
+        dependencyDAG = new DirectedAcyclicGraph<>(DefaultEdge.class);
+        enumImports = new HashSet<>();
+        pojoGenerator.beforeAllGenerate(dependencyDAG, enumImports);
         return Collections.emptyMap();
     }
 
@@ -116,9 +124,6 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         List<Data> rosettaClasses = model.getElements().stream().filter(Data.class::isInstance).map(Data.class::cast)
                 .collect(Collectors.toList());
 
-        List<RosettaMetaType> metaDataItems = model.getElements().stream().filter(RosettaMetaType.class::isInstance)
-                .map(RosettaMetaType.class::cast).collect(Collectors.toList());
-
         List<RosettaEnumeration> rosettaEnums = model.getElements().stream()
                 .filter(RosettaEnumeration.class::isInstance).map(RosettaEnumeration.class::cast)
                 .collect(Collectors.toList());
@@ -126,10 +131,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         List<Function> rosettaFunctions = model.getElements().stream().filter(Function.class::isInstance)
                 .map(Function.class::cast).collect(Collectors.toList());
 
-        if (!rosettaClasses.isEmpty() ||
-                !metaDataItems.isEmpty() ||
-                !rosettaEnums.isEmpty() ||
-                !rosettaFunctions.isEmpty()) {
+        if (!rosettaClasses.isEmpty() || !rosettaEnums.isEmpty() || !rosettaFunctions.isEmpty()) {
             addSubfolder(model.getName());
             if (!rosettaFunctions.isEmpty()) {
                 addSubfolder(model.getName() + ".functions");
@@ -138,11 +140,11 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
         LOGGER.debug("Processing module: {}", model.getName());
 
-        String namespace = PythonCodeGeneratorUtil.getNamespace(model);
-        Map<String, CharSequence> currentObject = objects.get(namespace);
+        String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
+        Map<String, CharSequence> currentObject = objects.get(nameSpace);
         if (currentObject == null) {
             currentObject = new HashMap<String, CharSequence>();
-            objects.put(namespace, currentObject);
+            objects.put(nameSpace, currentObject);
         }
         currentObject.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion));
         result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
@@ -163,12 +165,66 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         result.putAll(generateWorkspaces(workspaces, cleanVersion));
         result.putAll(generateInits(subfolders));
 
-        for (String namespace : objects.keySet()) {
-            Map<String, CharSequence> currentObject = objects.get(namespace);
+        for (String nameSpace : objects.keySet()) {
+            Map<String, CharSequence> currentObject = objects.get(nameSpace);
             if (currentObject != null && !currentObject.isEmpty()) {
-                result.put("pyproject.toml", PythonCodeGeneratorUtil.createPYProjectTomlFile(namespace, cleanVersion));
-                result.putAll(pojoGenerator.afterAllGenerate(namespace, currentObject));
+                result.put("pyproject.toml", PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
+                result.putAll(processDAG(nameSpace, currentObject));
             }
+        }
+        return result;
+    }
+
+    private Map<String, CharSequence> processDAG(String nameSpace, Map<String, CharSequence> nameSpaceObjects) {
+        Map<String, CharSequence> result = new HashMap<>();
+        if (dependencyDAG != null) {
+            PythonCodeWriter bundleWriter = new PythonCodeWriter();
+            TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
+                    dependencyDAG);
+
+            // for each element in the ordered collection add the generated class to the
+            // bundle and add a stub class to the results
+            boolean isFirst = true;
+            while (topologicalOrderIterator.hasNext()) {
+                if (isFirst) {
+                    bundleWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
+                    List<String> sortedEnumImports = new ArrayList<>(enumImports);
+                    Collections.sort(sortedEnumImports);
+                    for (String imp : sortedEnumImports) {
+                        bundleWriter.appendLine(imp);
+                    }
+                    isFirst = false;
+                }
+                String name = topologicalOrderIterator.next();
+                CharSequence object = nameSpaceObjects.get(name);
+                if (object != null) {
+                    // append the class to the bundle
+                    bundleWriter.newLine();
+                    bundleWriter.newLine();
+                    bundleWriter.appendBlock(object.toString());
+
+                    // create the stub
+                    String[] parsedName = name.split("\\.");
+                    String stubFileName = "src/" + String.join("/", parsedName) + ".py";
+
+                    PythonCodeWriter stubWriter = new PythonCodeWriter();
+                    stubWriter.appendLine("# pylint: disable=unused-import");
+                    stubWriter.append("from ");
+                    stubWriter.append(parsedName[0]);
+                    stubWriter.append("._bundle import ");
+                    stubWriter.append(name.replace('.', '_'));
+                    stubWriter.append(" as ");
+                    stubWriter.append(parsedName[parsedName.length - 1]);
+                    stubWriter.newLine();
+                    stubWriter.newLine();
+                    stubWriter.appendLine("# EOF");
+
+                    result.put(stubFileName, stubWriter.toString());
+                }
+            }
+            bundleWriter.newLine();
+            bundleWriter.appendLine("# EOF");
+            result.put("src/" + nameSpace + "/_bundle.py", bundleWriter.toString());
         }
         return result;
     }
