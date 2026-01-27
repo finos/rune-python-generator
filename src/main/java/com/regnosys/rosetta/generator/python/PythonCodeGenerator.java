@@ -1,5 +1,4 @@
 package com.regnosys.rosetta.generator.python;
-// TODO: re-engineer type generation to use an object that has the features carried throughout the generation (imports, etc.)
 
 // TODO: function support
 // TODO: review and consolidate unit tests
@@ -100,13 +99,12 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
     public PythonCodeGenerator() {
         super(PYTHON);
+        contexts = new HashMap<>();
     }
 
     @Override
     public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set,
             Collection<? extends RosettaModel> models, String version) {
-
-        contexts = new HashMap<>();
         return Collections.emptyMap();
     }
 

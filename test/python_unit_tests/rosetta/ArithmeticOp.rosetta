@@ -1,0 +1,41 @@
+namespace rosetta_dsl.test.semantic.arithmetic_op : <"generate Python unit tests from Rosetta.">
+
+type AddTest: <"Test add operation condition">
+    aValue int (1..1)
+    bValue int (1..1)
+    target int (1..1)
+    condition TestCond: <"Test condition">
+        if aValue + bValue = target
+        then True
+        else 
+            False
+
+type SubtractTest: <"Test subtract operation condition">
+    aValue int (1..1)
+    bValue int (1..1)
+    target int (1..1)
+    condition TestCond: <"Test condition">
+        if aValue - bValue = target
+        then True
+        else 
+            False
+
+type MultiplyTest: <"Test multiply operation condition">
+    aValue int (1..1)
+    bValue int (1..1)
+    target int (1..1)
+    condition TestCond: <"Test condition">
+        if aValue * bValue = target
+        then True
+        else 
+            False
+
+type DivideTest: <"Test divide operation condition">
+    aValue int (1..1)
+    bValue int (1..1)
+    target int (1..1)
+    condition TestCond: <"Test condition">
+        if aValue / bValue = target
+        then True
+        else 
+            False

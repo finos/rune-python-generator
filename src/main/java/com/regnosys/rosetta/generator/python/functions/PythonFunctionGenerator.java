@@ -20,8 +20,6 @@ public class PythonFunctionGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator.class);
 
-    private final List<String> importsFound = new ArrayList<>();
-
     @Inject
     private FunctionDependencyProvider functionDependencyProvider;
 
@@ -227,10 +225,12 @@ public class PythonFunctionGenerator {
     private void generateIfBlocks(PythonCodeWriter writer, Function function) {
         List<Integer> levelList = new ArrayList<>(Collections.singletonList(0));
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
-            writer.appendBlock(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList));
+            writer.appendBlock(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList,
+                    new HashSet<>()));
         }
         for (Operation operation : function.getOperations()) {
-            writer.appendBlock(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList));
+            writer.appendBlock(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList,
+                    new HashSet<>()));
         }
     }
 
@@ -239,7 +239,8 @@ public class PythonFunctionGenerator {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# conditions");
             writer.appendBlock(
-                    expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry"));
+                    expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry",
+                            new HashSet<>()));
             writer.appendLine("# Execute all registered conditions");
             writer.appendLine("execute_local_conditions(_pre_registry, 'Pre-condition')");
             writer.appendLine("");
@@ -253,7 +254,8 @@ public class PythonFunctionGenerator {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# post-conditions");
             writer.appendBlock(
-                    expressionGenerator.generateFunctionConditions(function.getPostConditions(), "_post_registry"));
+                    expressionGenerator.generateFunctionConditions(function.getPostConditions(), "_post_registry",
+                            new HashSet<>()));
             writer.appendLine("# Execute all registered post-conditions");
             writer.appendLine("execute_local_conditions(_post_registry, 'Post-condition')");
             return writer.toString();
@@ -266,7 +268,9 @@ public class PythonFunctionGenerator {
 
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
             expressionGenerator.setIfCondBlocks(new ArrayList<>());
-            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level, false);
+            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level, false,
+                    new HashSet<>());
+
             if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
                 level += 1;
             }
@@ -280,7 +284,9 @@ public class PythonFunctionGenerator {
             List<String> setNames = new ArrayList<>();
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
-                String expression = expressionGenerator.generateExpression(operation.getExpression(), level, false);
+                String expression = expressionGenerator.generateExpression(operation.getExpression(), level, false,
+                        new HashSet<>());
+
                 if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
                     level += 1;
                 }
@@ -382,12 +388,5 @@ public class PythonFunctionGenerator {
     private String _get_rune_object(String typeName, Segment nextPath, String expression) {
         return "_get_rune_object('" + typeName + "', " + getNextPathElementName(nextPath) + ", "
                 + buildObject(expression, nextPath) + ")";
-    }
-
-    public void addImportsFromConditions(String variable, String namespace) {
-        String imp = "from " + namespace + "." + variable + " import " + variable;
-        if (!importsFound.contains(imp)) {
-            importsFound.add(imp);
-        }
     }
 }

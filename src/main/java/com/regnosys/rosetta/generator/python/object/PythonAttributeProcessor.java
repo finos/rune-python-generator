@@ -23,22 +23,22 @@ public class PythonAttributeProcessor {
     @Inject
     private TypeSystem typeSystem;
 
-    public String generateAllAttributes(Data rosettaClass, Map<String, List<String>> keyRefConstraints) {
-        RDataType buildRDataType = rObjectFactory.buildRDataType(rosettaClass);
+    public String generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints) {
+        RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
-        if (allAttributes.isEmpty() && rosettaClass.getConditions().isEmpty()) {
+        if (allAttributes.isEmpty() && rc.getConditions().isEmpty()) {
             return "pass";
         }
 
         PythonCodeWriter writer = new PythonCodeWriter();
         for (RAttribute ra : allAttributes) {
-            generateAttribute(writer, rosettaClass, ra, keyRefConstraints);
+            generateAttribute(writer, rc, ra, keyRefConstraints);
         }
         return writer.toString();
     }
 
-    private void generateAttribute(PythonCodeWriter writer, Data rosettaClass, RAttribute ra,
+    private void generateAttribute(PythonCodeWriter writer, Data rc, RAttribute ra,
             Map<String, List<String>> keyRefConstraints) {
         RType rt = ra.getRMetaAnnotatedType().getRType();
 
@@ -53,7 +53,7 @@ public class PythonAttributeProcessor {
 
         if (attrTypeName == null) {
             throw new RuntimeException(
-                    "Attribute type is null for " + ra.getName() + " in class " + rosettaClass.getName());
+                    "Attribute type is null for " + ra.getName() + " in class " + rc.getName());
         }
 
         Map<String, String> attrProp = processProperties(rt);
@@ -281,27 +281,29 @@ public class PythonAttributeProcessor {
         return cardinalityMap;
     }
 
-    public Set<String> getImportsFromAttributes(Data rosettaClass) {
-        RDataType buildRDataType = rObjectFactory.buildRDataType(rosettaClass);
+    public void getImportsFromAttributes(Data rc, Set<String> enumImports) {
+        RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
-        return allAttributes.stream()
-                .filter(it -> !it.getName().equals("reference") && !it.getName().equals("meta")
-                        && !it.getName().equals("scheme"))
-                .filter(it -> !RuneToPythonMapper.isRosettaBasicType(it))
-                .map(it -> {
-                    RType rt = it.getRMetaAnnotatedType().getRType();
-                    if (rt instanceof RAliasType) {
-                        rt = typeSystem.stripFromTypeAliases(rt);
-                    }
-                    if (rt == null) {
-                        throw new RuntimeException(
-                                "Attribute type is null for " + it.getName() + " for class " + rosettaClass.getName());
-                    }
-                    return rt;
-                })
-                .filter(rt -> rt instanceof REnumType)
-                .map(rt -> "import " + ((REnumType) rt).getQualifiedName())
-                .collect(Collectors.toSet());
+        for (RAttribute attr : allAttributes) {
+            if (!attr.getName().equals("reference") &&
+                    !attr.getName().equals("meta") &&
+                    !attr.getName().equals("scheme") &&
+                    !RuneToPythonMapper.isRosettaBasicType(attr)) {
+                RType rt = attr.getRMetaAnnotatedType().getRType();
+                if (rt instanceof RAliasType) {
+                    rt = typeSystem.stripFromTypeAliases(rt);
+                }
+                if (rt == null) {
+                    throw new RuntimeException(
+                            "Attribute type is null for " + attr.getName() + " for class " + rc.getName());
+                }
+
+                if (rt instanceof REnumType) {
+                    String importStmt = "import " + ((REnumType) rt).getQualifiedName();
+                    enumImports.add(importStmt);
+                }
+            }
+        }
     }
 }

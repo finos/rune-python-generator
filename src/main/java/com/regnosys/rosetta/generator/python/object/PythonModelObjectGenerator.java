@@ -37,11 +37,11 @@ public class PythonModelObjectGenerator {
     /**
      * Generate Python from the collection of Rosetta classes (of type Data).
      * 
-     * @param rosettaClasses the collection of Rosetta Classes for this model
-     * @param version        the version for this collection of classes
+     * @param rClasses the collection of Rosetta Classes for this model
+     * @param version  the version for this collection of classes
      * @return a Map of all the generated Python indexed by the class name
      */
-    public Map<String, String> generate(Iterable<Data> rosettaClasses, String version,
+    public Map<String, String> generate(Iterable<Data> rClasses, String version,
             PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
@@ -54,24 +54,28 @@ public class PythonModelObjectGenerator {
 
         Map<String, String> result = new HashMap<>();
 
-        for (Data rosettaClass : rosettaClasses) {
-            RosettaModel model = (RosettaModel) rosettaClass.eContainer();
+        for (Data rc : rClasses) {
+            RosettaModel model = (RosettaModel) rc.eContainer();
             String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
 
             // Generate Python for the class
-            String pythonClass = generateClass(rosettaClass, nameSpace, version, enumImports);
+            try {
+                String pythonClass = generateClass(rc, nameSpace, version, enumImports);
 
-            // construct the class name using "." as a delimiter
-            String className = model.getName() + "." + rosettaClass.getName();
-            result.put(className, pythonClass);
+                // construct the class name using "." as a delimiter
+                String className = model.getName() + "." + rc.getName();
+                result.put(className, pythonClass);
 
-            dependencyDAG.addVertex(className);
-            if (rosettaClass.getSuperType() != null) {
-                Data superClass = rosettaClass.getSuperType();
-                RosettaModel superModel = (RosettaModel) superClass.eContainer();
-                String superClassName = superModel.getName() + "." + superClass.getName();
+                dependencyDAG.addVertex(className);
+                if (rc.getSuperType() != null) {
+                    Data superClass = rc.getSuperType();
+                    RosettaModel superModel = (RosettaModel) superClass.eContainer();
+                    String superClassName = superModel.getName() + "." + superClass.getName();
 
-                addDependency(dependencyDAG, className, superClassName);
+                    addDependency(dependencyDAG, className, superClassName);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Error generating Python for class " + rc.getName(), e);
             }
         }
         return result;
@@ -88,28 +92,26 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private String generateClass(Data rosettaClass, String nameSpace, String version, Set<String> enumImports) {
-        if (rosettaClass == null) {
+    private String generateClass(Data rc, String nameSpace, String version, Set<String> enumImports) {
+        if (rc == null) {
             throw new RuntimeException("Rosetta class not initialized");
         }
-        if (rosettaClass.getSuperType() != null && rosettaClass.getSuperType().getName() == null) {
+        if (rc.getSuperType() != null && rc.getSuperType().getName() == null) {
             throw new RuntimeException(
-                    "The class superType for " + rosettaClass.getName() + " exists but its name is null");
+                    "The class superType for " + rc.getName() + " exists but its name is null");
         }
         if (enumImports == null) {
             throw new RuntimeException("Enum imports not initialized");
         }
 
-        Set<String> enumImportsFound = pythonAttributeProcessor.getImportsFromAttributes(rosettaClass);
-        enumImports.addAll(enumImportsFound);
-        expressionGenerator.setImportsFound(new ArrayList<>(enumImportsFound));
+        pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports);
 
-        return generateBody(rosettaClass);
+        return generateBody(rc, enumImports);
     }
 
-    private String getClassMetaDataString(Data rosettaClass) {
+    private String getClassMetaDataString(Data rc) {
         // generate _ALLOWED_METADATA string for the type
-        RDataType rcRData = rObjectFactory.buildRDataType(rosettaClass);
+        RDataType rcRData = rObjectFactory.buildRDataType(rc);
         PythonCodeWriter writer = new PythonCodeWriter();
         boolean first = true;
 
@@ -160,51 +162,51 @@ public class PythonModelObjectGenerator {
         return writer.toString();
     }
 
-    private String getFullyQualifiedName(Data rosettaClass) {
-        RosettaModel model = (RosettaModel) rosettaClass.eContainer();
-        return model.getName() + "." + rosettaClass.getName();
+    private String getFullyQualifiedName(Data rc) {
+        RosettaModel model = (RosettaModel) rc.eContainer();
+        return model.getName() + "." + rc.getName();
     }
 
-    private String getBundleClassName(Data rosettaClass) {
-        return getFullyQualifiedName(rosettaClass).replace(".", "_");
+    private String getBundleClassName(Data rc) {
+        return getFullyQualifiedName(rc).replace(".", "_");
     }
 
-    private String generateBody(Data rosettaClass) {
-        RDataType rosettaDataType = rObjectFactory.buildRDataType(rosettaClass);
+    private String generateBody(Data rc, Set<String> enumImports) {
+        RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
         PythonCodeWriter writer = new PythonCodeWriter();
 
-        String superClassName = (rosettaClass.getSuperType() != null)
-                ? getBundleClassName(rosettaClass.getSuperType())
+        String superClassName = (rc.getSuperType() != null)
+                ? getBundleClassName(rc.getSuperType())
                 : "BaseDataClass";
 
-        writer.appendLine("class " + getBundleClassName(rosettaClass) + "(" + superClassName + "):");
+        writer.appendLine("class " + getBundleClassName(rc) + "(" + superClassName + "):");
         writer.indent();
 
-        String metaData = getClassMetaDataString(rosettaClass);
+        String metaData = getClassMetaDataString(rc);
         if (!metaData.isEmpty()) {
             writer.appendBlock(metaData);
         }
 
         pythonChoiceAliasProcessor.generateChoiceAliases(writer, rosettaDataType);
 
-        if (rosettaClass.getDefinition() != null) {
+        if (rc.getDefinition() != null) {
             writer.appendLine("\"\"\"");
-            writer.appendLine(rosettaClass.getDefinition());
+            writer.appendLine(rc.getDefinition());
             writer.appendLine("\"\"\"");
         }
 
-        writer.appendLine("_FQRTN = '" + getFullyQualifiedName(rosettaClass) + "'");
+        writer.appendLine("_FQRTN = '" + getFullyQualifiedName(rc) + "'");
 
-        writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rosettaClass, keyRefConstraints));
+        writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints));
 
         String constraints = keyRefConstraintsToString(keyRefConstraints);
         if (!constraints.isEmpty()) {
             writer.appendBlock(constraints);
         }
 
-        writer.appendBlock(expressionGenerator.generateTypeOrFunctionConditions(rosettaClass));
+        writer.appendBlock(expressionGenerator.generateTypeOrFunctionConditions(rc, enumImports));
 
         return writer.toString();
     }
