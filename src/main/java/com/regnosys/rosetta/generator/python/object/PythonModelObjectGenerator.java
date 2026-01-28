@@ -162,14 +162,6 @@ public class PythonModelObjectGenerator {
         return writer.toString();
     }
 
-    private String getFullyQualifiedName(Data rc) {
-        RosettaModel model = (RosettaModel) rc.eContainer();
-        if (model == null) {
-            throw new RuntimeException("Rosetta model not found for class " + rc.getName());
-        }
-        return PythonCodeGeneratorUtil.createFullyQualifiedObjectName(model.getName(), rc.getName());
-    }
-
     private String generateBody(Data rc, Set<String> enumImports) {
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();

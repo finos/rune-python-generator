@@ -16,12 +16,14 @@ public class PythonCodeGeneratorContext {
     private Map<String, CharSequence> objects = null; // Python code for types by nameSpace, by type name
     private Graph<String, DefaultEdge> dependencyDAG = null;
     private Set<String> enumImports = null;
+    private HashSet<String> functionNames = null;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new ArrayList<>();
         this.objects = new HashMap<>();
         this.dependencyDAG = new DirectedAcyclicGraph<>(DefaultEdge.class);
         this.enumImports = new HashSet<>();
+        this.functionNames = new HashSet<>();
     }
 
     public List<String> getSubfolders() {
@@ -44,5 +46,19 @@ public class PythonCodeGeneratorContext {
         if (!subfolders.contains(subfolder)) {
             subfolders.add(subfolder);
         }
+    }
+
+    public void addFunctionName(String functionName) {
+        if (!functionNames.contains(functionName)) {
+            functionNames.add(functionName);
+        }
+    }
+
+    public boolean hasFunctionName(String functionName) {
+        return functionNames.contains(functionName);
+    }
+
+    public boolean hasFunctions() {
+        return !functionNames.isEmpty();
     }
 }

@@ -210,14 +210,25 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
                     String[] parsedName = name.split("\\.");
                     String stubFileName = SRC + String.join("/", parsedName) + ".py";
 
+                    boolean isFunction = context.hasFunctionName(name);
                     PythonCodeWriter stubWriter = new PythonCodeWriter();
                     stubWriter.appendLine("# pylint: disable=unused-import");
+                    if (isFunction) {
+                        stubWriter.appendLine("import sys");
+                        stubWriter.appendLine("from rune.runtime.func_proxy import create_module_attr_guardian");
+                    }
                     stubWriter.append("from ");
                     stubWriter.append(parsedName[0]);
                     stubWriter.append("._bundle import ");
                     stubWriter.append(name.replace('.', '_'));
                     stubWriter.append(" as ");
                     stubWriter.append(parsedName[parsedName.length - 1]);
+                    if (isFunction) {
+                        stubWriter.newLine();
+                        stubWriter.newLine();
+                        stubWriter.appendLine(
+                                "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
+                    }
                     stubWriter.newLine();
                     stubWriter.newLine();
                     stubWriter.appendLine("# EOF");
@@ -225,6 +236,13 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
                     result.put(stubFileName, stubWriter.toString());
                 }
             }
+            if (context.hasFunctions()) {
+                bundleWriter.newLine();
+                bundleWriter.appendLine(
+                        "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
+            }
+
+            bundleWriter.newLine();
             bundleWriter.newLine();
             bundleWriter.appendLine("# EOF");
             result.put(SRC + nameSpace + "/_bundle.py", bundleWriter.toString());

@@ -24,7 +24,7 @@ public class PythonFunctionGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator.class);
 
     @Inject
-    private FunctionDependencyProvider functionDependencyProvider;
+    private PythonFunctionDependencyProvider functionDependencyProvider;
 
     @Inject
     private PythonExpressionGenerator expressionGenerator;
@@ -61,9 +61,10 @@ public class PythonFunctionGenerator {
             try {
                 String pythonFunction = generateFunction(rf, version, enumImports);
 
-                String functionName = model.getName() + ".functions." + rf.getName();
+                String functionName = PythonCodeGeneratorUtil.createFullyQualifiedObjectName(rf);
                 result.put(functionName, pythonFunction);
                 dependencyDAG.addVertex(functionName);
+                context.addFunctionName(functionName);
             } catch (Exception ex) {
                 LOGGER.error("Exception occurred generating rf {}", rf.getName(), ex);
                 throw new RuntimeException("Error generating Python for function " + rf.getName(), ex);
@@ -113,8 +114,6 @@ public class PythonFunctionGenerator {
 
         writer.unindent();
         writer.newLine();
-        writer.appendLine(
-                "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
 
         return writer.toString();
     }

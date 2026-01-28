@@ -53,16 +53,19 @@ public class PythonCodeGeneratorUtil {
                 # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
                 # pylint: disable=missing-module-docstring
                 from __future__ import annotations
-                from typing import Optional, Annotated
                 import datetime
                 import inspect
+                import sys
                 from decimal import Decimal
+                from typing import Annotated, Optional
+
                 from pydantic import Field, validate_call
+
                 from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.metadata import *
-                from rune.runtime.utils import *
                 from rune.runtime.conditions import *
                 from rune.runtime.func_proxy import *
+                from rune.runtime.metadata import *
+                from rune.runtime.utils import *
                 """.stripIndent();
     }
 

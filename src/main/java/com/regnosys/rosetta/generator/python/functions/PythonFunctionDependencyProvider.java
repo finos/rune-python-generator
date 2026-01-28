@@ -18,7 +18,7 @@ import java.util.stream.StreamSupport;
 /**
  * Determine the Rosetta dependencies for a Rosetta object
  */
-public class FunctionDependencyProvider {
+public class PythonFunctionDependencyProvider {
     @Inject
     private RObjectFactory rTypeBuilderFactory;
 

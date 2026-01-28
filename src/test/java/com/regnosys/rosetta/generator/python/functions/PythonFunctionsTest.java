@@ -35,6 +35,11 @@ public class PythonFunctionsTest {
                         """);
         String expectedStub = """
                 from com._bundle import com_rosetta_test_model_functions_Abs as Abs
+
+                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
+
+
+                # EOF
                 """;
 
         testUtils.assertGeneratedContainsExpectedString(
