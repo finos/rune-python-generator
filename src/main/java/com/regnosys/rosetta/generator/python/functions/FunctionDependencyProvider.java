@@ -4,6 +4,7 @@ import com.regnosys.rosetta.rosetta.*;
 import com.regnosys.rosetta.rosetta.expression.*;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
+
 import com.regnosys.rosetta.types.RFunction;
 import com.regnosys.rosetta.types.RObjectFactory;
 import jakarta.inject.Inject;
@@ -21,84 +22,55 @@ public class FunctionDependencyProvider {
     @Inject
     private RObjectFactory rTypeBuilderFactory;
 
-    private final Set<EObject> visited = new HashSet<>();
-
-    public Set<EObject> findDependencies(EObject object) {
-        if (visited.contains(object)) {
-            return Collections.emptySet();
-        }
-        return generateDependencies(object);
-    }
-
-    public Set<EObject> generateDependencies(EObject object) {
-        if (object == null) {
-            return Collections.emptySet();
-        }
-
-        Set<EObject> dependencies;
-        if (object instanceof RosettaBinaryOperation binary) {
-            dependencies = new HashSet<>();
-            dependencies.addAll(generateDependencies(binary.getLeft()));
-            dependencies.addAll(generateDependencies(binary.getRight()));
+    public void addDependencies(EObject object, Set<String> enumImports) {
+        if (object instanceof RosettaEnumeration enumeration) {
+            String name = enumeration.getName();
+            RosettaModel model = (RosettaModel) enumeration.eContainer();
+            String prefix = model.getName();
+            enumImports.add("import " + prefix + "." + name);
+        } else if (object instanceof RosettaEnumValueReference ref) {
+            addDependencies(ref.getEnumeration(), enumImports);
+        } else if (object instanceof RosettaBinaryOperation binary) {
+            addDependencies(binary.getLeft(), enumImports);
+            addDependencies(binary.getRight(), enumImports);
         } else if (object instanceof RosettaConditionalExpression cond) {
-            dependencies = new HashSet<>();
-            dependencies.addAll(generateDependencies(cond.getIf()));
-            dependencies.addAll(generateDependencies(cond.getIfthen()));
-            dependencies.addAll(generateDependencies(cond.getElsethen()));
+            addDependencies(cond.getIf(), enumImports);
+            addDependencies(cond.getIfthen(), enumImports);
+            addDependencies(cond.getElsethen(), enumImports);
         } else if (object instanceof RosettaOnlyExistsExpression onlyExists) {
-            dependencies = findDependenciesFromIterable(onlyExists.getArgs());
+            onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports));
         } else if (object instanceof RosettaFunctionalOperation functional) {
-            dependencies = new HashSet<>();
-            dependencies.addAll(generateDependencies(functional.getArgument()));
-            dependencies.addAll(generateDependencies(functional.getFunction()));
         } else if (object instanceof RosettaUnaryOperation unary) {
-            dependencies = generateDependencies(unary.getArgument());
+            addDependencies(unary.getArgument(), enumImports);
         } else if (object instanceof RosettaFeatureCall featureCall) {
-            dependencies = generateDependencies(featureCall.getReceiver());
+            addDependencies(featureCall.getReceiver(), enumImports);
         } else if (object instanceof RosettaSymbolReference symbolRef) {
-            dependencies = new HashSet<>();
-            dependencies.addAll(generateDependencies(symbolRef.getSymbol()));
-            dependencies.addAll(findDependenciesFromIterable(symbolRef.getArgs()));
-        } else if (object instanceof Function || object instanceof Data || object instanceof RosettaEnumeration) {
-            dependencies = new HashSet<>(Collections.singleton(object));
+            addDependencies(symbolRef.getSymbol(), enumImports);
+            symbolRef.getArgs().forEach(arg -> addDependencies(arg, enumImports));
         } else if (object instanceof InlineFunction inline) {
-            dependencies = generateDependencies(inline.getBody());
+            addDependencies(inline.getBody(), enumImports);
         } else if (object instanceof ListLiteral listLiteral) {
-            dependencies = listLiteral.getElements().stream()
-                    .flatMap(el -> generateDependencies(el).stream())
-                    .collect(Collectors.toSet());
+            listLiteral.getElements().forEach(el -> addDependencies(el, enumImports));
         } else if (object instanceof RosettaConstructorExpression constructor) {
-            dependencies = new HashSet<>();
             if (constructor.getTypeCall() != null && constructor.getTypeCall().getType() != null) {
-                dependencies.add(constructor.getTypeCall().getType());
+                addDependencies(constructor.getTypeCall().getType(), enumImports);
             }
             constructor.getValues()
-                    .forEach(valuePair -> dependencies.addAll(generateDependencies(valuePair.getValue())));
-        } else if (object instanceof RosettaExternalFunction ||
-                object instanceof RosettaEnumValueReference ||
+                    .forEach(valuePair -> addDependencies(valuePair.getValue(), enumImports));
+        } else if (object instanceof Function ||
+                object instanceof Data ||
+                object instanceof RosettaExternalFunction ||
                 object instanceof RosettaLiteral ||
                 object instanceof RosettaImplicitVariable ||
                 object instanceof RosettaSymbol ||
-                object instanceof RosettaDeepFeatureCall) {
-            dependencies = Collections.emptySet();
+                object instanceof RosettaDeepFeatureCall ||
+                object instanceof RosettaBasicType ||
+                object instanceof RosettaRecordType) {
+            return;
         } else {
             throw new IllegalArgumentException(object.eClass().getName()
                     + ": generating dependency in a function for this type is not yet implemented.");
         }
-
-        if (!dependencies.isEmpty()) {
-            visited.add(object);
-        }
-        return dependencies;
-    }
-
-    public Set<EObject> findDependenciesFromIterable(Iterable<? extends EObject> objects) {
-        if (objects == null) {
-            return Collections.emptySet();
-        }
-        return StreamSupport.stream(objects.spliterator(), false)
-                .flatMap(obj -> generateDependencies(obj).stream())
-                .collect(Collectors.toSet());
     }
 
     public Set<RFunction> rFunctionDependencies(RosettaExpression expression) {
@@ -122,9 +94,5 @@ public class FunctionDependencyProvider {
         return StreamSupport.stream(expressions.spliterator(), false)
                 .flatMap(expr -> rFunctionDependencies(expr).stream())
                 .collect(Collectors.toSet());
-    }
-
-    public void reset() {
-        visited.clear();
     }
 }

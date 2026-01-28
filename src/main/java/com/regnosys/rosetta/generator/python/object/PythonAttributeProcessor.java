@@ -282,6 +282,13 @@ public class PythonAttributeProcessor {
     }
 
     public void getImportsFromAttributes(Data rc, Set<String> enumImports) {
+        /**
+         * Get ENUM imports from attributes (all other dependencies are handled by the
+         * bundle)
+         * 
+         * @param rc
+         * @param enumImports
+         */
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
@@ -300,8 +307,7 @@ public class PythonAttributeProcessor {
                 }
 
                 if (rt instanceof REnumType) {
-                    String importStmt = "import " + ((REnumType) rt).getQualifiedName();
-                    enumImports.add(importStmt);
+                    enumImports.add("import " + ((REnumType) rt).getQualifiedName());
                 }
             }
         }

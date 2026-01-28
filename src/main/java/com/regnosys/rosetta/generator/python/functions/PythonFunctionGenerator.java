@@ -1,16 +1,19 @@
 package com.regnosys.rosetta.generator.python.functions;
 
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
+import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaFeature;
-import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaTyped;
 import com.regnosys.rosetta.rosetta.simple.*;
 import jakarta.inject.Inject;
-import org.eclipse.emf.ecore.EObject;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,61 +32,83 @@ public class PythonFunctionGenerator {
     /**
      * Generate Python from the collection of Rosetta functions.
      * 
-     * @param rosettaFunctions the collection of Rosetta functions to generate
-     * @param version          the version for this collection of functions
+     * @param rFunctions the collection of Rosetta functions to generate
+     * @param version    the version for this collection of functions
      * @return a Map of all the generated Python indexed by the file name
      */
 
-    public Map<String, String> generate(Iterable<Function> rosettaFunctions, String version) {
-        Map<String, String> result = new HashMap<>();
-
-        for (Function func : rosettaFunctions) {
-            RosettaModel tr = (RosettaModel) func.eContainer();
-            String namespace = tr.getName();
-            try {
-                String functionAsString = generateFunctions(func, version);
-                result.put(PythonCodeGeneratorUtil.toPyFunctionFileName(namespace, func.getName()),
-                        PythonCodeGeneratorUtil.createImportsFunc(func.getName()) + functionAsString);
-            } catch (Exception ex) {
-                LOGGER.error("Exception occurred generating func {}", func.getName(), ex);
-            }
+    public Map<String, String> generate(Iterable<Function> rFunctions, String version,
+            PythonCodeGeneratorContext context) {
+        Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
+        if (dependencyDAG == null) {
+            throw new RuntimeException("Dependency DAG not initialized");
         }
 
+        Set<String> enumImports = context.getEnumImports();
+        if (enumImports == null) {
+            throw new RuntimeException("Enum imports not initialized");
+        }
+
+        Map<String, String> result = new HashMap<>();
+
+        for (Function rf : rFunctions) {
+            RosettaModel model = (RosettaModel) rf.eContainer();
+            if (model == null) {
+                LOGGER.warn("Function {} has no container, skipping", rf.getName());
+                continue;
+            }
+            // String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
+            try {
+                String pythonFunction = generateFunction(rf, version, enumImports);
+
+                String functionName = model.getName() + ".functions." + rf.getName();
+                result.put(functionName, pythonFunction);
+                dependencyDAG.addVertex(functionName);
+            } catch (Exception ex) {
+                LOGGER.error("Exception occurred generating rf {}", rf.getName(), ex);
+                throw new RuntimeException("Error generating Python for function " + rf.getName(), ex);
+            }
+        }
         return result;
     }
 
-    private String generateFunctions(Function function, String version) {
-        Set<EObject> dependencies = collectFunctionDependencies(function);
+    private String generateFunction(Function rf, String version, Set<String> enumImports) {
+        if (rf == null) {
+            throw new RuntimeException("Function is null");
+        }
+        if (enumImports == null) {
+            throw new RuntimeException("Enum imports is null");
+        }
+        collectFunctionDependencies(rf, enumImports);
         PythonCodeWriter writer = new PythonCodeWriter();
 
-        writer.appendBlock(generateImports(dependencies, function));
         writer.appendLine("");
         writer.appendLine("");
 
         writer.appendLine("@replaceable");
-        writer.appendLine("def " + function.getName() + generatesInputs(function) + ":");
+        writer.appendLine("def " + rf.getName() + generatesInputs(rf) + ":");
         writer.indent();
 
-        writer.appendBlock(generateDescription(function));
+        writer.appendBlock(generateDescription(rf));
 
-        if (!function.getConditions().isEmpty()) {
+        if (!rf.getConditions().isEmpty()) {
             writer.appendLine("_pre_registry = {}");
         }
-        if (!function.getPostConditions().isEmpty()) {
+        if (!rf.getPostConditions().isEmpty()) {
             writer.appendLine("_post_registry = {}");
         }
         writer.appendLine("self = inspect.currentframe()");
         writer.appendLine("");
-        if (function.getConditions().isEmpty()) {
+        if (rf.getConditions().isEmpty()) {
             writer.appendLine("");
         }
 
-        writer.appendBlock(generateTypeOrFunctionConditions(function));
+        writer.appendBlock(generateTypeOrFunctionConditions(rf, enumImports));
 
-        generateIfBlocks(writer, function);
-        generateAlias(writer, function);
-        generateOperations(writer, function);
-        generatesOutput(writer, function);
+        generateIfBlocks(writer, rf, enumImports);
+        generateAlias(writer, rf, enumImports);
+        generateOperations(writer, rf, enumImports);
+        generatesOutput(writer, rf, enumImports);
 
         writer.unindent();
         writer.newLine();
@@ -93,34 +118,13 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateImports(Iterable<EObject> dependencies, Function function) {
-        PythonCodeWriter writer = new PythonCodeWriter();
-
-        for (EObject dependency : dependencies) {
-            RosettaModel tr = (RosettaModel) dependency.eContainer();
-            String importPath = tr.getName();
-            if (dependency instanceof Function func) {
-                writer.appendLine("from " + importPath + ".functions." + func.getName() + " import " + func.getName());
-            } else if (dependency instanceof RosettaEnumeration enumeration) {
-                writer.appendLine(
-                        "from " + importPath + "." + enumeration.getName() + " import " + enumeration.getName());
-            } else if (dependency instanceof Data data) {
-                writer.appendLine("from " + importPath + "." + data.getName() + " import " + data.getName());
-            }
-        }
-        writer.newLine();
-        writer.appendLine("__all__ = ['" + function.getName() + "']");
-
-        return writer.toString();
-    }
-
-    private void generatesOutput(PythonCodeWriter writer, Function function) {
+    private void generatesOutput(PythonCodeWriter writer, Function function, Set<String> enumImports) {
         Attribute output = function.getOutput();
         if (output != null) {
             if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty()) {
                 writer.appendLine(output.getName() + " = rune_resolve_attr(self, \"" + output.getName() + "\")");
             }
-            String postConds = generatePostConditions(function);
+            String postConds = generatePostConditions(function, enumImports);
             if (!postConds.isEmpty()) {
                 writer.appendLine("");
                 writer.appendBlock(postConds);
@@ -193,54 +197,48 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private Set<EObject> collectFunctionDependencies(Function func) {
-        Set<EObject> dependencies = new HashSet<>();
+    private void collectFunctionDependencies(Function rf, Set<String> enumImports) {
+        rf.getShortcuts().forEach(
+                shortcut -> functionDependencyProvider.addDependencies(shortcut.getExpression(), enumImports));
+        rf.getOperations().forEach(
+                operation -> functionDependencyProvider.addDependencies(operation.getExpression(), enumImports));
 
-        func.getShortcuts().forEach(
-                shortcut -> dependencies.addAll(functionDependencyProvider.findDependencies(shortcut.getExpression())));
-        func.getOperations().forEach(operation -> dependencies
-                .addAll(functionDependencyProvider.findDependencies(operation.getExpression())));
+        List<Condition> allConditions = new ArrayList<>(rf.getConditions());
+        allConditions.addAll(rf.getPostConditions());
+        allConditions.forEach(
+                condition -> functionDependencyProvider.addDependencies(condition.getExpression(), enumImports));
 
-        List<Condition> allConditions = new ArrayList<>(func.getConditions());
-        allConditions.addAll(func.getPostConditions());
-        allConditions.forEach(condition -> dependencies
-                .addAll(functionDependencyProvider.findDependencies(condition.getExpression())));
-
-        func.getInputs().forEach(input -> {
+        rf.getInputs().forEach(input -> {
             if (input.getTypeCall() != null && input.getTypeCall().getType() != null) {
-                dependencies.add(input.getTypeCall().getType());
+                functionDependencyProvider.addDependencies(input.getTypeCall().getType(), enumImports);
             }
         });
 
-        if (func.getOutput() != null && func.getOutput().getTypeCall() != null
-                && func.getOutput().getTypeCall().getType() != null) {
-            dependencies.add(func.getOutput().getTypeCall().getType());
+        if (rf.getOutput() != null && rf.getOutput().getTypeCall() != null
+                && rf.getOutput().getTypeCall().getType() != null) {
+            functionDependencyProvider.addDependencies(rf.getOutput().getTypeCall().getType(), enumImports);
         }
-
-        dependencies.removeIf(it -> it instanceof Function f && f.getName().equals(func.getName()));
-
-        return dependencies;
     }
 
-    private void generateIfBlocks(PythonCodeWriter writer, Function function) {
+    private void generateIfBlocks(PythonCodeWriter writer, Function function, Set<String> enumImports) {
         List<Integer> levelList = new ArrayList<>(Collections.singletonList(0));
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
             writer.appendBlock(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList,
-                    new HashSet<>()));
+                    enumImports));
         }
         for (Operation operation : function.getOperations()) {
             writer.appendBlock(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList,
-                    new HashSet<>()));
+                    enumImports));
         }
     }
 
-    private String generateTypeOrFunctionConditions(Function function) {
+    private String generateTypeOrFunctionConditions(Function function, Set<String> enumImports) {
         if (!function.getConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# conditions");
             writer.appendBlock(
                     expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry",
-                            new HashSet<>()));
+                            enumImports));
             writer.appendLine("# Execute all registered conditions");
             writer.appendLine("execute_local_conditions(_pre_registry, 'Pre-condition')");
             writer.appendLine("");
@@ -249,13 +247,13 @@ public class PythonFunctionGenerator {
         return "";
     }
 
-    private String generatePostConditions(Function function) {
+    private String generatePostConditions(Function function, Set<String> enumImports) {
         if (!function.getPostConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# post-conditions");
             writer.appendBlock(
                     expressionGenerator.generateFunctionConditions(function.getPostConditions(), "_post_registry",
-                            new HashSet<>()));
+                            enumImports));
             writer.appendLine("# Execute all registered post-conditions");
             writer.appendLine("execute_local_conditions(_post_registry, 'Post-condition')");
             return writer.toString();
@@ -263,13 +261,13 @@ public class PythonFunctionGenerator {
         return "";
     }
 
-    private void generateAlias(PythonCodeWriter writer, Function function) {
+    private void generateAlias(PythonCodeWriter writer, Function function, Set<String> enumImports) {
         int level = 0;
 
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
             expressionGenerator.setIfCondBlocks(new ArrayList<>());
             String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level, false,
-                    new HashSet<>());
+                    enumImports);
 
             if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
                 level += 1;
@@ -278,14 +276,14 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private void generateOperations(PythonCodeWriter writer, Function function) {
+    private void generateOperations(PythonCodeWriter writer, Function function, Set<String> enumImports) {
         int level = 0;
         if (function.getOutput() != null) {
             List<String> setNames = new ArrayList<>();
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
                 String expression = expressionGenerator.generateExpression(operation.getExpression(), level, false,
-                        new HashSet<>());
+                        enumImports);
 
                 if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
                     level += 1;
