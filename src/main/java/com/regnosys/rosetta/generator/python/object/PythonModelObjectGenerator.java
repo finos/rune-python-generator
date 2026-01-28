@@ -164,11 +164,10 @@ public class PythonModelObjectGenerator {
 
     private String getFullyQualifiedName(Data rc) {
         RosettaModel model = (RosettaModel) rc.eContainer();
-        return model.getName() + "." + rc.getName();
-    }
-
-    private String getBundleClassName(Data rc) {
-        return getFullyQualifiedName(rc).replace(".", "_");
+        if (model == null) {
+            throw new RuntimeException("Rosetta model not found for class " + rc.getName());
+        }
+        return PythonCodeGeneratorUtil.createFullyQualifiedObjectName(model.getName(), rc.getName());
     }
 
     private String generateBody(Data rc, Set<String> enumImports) {
@@ -178,10 +177,10 @@ public class PythonModelObjectGenerator {
         PythonCodeWriter writer = new PythonCodeWriter();
 
         String superClassName = (rc.getSuperType() != null)
-                ? getBundleClassName(rc.getSuperType())
+                ? PythonCodeGeneratorUtil.createBundleObjectName(rc.getSuperType())
                 : "BaseDataClass";
 
-        writer.appendLine("class " + getBundleClassName(rc) + "(" + superClassName + "):");
+        writer.appendLine("class " + PythonCodeGeneratorUtil.createBundleObjectName(rc) + "(" + superClassName + "):");
         writer.indent();
 
         String metaData = getClassMetaDataString(rc);
@@ -197,7 +196,7 @@ public class PythonModelObjectGenerator {
             writer.appendLine("\"\"\"");
         }
 
-        writer.appendLine("_FQRTN = '" + getFullyQualifiedName(rc) + "'");
+        writer.appendLine("_FQRTN = '" + PythonCodeGeneratorUtil.createFullyQualifiedObjectName(rc) + "'");
 
         writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints));
 

@@ -86,7 +86,8 @@ public class PythonFunctionGenerator {
         writer.appendLine("");
 
         writer.appendLine("@replaceable");
-        writer.appendLine("def " + rf.getName() + generatesInputs(rf) + ":");
+        writer.appendLine("@validate_call");
+        writer.appendLine("def " + PythonCodeGeneratorUtil.createBundleObjectName(rf) + generateInputs(rf) + ":");
         writer.indent();
 
         writer.appendBlock(generateDescription(rf));
@@ -137,7 +138,7 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private String generatesInputs(Function function) {
+    private String generateInputs(Function function) {
         List<Attribute> inputs = function.getInputs();
         Attribute output = function.getOutput();
 
@@ -240,7 +241,7 @@ public class PythonFunctionGenerator {
                     expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry",
                             enumImports));
             writer.appendLine("# Execute all registered conditions");
-            writer.appendLine("execute_local_conditions(_pre_registry, 'Pre-condition')");
+            writer.appendLine("rune_execute_local_conditions(_pre_registry, 'Pre-condition')");
             writer.appendLine("");
             return writer.toString();
         }
@@ -255,7 +256,7 @@ public class PythonFunctionGenerator {
                     expressionGenerator.generateFunctionConditions(function.getPostConditions(), "_post_registry",
                             enumImports));
             writer.appendLine("# Execute all registered post-conditions");
-            writer.appendLine("execute_local_conditions(_post_registry, 'Post-condition')");
+            writer.appendLine("rune_execute_local_conditions(_post_registry, 'Post-condition')");
             return writer.toString();
         }
         return "";

@@ -1,7 +1,10 @@
 package com.regnosys.rosetta.generator.python.util;
 
 import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.rosetta.simple.Data;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -42,30 +45,6 @@ public class PythonCodeGeneratorUtil {
         return writer.toString();
     }
 
-    public static String createImports(String name) {
-        return """
-                # pylint: disable=line-too-long, invalid-name, missing-function-docstring
-                # pylint: disable=bad-indentation, trailing-whitespace, superfluous-parens
-                # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import
-                # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
-                # pylint: disable=missing-module-docstring, unused-variable, unnecessary-pass
-
-                from __future__ import annotations
-                from typing import Optional, Annotated
-                import datetime
-                import inspect
-                from decimal import Decimal
-                from pydantic import Field
-                from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.metadata import *
-                from rune.runtime.utils import *
-                from rune.runtime.conditions import *
-                from rune.runtime.func_proxy import *
-                __all__ = ['%s']
-
-                """.formatted(name).stripIndent();
-    }
-
     public static String createImports() {
         return """
                 # pylint: disable=line-too-long, invalid-name, missing-function-docstring
@@ -78,7 +57,7 @@ public class PythonCodeGeneratorUtil {
                 import datetime
                 import inspect
                 from decimal import Decimal
-                from pydantic import Field
+                from pydantic import Field, validate_call
                 from rune.runtime.base_data_class import BaseDataClass
                 from rune.runtime.metadata import *
                 from rune.runtime.utils import *
@@ -87,22 +66,21 @@ public class PythonCodeGeneratorUtil {
                 """.stripIndent();
     }
 
-    public static String createImportsFunc(String name) {
-        return """
-                # pylint: disable=line-too-long, invalid-name, missing-function-docstring, missing-module-docstring, superfluous-parens
-                # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import, wildcard-import, wrong-import-order, missing-class-docstring
-                from __future__ import annotations
-                import sys
-                import datetime
-                import inspect
-                from decimal import Decimal
-                from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.metadata import *
-                from rune.runtime.utils import *
-                from rune.runtime.conditions import *
-                from rune.runtime.func_proxy import *
-                """
-                .stripIndent();
+    public static String createFullyQualifiedObjectName(String modelName, String objectName) {
+        return modelName + "." + objectName;
+    }
+
+    public static String createFullyQualifiedObjectName(RosettaNamed rn) {
+        RosettaModel model = (RosettaModel) rn.eContainer();
+        if (model == null) {
+            throw new RuntimeException("Rosetta model not found for data " + rn.getName());
+        }
+        String function = (rn instanceof Function) ? ".functions" : "";
+        return createFullyQualifiedObjectName(model.getName() + function, rn.getName());
+    }
+
+    public static String createBundleObjectName(RosettaNamed rn) {
+        return createFullyQualifiedObjectName(rn).replace(".", "_");
     }
 
     public static String toFileName(String namespace, String fileName) {

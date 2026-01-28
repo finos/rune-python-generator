@@ -23,7 +23,7 @@ public class PythonFunctionsTest {
     @Test
     public void testGeneratedAbsFunction() {
 
-        String generatedFunction = testUtils.generatePythonFromString(
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                         func Abs: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
                             inputs:
@@ -32,12 +32,17 @@ public class PythonFunctionsTest {
                                 result number (1..1)
                             set result:
                                 if arg < 0 then -1 * arg else arg
-                        """)
-                .toString();
+                        """);
+        String expectedStub = """
+                from com._bundle import com_rosetta_test_model_functions_Abs as Abs
+                """;
 
-        String expected = """
+        testUtils.assertGeneratedContainsExpectedString(
+                gf.get("src/com/rosetta/test/model/functions/Abs.py").toString(), expectedStub);
+        String expectedBundle = """
                 @replaceable
-                def Abs(arg: Decimal) -> Decimal:
+                @validate_call
+                def com_rosetta_test_model_functions_Abs(arg: Decimal) -> Decimal:
                     \"""
                     Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
@@ -64,7 +69,8 @@ public class PythonFunctionsTest {
 
                     return result
                 """;
-        testUtils.assertGeneratedContainsExpectedString(generatedFunction, expected);
+
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
     // Test generating an AppendToList function
@@ -166,7 +172,7 @@ public class PythonFunctionsTest {
      * return (rune_attr_exists(rune_resolve_attr(self, "number1")) and
      * rune_attr_exists(rune_resolve_attr(self, "number2")))
      * # Execute all registered conditions
-     * execute_local_conditions(_pre_registry, 'Pre-condition')
+     * rune_execute_local_conditions(_pre_registry, 'Pre-condition')
      * 
      * sum = set_rune_attr(rune_resolve_attr(self, 'sum'), 'number2',
      * rune_resolve_attr(self, "number2"))
@@ -633,7 +639,7 @@ public class PythonFunctionsTest {
                     def condition_0_PositiveNearest(self):
                         return rune_all_elements(rune_resolve_attr(self, "nearest"), ">", 0)
                     # Execute all registered conditions
-                    execute_local_conditions(_pre_registry, 'Pre-condition')
+                    rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
                     roundedValue = rune_resolve_attr(self, "roundedValue")
 
@@ -697,7 +703,7 @@ public class PythonFunctionsTest {
                     def condition_1_valueNegative(self):
                         return rune_all_elements(rune_resolve_attr(self, "value"), "<", 0)
                     # Execute all registered conditions
-                    execute_local_conditions(_pre_registry, 'Pre-condition')
+                    rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
                     roundedValue = rune_resolve_attr(self, "roundedValue")
 
@@ -767,7 +773,7 @@ public class PythonFunctionsTest {
 
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "masterConfirmation")), _then_fn0, _else_fn0)
                     # Execute all registered post-conditions
-                    execute_local_conditions(_post_registry, 'Post-condition')
+                    rune_execute_local_conditions(_post_registry, 'Post-condition')
 
                     return interestRatePayout
 
