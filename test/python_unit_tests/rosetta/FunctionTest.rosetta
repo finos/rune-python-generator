@@ -1,7 +1,7 @@
 namespace rosetta_dsl.test : <"generate Python unit tests from Rosetta.">
 
 
-func Abs: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
+func TestAbsNumber: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
     inputs:
         arg number (1..1)
     output:

@@ -15,6 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+// TODO: does this need to be here? RosettaFunctionalOperation functional
+
 /**
  * Determine the Rosetta dependencies for a Rosetta object
  */
@@ -40,6 +42,7 @@ public class PythonFunctionDependencyProvider {
         } else if (object instanceof RosettaOnlyExistsExpression onlyExists) {
             onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports));
         } else if (object instanceof RosettaFunctionalOperation functional) {
+            // NOP
         } else if (object instanceof RosettaUnaryOperation unary) {
             addDependencies(unary.getArgument(), enumImports);
         } else if (object instanceof RosettaFeatureCall featureCall) {

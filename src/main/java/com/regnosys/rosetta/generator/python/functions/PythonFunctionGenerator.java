@@ -80,7 +80,7 @@ public class PythonFunctionGenerator {
         if (enumImports == null) {
             throw new RuntimeException("Enum imports is null");
         }
-        collectFunctionDependencies(rf, enumImports);
+        enumImports.addAll(collectFunctionDependencies(rf));
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -105,12 +105,12 @@ public class PythonFunctionGenerator {
             writer.appendLine("");
         }
 
-        writer.appendBlock(generateTypeOrFunctionConditions(rf, enumImports));
+        writer.appendBlock(generateTypeOrFunctionConditions(rf));
 
-        generateIfBlocks(writer, rf, enumImports);
-        generateAlias(writer, rf, enumImports);
-        generateOperations(writer, rf, enumImports);
-        generatesOutput(writer, rf, enumImports);
+        generateIfBlocks(writer, rf);
+        generateAlias(writer, rf);
+        generateOperations(writer, rf);
+        generatesOutput(writer, rf);
 
         writer.unindent();
         writer.newLine();
@@ -118,13 +118,13 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private void generatesOutput(PythonCodeWriter writer, Function function, Set<String> enumImports) {
+    private void generatesOutput(PythonCodeWriter writer, Function function) {
         Attribute output = function.getOutput();
         if (output != null) {
             if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty()) {
                 writer.appendLine(output.getName() + " = rune_resolve_attr(self, \"" + output.getName() + "\")");
             }
-            String postConds = generatePostConditions(function, enumImports);
+            String postConds = generatePostConditions(function);
             if (!postConds.isEmpty()) {
                 writer.appendLine("");
                 writer.appendBlock(postConds);
@@ -197,7 +197,8 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private void collectFunctionDependencies(Function rf, Set<String> enumImports) {
+    private Set<String> collectFunctionDependencies(Function rf) {
+        Set<String> enumImports = new HashSet<>();
         rf.getShortcuts().forEach(
                 shortcut -> functionDependencyProvider.addDependencies(shortcut.getExpression(), enumImports));
         rf.getOperations().forEach(
@@ -218,27 +219,25 @@ public class PythonFunctionGenerator {
                 && rf.getOutput().getTypeCall().getType() != null) {
             functionDependencyProvider.addDependencies(rf.getOutput().getTypeCall().getType(), enumImports);
         }
+        return enumImports;
     }
 
-    private void generateIfBlocks(PythonCodeWriter writer, Function function, Set<String> enumImports) {
+    private void generateIfBlocks(PythonCodeWriter writer, Function function) {
         List<Integer> levelList = new ArrayList<>(Collections.singletonList(0));
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
-            writer.appendBlock(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList,
-                    enumImports));
+            writer.appendBlock(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList));
         }
         for (Operation operation : function.getOperations()) {
-            writer.appendBlock(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList,
-                    enumImports));
+            writer.appendBlock(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList));
         }
     }
 
-    private String generateTypeOrFunctionConditions(Function function, Set<String> enumImports) {
+    private String generateTypeOrFunctionConditions(Function function) {
         if (!function.getConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# conditions");
             writer.appendBlock(
-                    expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry",
-                            enumImports));
+                    expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry"));
             writer.appendLine("# Execute all registered conditions");
             writer.appendLine("rune_execute_local_conditions(_pre_registry, 'Pre-condition')");
             writer.appendLine("");
@@ -247,13 +246,12 @@ public class PythonFunctionGenerator {
         return "";
     }
 
-    private String generatePostConditions(Function function, Set<String> enumImports) {
+    private String generatePostConditions(Function function) {
         if (!function.getPostConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# post-conditions");
             writer.appendBlock(
-                    expressionGenerator.generateFunctionConditions(function.getPostConditions(), "_post_registry",
-                            enumImports));
+                    expressionGenerator.generateFunctionConditions(function.getPostConditions(), "_post_registry"));
             writer.appendLine("# Execute all registered post-conditions");
             writer.appendLine("rune_execute_local_conditions(_post_registry, 'Post-condition')");
             return writer.toString();
@@ -261,13 +259,12 @@ public class PythonFunctionGenerator {
         return "";
     }
 
-    private void generateAlias(PythonCodeWriter writer, Function function, Set<String> enumImports) {
+    private void generateAlias(PythonCodeWriter writer, Function function) {
         int level = 0;
 
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
             expressionGenerator.setIfCondBlocks(new ArrayList<>());
-            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level, false,
-                    enumImports);
+            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level, false);
 
             if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
                 level += 1;
@@ -276,14 +273,13 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private void generateOperations(PythonCodeWriter writer, Function function, Set<String> enumImports) {
+    private void generateOperations(PythonCodeWriter writer, Function function) {
         int level = 0;
         if (function.getOutput() != null) {
             List<String> setNames = new ArrayList<>();
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
-                String expression = expressionGenerator.generateExpression(operation.getExpression(), level, false,
-                        enumImports);
+                String expression = expressionGenerator.generateExpression(operation.getExpression(), level, false);
 
                 if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
                     level += 1;
@@ -318,8 +314,14 @@ public class PythonFunctionGenerator {
                     writer.appendLine(root.getName() + ".add_rune_attr(self, " + expression + ")");
                 } else {
                     String path = generateAttributesPath(operation.getPath());
-                    writer.appendLine(root.getName() + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
-                            + root.getName() + "), " + path + "), " + expression + ")");
+                    writer.appendLine(root.getName()
+                            + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
+                            + root.getName()
+                            + "), "
+                            + path
+                            + "), "
+                            + expression
+                            + ")");
                 }
             }
         }

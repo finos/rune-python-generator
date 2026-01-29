@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import jakarta.inject.Inject;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
@@ -76,6 +74,25 @@ public class PythonFunctionsTest {
                 """;
 
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
+    // Test generating a function referencing a type
+    @Test
+    public void testGeneratedFunctionReferencingType() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        type A : <"A type">
+                            a number (1..1)
+
+                        func TestAbsType: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
+                            inputs:
+                                arg A (1..1)
+                            output:
+                                result number (1..1)
+                            set result:
+                                if arg->a < 0 then -1 * arg->a else arg->a
+                        """);
+        System.out.println(gf.toString());
     }
 
     // Test generating an AppendToList function

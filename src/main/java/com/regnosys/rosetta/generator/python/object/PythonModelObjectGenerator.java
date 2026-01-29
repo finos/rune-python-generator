@@ -106,7 +106,7 @@ public class PythonModelObjectGenerator {
 
         pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports);
 
-        return generateBody(rc, enumImports);
+        return generateBody(rc);
     }
 
     private String getClassMetaDataString(Data rc) {
@@ -162,7 +162,7 @@ public class PythonModelObjectGenerator {
         return writer.toString();
     }
 
-    private String generateBody(Data rc, Set<String> enumImports) {
+    private String generateBody(Data rc) {
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
@@ -197,7 +197,7 @@ public class PythonModelObjectGenerator {
             writer.appendBlock(constraints);
         }
 
-        writer.appendBlock(expressionGenerator.generateTypeOrFunctionConditions(rc, enumImports));
+        writer.appendBlock(expressionGenerator.generateTypeOrFunctionConditions(rc));
 
         return writer.toString();
     }

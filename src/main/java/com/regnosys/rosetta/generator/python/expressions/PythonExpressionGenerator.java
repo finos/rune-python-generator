@@ -35,7 +35,7 @@ public class PythonExpressionGenerator {
         return isSwitchCond;
     }
 
-    public String generateExpression(RosettaExpression expr, int ifLevel, boolean isLambda, Set<String> enumImports) {
+    public String generateExpression(RosettaExpression expr, int ifLevel, boolean isLambda) {
 
         if (expr == null)
             return "None";
@@ -49,88 +49,78 @@ public class PythonExpressionGenerator {
         } else if (expr instanceof RosettaStringLiteral s) {
             return "\"" + s.getValue() + "\"";
         } else if (expr instanceof AsKeyOperation asKey) {
-            return "{" + generateExpression(asKey.getArgument(), ifLevel, isLambda, enumImports) + ": True}";
+            return "{" + generateExpression(asKey.getArgument(), ifLevel, isLambda) + ": True}";
         } else if (expr instanceof DistinctOperation distinct) {
-            return "set(" + generateExpression(distinct.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "set(" + generateExpression(distinct.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof FilterOperation filter) {
-            return generateFilterOperation(filter, ifLevel, isLambda, enumImports);
+            return generateFilterOperation(filter, ifLevel, isLambda);
         } else if (expr instanceof FirstOperation first) {
-            return generateExpression(first.getArgument(), ifLevel, isLambda, enumImports) + "[0]";
+            return generateExpression(first.getArgument(), ifLevel, isLambda) + "[0]";
         } else if (expr instanceof FlattenOperation flatten) {
-            return "rune_flatten_list(" + generateExpression(flatten.getArgument(), ifLevel, isLambda, enumImports)
-                    + ")";
+            return "rune_flatten_list(" + generateExpression(flatten.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof ListLiteral listLiteral) {
             return "[" + listLiteral.getElements().stream()
-                    .map(arg -> generateExpression(arg, ifLevel, isLambda, enumImports))
+                    .map(arg -> generateExpression(arg, ifLevel, isLambda))
                     .collect(Collectors.joining(", ")) + "]";
         } else if (expr instanceof LastOperation last) {
-            return generateExpression(last.getArgument(), ifLevel, isLambda, enumImports) + "[-1]";
+            return generateExpression(last.getArgument(), ifLevel, isLambda) + "[-1]";
         } else if (expr instanceof MapOperation mapOp) {
-            return generateMapOperation(mapOp, ifLevel, isLambda, enumImports);
+            return generateMapOperation(mapOp, ifLevel, isLambda);
         } else if (expr instanceof MaxOperation maxOp) {
-            return "max(" + generateExpression(maxOp.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "max(" + generateExpression(maxOp.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof MinOperation minOp) {
-            return "min(" + generateExpression(minOp.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "min(" + generateExpression(minOp.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof SortOperation sort) {
-            return "sorted(" + generateExpression(sort.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "sorted(" + generateExpression(sort.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof ThenOperation then) {
-            return generateThenOperation(then, ifLevel, isLambda, enumImports);
+            return generateThenOperation(then, ifLevel, isLambda);
         } else if (expr instanceof SumOperation sum) {
-            return "sum(" + generateExpression(sum.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "sum(" + generateExpression(sum.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof SwitchOperation switchOp) {
-            return generateSwitchOperation(switchOp, ifLevel, isLambda, enumImports);
+            return generateSwitchOperation(switchOp, ifLevel, isLambda);
         } else if (expr instanceof ToEnumOperation toEnum) {
             return toEnum.getEnumeration().getName() + "("
-                    + generateExpression(toEnum.getArgument(), ifLevel, isLambda, enumImports)
-                    + ")";
+                    + generateExpression(toEnum.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof ToStringOperation toString) {
-            return "rune_str(" + generateExpression(toString.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "rune_str(" + generateExpression(toString.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof ToDateOperation toDate) {
-            return "datetime.datetime.strptime("
-                    + generateExpression(toDate.getArgument(), ifLevel, isLambda, enumImports)
+            return "datetime.datetime.strptime(" + generateExpression(toDate.getArgument(), ifLevel, isLambda)
                     + ", \"%Y-%m-%d\").date()";
         } else if (expr instanceof ToDateTimeOperation toDateTime) {
-            return "datetime.datetime.strptime("
-                    + generateExpression(toDateTime.getArgument(), ifLevel, isLambda, enumImports)
+            return "datetime.datetime.strptime(" + generateExpression(toDateTime.getArgument(), ifLevel, isLambda)
                     + ", \"%Y-%m-%d %H:%M:%S\")";
         } else if (expr instanceof ToIntOperation toInt) {
-            return "int(" + generateExpression(toInt.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "int(" + generateExpression(toInt.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof ToTimeOperation toTime) {
-            return "datetime.datetime.strptime("
-                    + generateExpression(toTime.getArgument(), ifLevel, isLambda, enumImports)
+            return "datetime.datetime.strptime(" + generateExpression(toTime.getArgument(), ifLevel, isLambda)
                     + ", \"%H:%M:%S\").time()";
         } else if (expr instanceof ToZonedDateTimeOperation toZoned) {
-            return "rune_zoned_date_time(" + generateExpression(toZoned.getArgument(), ifLevel, isLambda, enumImports)
-                    + ")";
+            return "rune_zoned_date_time(" + generateExpression(toZoned.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof RosettaAbsentExpression absent) {
-            return "(not rune_attr_exists(" + generateExpression(absent.getArgument(), ifLevel, isLambda, enumImports)
-                    + "))";
+            return "(not rune_attr_exists(" + generateExpression(absent.getArgument(), ifLevel, isLambda) + "))";
         } else if (expr instanceof RosettaBinaryOperation binary) {
-            return generateBinaryExpression(binary, ifLevel, isLambda, enumImports);
+            return generateBinaryExpression(binary, ifLevel, isLambda);
         } else if (expr instanceof RosettaConditionalExpression cond) {
-            return generateConditionalExpression(cond, ifLevel, isLambda, enumImports);
+            return generateConditionalExpression(cond, ifLevel, isLambda);
         } else if (expr instanceof RosettaConstructorExpression constructor) {
-            return generateConstructorExpression(constructor, ifLevel, isLambda, enumImports);
+            return generateConstructorExpression(constructor, ifLevel, isLambda);
         } else if (expr instanceof RosettaCountOperation count) {
-            return "rune_count(" + generateExpression(count.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "rune_count(" + generateExpression(count.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof RosettaDeepFeatureCall deepFeature) {
             return "rune_resolve_deep_attr(self, \"" + deepFeature.getFeature().getName() + "\")";
         } else if (expr instanceof RosettaEnumValueReference enumRef) {
             return enumRef.getEnumeration().getName() + "." + EnumHelper.convertValue(enumRef.getValue());
         } else if (expr instanceof RosettaExistsExpression exists) {
-            return "rune_attr_exists(" + generateExpression(exists.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "rune_attr_exists(" + generateExpression(exists.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof RosettaFeatureCall featureCall) {
-            return generateFeatureCall(featureCall, ifLevel, isLambda, enumImports);
+            return generateFeatureCall(featureCall, ifLevel, isLambda);
         } else if (expr instanceof RosettaOnlyElement onlyElement) {
-            return "rune_get_only_element("
-                    + generateExpression(onlyElement.getArgument(), ifLevel, isLambda, enumImports) + ")";
+            return "rune_get_only_element(" + generateExpression(onlyElement.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof RosettaOnlyExistsExpression onlyExists) {
-            return "rune_check_one_of(self, "
-                    + generateExpression(onlyExists.getArgs().get(0), ifLevel, isLambda, enumImports)
+            return "rune_check_one_of(self, " + generateExpression(onlyExists.getArgs().get(0), ifLevel, isLambda)
                     + ")";
         } else if (expr instanceof RosettaSymbolReference symbolRef) {
-            return generateSymbolReference(symbolRef, ifLevel, isLambda, enumImports);
-
+            return generateSymbolReference(symbolRef, ifLevel, isLambda);
         } else if (expr instanceof RosettaImplicitVariable implicit) {
             return implicit.getName();
         } else {
@@ -139,12 +129,11 @@ public class PythonExpressionGenerator {
         }
     }
 
-    private String generateConditionalExpression(RosettaConditionalExpression expr, int ifLevel, boolean isLambda,
-            Set<String> enumImports) {
-        String ifExpr = generateExpression(expr.getIf(), ifLevel + 1, isLambda, enumImports);
-        String ifThen = generateExpression(expr.getIfthen(), ifLevel + 1, isLambda, enumImports);
+    private String generateConditionalExpression(RosettaConditionalExpression expr, int ifLevel, boolean isLambda) {
+        String ifExpr = generateExpression(expr.getIf(), ifLevel + 1, isLambda);
+        String ifThen = generateExpression(expr.getIfthen(), ifLevel + 1, isLambda);
         String elseThen = (expr.getElsethen() != null && expr.isFull())
-                ? generateExpression(expr.getElsethen(), ifLevel + 1, isLambda, enumImports)
+                ? generateExpression(expr.getElsethen(), ifLevel + 1, isLambda)
                 : "True";
         String ifBlocks = """
                 def _then_fn%d():
@@ -157,26 +146,22 @@ public class PythonExpressionGenerator {
         return "if_cond_fn(%s, _then_fn%d, _else_fn%d)".formatted(ifExpr, ifLevel, ifLevel);
     }
 
-    private String generateFeatureCall(RosettaFeatureCall expr, int ifLevel, boolean isLambda,
-            Set<String> enumImports) {
+    private String generateFeatureCall(RosettaFeatureCall expr, int ifLevel, boolean isLambda) {
         if (expr.getFeature() instanceof RosettaEnumValue evalue) {
-            RosettaSymbol symbol = ((RosettaSymbolReference) expr.getReceiver()).getSymbol();
-            RosettaModel model = (RosettaModel) symbol.eContainer();
-            addImportsFromConditions(symbol.getName(), model.getName(), enumImports);
             return generateEnumString(evalue);
         }
         String right = expr.getFeature().getName();
         if ("None".equals(right)) {
             right = "NONE";
         }
-        String receiver = generateExpression(expr.getReceiver(), ifLevel, isLambda, enumImports);
+        String receiver = generateExpression(expr.getReceiver(), ifLevel, isLambda);
         return (receiver == null) ? right : "rune_resolve_attr(" + receiver + ", \"" + right + "\")";
     }
 
-    private String generateThenOperation(ThenOperation expr, int ifLevel, boolean isLambda, Set<String> enumImports) {
+    private String generateThenOperation(ThenOperation expr, int ifLevel, boolean isLambda) {
         InlineFunction funcExpr = expr.getFunction();
-        String argExpr = generateExpression(expr.getArgument(), ifLevel, isLambda, enumImports);
-        String body = generateExpression(funcExpr.getBody(), ifLevel, true, enumImports);
+        String argExpr = generateExpression(expr.getArgument(), ifLevel, isLambda);
+        String body = generateExpression(funcExpr.getBody(), ifLevel, true);
         String funcParams = funcExpr.getParameters().stream().map(ClosureParameter::getName)
                 .collect(Collectors.joining(", "));
         String lambdaFunction = (funcParams.isEmpty()) ? "(lambda item: " + body + ")"
@@ -184,51 +169,49 @@ public class PythonExpressionGenerator {
         return lambdaFunction + "(" + argExpr + ")";
     }
 
-    private String generateFilterOperation(FilterOperation expr, int ifLevel, boolean isLambda,
-            Set<String> enumImports) {
-        String argument = generateExpression(expr.getArgument(), ifLevel, isLambda, enumImports);
-        String filterExpression = generateExpression(expr.getFunction().getBody(), ifLevel, true, enumImports);
+    private String generateFilterOperation(FilterOperation expr, int ifLevel, boolean isLambda) {
+        String argument = generateExpression(expr.getArgument(), ifLevel, isLambda);
+        String filterExpression = generateExpression(expr.getFunction().getBody(), ifLevel, true);
         return "rune_filter(" + argument + ", lambda item: " + filterExpression + ")";
     }
 
-    private String generateMapOperation(MapOperation expr, int ifLevel, boolean isLambda, Set<String> enumImports) {
+    private String generateMapOperation(MapOperation expr, int ifLevel, boolean isLambda) {
         InlineFunction inlineFunc = expr.getFunction();
-        String funcBody = generateExpression(inlineFunc.getBody(), ifLevel, true, enumImports);
+        String funcBody = generateExpression(inlineFunc.getBody(), ifLevel, true);
         String lambdaFunction = "lambda item: " + funcBody;
-        String argument = generateExpression(expr.getArgument(), ifLevel, isLambda, enumImports);
+        String argument = generateExpression(expr.getArgument(), ifLevel, isLambda);
         return "list(map(" + lambdaFunction + ", " + argument + "))";
     }
 
-    private String generateConstructorExpression(RosettaConstructorExpression expr, int ifLevel, boolean isLambda,
-            Set<String> enumImports) {
+    private String generateConstructorExpression(RosettaConstructorExpression expr, int ifLevel, boolean isLambda) {
         String type = (expr.getTypeCall() != null && expr.getTypeCall().getType() != null)
                 ? expr.getTypeCall().getType().getName()
                 : null;
         if (type != null) {
             return type + "(" + expr.getValues().stream()
                     .map(pair -> pair.getKey().getName() + "="
-                            + generateExpression(pair.getValue(), ifLevel, isLambda, enumImports))
+                            + generateExpression(pair.getValue(), ifLevel, isLambda))
                     .collect(Collectors.joining(", ")) + ")";
         } else {
             return "{" + expr.getValues().stream()
                     .map(pair -> "'" + pair.getKey().getName() + "': "
-                            + generateExpression(pair.getValue(), ifLevel, isLambda, enumImports))
+                            + generateExpression(pair.getValue(), ifLevel, isLambda))
                     .collect(Collectors.joining(", ")) + "}";
         }
     }
 
-    private String getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda, Set<String> enumImports) {
+    private String getGuardExpression(SwitchCaseGuard caseGuard, boolean isLambda) {
         if (caseGuard == null) {
             throw new UnsupportedOperationException("Null SwitchCaseGuard");
         }
         RosettaExpression literalGuard = caseGuard.getLiteralGuard();
         if (literalGuard != null) {
-            return "switchAttribute == " + generateExpression(literalGuard, 0, isLambda, enumImports);
+            return "switchAttribute == " + generateExpression(literalGuard, 0, isLambda);
         }
         RosettaEnumValue enumGuard = caseGuard.getEnumGuard();
         if (enumGuard != null) {
-            return "switchAttribute == rune_resolve_attr(" + generateEnumString(enumGuard) + ",\"" + enumGuard.getName()
-                    + "\")";
+            return "switchAttribute == rune_resolve_attr(" + generateEnumString(enumGuard) + ",\""
+                    + enumGuard.getName() + "\")";
         }
         RosettaFeature optionGuard = caseGuard.getChoiceOptionGuard();
         if (optionGuard != null) {
@@ -241,9 +224,8 @@ public class PythonExpressionGenerator {
         throw new UnsupportedOperationException("Unsupported SwitchCaseGuard type");
     }
 
-    private String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda,
-            Set<String> enumImports) {
-        String attr = generateExpression(expr.getArgument(), 0, isLambda, enumImports);
+    private String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
+        String attr = generateExpression(expr.getArgument(), 0, isLambda);
         PythonCodeWriter writer = new PythonCodeWriter();
         isSwitchCond = true;
 
@@ -251,9 +233,8 @@ public class PythonExpressionGenerator {
         for (int i = 0; i < cases.size(); i++) {
             var currentCase = cases.get(i);
             String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
-            String thenExprDef = currentCase.isDefault()
-                    ? generateExpression(expr.getDefault(), 0, isLambda, enumImports)
-                    : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda, enumImports);
+            String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), 0, isLambda)
+                    : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda);
 
             writer.appendLine("def " + funcName + "():");
 
@@ -272,7 +253,7 @@ public class PythonExpressionGenerator {
             } else {
                 SwitchCaseGuard guard = currentCase.getGuard();
                 String prefix = (i == 0) ? "if " : "elif ";
-                writer.appendLine(prefix + getGuardExpression(guard, isLambda, enumImports) + ":");
+                writer.appendLine(prefix + getGuardExpression(guard, isLambda) + ":");
             }
             writer.indent();
             writer.appendLine("return " + funcName + "()");
@@ -281,8 +262,7 @@ public class PythonExpressionGenerator {
         return writer.toString();
     }
 
-    private String generateSymbolReference(RosettaSymbolReference expr, int ifLevel, boolean isLambda,
-            Set<String> enumImports) {
+    private String generateSymbolReference(RosettaSymbolReference expr, int ifLevel, boolean isLambda) {
 
         RosettaSymbol symbol = expr.getSymbol();
         if (symbol instanceof Data || symbol instanceof RosettaEnumeration) {
@@ -292,7 +272,7 @@ public class PythonExpressionGenerator {
         } else if (symbol instanceof RosettaEnumValue evalue) {
             return generateEnumString(evalue);
         } else if (symbol instanceof RosettaCallableWithArgs callable) {
-            return generateCallableWithArgsCall(callable, expr, ifLevel, isLambda, enumImports);
+            return generateCallableWithArgsCall(callable, expr, ifLevel, isLambda);
         } else if (symbol instanceof ShortcutDeclaration || symbol instanceof ClosureParameter) {
             return "rune_resolve_attr(self, \"" + symbol.getName() + "\")";
         } else {
@@ -328,21 +308,14 @@ public class PythonExpressionGenerator {
     }
 
     private String generateCallableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr, int ifLevel,
-            boolean isLambda, Set<String> enumImports) {
-        if (s instanceof FunctionImpl) {
-            addImportsFromConditions(s.getName(), ((RosettaModel) s.eContainer()).getName() + ".functions",
-                    enumImports);
-        } else {
-            addImportsFromConditions(s.getName(), ((RosettaModel) s.eContainer()).getName(), enumImports);
-        }
-        String args = expr.getArgs().stream()
-                .map(arg -> generateExpression(arg, ifLevel, isLambda, enumImports))
+            boolean isLambda) {
+        // Dependency handled by PythonFunctionDependencyProvider
+        String args = expr.getArgs().stream().map(arg -> generateExpression(arg, ifLevel, isLambda))
                 .collect(Collectors.joining(", "));
         return s.getName() + "(" + args + ")";
     }
 
-    private String generateBinaryExpression(RosettaBinaryOperation expr, int ifLevel, boolean isLambda,
-            Set<String> enumImports) {
+    private String generateBinaryExpression(RosettaBinaryOperation expr, int ifLevel, boolean isLambda) {
 
         if (expr instanceof ModifiableBinaryOperation mod) {
             if (mod.getCardMod() == null) {
@@ -350,36 +323,31 @@ public class PythonExpressionGenerator {
                         "ModifiableBinaryOperation with expressions with no cardinality");
             }
             if ("<>".equals(mod.getOperator())) {
-                return "rune_any_elements(" + generateExpression(mod.getLeft(), ifLevel, isLambda, enumImports) + ", \""
-                        + mod.getOperator() + "\", "
-                        + generateExpression(mod.getRight(), ifLevel, isLambda, enumImports)
-                        + ")";
+                return "rune_any_elements(" + generateExpression(mod.getLeft(), ifLevel, isLambda) + ", \""
+                        + mod.getOperator() + "\", " + generateExpression(mod.getRight(), ifLevel, isLambda) + ")";
             } else {
-                return "rune_all_elements(" + generateExpression(mod.getLeft(), ifLevel, isLambda, enumImports) + ", \""
-                        + mod.getOperator() + "\", "
-                        + generateExpression(mod.getRight(), ifLevel, isLambda, enumImports)
-                        + ")";
+                return "rune_all_elements(" + generateExpression(mod.getLeft(), ifLevel, isLambda) + ", \""
+                        + mod.getOperator() + "\", " + generateExpression(mod.getRight(), ifLevel, isLambda) + ")";
             }
         } else {
             return switch (expr.getOperator()) {
-                case "=" -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda, enumImports) + " == "
-                        + generateExpression(expr.getRight(), ifLevel, isLambda, enumImports) + ")";
-                case "<>" -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda, enumImports) + " != "
-                        + generateExpression(expr.getRight(), ifLevel, isLambda, enumImports) + ")";
-                case "contains" -> "rune_contains(" + generateExpression(expr.getLeft(), ifLevel, isLambda, enumImports)
-                        + ", " + generateExpression(expr.getRight(), ifLevel, isLambda, enumImports) + ")";
-                case "disjoint" -> "rune_disjoint(" + generateExpression(expr.getLeft(), ifLevel, isLambda, enumImports)
-                        + ", " + generateExpression(expr.getRight(), ifLevel, isLambda, enumImports) + ")";
-                case "join" -> generateExpression(expr.getLeft(), ifLevel, isLambda, enumImports) + ".join("
-                        + generateExpression(expr.getRight(), ifLevel, isLambda, enumImports) + ")";
-                default -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda, enumImports) + " "
-                        + expr.getOperator() + " " + generateExpression(expr.getRight(), ifLevel, isLambda, enumImports)
-                        + ")";
+                case "=" -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " == "
+                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
+                case "<>" -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " != "
+                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
+                case "contains" -> "rune_contains(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + ", "
+                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
+                case "disjoint" -> "rune_disjoint(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + ", "
+                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
+                case "join" -> generateExpression(expr.getLeft(), ifLevel, isLambda) + ".join("
+                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
+                default -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " " + expr.getOperator() + " "
+                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
             };
         }
     }
 
-    public String generateTypeOrFunctionConditions(Data cls, Set<String> enumImports) {
+    public String generateTypeOrFunctionConditions(Data cls) {
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : cls.getConditions()) {
@@ -387,30 +355,29 @@ public class PythonExpressionGenerator {
             if (isConstraintCondition(cond)) {
                 result.append(generateConstraintCondition(cls, cond));
             } else {
-                result.append(generateIfThenElseOrSwitch(cond, enumImports));
+                result.append(generateIfThenElseOrSwitch(cond));
             }
             nConditions++;
         }
         return result.toString();
     }
 
-    public String generateFunctionConditions(List<Condition> conditions, String condition_type,
-            Set<String> enumImports) {
+    public String generateFunctionConditions(List<Condition> conditions, String condition_type) {
 
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : conditions) {
             result.append(generateFunctionConditionBoilerPlate(cond, nConditions, condition_type));
-            result.append(generateIfThenElseOrSwitch(cond, enumImports));
+            result.append(generateIfThenElseOrSwitch(cond));
 
             nConditions++;
         }
         return result.toString();
     }
 
-    public String generateThenElseForFunction(RosettaExpression expr, List<Integer> ifLevel, Set<String> enumImports) {
+    public String generateThenElseForFunction(RosettaExpression expr, List<Integer> ifLevel) {
         ifCondBlocks.clear();
-        generateExpression(expr, ifLevel.get(0), false, enumImports);
+        generateExpression(expr, ifLevel.get(0), false);
 
         PythonCodeWriter writer = new PythonCodeWriter();
         if (!ifCondBlocks.isEmpty()) {
@@ -483,10 +450,10 @@ public class PythonExpressionGenerator {
         return writer.toString();
     }
 
-    private String generateIfThenElseOrSwitch(Condition c, Set<String> enumImports) {
+    private String generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear();
         isSwitchCond = false;
-        String expr = generateExpression(c.getExpression(), 0, false, enumImports);
+        String expr = generateExpression(c.getExpression(), 0, false);
 
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.indent();
@@ -502,12 +469,5 @@ public class PythonExpressionGenerator {
         }
         writer.appendLine("return " + expr);
         return writer.toString();
-    }
-
-    public void addImportsFromConditions(String variable, String namespace, Set<String> enumImports) {
-        String imp = "from " + namespace + "." + variable + " import " + variable;
-        if (enumImports != null && !enumImports.contains(imp)) {
-            enumImports.add(imp);
-        }
     }
 }
