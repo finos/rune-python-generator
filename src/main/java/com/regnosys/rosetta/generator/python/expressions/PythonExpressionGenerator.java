@@ -9,10 +9,9 @@ import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -187,6 +186,8 @@ public class PythonExpressionGenerator {
         String type = (expr.getTypeCall() != null && expr.getTypeCall().getType() != null)
                 ? expr.getTypeCall().getType().getName()
                 : null;
+        String fullyQualifiedType = RuneToPythonMapper.getBundleObjectName(expr.getTypeCall().getType());
+        type = fullyQualifiedType;
         if (type != null) {
             return type + "(" + expr.getValues().stream()
                     .map(pair -> pair.getKey().getName() + "="

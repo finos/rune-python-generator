@@ -49,7 +49,7 @@ public class PythonFunctionsTest {
                     \"""
                     Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
-                    Parameters\s
+                    Parameters
                     ----------
                     arg : Decimal
 
@@ -67,7 +67,7 @@ public class PythonFunctionsTest {
                     def _else_fn0():
                         return rune_resolve_attr(self, "arg")
 
-                    result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0)
+                    result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0)
 
 
                     return result
@@ -76,23 +76,104 @@ public class PythonFunctionsTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
-    // Test generating a function referencing a type
+    // Test generating a function that takes a type as an input
     @Test
-    public void testGeneratedFunctionReferencingType() {
+    public void testGeneratedFunctionTypeAsInput() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        type A : <"A type">
+                        type AInput : <\"A type\">
                             a number (1..1)
 
-                        func TestAbsType: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
+                        func TestAbsType: <\"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.\">
                             inputs:
-                                arg  A (1..1)
+                                arg  AInput (1..1)
                             output:
                                 result number (1..1)
                             set result:
                                 if arg->a < 0 then -1 * arg->a else arg->a
                         """);
-        System.out.println(gf.toString());
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_TestAbsType(arg: com_rosetta_test_model_AInput) -> Decimal:
+                    \"\"\"
+                    Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
+
+                    Parameters
+                    ----------
+                    arg : com.rosetta.test.model.AInput
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    def _then_fn0():
+                        return (-1 * rune_resolve_attr(rune_resolve_attr(self, \"arg\"), \"a\"))
+
+                    def _else_fn0():
+                        return rune_resolve_attr(rune_resolve_attr(self, \"arg\"), \"a\")
+
+                    result = if_cond_fn(rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"arg\"), \"a\"), \"<\", 0), _then_fn0, _else_fn0)
+
+
+                    return result
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
+    // Test generating a function that returns a type
+    @Test
+    public void testGeneratedFunctionTypeAsOutput() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        type AOutput : <\"AOutput type\">
+                            a number (1..1)
+
+                        func TestAbsOutputType: <\"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.\">
+                            inputs:
+                                arg number (1..1)
+                            output:
+                                result AOutput (1..1)
+                            set result: AOutput {
+                                a: if arg < 0 then arg * -1 else arg
+                            }
+                        """);
+
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_TestAbsOutputType(arg: Decimal) -> com_rosetta_test_model_AOutput:
+                    \"\"\"
+                    Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
+
+                    Parameters
+                    ----------
+                    arg : Decimal
+
+                    Returns
+                    -------
+                    result : com.rosetta.test.model.AOutput
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    def _then_fn0():
+                        return (rune_resolve_attr(self, "arg") * -1)
+
+                    def _else_fn0():
+                        return rune_resolve_attr(self, "arg")
+
+                    result = com_rosetta_test_model_AOutput(a=if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0))
+
+
+                    return result
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
     // Test generating an AppendToList function
@@ -134,7 +215,7 @@ public class PythonFunctionsTest {
                     self = inspect.currentframe()
 
 
-                    result =  rune_resolve_attr(self, "list")
+                    result = rune_resolve_attr(self, "list")
                     result.add_rune_attr(self, rune_resolve_attr(self, "value"))
 
 
@@ -360,7 +441,7 @@ public class PythonFunctionsTest {
                     def _else_fn0():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.SUBTRACT), _then_fn1, _else_fn1)
 
-                    result =  if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.ADD), _then_fn0, _else_fn0)
+                    result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.ADD), _then_fn0, _else_fn0)
 
 
                     return result
@@ -465,7 +546,7 @@ public class PythonFunctionsTest {
                         return True
 
                     Alias = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "inp1"), "<", 0), _then_fn0, _else_fn0)
-                    result =  rune_resolve_attr(self, "Alias")
+                    result = rune_resolve_attr(self, "Alias")
 
 
                     return result

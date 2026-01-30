@@ -117,6 +117,37 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
+    private String generateParametersString(String name, int sup) {
+        return (sup == 0) ? "list[" + name + "]" : name;
+    }
+
+    private String generateInputs(Function function) {
+        StringBuilder result = new StringBuilder("(");
+        List<Attribute> inputs = function.getInputs();
+        for (int i = 0; i < inputs.size(); i++) {
+            Attribute input = inputs.get(i);
+            String inputBundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType());
+            String inputType = generateParametersString(inputBundleName, input.getCard().getSup());
+            result.append(input.getName()).append(": ").append(inputType);
+            if (input.getCard().getInf() == 0) {
+                result.append(" | None");
+            }
+            if (i < inputs.size() - 1) {
+                result.append(", ");
+            }
+        }
+        result.append(") -> ");
+        Attribute output = function.getOutput();
+        if (output != null) {
+            String outputBundleName = RuneToPythonMapper.getBundleObjectName(output.getTypeCall().getType());
+            String outputType = generateParametersString(outputBundleName, output.getCard().getSup());
+            result.append(outputType);
+        } else {
+            result.append("None");
+        }
+        return result.toString();
+    }
+
     private void generateOutput(PythonCodeWriter writer, Function function) {
         Attribute output = function.getOutput();
         if (output != null) {
@@ -132,38 +163,9 @@ public class PythonFunctionGenerator {
                 writer.appendLine("");
                 writer.appendLine("");
             }
+
             writer.appendLine("return " + output.getName());
         }
-    }
-
-    private String generateParametersString(String name, int sup) {
-        return (sup == 0) ? "list[" + name + "]" : name;
-    }
-
-    private String generateInputs(Function function) {
-        List<Attribute> inputs = function.getInputs();
-        Attribute output = function.getOutput();
-
-        StringBuilder result = new StringBuilder("(");
-        for (int i = 0; i < inputs.size(); i++) {
-            Attribute input = inputs.get(i);
-            String bundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType());
-            String type = generateParametersString(bundleName, input.getCard().getSup());
-            result.append(input.getName()).append(": ").append(type);
-            if (input.getCard().getInf() == 0) {
-                result.append(" | None");
-            }
-            if (i < inputs.size() - 1) {
-                result.append(", ");
-            }
-        }
-        result.append(") -> ");
-        if (output != null) {
-            result.append(RuneToPythonMapper.toPythonBasicType(output.getTypeCall().getType().getName()));
-        } else {
-            result.append("None");
-        }
-        return result.toString();
     }
 
     private String generateDescription(Function function) {
@@ -177,7 +179,7 @@ public class PythonFunctionGenerator {
             writer.appendLine(description);
         }
         writer.appendLine("");
-        writer.appendLine("Parameters ");
+        writer.appendLine("Parameters");
         writer.appendLine("----------");
         for (Attribute input : inputs) {
             String paramName = generateParametersString(
@@ -336,7 +338,7 @@ public class PythonFunctionGenerator {
             Function function, String expression, List<String> setNames) {
         Attribute attributeRoot = (Attribute) root;
         String name = attributeRoot.getName();
-        String spacer = (expression.startsWith("if_cond_fn") || name.equals("result")) ? " =  " : " = ";
+        String spacer = (expression.startsWith("if_cond_fn") || name.equals("result")) ? " = " : " = ";
         if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
             writer.appendLine(attributeRoot.getName() + spacer + expression);
         } else {
