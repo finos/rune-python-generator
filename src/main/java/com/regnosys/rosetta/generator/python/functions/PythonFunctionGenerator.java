@@ -117,21 +117,19 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateParametersString(String name, int sup) {
-        return (sup == 0) ? "list[" + name + "]" : name;
-    }
-
     private String generateInputs(Function function) {
         StringBuilder result = new StringBuilder("(");
         List<Attribute> inputs = function.getInputs();
         for (int i = 0; i < inputs.size(); i++) {
             Attribute input = inputs.get(i);
             String inputBundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType());
-            String inputType = generateParametersString(inputBundleName, input.getCard().getSup());
+            String inputType = RuneToPythonMapper.formatPythonType(
+                    inputBundleName,
+                    input.getCard().getInf(),
+                    input.getCard().getSup(),
+                    true);
             result.append(input.getName()).append(": ").append(inputType);
-            if (input.getCard().getInf() == 0) {
-                result.append(" | None");
-            }
+
             if (i < inputs.size() - 1) {
                 result.append(", ");
             }
@@ -140,7 +138,11 @@ public class PythonFunctionGenerator {
         Attribute output = function.getOutput();
         if (output != null) {
             String outputBundleName = RuneToPythonMapper.getBundleObjectName(output.getTypeCall().getType());
-            String outputType = generateParametersString(outputBundleName, output.getCard().getSup());
+            String outputType = RuneToPythonMapper.formatPythonType(
+                    outputBundleName,
+                    1, // Force min=1 to suppress Optional/| None for return types
+                    output.getCard().getSup(),
+                    true);
             result.append(outputType);
         } else {
             result.append("None");
@@ -182,9 +184,11 @@ public class PythonFunctionGenerator {
         writer.appendLine("Parameters");
         writer.appendLine("----------");
         for (Attribute input : inputs) {
-            String paramName = generateParametersString(
+            String paramName = RuneToPythonMapper.formatPythonType(
                     RuneToPythonMapper.getFullyQualifiedObjectName(input.getTypeCall().getType()),
-                    input.getCard().getSup());
+                    1, // Force min=1 to match legacy docstring format (no Optional)
+                    input.getCard().getSup(),
+                    true);
             writer.appendLine(input.getName() + " : " + paramName);
             if (input.getDefinition() != null) {
                 writer.appendLine(input.getDefinition());
@@ -194,9 +198,11 @@ public class PythonFunctionGenerator {
         writer.appendLine("Returns");
         writer.appendLine("-------");
         if (output != null) {
-            String paramName = generateParametersString(
+            String paramName = RuneToPythonMapper.formatPythonType(
                     RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType()),
-                    output.getCard().getSup());
+                    1, // Force min=1 to match legacy docstring format (no Optional)
+                    output.getCard().getSup(),
+                    true);
 
             writer.appendLine(output.getName() + " : " + paramName);
         } else {

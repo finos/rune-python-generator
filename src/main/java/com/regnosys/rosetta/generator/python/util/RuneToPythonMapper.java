@@ -233,6 +233,42 @@ public class RuneToPythonMapper {
     }
 
     /**
+     * Formats a Python type string based on cardinality and context.
+     *
+     * @param baseType        the base Python type (e.g., "str", "Decimal")
+     * @param min             the minimum cardinality
+     * @param max             the maximum cardinality
+     * @param isInputArgument true if this is for a function input argument (uses "
+     *                        | None"), false for a class field (uses
+     *                        "Optional[...]").
+     * @return the formatted Python type string
+     */
+    public static String formatPythonType(String baseType, int min, int max, boolean isInputArgument) {
+        String type = baseType;
+        boolean isList = (max > 1 || max == -1 || max == 0);
+
+        if (isList) {
+            type = "list[" + type + "]";
+        }
+
+        if (min == 0) {
+            if (isInputArgument) {
+                type = type + " | None";
+            } else {
+                type = "Optional[" + type + "]";
+            }
+        }
+        return type;
+    }
+
+    public static String getFlattenedTypeName(RType type, String typeName) {
+        if (isRosettaBasicType(type) || type instanceof REnumType) {
+            return typeName;
+        }
+        return typeName.replace('.', '_');
+    }
+
+    /**
      * Check if the given type is in the set of Python types.
      *
      * @param pythonType the Python type name

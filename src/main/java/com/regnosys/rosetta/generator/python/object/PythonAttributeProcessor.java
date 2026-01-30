@@ -73,16 +73,13 @@ public class PythonAttributeProcessor {
             Map<String, String> cardinalityMap) {
 
         String propString = createPropString(attrProp);
-        boolean isRosettaBasicType = RuneToPythonMapper.isRosettaBasicType(rt);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
 
         String attrTypeName = (!validators.isEmpty())
                 ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
                 : attrTypeNameIn;
 
-        String attrTypeNameOut = (isRosettaBasicType || rt instanceof REnumType)
-                ? attrTypeName
-                : attrTypeName.replace('.', '_');
+        String attrTypeNameOut = RuneToPythonMapper.getFlattenedTypeName(rt, attrTypeName);
 
         String metaPrefix = "";
         String metaSuffix = "";
@@ -90,10 +87,27 @@ public class PythonAttributeProcessor {
         if (!validators.isEmpty()) {
             metaPrefix = getMetaDataPrefix(validators);
             metaSuffix = getMetaDataSuffix(validators, attrTypeNameOut);
-        } else if (!isRosettaBasicType && !(rt instanceof REnumType)) {
+        } else if (!RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType)) {
             metaPrefix = "Annotated[";
             metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
         }
+
+        String baseType = metaPrefix + attrTypeNameOut + metaSuffix;
+        RCardinality cardinality = ra.getCardinality();
+        int min = cardinality.getMin();
+        int max = cardinality.getMax().orElse(-1);
+        boolean isList = (cardinality.isMulti() || max > 1);
+
+        // If it is a list and we have properties (e.g. max_digits), these properties
+        // belong to the element, not the list.
+        // So we wrap the element type in Annotated[Type, Field(...properties...)].
+        boolean propertiesAppliedToInnerType = false;
+        if (isList && !attrProp.isEmpty()) {
+            baseType = "Annotated[" + baseType + ", Field(" + propString + ")]";
+            propertiesAppliedToInnerType = true;
+        }
+
+        String pythonType = RuneToPythonMapper.formatPythonType(baseType, min, max, false);
 
         String attrDesc = (ra.getDefinition() == null)
                 ? ""
@@ -101,44 +115,23 @@ public class PythonAttributeProcessor {
 
         StringBuilder lineBuilder = new StringBuilder();
         lineBuilder.append(attrName).append(": ");
+        lineBuilder.append(pythonType);
 
-        if (!attrProp.isEmpty() && !cardinalityMap.isEmpty() && cardinalityMap.get("cardinalityString").length() > 0) {
-            lineBuilder.append(cardinalityMap.get("cardinalityPrefix"));
-            lineBuilder.append("Annotated[");
-            lineBuilder.append(attrTypeNameOut);
-            lineBuilder.append(", Field(");
+        lineBuilder.append(" = Field(");
+        lineBuilder.append(cardinalityMap.get("fieldDefault"));
+        lineBuilder.append(", description='");
+        lineBuilder.append(attrDesc);
+        lineBuilder.append("'");
+        lineBuilder.append(cardinalityMap.get("cardinalityString"));
+
+        // Only append propString to the outer Field if it hasn't been applied to the
+        // inner type
+        if (!propString.isEmpty() && !propertiesAppliedToInnerType) {
+            lineBuilder.append(", ");
             lineBuilder.append(propString);
-            if (!metaSuffix.isEmpty()) {
-                lineBuilder.append(metaSuffix);
-            } else {
-                lineBuilder.append(")]");
-            }
-            lineBuilder.append(cardinalityMap.get("cardinalitySuffix"));
-            lineBuilder.append(" = Field(");
-            lineBuilder.append(cardinalityMap.get("fieldDefault"));
-            lineBuilder.append(", description='");
-            lineBuilder.append(attrDesc);
-            lineBuilder.append("'");
-            lineBuilder.append(cardinalityMap.get("cardinalityString"));
-            lineBuilder.append(")");
-        } else {
-            lineBuilder.append(cardinalityMap.get("cardinalityPrefix"));
-            lineBuilder.append(metaPrefix);
-            lineBuilder.append(attrTypeNameOut);
-            lineBuilder.append(metaSuffix);
-            lineBuilder.append(cardinalityMap.get("cardinalitySuffix"));
-            lineBuilder.append(" = Field(");
-            lineBuilder.append(cardinalityMap.get("fieldDefault"));
-            lineBuilder.append(", description='");
-            lineBuilder.append(attrDesc);
-            lineBuilder.append("'");
-            lineBuilder.append(cardinalityMap.get("cardinalityString"));
-            if (!propString.isEmpty()) {
-                lineBuilder.append(", ");
-                lineBuilder.append(propString);
-            }
-            lineBuilder.append(")");
         }
+
+        lineBuilder.append(")");
         writer.appendLine(lineBuilder.toString());
 
         if (ra.getDefinition() != null) {
@@ -233,49 +226,35 @@ public class PythonAttributeProcessor {
         boolean upperBoundIsGTOne = (upperCardinality.isPresent() && upperCardinality.get() > 1);
 
         String fieldDefault = "";
-        String cardinalityPrefix = "";
-        String cardinalitySuffix = "";
         String cardinalityString = "";
 
-        switch (lowerBound) {
-            case 0 -> {
-                cardinalityPrefix = "Optional[";
-                cardinalitySuffix = "]";
-                fieldDefault = "None";
-                if (cardinality.isMulti() || upperBoundIsGTOne) {
-                    cardinalityPrefix += "list[";
-                    cardinalitySuffix += "]";
-                    if (upperBoundIsGTOne) {
-                        cardinalityString = ", max_length=" + upperCardinality.get().toString();
-                    }
+        // Default constraints
+        if (lowerBound == 0) {
+            fieldDefault = "None";
+            if (cardinality.isMulti() || upperBoundIsGTOne) {
+                if (upperBoundIsGTOne) {
+                    cardinalityString = ", max_length=" + upperCardinality.get().toString();
                 }
             }
-            case 1 -> {
-                fieldDefault = "...";
-                if (cardinality.isMulti() || upperBoundIsGTOne) {
-                    cardinalityPrefix = "list[";
-                    cardinalitySuffix = "]";
-                    cardinalityString = ", min_length=1";
-                    if (upperBoundIsGTOne) {
-                        cardinalityString += ", max_length=" + upperCardinality.get().toString();
-                    }
+        } else if (lowerBound == 1) {
+            fieldDefault = "...";
+            if (cardinality.isMulti() || upperBoundIsGTOne) {
+                cardinalityString = ", min_length=1";
+                if (upperBoundIsGTOne) {
+                    cardinalityString += ", max_length=" + upperCardinality.get().toString();
                 }
             }
-            default -> {
-                cardinalityPrefix = "list[";
-                cardinalitySuffix = "]";
-                cardinalityString = ", min_length=" + lowerBound;
-                fieldDefault = "...";
-                if (upperCardinality.isPresent()) {
-                    int upperBound = upperCardinality.get();
-                    if (upperBound > 1) {
-                        cardinalityString += ", max_length=" + upperBound;
-                    }
+        } else {
+            fieldDefault = "...";
+            cardinalityString = ", min_length=" + lowerBound;
+            if (upperCardinality.isPresent()) {
+                int upperBound = upperCardinality.get();
+                if (upperBound > 1) {
+                    cardinalityString += ", max_length=" + upperBound;
                 }
             }
         }
-        cardinalityMap.put("cardinalityPrefix", cardinalityPrefix);
-        cardinalityMap.put("cardinalitySuffix", cardinalitySuffix);
+
         cardinalityMap.put("cardinalityString", cardinalityString);
         cardinalityMap.put("fieldDefault", fieldDefault);
         return cardinalityMap;
