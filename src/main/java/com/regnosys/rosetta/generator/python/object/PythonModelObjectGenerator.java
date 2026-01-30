@@ -4,6 +4,7 @@ import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
@@ -169,10 +170,10 @@ public class PythonModelObjectGenerator {
         PythonCodeWriter writer = new PythonCodeWriter();
 
         String superClassName = (rc.getSuperType() != null)
-                ? PythonCodeGeneratorUtil.createBundleObjectName(rc.getSuperType())
+                ? RuneToPythonMapper.getBundleObjectName(rc.getSuperType())
                 : "BaseDataClass";
 
-        writer.appendLine("class " + PythonCodeGeneratorUtil.createBundleObjectName(rc) + "(" + superClassName + "):");
+        writer.appendLine("class " + RuneToPythonMapper.getBundleObjectName(rc) + "(" + superClassName + "):");
         writer.indent();
 
         String metaData = getClassMetaDataString(rc);
@@ -188,7 +189,7 @@ public class PythonModelObjectGenerator {
             writer.appendLine("\"\"\"");
         }
 
-        writer.appendLine("_FQRTN = '" + PythonCodeGeneratorUtil.createFullyQualifiedObjectName(rc) + "'");
+        writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedObjectName(rc) + "'");
 
         writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints));
 

@@ -1,12 +1,6 @@
 package com.regnosys.rosetta.generator.python.functions;
 
-import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
-
-import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
-import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
-import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaFeature;
 import com.regnosys.rosetta.rosetta.RosettaTyped;
@@ -18,6 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 
 public class PythonFunctionGenerator {
 
@@ -61,7 +60,7 @@ public class PythonFunctionGenerator {
             try {
                 String pythonFunction = generateFunction(rf, version, enumImports);
 
-                String functionName = PythonCodeGeneratorUtil.createFullyQualifiedObjectName(rf);
+                String functionName = RuneToPythonMapper.getFullyQualifiedObjectName(rf);
                 result.put(functionName, pythonFunction);
                 dependencyDAG.addVertex(functionName);
                 context.addFunctionName(functionName);
@@ -88,7 +87,7 @@ public class PythonFunctionGenerator {
 
         writer.appendLine("@replaceable");
         writer.appendLine("@validate_call");
-        writer.appendLine("def " + PythonCodeGeneratorUtil.createBundleObjectName(rf) + generateInputs(rf) + ":");
+        writer.appendLine("def " + RuneToPythonMapper.getBundleObjectName(rf) + generateInputs(rf) + ":");
         writer.indent();
 
         writer.appendBlock(generateDescription(rf));
@@ -110,7 +109,7 @@ public class PythonFunctionGenerator {
         generateIfBlocks(writer, rf);
         generateAlias(writer, rf);
         generateOperations(writer, rf);
-        generatesOutput(writer, rf);
+        generateOutput(writer, rf);
 
         writer.unindent();
         writer.newLine();
@@ -118,7 +117,7 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private void generatesOutput(PythonCodeWriter writer, Function function) {
+    private void generateOutput(PythonCodeWriter writer, Function function) {
         Attribute output = function.getOutput();
         if (output != null) {
             if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty()) {
@@ -137,6 +136,10 @@ public class PythonFunctionGenerator {
         }
     }
 
+    private String generateParametersString(String name, int sup) {
+        return (sup == 0) ? "list[" + name + "]" : name;
+    }
+
     private String generateInputs(Function function) {
         List<Attribute> inputs = function.getInputs();
         Attribute output = function.getOutput();
@@ -144,10 +147,8 @@ public class PythonFunctionGenerator {
         StringBuilder result = new StringBuilder("(");
         for (int i = 0; i < inputs.size(); i++) {
             Attribute input = inputs.get(i);
-            String typeName = input.getTypeCall().getType().getName();
-            String type = input.getCard().getSup() == 0
-                    ? "list[" + RuneToPythonMapper.toPythonBasicType(typeName) + "]"
-                    : RuneToPythonMapper.toPythonBasicType(typeName);
+            String bundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType());
+            String type = generateParametersString(bundleName, input.getCard().getSup());
             result.append(input.getName()).append(": ").append(type);
             if (input.getCard().getInf() == 0) {
                 result.append(" | None");
@@ -179,7 +180,10 @@ public class PythonFunctionGenerator {
         writer.appendLine("Parameters ");
         writer.appendLine("----------");
         for (Attribute input : inputs) {
-            writer.appendLine(input.getName() + " : " + input.getTypeCall().getType().getName());
+            String paramName = generateParametersString(
+                    RuneToPythonMapper.getFullyQualifiedObjectName(input.getTypeCall().getType()),
+                    input.getCard().getSup());
+            writer.appendLine(input.getName() + " : " + paramName);
             if (input.getDefinition() != null) {
                 writer.appendLine(input.getDefinition());
             }
@@ -188,7 +192,8 @@ public class PythonFunctionGenerator {
         writer.appendLine("Returns");
         writer.appendLine("-------");
         if (output != null) {
-            writer.appendLine(output.getName() + " : " + output.getTypeCall().getType().getName());
+            writer.appendLine(output.getName() + " : "
+                    + RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType()));
         } else {
             writer.appendLine("No Return");
         }

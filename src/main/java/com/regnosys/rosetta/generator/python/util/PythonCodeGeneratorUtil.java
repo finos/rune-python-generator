@@ -1,10 +1,7 @@
 package com.regnosys.rosetta.generator.python.util;
 
 import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.types.RAttribute;
-import com.regnosys.rosetta.rosetta.simple.Function;
-import com.regnosys.rosetta.rosetta.simple.Data;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -67,23 +64,6 @@ public class PythonCodeGeneratorUtil {
                 from rune.runtime.metadata import *
                 from rune.runtime.utils import *
                 """.stripIndent();
-    }
-
-    public static String createFullyQualifiedObjectName(String modelName, String objectName) {
-        return modelName + "." + objectName;
-    }
-
-    public static String createFullyQualifiedObjectName(RosettaNamed rn) {
-        RosettaModel model = (RosettaModel) rn.eContainer();
-        if (model == null) {
-            throw new RuntimeException("Rosetta model not found for data " + rn.getName());
-        }
-        String function = (rn instanceof Function) ? ".functions" : "";
-        return createFullyQualifiedObjectName(model.getName() + function, rn.getName());
-    }
-
-    public static String createBundleObjectName(RosettaNamed rn) {
-        return createFullyQualifiedObjectName(rn).replace(".", "_");
     }
 
     public static String toFileName(String namespace, String fileName) {

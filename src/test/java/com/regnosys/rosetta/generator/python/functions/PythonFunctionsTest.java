@@ -51,11 +51,11 @@ public class PythonFunctionsTest {
 
                     Parameters\s
                     ----------
-                    arg : number
+                    arg : Decimal
 
                     Returns
                     -------
-                    result : number
+                    result : Decimal
 
                     \"""
                     self = inspect.currentframe()
@@ -86,7 +86,7 @@ public class PythonFunctionsTest {
 
                         func TestAbsType: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
                             inputs:
-                                arg A (1..1)
+                                arg  A (1..1)
                             output:
                                 result number (1..1)
                             set result:

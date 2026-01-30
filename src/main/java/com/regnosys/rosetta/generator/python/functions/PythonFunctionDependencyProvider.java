@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-// TODO: does this need to be here? RosettaFunctionalOperation functional
+// TODO: do we need to process RosettaFunctionalOperation
 
 /**
  * Determine the Rosetta dependencies for a Rosetta object
