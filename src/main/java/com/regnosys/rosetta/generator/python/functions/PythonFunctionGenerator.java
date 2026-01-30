@@ -194,8 +194,11 @@ public class PythonFunctionGenerator {
         writer.appendLine("Returns");
         writer.appendLine("-------");
         if (output != null) {
-            writer.appendLine(output.getName() + " : "
-                    + RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType()));
+            String paramName = generateParametersString(
+                    RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType()),
+                    output.getCard().getSup());
+
+            writer.appendLine(output.getName() + " : " + paramName);
         } else {
             writer.appendLine("No Return");
         }

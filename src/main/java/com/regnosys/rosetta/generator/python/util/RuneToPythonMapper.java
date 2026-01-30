@@ -5,10 +5,12 @@ import java.util.Set;
 
 import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.REnumType;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.RosettaModel;
+
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.simple.Function;
-import com.regnosys.rosetta.rosetta.RosettaModel;
 
 /**
  * A utility class for mapping Rune (Rosetta) types and attributes to their
@@ -149,6 +151,10 @@ public class RuneToPythonMapper {
         if (model == null) {
             throw new RuntimeException("Rosetta model not found for data " + rn.getName());
         }
+
+        if (rn instanceof REnumType) {
+            return ((REnumType) rn).getQualifiedName().toString();
+        }
         String typeName = toPythonBasicTypeInnerFunction(rn.getName());
         if (typeName == null) {
             String function = (rn instanceof Function) ? ".functions" : "";
@@ -158,7 +164,9 @@ public class RuneToPythonMapper {
     }
 
     public static String getBundleObjectName(RosettaNamed rn) {
-        return getFullyQualifiedObjectName(rn).replace(".", "_");
+        String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn);
+        return (rn instanceof RosettaEnumeration) ? fullyQualifiedObjectName
+                : fullyQualifiedObjectName.replace(".", "_");
     }
 
     /**

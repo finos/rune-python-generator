@@ -17,6 +17,52 @@ public class PythonFunctionsTest {
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    // Test generating a function to add two numbers
+
+    @Test
+    public void testGeneratedAddTwoNumbersFunction() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        func AddTwoNumbers: <\"Add two numbers together.\">
+                            inputs:
+                                number1 number (1..1) <\"The first number to add.\">
+                                number2 number (1..1) <\"The second number to add.\">
+                            output:
+                                result number (1..1)
+                            set result:
+                                number1 + number2
+                            """);
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
+                    \"\"\"
+                    Add two numbers together.
+
+                    Parameters
+                    ----------
+                    number1 : Decimal
+                    The first number to add.
+
+                    number2 : Decimal
+                    The second number to add.
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    result = (rune_resolve_attr(self, \"number1\") + rune_resolve_attr(self, \"number2\"))
+
+
+                    return result
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
     // Test generating an Abs function
     @Test
     public void testGeneratedAbsFunction() {
@@ -46,7 +92,7 @@ public class PythonFunctionsTest {
                 @replaceable
                 @validate_call
                 def com_rosetta_test_model_functions_Abs(arg: Decimal) -> Decimal:
-                    \"""
+                    \"\"\"
                     Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
                     Parameters
@@ -57,7 +103,7 @@ public class PythonFunctionsTest {
                     -------
                     result : Decimal
 
-                    \"""
+                    \"\"\"
                     self = inspect.currentframe()
 
 
@@ -176,181 +222,11 @@ public class PythonFunctionsTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
-    // Test generating an AppendToList function
-    @Disabled
-    @Test
-    public void testGeneratedAppendToListFunction() {
-        String pythonString = testUtils.generatePythonFromString(
-                """
-                        func AppendToList: <"Append a single value to a list of numbers.">
-                            inputs:
-                                list number (0..*) <"Input list.">
-                                value number (1..1) <"Value to add to a list.">
-                            output:
-                                result number (0..*) <"Resulting list.">
-
-                            add result: list
-                            add result: value
-                        """).toString();
-
-        String expected = """
-                @replaceable
-                def AppendToList(list: list[Decimal] | None, value: Decimal) -> list[Decimal]:
-                    \"\"\"
-                    Append a single value to a list of numbers.
-
-                    Parameters\s
-                    ----------
-                    list : number
-                    Input list.
-
-                    value : number
-                    Value to add to a list.
-
-                    Returns
-                    -------
-                    result : number
-
-                    \"\"\"
-                    self = inspect.currentframe()
-
-
-                    result = rune_resolve_attr(self, "list")
-                    result.add_rune_attr(self, rune_resolve_attr(self, "value"))
-
-
-                    return result
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-                """;
-        testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
-    }
-
-    // Test generating a function to add two numbers
-    /*
-     * @Test
-     * public void testGeneratedAddTwoNumbersFunction() {
-     * String python = testUtils.generatePythonFromString(
-     * """
-     * func AddTwoNumbers: <"Add two numbers together.">
-     * inputs:
-     * number1 number (1..1) <"The first number to add.">
-     * number2 number (1..1) <"The second number to add.">
-     * output:
-     * sum number (1..1)
-     * set sum: number1
-     * add sum: number2
-     * 
-     * """)
-     * .toString();
-     * 
-     * String expected = """
-     * 
-     * @replaceable
-     * def AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
-     * \"""
-     * Add two numbers together.
-     * 
-     * Parameters\s
-     * ----------
-     * number1 : number
-     * The first number to add.
-     * 
-     * number2 : number
-     * The second number to add.
-     * 
-     * Returns
-     * -------
-     * sum : number
-     * The sum of the two numbers.
-     * 
-     * \"""
-     * _pre_registry = {}
-     * self = inspect.currentframe()
-     * 
-     * # conditions
-     * 
-     * @rune_local_condition(_pre_registry)
-     * def condition_0_CurrencyOrFinancialUnitExists(self):
-     * return (rune_attr_exists(rune_resolve_attr(self, "number1")) and
-     * rune_attr_exists(rune_resolve_attr(self, "number2")))
-     * # Execute all registered conditions
-     * rune_execute_local_conditions(_pre_registry, 'Pre-condition')
-     * 
-     * sum = set_rune_attr(rune_resolve_attr(self, 'sum'), 'number2',
-     * rune_resolve_attr(self, "number2"))
-     * 
-     * 
-     * return sum
-     * 
-     * sys.modules[__name__].__class__ =
-     * create_module_attr_guardian(sys.modules[__name__].__class__)
-     * """;
-     * testUtils.assertGeneratedContainsExpectedString(python, expected);
-     * }
-     */
-    @Disabled
-    @Test
-    public void testFilterOperation() {
-        String python = testUtils.generatePythonFromString(
-                """
-                        func FilterQuantity: <"Filter list of quantities based on unit type.">
-                                    inputs:
-                                        quantities Quantity (0..*) <"List of quantities to filter.">
-                                        unit UnitType (1..1) <"Currency unit type.">
-                                    output:
-                                        filteredQuantities Quantity (0..*)
-
-                                    add filteredQuantities:
-                                        quantities
-                                            filter quantities -> unit all = unit
-                                type Quantity: <"Specifies a quantity as a single value to be associated to a financial product, for example a transfer amount resulting from a trade. This data type extends QuantitySchedule and requires that only the single amount value exists.">
-                                    value number (0..1) <"Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.">
-                                    unit UnitType (0..1) <"Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).">
-                                  type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
-                                      value int (1..1)
-                        """)
-                .toString();
-
-        String expected = """
-                @replaceable
-                def FilterQuantity(quantities: list[Quantity] | None, unit: UnitType) -> Quantity:
-                    \"""
-                    Filter list of quantities based on unit type.
-
-                    Parameters\s
-                    ----------
-                    quantities : Quantity
-                    List of quantities to filter.
-
-                    unit : UnitType
-                    Currency unit type.
-
-                    Returns
-                    -------
-                    filteredQuantities : Quantity
-
-                    \"""
-                    self = inspect.currentframe()
-
-
-                    filteredQuantities = rune_filter(rune_resolve_attr(self, "quantities"), lambda item: rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "quantities"), "unit"), "=", rune_resolve_attr(self, "unit")))
-
-
-                    return filteredQuantities
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-                """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
-
-    }
-
     // Test generation with an enum
-    @Disabled
     @Test
-    public void testWithEnumAttr() {
+    public void testGenerateFunctionWithEnum() {
 
-        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                         enum ArithmeticOperationEnum: <"An arithmetic operator that can be passed to a function">
                             Add <"Addition">
@@ -382,26 +258,25 @@ public class PythonFunctionsTest {
                                 else if op = ArithmeticOperationEnum -> Min then
                                     Min( n1, n2 )
                         """);
-        String generatedFunction = python.get("src/com/rosetta/test/model/functions/ArithmeticOperation.py").toString();
-
-        String expected = """
+        String expectedBundle = """
                 @replaceable
-                def ArithmeticOperation(n1: Decimal, op: ArithmeticOperationEnum, n2: Decimal) -> Decimal:
-                    \"""
+                @validate_call
+                def com_rosetta_test_model_functions_ArithmeticOperation(n1: Decimal, op: com.rosetta.test.model.ArithmeticOperationEnum, n2: Decimal) -> Decimal:
+                    \"\"\"
 
-                    Parameters\s
+                    Parameters
                     ----------
-                    n1 : number
+                    n1 : Decimal
 
-                    op : ArithmeticOperationEnum
+                    op : com.rosetta.test.model.ArithmeticOperationEnum
 
-                    n2 : number
+                    n2 : Decimal
 
                     Returns
                     -------
-                    result : number
+                    result : Decimal
 
-                    \"""
+                    \"\"\"
                     self = inspect.currentframe()
 
 
@@ -446,7 +321,113 @@ public class PythonFunctionsTest {
 
                     return result
                 """;
-        testUtils.assertGeneratedContainsExpectedString(generatedFunction, expected);
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
+    // Test generating an AppendToList function
+    @Test
+    public void testGeneratedAppendToListFunction() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        func AppendToList: <\"Append a single value to a list of numbers.\">
+                            inputs:
+                                list number (0..*) <\"Input list.\">
+                                value number (1..1) <\"Value to add to a list.\">
+                            output:
+                                result number (0..*) <\"Resulting list.\">
+
+                            add result: list
+                            add result: value
+                        """);
+
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_AppendToList(list: list[Decimal] | None, value: Decimal) -> list[Decimal]:
+                    \"\"\"
+                    Append a single value to a list of numbers.
+
+                    Parameters
+                    ----------
+                    list : list[Decimal]
+                    Input list.
+
+                    value : Decimal
+                    Value to add to a list.
+
+                    Returns
+                    -------
+                    result : list[Decimal]
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    result =  rune_resolve_attr(self, "list")
+                    result.add_rune_attr(self, rune_resolve_attr(self, "value"))
+
+
+                    return result
+
+                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
+    @Disabled
+    @Test
+    public void testFilterOperation() {
+        String python = testUtils.generatePythonFromString(
+                """
+                        func FilterQuantity: <"Filter list of quantities based on unit type.">
+                                    inputs:
+                                        quantities Quantity (0..*) <"List of quantities to filter.">
+                                        unit UnitType (1..1) <"Currency unit type.">
+                                    output:
+                                        filteredQuantities Quantity (0..*)
+
+                                    add filteredQuantities:
+                                        quantities
+                                            filter quantities -> unit all = unit
+                                type Quantity: <"Specifies a quantity as a single value to be associated to a financial product, for example a transfer amount resulting from a trade. This data type extends QuantitySchedule and requires that only the single amount value exists.">
+                                    value number (0..1) <"Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.">
+                                    unit UnitType (0..1) <"Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).">
+                                  type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
+                                      value int (1..1)
+                        """)
+                .toString();
+
+        String expected = """
+                @replaceable
+                def FilterQuantity(quantities: list[Quantity] | None, unit: UnitType) -> Quantity:
+                    \"\"\"
+                    Filter list of quantities based on unit type.
+
+                    Parameters\s
+                    ----------
+                    quantities : Quantity
+                    List of quantities to filter.
+
+                    unit : UnitType
+                    Currency unit type.
+
+                    Returns
+                    -------
+                    filteredQuantities : Quantity
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    filteredQuantities = rune_filter(rune_resolve_attr(self, "quantities"), lambda item: rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "quantities"), "unit"), "=", rune_resolve_attr(self, "unit")))
+
+
+                    return filteredQuantities
+
+                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
+                """;
+        testUtils.assertGeneratedContainsExpectedString(python, expected);
+
     }
 
     @Disabled
@@ -474,7 +455,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def FilterQuantityByCurrencyExists(quantities: list[QuantitySchedule] | None) -> QuantitySchedule:
-                    \"""
+                    \"\"\"
                     Filter list of quantities based on unit type.
 
                     Parameters\s
@@ -486,7 +467,7 @@ public class PythonFunctionsTest {
                     -------
                     filteredQuantities : QuantitySchedule
 
-                    \"""
+                    \"\"\"
                     self = inspect.currentframe()
 
 
@@ -523,7 +504,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def testAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
-                    \"""
+                    \"\"\"
 
                     Parameters\s
                     ----------
@@ -535,7 +516,7 @@ public class PythonFunctionsTest {
                     -------
                     result : number
 
-                    \"""
+                    \"\"\"
                     self = inspect.currentframe()
 
 
@@ -590,7 +571,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def testAlias(a: A, b: B) -> C:
-                    \"""
+                    \"\"\"
 
                     Parameters\s
                     ----------
@@ -602,7 +583,7 @@ public class PythonFunctionsTest {
                     -------
                     c : C
 
-                    \"""
+                    \"\"\"
                     self = inspect.currentframe()
 
 
@@ -667,7 +648,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def ResolveInterestRateObservationIdentifiers(payout: InterestRatePayout, date: datetime.date) -> ObservationIdentifier:
-                    \"""
+                    \"\"\"
                     Defines which attributes on the InterestRatePayout should be used to locate and resolve the underlier's price, for example for the reset process.
 
                     Parameters\s
@@ -680,7 +661,7 @@ public class PythonFunctionsTest {
                     -------
                     identifiers : ObservationIdentifier
 
-                    \"""
+                    \"\"\"
                     self = inspect.currentframe()
 
 
@@ -718,7 +699,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def RoundToNearest(value: Decimal, nearest: Decimal, roundingMode: RoundingModeEnum) -> Decimal:
-                    \"""
+                    \"\"\"
 
                     Parameters\s
                     ----------
@@ -732,7 +713,7 @@ public class PythonFunctionsTest {
                     -------
                     roundedValue : number
 
-                    \"""
+                    \"\"\"
                     _pre_registry = {}
                     self = inspect.currentframe()
 
@@ -778,7 +759,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def RoundToNearest(value: Decimal, nearest: Decimal, roundingMode: RoundingModeEnum) -> Decimal:
-                    \"""
+                    \"\"\"
 
                     Parameters\s
                     ----------
@@ -792,7 +773,7 @@ public class PythonFunctionsTest {
                     -------
                     roundedValue : number
 
-                    \"""
+                    \"\"\"
                     _pre_registry = {}
                     self = inspect.currentframe()
 
@@ -843,7 +824,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def NewFloatingPayout(masterConfirmation: EquitySwapMasterConfirmation2018 | None) -> InterestRatePayout:
-                    \"""
+                    \"\"\"
                     Function specification to create the interest rate (floating) payout part of an Equity Swap according to the 2018 ISDA CDM Equity Confirmation template.
 
                     Parameters\s
@@ -854,7 +835,7 @@ public class PythonFunctionsTest {
                     -------
                     interestRatePayout : InterestRatePayout
 
-                    \"""
+                    \"\"\"
                     _post_registry = {}
                     self = inspect.currentframe()
 
@@ -865,9 +846,9 @@ public class PythonFunctionsTest {
 
                     @rune_local_condition(_post_registry)
                     def condition_0_InterestRatePayoutTerms(self):
-                        \"""
+                        \"\"\"
                         Interest rate payout must inherit terms from the Master Confirmation Agreement when it exists.
-                        \"""
+                        \"\"\"
                         def _then_fn0():
                             return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "interestRatePayout"), "paymentDates"), "=", rune_resolve_attr(rune_resolve_attr(self, "masterConfirmation"), "equityCashSettlementDates"))
 
@@ -926,7 +907,7 @@ public class PythonFunctionsTest {
         String expected = """
                 @replaceable
                 def DayCountFraction(interestRatePayout: InterestRatePayout, date: datetime.date) -> Decimal:
-                    \"""
+                    \"\"\"
 
                     Parameters\s
                     ----------
@@ -938,7 +919,7 @@ public class PythonFunctionsTest {
                     -------
                     a : number
 
-                    \"""
+                    \"\"\"
                     self = inspect.currentframe()
 
 

@@ -76,9 +76,6 @@ public class PythonAttributeProcessor {
         boolean isRosettaBasicType = RuneToPythonMapper.isRosettaBasicType(rt);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
 
-        String metaPrefix = "";
-        String metaSuffix = "";
-
         String attrTypeName = (!validators.isEmpty())
                 ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
                 : attrTypeNameIn;
@@ -86,6 +83,9 @@ public class PythonAttributeProcessor {
         String attrTypeNameOut = (isRosettaBasicType || rt instanceof REnumType)
                 ? attrTypeName
                 : attrTypeName.replace('.', '_');
+
+        String metaPrefix = "";
+        String metaSuffix = "";
 
         if (!validators.isEmpty()) {
             metaPrefix = getMetaDataPrefix(validators);

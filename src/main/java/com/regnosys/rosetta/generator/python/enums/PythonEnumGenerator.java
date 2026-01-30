@@ -33,9 +33,6 @@ public class PythonEnumGenerator {
             writer.newLine();
 
             generateEnumClass(writer, enumeration);
-
-            // Note: Xtend code used replace('\t', ' '), maintaining that style although
-            // PythonCodeWriter uses 4 spaces.
             result.put(PythonCodeGeneratorUtil.toPyFileName(namespace, enumeration.getName()), writer.toString());
         }
         return result;
