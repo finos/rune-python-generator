@@ -368,8 +368,6 @@ public class PythonFunctionsTest {
 
 
                     return result
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
