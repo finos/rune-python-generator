@@ -20,7 +20,7 @@ public class PythonFunctionsTest {
     // Test generating a function to add two numbers
 
     @Test
-    public void testGeneratedAddTwoNumbersFunction() {
+    public void testGeneratedFunctionWithAddingNumbers() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                         func AddTwoNumbers: <\"Add two numbers together.\">
@@ -65,7 +65,7 @@ public class PythonFunctionsTest {
 
     // Test generating an Abs function
     @Test
-    public void testGeneratedAbsFunction() {
+    public void testGeneratedFunctionAbs() {
 
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
