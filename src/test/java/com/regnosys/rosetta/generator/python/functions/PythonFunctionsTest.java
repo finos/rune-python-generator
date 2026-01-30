@@ -326,7 +326,7 @@ public class PythonFunctionsTest {
 
     // Test generating an AppendToList function
     @Test
-    public void testGeneratedAppendToListFunction() {
+    public void testGenerateFunctionWithAppendToList() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                         func AppendToList: <\"Append a single value to a list of numbers.\">
@@ -799,7 +799,7 @@ public class PythonFunctionsTest {
 
     @Disabled
     @Test
-    public void testPostCondition() {
+    public void testGenerateFunctionWithPostCondition() {
         String python = testUtils.generatePythonFromString(
                 """
                         func NewFloatingPayout: <"Function specification to create the interest rate (floating) payout part of an Equity Swap according to the 2018 ISDA CDM Equity Confirmation template.">
