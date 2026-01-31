@@ -33,22 +33,22 @@ public class PythonDataRuleGeneratorTest {
                     _FQRTN = 'com.rosetta.test.model.Foo'
                     bar: Optional[str] = Field(None, description='')
                     baz: Optional[str] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
                         def _then_fn1():
                             return (not rune_attr_exists(rune_resolve_attr(self, "baz")))
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn1():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         def _then_fn0():
                             return rune_attr_exists(rune_resolve_attr(self, "baz"))
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return if_cond_fn((rune_all_elements(rune_resolve_attr(self, "bar"), "=", "I") or rune_all_elements(rune_resolve_attr(self, "bar"), "=", "N")), _then_fn1, _else_fn1)
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "bar"), "=", "Y"), _then_fn0, _else_fn0)""";
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo);
     }
@@ -72,28 +72,28 @@ public class PythonDataRuleGeneratorTest {
                     _FQRTN = 'com.rosetta.test.model.Foo'
                     bar: Optional[str] = Field(None, description='')
                     baz: Optional[str] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
                         def _then_fn2():
                             return (not rune_attr_exists(rune_resolve_attr(self, "baz")))
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn2():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         def _then_fn1():
                             return rune_attr_exists(rune_resolve_attr(self, "baz"))
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn1():
                             return if_cond_fn((rune_all_elements(rune_resolve_attr(self, "bar"), "=", "I") or rune_all_elements(rune_resolve_attr(self, "bar"), "=", "N")), _then_fn2, _else_fn2)
-                \s\s\s\s\s\s\s\s
+
                         def _then_fn0():
                             return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "bar"), "=", "Y"), _then_fn1, _else_fn1)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "bar")), _then_fn0, _else_fn0)""";
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo);
     }
@@ -117,16 +117,16 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_Quote(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.Quote'
                     quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_Quote_Price(self):
                         item = self
                         def _then_fn0():
                             return (rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "bidPrice")) or rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "offerPrice")))
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "quotePrice")), _then_fn0, _else_fn0)""";
 
         String expectedQuotePrice = """
@@ -152,7 +152,7 @@ public class PythonDataRuleGeneratorTest {
                                     and quotePrice -> price2 exists
                                     and quotePrice -> price3 exists
                                 )
-                        \s
+
                         type QuotePrice:
                             price1 number (0..1)
                             price2 number (0..1)
@@ -164,16 +164,16 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_Quote(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.Quote'
                     quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_Quote_Price(self):
                         item = self
                         def _then_fn0():
                             return ((rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "price1")) and rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "price2"))) and rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "price3")))
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "quotePrice")), _then_fn0, _else_fn0)""";
         String expectedQuotePrice = """
                 class com_rosetta_test_model_QuotePrice(BaseDataClass):
@@ -195,7 +195,7 @@ public class PythonDataRuleGeneratorTest {
                             condition Quote_Price:
                                 if quotePrice exists
                                 then quotePrice -> bidPrice = 0.0
-                        \s
+
                         type QuotePrice:
                             bidPrice number (0..1)
                         """).toString();
@@ -204,16 +204,16 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_Quote(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.Quote'
                     quotePrice: Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_Quote_Price(self):
                         item = self
                         def _then_fn0():
                             return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "bidPrice"), "=", 0.0)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "quotePrice")), _then_fn0, _else_fn0)""";
 
         String expectedQuotePrice = """
@@ -234,10 +234,10 @@ public class PythonDataRuleGeneratorTest {
                                 price number (0..1)
                             output:
                                 something number (1..1)
-                        \s
+
                         type Quote:
                             price number (0..1)
-                            \s
+
                             condition:
                                 if price exists
                                 then Foo( price ) = 5.0
@@ -247,16 +247,16 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_Quote(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.Quote'
                     price: Optional[Decimal] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
                         def _then_fn0():
                             return rune_all_elements(Foo(rune_resolve_attr(self, "price")), "=", 5.0)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "price")), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuote);
@@ -271,10 +271,10 @@ public class PythonDataRuleGeneratorTest {
                                 price number (0..1)
                             output:
                                 something number (1..1)
-                        \s
+
                         type Quote:
                             price number (0..1)
-                        \s
+
                             condition:
                                 if price exists
                                 then Foo( price ) = 5.0
@@ -285,16 +285,16 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_Quote(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.Quote'
                     price: Optional[Decimal] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
                         def _then_fn0():
                             return rune_all_elements(Foo(rune_resolve_attr(self, "price")), "=", 5.0)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "price")), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedQuote);
@@ -319,16 +319,16 @@ public class PythonDataRuleGeneratorTest {
                     _FQRTN = 'com.rosetta.test.model.Coin'
                     head: Optional[bool] = Field(None, description='')
                     tail: Optional[bool] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_CoinHeadRule(self):
                         item = self
                         def _then_fn0():
                             return rune_all_elements(rune_resolve_attr(self, "tail"), "=", False)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "head"), "=", True), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
@@ -341,7 +341,7 @@ public class PythonDataRuleGeneratorTest {
                         type Coin:
                             head boolean (0..1)
                             tail boolean (0..1)
-                        \s
+
                             condition CoinTailRule:
                                 if tail = True
                                 then head = False
@@ -352,16 +352,16 @@ public class PythonDataRuleGeneratorTest {
                     _FQRTN = 'com.rosetta.test.model.Coin'
                     head: Optional[bool] = Field(None, description='')
                     tail: Optional[bool] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_CoinTailRule(self):
                         item = self
                         def _then_fn0():
                             return rune_all_elements(rune_resolve_attr(self, "head"), "=", False)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "tail"), "=", True), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
@@ -374,7 +374,7 @@ public class PythonDataRuleGeneratorTest {
                         type Coin:
                             head boolean (0..1)
                             tail boolean (0..1)
-                            \s
+
                             condition EdgeRule:
                                 if tail = False
                                 then head = False
@@ -385,16 +385,16 @@ public class PythonDataRuleGeneratorTest {
                     _FQRTN = 'com.rosetta.test.model.Coin'
                     head: Optional[bool] = Field(None, description='')
                     tail: Optional[bool] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_EdgeRule(self):
                         item = self
                         def _then_fn0():
                             return rune_all_elements(rune_resolve_attr(self, "head"), "=", False)
-                \s\s\s\s\s\s\s\s
+
                         def _else_fn0():
                             return True
-                \s\s\s\s\s\s\s\s
+
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "tail"), "=", False), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
@@ -406,7 +406,7 @@ public class PythonDataRuleGeneratorTest {
                 """
                         type CondTest:
                             multiAttr number (1..*)
-                        \s
+
                             condition:
                                 multiAttr count >= 0
                         """).toString();
@@ -415,7 +415,7 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_CondTest(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.CondTest'
                     multiAttr: list[Decimal] = Field(..., description='', min_length=1)
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
@@ -430,13 +430,13 @@ public class PythonDataRuleGeneratorTest {
                         type Foo:
                             x string (0..1)
                             y string (0..1)
-                        \s
+
                             condition:
                                 x exists
-                        \s
+
                         type Bar extends Foo:
                             z string (0..1)
-                        \s
+
                             condition:
                                 y exists
                         """).toString();
@@ -446,7 +446,7 @@ public class PythonDataRuleGeneratorTest {
                     _FQRTN = 'com.rosetta.test.model.Foo'
                     x: Optional[str] = Field(None, description='')
                     y: Optional[str] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
@@ -456,7 +456,7 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):
                     _FQRTN = 'com.rosetta.test.model.Bar'
                     z: Optional[str] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
@@ -473,13 +473,13 @@ public class PythonDataRuleGeneratorTest {
                         type Foo:
                             x string (0..1)
                             y string (0..1)
-                        \s
+
                             condition:
                                 x exists
-                        \s
+
                         type Bar extends Foo:
                             z string (0..1)
-                        \s
+
                             condition:
                                 y exists
                         """).toString();
@@ -489,7 +489,7 @@ public class PythonDataRuleGeneratorTest {
                     _FQRTN = 'com.rosetta.test.model.Foo'
                     x: Optional[str] = Field(None, description='')
                     y: Optional[str] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
@@ -499,7 +499,7 @@ public class PythonDataRuleGeneratorTest {
                 class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):
                     _FQRTN = 'com.rosetta.test.model.Bar'
                     z: Optional[str] = Field(None, description='')
-                \s\s\s\s
+
                     @rune_condition
                     def condition_0_(self):
                         item = self
