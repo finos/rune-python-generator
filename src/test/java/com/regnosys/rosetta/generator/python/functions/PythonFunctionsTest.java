@@ -372,6 +372,121 @@ public class PythonFunctionsTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    @Test
+    public void testAlias1() {
+
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        func TestAlias:
+                            inputs:
+                                inp1 number(1..1)
+                                inp2 number(1..1)
+                            output:
+                                result number(1..1)
+                            alias Alias:
+                                if inp1 < 0 then inp1 else inp2
+
+                            set result:
+                                Alias
+                        """);
+
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_TestAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    inp1 : Decimal
+
+                    inp2 : Decimal
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    def _then_fn0():
+                        return rune_resolve_attr(self, "inp1")
+
+                    def _else_fn0():
+                        return rune_resolve_attr(self, "inp2")
+
+                    Alias = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "inp1"), "<", 0), _then_fn0, _else_fn0)
+                    result = rune_resolve_attr(self, "Alias")
+
+
+                    return result
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+
+    }
+
+    // Test alias with basemodels inputs
+    @Test
+    public void testAliasWithBaseModelInputs() {
+
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        type A:
+                            valueA number(1..1)
+
+                        type B:
+                            valueB number(1..1)
+
+                        type C:
+                            valueC number(1..1)
+
+                        func TestAlias:
+                            inputs:
+                                a A (1..1)
+                                b B (1..1)
+                            output:
+                                c C (1..1)
+                            alias Alias1:
+                                a->valueA
+                            alias Alias2:
+                                b->valueB
+                            set c->valueC:
+                                Alias1*Alias2
+                        """);
+
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_TestAlias(a: com_rosetta_test_model_A, b: com_rosetta_test_model_B) -> com_rosetta_test_model_C:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    a : com.rosetta.test.model.A
+
+                    b : com.rosetta.test.model.B
+
+                    Returns
+                    -------
+                    c : com.rosetta.test.model.C
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    Alias1 = rune_resolve_attr(rune_resolve_attr(self, "a"), "valueA")
+                    Alias2 = rune_resolve_attr(rune_resolve_attr(self, "b"), "valueB")
+                    c = _get_rune_object('C', 'valueC', (rune_resolve_attr(self, "Alias1") * rune_resolve_attr(self, "Alias2")))
+
+
+                    return c
+                """;
+
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+
+    }
+
     @Disabled
     @Test
     public void testFilterOperation() {
@@ -476,125 +591,6 @@ public class PythonFunctionsTest {
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
                 """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
-
-    }
-
-    @Disabled
-    @Test
-    public void testAlias1() {
-
-        String python = testUtils.generatePythonFromString(
-                """
-                        func testAlias:
-                            inputs:
-                                inp1 number(1..1)
-                                inp2 number(1..1)
-                            output:
-                                result number(1..1)
-                            alias Alias:
-                                if inp1 < 0 then inp1
-
-                            set result:
-                                Alias
-                        """).toString();
-
-        String expected = """
-                @replaceable
-                def testAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
-                    \"\"\"
-
-                    Parameters\s
-                    ----------
-                    inp1 : number
-
-                    inp2 : number
-
-                    Returns
-                    -------
-                    result : number
-
-                    \"\"\"
-                    self = inspect.currentframe()
-
-
-                    def _then_fn0():
-                        return rune_resolve_attr(self, "inp1")
-
-                    def _else_fn0():
-                        return True
-
-                    Alias = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "inp1"), "<", 0), _then_fn0, _else_fn0)
-                    result = rune_resolve_attr(self, "Alias")
-
-
-                    return result
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-                """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
-
-    }
-
-    // Test alias with basemodels inputs
-    @Disabled
-    @Test
-    public void testAlias2() {
-
-        String python = testUtils.generatePythonFromString(
-                """
-                        type A:
-                            valueA number(1..1)
-
-                        type B:
-                            valueB number(1..1)
-
-                        type C:
-                            valueC number(1..1)
-
-                        func testAlias:
-                            inputs:
-                                a A (1..1)
-                                b B (1..1)
-                            output:
-                                c C (1..1)
-                            alias Alias1:
-                                a->valueA
-                            alias Alias2:
-                                b->valueB
-                            set c->valueC:
-                                Alias1*Alias2
-                        """).toString();
-
-        String expected = """
-                @replaceable
-                def testAlias(a: A, b: B) -> C:
-                    \"\"\"
-
-                    Parameters\s
-                    ----------
-                    a : A
-
-                    b : B
-
-                    Returns
-                    -------
-                    c : C
-
-                    \"\"\"
-                    self = inspect.currentframe()
-
-
-                    Alias1 = rune_resolve_attr(rune_resolve_attr(self, "a"), "valueA")
-                    Alias2 = rune_resolve_attr(rune_resolve_attr(self, "b"), "valueB")
-                    c = _get_rune_object('C', 'valueC', (rune_resolve_attr(self, "Alias1") * rune_resolve_attr(self, "Alias2")))
-
-
-                    return c
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-                """;
-
         testUtils.assertGeneratedContainsExpectedString(python, expected);
 
     }

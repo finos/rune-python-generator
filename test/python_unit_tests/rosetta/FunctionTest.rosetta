@@ -29,3 +29,15 @@ func TestAbsOutputType: <"Returns the absolute value of a number. If the argumen
         AOutput {
             a: if arg < 0 then arg * -1 else arg
         }
+
+func TestAlias:
+    inputs:
+        inp1 number(1..1)
+        inp2 number(1..1)
+    output:
+        result number(1..1)
+    alias Alias:
+        if inp1 < inp2 then inp1 else inp2
+
+    set result:
+        Alias
