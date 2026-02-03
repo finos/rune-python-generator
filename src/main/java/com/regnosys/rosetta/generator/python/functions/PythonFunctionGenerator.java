@@ -312,27 +312,25 @@ public class PythonFunctionGenerator {
     private void generateAddOperation(PythonCodeWriter writer, AssignPathRoot root, Operation operation,
             Function function, String expression, List<String> setNames) {
         Attribute attribute = (Attribute) root;
-
+        String rootName = root.getName();
         if (attribute.getTypeCall().getType() instanceof RosettaEnumeration) {
-            if (!setNames.contains(root.getName())) {
-                setNames.add(root.getName());
-                writer.appendLine(root.getName() + " = []");
+            if (!setNames.contains(rootName)) {
+                setNames.add(rootName);
+                writer.appendLine(rootName + " = []");
             }
-            writer.appendLine(root.getName() + ".extend(" + expression + ")");
+            writer.appendLine(rootName + ".extend(" + expression + ")");
         } else {
-            if (!setNames.contains(root.getName())) {
-                setNames.add(root.getName());
-                String spacer = (expression.startsWith("if_cond_fn") || root.getName().equals("result")) ? " =  "
-                        : " = ";
-                writer.appendLine(root.getName() + spacer + expression);
+            if (!setNames.contains(rootName)) {
+                setNames.add(rootName);
+                writer.appendLine(rootName + " = " + expression);
             } else {
                 if (operation.getPath() == null) {
-                    writer.appendLine(root.getName() + ".add_rune_attr(self, " + expression + ")");
+                    writer.appendLine(rootName + ".add_rune_attr(self, " + expression + ")");
                 } else {
                     String path = generateAttributesPath(operation.getPath());
-                    writer.appendLine(root.getName()
+                    writer.appendLine(rootName
                             + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
-                            + root.getName()
+                            + rootName
                             + "), "
                             + path
                             + "), "
@@ -346,19 +344,21 @@ public class PythonFunctionGenerator {
     private void generateSetOperation(PythonCodeWriter writer, AssignPathRoot root, Operation operation,
             Function function, String expression, List<String> setNames) {
         Attribute attributeRoot = (Attribute) root;
-        String name = attributeRoot.getName();
-        String spacer = (expression.startsWith("if_cond_fn") || name.equals("result")) ? " = " : " = ";
+        String equalsSign = " = ";
         if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
-            writer.appendLine(attributeRoot.getName() + spacer + expression);
+            writer.appendLine(attributeRoot.getName() + equalsSign + expression);
         } else {
             if (!setNames.contains(attributeRoot.getName())) {
+                String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
+                System.out.println(
+                        "***** need to create object for " + attributeRoot.getName() + " of type " + bundleName);
                 setNames.add(attributeRoot.getName());
-                writer.appendLine(attributeRoot.getName() + spacer + "_get_rune_object('"
-                        + attributeRoot.getTypeCall().getType().getName() + "', " +
+                writer.appendLine(attributeRoot.getName() + equalsSign + "_get_rune_object('"
+                        + bundleName + "', " +
                         getNextPathElementName(operation.getPath()) + ", "
                         + buildObject(expression, operation.getPath()) + ")");
             } else {
-                writer.appendLine(attributeRoot.getName() + spacer + "set_rune_attr(rune_resolve_attr(self, '"
+                writer.appendLine(attributeRoot.getName() + equalsSign + "set_rune_attr(rune_resolve_attr(self, '"
                         + attributeRoot.getName()
                         + "'), " +
                         generateAttributesPath(operation.getPath()) + ", " + expression + ")");
@@ -381,11 +381,7 @@ public class PythonFunctionGenerator {
     }
 
     private String getNextPathElementName(Segment path) {
-        if (path != null) {
-            RosettaFeature feature = path.getFeature();
-            return "'" + feature.getName() + "'";
-        }
-        return "null";
+        return (path == null) ? null : "'" + path.getFeature().getName() + "'";
     }
 
     private String buildObject(String expression, Segment path) {
@@ -395,14 +391,18 @@ public class PythonFunctionGenerator {
 
         RosettaFeature feature = path.getFeature();
         if (feature instanceof RosettaTyped typed) {
-            return _get_rune_object(typed.getTypeCall().getType().getName(), path.getNext(), expression);
+            String bundleName = RuneToPythonMapper.getBundleObjectName(typed.getTypeCall().getType());
+            System.out.println("***** need to create object for " + feature.getName() + " of type " + bundleName);
+            Segment nextPath = path.getNext();
+            return "_get_rune_object('"
+                    + bundleName
+                    + "', "
+                    + getNextPathElementName(nextPath)
+                    + ", "
+                    + buildObject(expression, nextPath)
+                    + ")";
         }
         throw new IllegalArgumentException("Cannot build object for feature " + feature.getName() + " of type "
                 + feature.getClass().getSimpleName());
-    }
-
-    private String _get_rune_object(String typeName, Segment nextPath, String expression) {
-        return "_get_rune_object('" + typeName + "', " + getNextPathElementName(nextPath) + ", "
-                + buildObject(expression, nextPath) + ")";
     }
 }

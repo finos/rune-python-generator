@@ -30,6 +30,36 @@ func TestAbsOutputType: <"Returns the absolute value of a number. If the argumen
             a: if arg < 0 then arg * -1 else arg
         }
 
+enum ArithmeticOperationEnum: <"An arithmetic operator that can be passed to a function">
+    Add <"Addition">
+    Subtract <"Subtraction">
+    Multiply <"Multiplication">
+    Divide <"Division">
+    Max <"Max of 2 values">
+    Min <"Min of 2 values">
+
+func ArithmeticOperation:
+    inputs:
+        n1 number (1..1)
+        op ArithmeticOperationEnum (1..1)
+        n2 number (1..1)
+    output:
+        result number (1..1)
+
+    set result:
+        if op = ArithmeticOperationEnum -> Add then
+            n1 + n2
+        else if op = ArithmeticOperationEnum -> Subtract then
+            n1 - n2
+        else if op = ArithmeticOperationEnum -> Multiply then
+            n1 * n2
+        else if op = ArithmeticOperationEnum -> Divide then
+            n1 / n2
+        else if op = ArithmeticOperationEnum -> Max then
+            [n1, n2] max
+        else if op = ArithmeticOperationEnum -> Min then
+            [n1, n2] min
+
 func TestAlias:
     inputs:
         inp1 number(1..1)
@@ -41,3 +71,45 @@ func TestAlias:
 
     set result:
         Alias
+
+type A:
+    valueA number(1..1)
+
+type B:
+    valueB number(1..1)
+
+type C:
+    valueC number(1..1)
+
+func TestAliasWithBaseModelInputs:
+    inputs:
+        a A (1..1)
+        b B (1..1)
+    output:
+        c C (1..1)
+    alias Alias1:
+        a->valueA
+    alias Alias2:
+        b->valueB
+    set c->valueC:
+        Alias1*Alias2
+
+enum RoundingModeEnum:
+    Down
+    Up
+func RoundToNearest:
+    inputs:
+        value number (1..1)
+        nearest number (1..1)
+        roundingMode RoundingModeEnum (1..1)
+    output:
+        roundedValue number (1..1)
+    condition PositiveNearest:
+        nearest > 0
+    set roundedValue:
+        if roundingMode = RoundingModeEnum -> Down then
+            value
+        else if roundingMode = RoundingModeEnum -> Up then
+            nearest
+        else
+            value

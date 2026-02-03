@@ -313,7 +313,13 @@ public class PythonExpressionGenerator {
         // Dependency handled by PythonFunctionDependencyProvider
         String args = expr.getArgs().stream().map(arg -> generateExpression(arg, ifLevel, isLambda))
                 .collect(Collectors.joining(", "));
-        return s.getName() + "(" + args + ")";
+        String funcName = s.getName();
+        if ("Max".equals(funcName)) {
+            funcName = "max";
+        } else if ("Min".equals(funcName)) {
+            funcName = "min";
+        }
+        return funcName + "(" + args + ")";
     }
 
     private String generateBinaryExpression(RosettaBinaryOperation expr, int ifLevel, boolean isLambda) {
@@ -424,13 +430,14 @@ public class PythonExpressionGenerator {
         writer.newLine();
         writer.appendLine("@rune_local_condition(" + condition_type + ")");
         String name = cond.getName() != null ? cond.getName() : "";
-        writer.appendLine("def condition_" + nConditions + "_" + name + "(self):");
+        writer.appendLine("def condition_" + nConditions + "_" + name + "():");
         writer.indent();
         if (cond.getDefinition() != null) {
             writer.appendLine("\"\"\"");
             writer.appendLine(cond.getDefinition());
             writer.appendLine("\"\"\"");
         }
+        writer.appendLine("item = self");
         return writer.toString();
     }
 

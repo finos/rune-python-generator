@@ -153,12 +153,15 @@ public class RuneToPythonMapper {
         }
 
         if (rn instanceof REnumType) {
-            return ((REnumType) rn).getQualifiedName().toString();
+            return ((REnumType) rn).getQualifiedName().toString() + "." + rn.getName();
         }
         String typeName = toPythonBasicTypeInnerFunction(rn.getName());
         if (typeName == null) {
             String function = (rn instanceof Function) ? ".functions" : "";
             typeName = model.getName() + function + "." + rn.getName();
+            if (rn instanceof RosettaEnumeration) {
+                typeName += "." + rn.getName();
+            }
         }
         return typeName;
     }
