@@ -2,6 +2,7 @@
 
 import pytest
 from rune.runtime.conditions import ConditionViolationError
+from rune.runtime.metadata import Reference
 
 from rosetta_dsl.test.functions.functions.TestAbsNumber import TestAbsNumber
 from rosetta_dsl.test.functions.AInput import AInput
@@ -130,9 +131,9 @@ def test_add_operation():
 
 def test_metadata_function():
     """Test metadata function"""
-    key_entity = KeyEntity(value=5, key="key")
-    ref_entity = RefEntity(target=key_entity, ext_key="key")
-    assert MetadataFunction(ref=ref_entity) == "5"
+    key_entity = KeyEntity(value=5, key="key")  # noqa: F841
+    ref_entity = RefEntity(ke=Reference(target=key_entity, ext_key="key"))
+    assert MetadataFunction(ref=ref_entity) == 5
 
 
 if __name__ == "__main__":

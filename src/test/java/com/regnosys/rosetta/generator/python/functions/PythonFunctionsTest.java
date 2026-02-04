@@ -799,21 +799,19 @@ public class PythonFunctionsTest {
 
         String expected = """
                 @replaceable
-                def FilterQuantity(quantities: list[Quantity] | None, unit: UnitType) -> Quantity:
+                @validate_call
+                def com_rosetta_test_model_functions_FilterQuantity(quantities: list[com_rosetta_test_model_Quantity] | None, unit: com_rosetta_test_model_UnitType) -> list[com_rosetta_test_model_Quantity]:
                     \"\"\"
-                    Filter list of quantities based on unit type.
 
                     Parameters
                     ----------
                     quantities : list[com.rosetta.test.model.Quantity]
-                    List of quantities to filter.
 
-                    unit : UnitType
-                    Currency unit type.
+                    unit : com.rosetta.test.model.UnitType
 
                     Returns
                     -------
-                    filteredQuantities : Quantity
+                    filteredQuantities : list[com.rosetta.test.model.Quantity]
 
                     \"\"\"
                     self = inspect.currentframe()
@@ -823,8 +821,6 @@ public class PythonFunctionsTest {
 
 
                     return filteredQuantities
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expected);
 

@@ -37,7 +37,7 @@ def test_reuse_a_no_ref():
 
 
 if __name__ == "__main__":
-    test_resuse_ref()
+    test_reuse_ref()
     test_reuse_a_ref()
     test_reuse_a_no_ref()
 

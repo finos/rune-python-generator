@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-// TODO: do we need to process RosettaFunctionalOperation
+// TODO: do we need to process RosettaFunctionalOperation?
 
 /**
  * Determine the Rosetta dependencies for a Rosetta object
@@ -68,7 +68,8 @@ public class PythonFunctionDependencyProvider {
                 object instanceof RosettaSymbol ||
                 object instanceof RosettaDeepFeatureCall ||
                 object instanceof RosettaBasicType ||
-                object instanceof RosettaRecordType) {
+                object instanceof RosettaRecordType ||
+                object instanceof RosettaTypeAlias) {
             return;
         } else {
             throw new IllegalArgumentException(object.eClass().getName()

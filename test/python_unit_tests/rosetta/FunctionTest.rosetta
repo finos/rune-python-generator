@@ -153,6 +153,6 @@ func MetadataFunction:
     inputs:
         ref RefEntity (1..1)
     output:
-        result string (1..1)
+        result int (1..1)
     set result:
-        ref->value
+        ref->ke->value

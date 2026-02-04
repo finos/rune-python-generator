@@ -60,10 +60,24 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
 export PYTHONDONTWRITEBYTECODE=1
 
-type -P python >/dev/null && PYEXE=python || PYEXE=python3
+# If a virtual environment is active, deactivate it to avoid using its python for venv creation
+if [ -n "$VIRTUAL_ENV" ]; then
+  deactivate 2>/dev/null || true
+fi
+# Clear command hash to avoid using deleted venv paths
+hash -r 2>/dev/null || true
+
+if command -v python3 &>/dev/null; then
+  PYEXE=python3
+elif command -v python &>/dev/null; then
+  PYEXE=python
+else
+  echo "Python is not installed."
+  error
+fi
+
 if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' >/dev/null 2>&1; then
   echo "Found $($PYEXE -V)"
   echo "Expecting at least python 3.11 - exiting!"
