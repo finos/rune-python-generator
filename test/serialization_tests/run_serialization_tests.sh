@@ -88,7 +88,7 @@ source "$PYTHON_SETUP_PATH/setup_python_env.sh"
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-# PY_SCRIPTS is set by setup_python_env.sh
+if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
 source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
 
 echo "***** Build and Install Helper"

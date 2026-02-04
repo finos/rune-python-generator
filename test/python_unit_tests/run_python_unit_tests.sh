@@ -5,10 +5,12 @@ function usage {
 Usage: $(basename "$0") [options]
 
 Options:
+  -r, --reuse-env                              Reuse the .pyenv environment if it exists
   -k, --no-clean, --skip-clean, --keep-venv  Skip the cleanup step (leave venv active; do not run cleanup script)
   -h, --help                                  Show this help
 Env:
   SKIP_CLEANUP=1                              Same as --no-clean
+  REUSE_ENV=1                                 Same as -r
 EOF
 }
 
@@ -29,9 +31,20 @@ CLEANUP=1
 if [[ "${SKIP_CLEANUP:-}" == "1" || "${SKIP_CLEANUP:-}" == "true" ]]; then
   CLEANUP=0
 fi
+
+if [[ "${REUSE_ENV:-}" == "1" || "${REUSE_ENV:-}" == "true" ]]; then
+  REUSE_ENV=1
+else
+  REUSE_ENV=0
+fi
 # CLI options
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -r|--reuse-env)
+      REUSE_ENV=1
+      CLEANUP=0
+      shift
+      ;;
     -k|--no-clean|--skip-clean|--keep-venv)
       CLEANUP=0
       shift
@@ -96,14 +109,25 @@ if [[ $JAVA_EXIT_CODE -ne 0 ]]; then
   exit 1
 fi
 
-echo "***** setting up common environment"
-# shellcheck disable=SC1090
-source "$PYTHON_SETUP_PATH/setup_python_env.sh"
-
-echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-# shellcheck disable=SC1090
-source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
+VENV_PATH="$PROJECT_ROOT_PATH/$VENV_NAME"
+
+if [[ $REUSE_ENV -eq 1 && -d "$VENV_PATH" ]]; then
+  echo "***** reusing virtual environment"
+  if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
+  # shellcheck disable=SC1090
+  source "$VENV_PATH/${PY_SCRIPTS}/activate" || error
+  echo "***** removing existing python_rosetta_dsl package"
+  $PYEXE -m pip uninstall -y python_rosetta_dsl || true
+else
+  echo "***** setting up common environment"
+  # shellcheck disable=SC1090
+  source "$PYTHON_SETUP_PATH/setup_python_env.sh"
+
+  echo "***** activating virtual environment"
+  # shellcheck disable=SC1090
+  source "$VENV_PATH/${PY_SCRIPTS}/activate" || error
+fi
 
 # package and install generated Python
 cd "$PYTHON_TESTS_TARGET_PATH" || error

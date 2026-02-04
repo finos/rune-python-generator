@@ -28,8 +28,9 @@ source $MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-VENV_PATH="../.."
-source $MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+VENV_PATH="../../$VENV_NAME"
+if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
+source "$MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/${PY_SCRIPTS}/activate" || error
 
 # install cdm package
 PYTHONCDMDIR="../../target/python-cdm"
