@@ -62,17 +62,15 @@ while [[ $# -gt 0 ]]; do
 done
 export PYTHONDONTWRITEBYTECODE=1
 
-# If a virtual environment is active, deactivate it to avoid using its python for venv creation
-if [ -n "$VIRTUAL_ENV" ]; then
-  deactivate 2>/dev/null || true
-fi
-# Clear command hash to avoid using deleted venv paths
-hash -r 2>/dev/null || true
+# If a virtual environment is active, or if .pyenv/bin is in PATH, scrub it
+# This ensures we use a system python to create the new venv
+VENV_NAME=".pyenv"
+CLEAN_PATH=$(echo "$PATH" | sed -E "s|[^:]*/$VENV_NAME/[^:]*:?||g")
 
 if command -v python3 &>/dev/null; then
-  PYEXE=python3
+  PYEXE=$(PATH="$CLEAN_PATH" command -v python3)
 elif command -v python &>/dev/null; then
-  PYEXE=python
+  PYEXE=$(PATH="$CLEAN_PATH" command -v python)
 else
   echo "Python is not installed."
   error
@@ -132,7 +130,7 @@ if [[ $REUSE_ENV -eq 1 && -d "$VENV_PATH" ]]; then
   # shellcheck disable=SC1090
   source "$VENV_PATH/${PY_SCRIPTS}/activate" || error
   echo "***** removing existing python_rosetta_dsl package"
-  $PYEXE -m pip uninstall -y python_rosetta_dsl || true
+  python -m pip uninstall -y python_rosetta_dsl || true
 else
   echo "***** setting up common environment"
   # shellcheck disable=SC1090
@@ -145,13 +143,13 @@ fi
 
 # package and install generated Python
 cd "$PYTHON_TESTS_TARGET_PATH" || error
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
-$PYEXE -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
+python -m pip wheel --no-deps --only-binary :all: . || error
+python -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
 
 # run tests
 echo "***** run unit tests"
 cd "$MY_PATH" || error
-$PYEXE -m pytest -p no:cacheprovider "$MY_PATH"
+python -m pytest -p no:cacheprovider "$MY_PATH"
 
 if (( CLEANUP )); then
   echo "***** cleanup"

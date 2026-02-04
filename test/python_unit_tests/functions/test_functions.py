@@ -131,8 +131,8 @@ def test_add_operation():
 
 def test_metadata_function():
     """Test metadata function"""
-    key_entity = KeyEntity(value=5, key="key")  # noqa: F841
-    ref_entity = RefEntity(ke=Reference(target=key_entity, ext_key="key"))
+    key_entity = KeyEntity(value=5, key="key-123")  # noqa: F841
+    ref_entity = RefEntity(ke=Reference(target=key_entity, ext_key="key-123"))
     assert MetadataFunction(ref=ref_entity) == 5
 
 

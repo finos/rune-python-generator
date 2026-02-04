@@ -13,11 +13,24 @@ function error
 
 export PYTHONDONTWRITEBYTECODE=1
 
-type -P python > /dev/null && PYEXE=python || PYEXE=python3
-if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1; then
-        echo "Found $($PYEXE -V)"
-        echo "Expecting at least python 3.11 - exiting!"
-        exit 1
+# If a virtual environment is active, or if .pyenv/bin is in PATH, scrub it
+# This ensures we use a system python to create the new venv
+VENV_NAME=".pyenv"
+CLEAN_PATH=$(echo "$PATH" | sed -E "s|[^:]*/$VENV_NAME/[^:]*:?||g")
+
+if command -v python3 &>/dev/null; then
+  PYEXE=$(PATH="$CLEAN_PATH" command -v python3)
+elif command -v python &>/dev/null; then
+  PYEXE=$(PATH="$CLEAN_PATH" command -v python)
+else
+  echo "Python is not installed."
+  error
+fi
+
+if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' >/dev/null 2>&1; then
+  echo "Found $($PYEXE -V)"
+  echo "Expecting at least python 3.11 - exiting!"
+  exit 1
 fi
 
 # Parse args: default is skip; pass 'getsource' to fetch sources
@@ -93,14 +106,14 @@ source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
 
 echo "***** Build and Install Helper"
 cd "$MY_PATH/test_helper" || error
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
-$PYEXE -m pip install test_helper-0.0.0-py3-none-any.whl || error
+python -m pip wheel --no-deps --only-binary :all: . || error
+python -m pip install test_helper-0.0.0-py3-none-any.whl || error
 rm -f test_helper-0.0.0-py3-none-any.whl
 
 echo "***** Build and Install Generated Unit Tests"
 cd "$PYTHON_TESTS_TARGET_PATH" || error
 rm -f ./*.whl
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
+python -m pip wheel --no-deps --only-binary :all: . || error
 WHEEL_FILE=$(ls -1 ./*.whl 2>/dev/null | head -n 1)
 if [[ -z "$WHEEL_FILE" ]]; then
   echo "No wheel produced in $PYTHON_TESTS_TARGET_PATH"
@@ -108,12 +121,12 @@ if [[ -z "$WHEEL_FILE" ]]; then
   source "$PYTHON_SETUP_PATH/cleanup_python_env.sh"
   exit 1
 fi
-$PYEXE -m pip install "$WHEEL_FILE" || error
+python -m pip install "$WHEEL_FILE" || error
 
 # run tests
 echo "***** run tests"
 cd "$MY_PATH" || error
-$PYEXE -m pytest -p no:cacheprovider . || error
+python -m pytest -p no:cacheprovider . || error
 
 echo "***** cleanup"
 deactivate
