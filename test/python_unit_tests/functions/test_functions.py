@@ -8,8 +8,12 @@ from rosetta_dsl.test.functions.AInput import AInput
 from rosetta_dsl.test.functions.functions.TestAbsInputType import TestAbsInputType
 from rosetta_dsl.test.functions.functions.TestAbsOutputType import TestAbsOutputType
 from rosetta_dsl.test.functions.functions.TestAlias import TestAlias
-from rosetta_dsl.test.functions.RoundingModeEnum import RoundingModeEnum
-from rosetta_dsl.test.functions.functions.RoundToNearest import RoundToNearest
+from rosetta_dsl.test.functions.functions.MinMaxWithSimpleCondition import (
+    MinMaxWithSimpleCondition,
+)
+from rosetta_dsl.test.functions.functions.MinMaxWithPostCondition import (
+    MinMaxWithPostCondition,
+)
 from rosetta_dsl.test.functions.functions.ArithmeticOperation import ArithmeticOperation
 from rosetta_dsl.test.functions.ArithmeticOperationEnum import ArithmeticOperationEnum
 
@@ -79,12 +83,20 @@ def test_arithmetic_operation():
     assert ArithmeticOperation(n1=5, op=ArithmeticOperationEnum.MIN, n2=10) == 5
 
 
-def test_round_to_nearest():
-    """Test round to nearest"""
-    assert RoundToNearest(value=5, nearest=10, roundingMode=RoundingModeEnum.DOWN) == 5
-    assert RoundToNearest(value=5, nearest=10, roundingMode=RoundingModeEnum.UP) == 10
+def test_min_max_simple_conditions():
+    """Test min max simple conditions"""
+    assert MinMaxWithSimpleCondition(in1=5, in2=10, direction="min") == 5
+    assert MinMaxWithSimpleCondition(in1=5, in2=10, direction="max") == 10
     with pytest.raises(ConditionViolationError):
-        RoundToNearest(value=5, nearest=-10, roundingMode=RoundingModeEnum.DOWN)
+        MinMaxWithSimpleCondition(in1=5, in2=-10, direction="none")
+
+
+def test_min_max_post_conditions():
+    """Test min max post conditions"""
+    assert MinMaxWithPostCondition(in1=5, in2=10, direction="min") == 5
+    assert MinMaxWithPostCondition(in1=5, in2=10, direction="max") == 10
+    with pytest.raises(ConditionViolationError):
+        MinMaxWithPostCondition(in1=5, in2=-10, direction="none")
 
 
 if __name__ == "__main__":
@@ -96,5 +108,7 @@ if __name__ == "__main__":
     test_abs_output_type_negative()
     test_alias()
     test_alias_with_base_model_inputs()
-
+    test_min_max_simple_conditions()
+    test_min_max_post_conditions()
+    test_arithmetic_operation()
 # EOF

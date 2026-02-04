@@ -104,7 +104,7 @@ public class PythonFunctionGenerator {
             writer.appendLine("");
         }
 
-        writer.appendBlock(generateTypeOrFunctionConditions(rf));
+        writer.appendBlock(generateConditions(rf));
 
         generateIfBlocks(writer, rf);
         generateAlias(writer, rf);
@@ -248,7 +248,7 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private String generateTypeOrFunctionConditions(Function function) {
+    private String generateConditions(Function function) {
         if (!function.getConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# conditions");

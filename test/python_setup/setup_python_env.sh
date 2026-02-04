@@ -26,7 +26,7 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
-
+RUNE_RUNTIME_FILE="rune_runtime-1.0.19.dev6+g53b62b399-py3-none-any.whl"
 # Determine the Python executable
 if command -v python &>/dev/null; then
     PYEXE=python
@@ -67,6 +67,8 @@ ${PYEXE} -m pip install --upgrade pip || error
 ${PYEXE} -m pip install -r requirements.txt || error
 
 echo "***** Get and Install Runtime"
+
+RUNE_RUNTIME_FILE="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime/rune_runtime-1.0.19.dev6+g53b62b399-py3-none-any.whl"
 
 if [ -n "$RUNE_RUNTIME_FILE" ]; then
     # --- Local Installation Logic ---

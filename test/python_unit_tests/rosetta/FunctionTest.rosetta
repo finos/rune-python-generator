@@ -94,22 +94,32 @@ func TestAliasWithBaseModelInputs:
     set c->valueC:
         Alias1*Alias2
 
-enum RoundingModeEnum:
-    Down
-    Up
-func RoundToNearest:
+func MinMaxWithSimpleCondition:
     inputs:
-        value number (1..1)
-        nearest number (1..1)
-        roundingMode RoundingModeEnum (1..1)
+        in1 number (1..1)
+        in2 number (1..1)
+        direction string (1..1)
     output:
-        roundedValue number (1..1)
-    condition PositiveNearest:
-        nearest > 0
-    set roundedValue:
-        if roundingMode = RoundingModeEnum -> Down then
-            value
-        else if roundingMode = RoundingModeEnum -> Up then
-            nearest
-        else
-            value
+        result number (1..1)
+    condition Directiom:
+        direction = "min" or direction = "max"
+    set result:
+        if direction = "min" then
+            [in1, in2] min
+        else if direction = "max" then
+            [in1, in2] max
+
+func MinMaxWithPostCondition:
+    inputs:
+        in1 number (1..1)
+        in2 number (1..1)
+        direction string (1..1)
+    output:
+        result number (1..1)
+    set result:
+        if direction = "min" then
+            [in1, in2] min
+        else if direction = "max" then
+            [in1, in2] max
+    post-condition Directiom:
+        direction = "min" or direction = "max"

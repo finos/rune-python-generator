@@ -488,40 +488,42 @@ public class PythonFunctionsTest {
     }
 
     @Test
-    public void testCondition() {
+    public void testSimpleCondition() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        enum RoundingModeEnum:
-                            Down
-                            Up
-                        func RoundToNearest:
+                        func MinMaxWithSimpleCondition:
                             inputs:
-                                value number (1..1)
-                                nearest number (1..1)
-                                roundingMode RoundingModeEnum (1..1)
+                                in1 number (1..1)
+                                in2 number (1..1)
+                                direction string (1..1)
                             output:
-                                roundedValue number (1..1)
-                            condition PositiveNearest:
-                                nearest > 0
+                                result number (1..1)
+                            condition Directiom:
+                                direction = "min" or direction = "max"
+                            set result:
+                                if direction = "min" then
+                                    [in1, in2] min
+                                else if direction = "max" then
+                                    [in1, in2] max
                         """);
 
         String expectedBundle = """
                 @replaceable
                 @validate_call
-                def com_rosetta_test_model_functions_RoundToNearest(value: Decimal, nearest: Decimal, roundingMode: com.rosetta.test.model.RoundingModeEnum.RoundingModeEnum) -> Decimal:
+                def com_rosetta_test_model_functions_MinMaxWithSimpleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
                     \"\"\"
 
                     Parameters
                     ----------
-                    value : Decimal
+                    in1 : Decimal
 
-                    nearest : Decimal
+                    in2 : Decimal
 
-                    roundingMode : com.rosetta.test.model.RoundingModeEnum.RoundingModeEnum
+                    direction : str
 
                     Returns
                     -------
-                    roundedValue : Decimal
+                    result : Decimal
 
                     \"\"\"
                     _pre_registry = {}
@@ -530,16 +532,175 @@ public class PythonFunctionsTest {
                     # conditions
 
                     @rune_local_condition(_pre_registry)
-                    def condition_0_PositiveNearest():
+                    def condition_0_Directiom():
                         item = self
-                        return rune_all_elements(rune_resolve_attr(self, "nearest"), ">", 0)
+                        return (rune_all_elements(rune_resolve_attr(self, \"direction\"), "=", \"min\") or rune_all_elements(rune_resolve_attr(self, \"direction\"), "=", \"max\"))
                     # Execute all registered conditions
                     rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
-                    roundedValue = rune_resolve_attr(self, \"roundedValue\")
+                    def _then_fn1():
+                        return max([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")])
+
+                    def _else_fn1():
+                        return True
+
+                    def _then_fn0():
+                        return min([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")])
+
+                    def _else_fn0():
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "max"), _then_fn1, _else_fn1)
+
+                    result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "min"), _then_fn0, _else_fn0)
 
 
-                    return roundedValue
+                    return result
+                                                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
+    @Test
+    public void testPostCondition() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        func MinMaxWithPostCondition:
+                            inputs:
+                                in1 number (1..1)
+                                in2 number (1..1)
+                                direction string (1..1)
+                            output:
+                                result number (1..1)
+                            set result:
+                                if direction = "min" then
+                                    [in1, in2] min
+                                else if direction = "max" then
+                                    [in1, in2] max
+                            post-condition Directiom:
+                                direction = "min" or direction = "max"                        """);
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_MinMaxWithPostCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    in1 : Decimal
+
+                    in2 : Decimal
+
+                    direction : str
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    _post_registry = {}
+                    self = inspect.currentframe()
+
+
+                    def _then_fn1():
+                        return max([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")])
+
+                    def _else_fn1():
+                        return True
+
+                    def _then_fn0():
+                        return min([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")])
+
+                    def _else_fn0():
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"direction\"), "=", \"max\"), _then_fn1, _else_fn1)
+
+                    result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"direction\"), "=", \"min\"), _then_fn0, _else_fn0)
+
+                    # post-conditions
+
+                    @rune_local_condition(_post_registry)
+                    def condition_0_Directiom():
+                        item = self
+                        return (rune_all_elements(rune_resolve_attr(self, \"direction\"), "=", \"min\") or rune_all_elements(rune_resolve_attr(self, \"direction\"), "=", \"max\"))
+                    # Execute all registered post-conditions
+                    rune_execute_local_conditions(_post_registry, 'Post-condition')
+
+                    return result
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
+    @Test
+    public void testMultipleConditions() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        func MinMaxWithMPositiveNumbersAndMultipleCondition:
+                            inputs:
+                                in1 number (1..1)
+                                in2 number (1..1)
+                                direction string (1..1)
+
+                            output:
+                                result number (1..1)
+                            condition Directiom:
+                                direction = "min" or direction = "max"
+                            condition PositiveNumbers:
+                                in1 > 0 and in2 > 0
+                            set result:
+                                if direction = "min" then
+                                    [in1, in2] min
+                                else if direction = "max" then
+                                    [in1, in2] max
+                        """);
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_MinMaxWithMPositiveNumbersAndMultipleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    in1 : Decimal
+
+                    in2 : Decimal
+
+                    direction : str
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    _pre_registry = {}
+                    self = inspect.currentframe()
+
+                    # conditions
+
+                    @rune_local_condition(_pre_registry)
+                    def condition_0_Directiom():
+                        item = self
+                        return (rune_all_elements(rune_resolve_attr(self, "direction"), "=", "min") or rune_all_elements(rune_resolve_attr(self, "direction"), "=", "max"))
+
+                    @rune_local_condition(_pre_registry)
+                    def condition_1_PositiveNumbers():
+                        item = self
+                        return (rune_all_elements(rune_resolve_attr(self, "in1"), ">", 0) and rune_all_elements(rune_resolve_attr(self, "in2"), ">", 0))
+                    # Execute all registered conditions
+                    rune_execute_local_conditions(_pre_registry, 'Pre-condition')
+
+                    def _then_fn1():
+                        return max([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")])
+
+                    def _else_fn1():
+                        return True
+
+                    def _then_fn0():
+                        return min([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")])
+
+                    def _else_fn0():
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "max"), _then_fn1, _else_fn1)
+
+                    result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "min"), _then_fn0, _else_fn0)
+
+
+                    return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -726,70 +887,6 @@ public class PythonFunctionsTest {
                 """;
         testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
 
-    }
-
-    @Disabled
-    @Test
-    public void testMultipleConditions() {
-        String python = testUtils.generatePythonFromString(
-                """
-                        func RoundToNearest:
-                            inputs:
-                                value number (1..1)
-                                nearest number (1..1)
-                                roundingMode RoundingModeEnum (1..1)
-                            output:
-                                roundedValue number (1..1)
-                            condition PositiveNearest:
-                                nearest > 0
-                            condition valueNegative:
-                                value < 0
-                        enum RoundingModeEnum:
-                            Down
-                            Up
-                        """).toString();
-
-        String expected = """
-                @replaceable
-                def RoundToNearest(value: Decimal, nearest: Decimal, roundingMode: RoundingModeEnum) -> Decimal:
-                    \"\"\"
-
-                    Parameters\s
-                    ----------
-                    value : number
-
-                    nearest : number
-
-                    roundingMode : RoundingModeEnum
-
-                    Returns
-                    -------
-                    roundedValue : number
-
-                    \"\"\"
-                    _pre_registry = {}
-                    self = inspect.currentframe()
-
-                    # conditions
-
-                    @rune_local_condition(_pre_registry)
-                    def condition_0_PositiveNearest(self):
-                        return rune_all_elements(rune_resolve_attr(self, "nearest"), ">", 0)
-
-                    @rune_local_condition(_pre_registry)
-                    def condition_1_valueNegative(self):
-                        return rune_all_elements(rune_resolve_attr(self, "value"), "<", 0)
-                    # Execute all registered conditions
-                    rune_execute_local_conditions(_pre_registry, 'Pre-condition')
-
-                    roundedValue = rune_resolve_attr(self, "roundedValue")
-
-
-                    return roundedValue
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-                """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
     }
 
     @Disabled
