@@ -777,28 +777,25 @@ public class PythonFunctionsTest {
         testUtils.assertGeneratedContainsExpectedString(expectedBundleString, expectedBundleMainFunction);
     }
 
-    @Disabled
     @Test
-    public void testFilterOperation() {
-        String python = testUtils.generatePythonFromString(
+    public void testAddOperation() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        func FilterQuantity: <"Filter list of quantities based on unit type.">
-                                    inputs:
-                                        quantities Quantity (0..*) <"List of quantities to filter.">
-                                        unit UnitType (1..1) <"Currency unit type.">
-                                    output:
-                                        filteredQuantities Quantity (0..*)
-
-                                    add filteredQuantities:
-                                        quantities
-                                            filter quantities -> unit all = unit
-                                type Quantity: <"Specifies a quantity as a single value to be associated to a financial product, for example a transfer amount resulting from a trade. This data type extends QuantitySchedule and requires that only the single amount value exists.">
-                                    value number (0..1) <"Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.">
-                                    unit UnitType (0..1) <"Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).">
-                                  type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
-                                      value int (1..1)
-                        """)
-                .toString();
+                        type Quantity:
+                            value number (0..1)
+                            unit UnitType (0..1)
+                        type UnitType:
+                            value int (1..1)
+                        func FilterQuantity:
+                            inputs:
+                                quantities Quantity (0..*)
+                                unit UnitType (1..1)
+                            output:
+                                filteredQuantities Quantity (0..*)
+                            add filteredQuantities:
+                                quantities
+                                    filter quantities -> unit all = unit
+                            """);
 
         String expected = """
                 @replaceable
@@ -806,9 +803,9 @@ public class PythonFunctionsTest {
                     \"\"\"
                     Filter list of quantities based on unit type.
 
-                    Parameters\s
+                    Parameters
                     ----------
-                    quantities : Quantity
+                    quantities : list[com.rosetta.test.model.Quantity]
                     List of quantities to filter.
 
                     unit : UnitType
@@ -829,7 +826,7 @@ public class PythonFunctionsTest {
 
                 sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
                 """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expected);
 
     }
 
@@ -838,6 +835,11 @@ public class PythonFunctionsTest {
     public void testFilterOperation2() {
         String python = testUtils.generatePythonFromString(
                 """
+                        type QuantitySchedule: <"Specifies a quantity as a single value to be associated to a financial product, for example a transfer amount resulting from a trade. This data type extends QuantitySchedule and requires that only the single amount value exists.">
+                                value number (0..1) <"Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.">
+                                unit UnitType (0..1) <"Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).">
+                        type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
+                                  currency string(0..1)
                         func FilterQuantityByCurrencyExists: <"Filter list of quantities based on unit type.">
                             inputs:
                                 quantities QuantitySchedule (0..*) <"List of quantities to filter.">
@@ -847,11 +849,6 @@ public class PythonFunctionsTest {
                             add filteredQuantities:
                                 quantities
                                     filter item -> unit -> currency exists
-                        type QuantitySchedule: <"Specifies a quantity as a single value to be associated to a financial product, for example a transfer amount resulting from a trade. This data type extends QuantitySchedule and requires that only the single amount value exists.">
-                                value number (0..1) <"Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.">
-                                unit UnitType (0..1) <"Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).">
-                        type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
-                                  currency string(0..1)
                         """)
                 .toString();
 

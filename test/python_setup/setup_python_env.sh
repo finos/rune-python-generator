@@ -11,22 +11,6 @@ function error {
     exit 1
 }
 
-# --- Argument Parsing ---
-RUNE_RUNTIME_FILE=""
-
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -rrf|--rune_runtime)
-            RUNE_RUNTIME_FILE="$2"
-            shift # past argument
-            shift # past value
-            ;;
-        *)
-            shift # skip unknown option
-            ;;
-    esac
-done
-RUNE_RUNTIME_FILE="rune_runtime-1.0.19.dev6+g53b62b399-py3-none-any.whl"
 # Determine the Python executable
 if command -v python &>/dev/null; then
     PYEXE=python
@@ -50,7 +34,7 @@ cd "${ENV_BUILD_PATH}" || error
 
 echo "***** setup virtual environment in [project_root]/.pyenv"
 VENV_NAME=".pyenv"
-VENV_PATH="../.."
+VENV_PATH="../../$VENV_NAME"
 
 # Determine the scripts directory
 if [ -z "${WINDIR}" ]; then
@@ -59,9 +43,9 @@ else
     PY_SCRIPTS='Scripts'
 fi
 
-rm -rf "${VENV_PATH}/${VENV_NAME}"
-${PYEXE} -m venv --clear "${VENV_PATH}/${VENV_NAME}" || error
-source "${VENV_PATH}/${VENV_NAME}/${PY_SCRIPTS}/activate" || error
+rm -rf "${VENV_PATH}"
+${PYEXE} -m venv --clear "${VENV_PATH}" || error
+source "${VENV_PATH}/${PY_SCRIPTS}/activate" || error
 
 ${PYEXE} -m pip install --upgrade pip || error
 ${PYEXE} -m pip install -r requirements.txt || error
