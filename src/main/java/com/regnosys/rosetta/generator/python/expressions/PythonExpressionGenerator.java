@@ -318,6 +318,8 @@ public class PythonExpressionGenerator {
             funcName = "max";
         } else if ("Min".equals(funcName)) {
             funcName = "min";
+        } else {
+            funcName = RuneToPythonMapper.getBundleObjectName(s);
         }
         return funcName + "(" + args + ")";
     }

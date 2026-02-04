@@ -123,3 +123,19 @@ func MinMaxWithPostCondition:
             [in1, in2] max
     post-condition Directiom:
         direction = "min" or direction = "max"
+
+func BaseFunction:
+    inputs:
+        value number (1..1)
+    output:
+        result number (1..1)
+    set result:
+        value * 2
+
+func MainFunction:
+    inputs:
+        value number (1..1)
+    output:
+        result number (1..1)
+    set result:
+        BaseFunction(value)

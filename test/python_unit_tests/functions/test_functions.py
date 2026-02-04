@@ -16,6 +16,7 @@ from rosetta_dsl.test.functions.functions.MinMaxWithPostCondition import (
 )
 from rosetta_dsl.test.functions.functions.ArithmeticOperation import ArithmeticOperation
 from rosetta_dsl.test.functions.ArithmeticOperationEnum import ArithmeticOperationEnum
+from rosetta_dsl.test.functions.functions.MainFunction import MainFunction
 
 
 def test_abs_positive():
@@ -99,6 +100,11 @@ def test_min_max_post_conditions():
         MinMaxWithPostCondition(in1=5, in2=-10, direction="none")
 
 
+def test_function_with_function_call():
+    """Test function with function call"""
+    assert MainFunction(value=5) == 10
+
+
 if __name__ == "__main__":
     test_abs_positive()
     test_abs_negative()
@@ -111,4 +117,5 @@ if __name__ == "__main__":
     test_min_max_simple_conditions()
     test_min_max_post_conditions()
     test_arithmetic_operation()
+    test_function_with_function_call()
 # EOF

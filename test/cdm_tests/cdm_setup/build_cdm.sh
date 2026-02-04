@@ -32,6 +32,7 @@ PROJECT_ROOT_PATH="$MY_PATH/../../.."
 CDM_SOURCE_PATH="$MY_PATH/../common-domain-model/rosetta-source/src/main/rosetta"
 PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
 PYTHON_SETUP_PATH="$MY_PATH/../../python_setup"
+JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 cd ${MY_PATH} || error
 
 # Parse command-line arguments for --skip-cdm
@@ -48,8 +49,21 @@ else
     echo "Skipping get_cdm.sh as requested."
 fi
 
+if [[ ! -f "$JAR_PATH" ]]; then
+  echo "Could not find generator jar at: $JAR_PATH"
+  echo "Building with maven..."
+  if ! (cd "$PROJECT_ROOT_PATH" && mvn clean package); then
+    echo "Maven build failed - exiting."
+    exit 1
+  fi
+  if [[ ! -f "$JAR_PATH" ]]; then
+    echo "Maven build completed but $JAR_PATH still missing - exiting."
+    exit 1
+  fi
+fi
+
 echo "***** build CDM"
-java -cp $PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
+java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."

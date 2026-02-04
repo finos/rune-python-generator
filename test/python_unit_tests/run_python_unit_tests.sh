@@ -69,8 +69,15 @@ PYTHON_TESTS_TARGET_PATH="$PROJECT_ROOT_PATH/target/python-tests/unit_tests"
 # Validate inputs/existence
 if [[ ! -f "$JAR_PATH" ]]; then
   echo "Could not find generator jar at: $JAR_PATH"
-  echo "Build the jar first (e.g., mvn -q -DskipTests package) and re-run."
-  exit 1
+  echo "Building with maven..."
+  if ! (cd "$PROJECT_ROOT_PATH" && mvn clean package); then
+    echo "Maven build failed - exiting."
+    exit 1
+  fi
+  if [[ ! -f "$JAR_PATH" ]]; then
+    echo "Maven build completed but $JAR_PATH still missing - exiting."
+    exit 1
+  fi
 fi
 if [[ ! -d "$INPUT_ROSETTA_PATH" ]]; then
   echo "Input Rune sources not found at: $INPUT_ROSETTA_PATH"

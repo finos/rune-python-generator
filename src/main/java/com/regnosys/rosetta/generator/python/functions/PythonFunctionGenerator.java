@@ -348,8 +348,8 @@ public class PythonFunctionGenerator {
         if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
             writer.appendLine(attributeRoot.getName() + equalsSign + expression);
         } else {
+            String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
             if (!setNames.contains(attributeRoot.getName())) {
-                String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
                 System.out.println(
                         "***** need to create object for " + attributeRoot.getName() + " of type " + bundleName);
                 setNames.add(attributeRoot.getName());

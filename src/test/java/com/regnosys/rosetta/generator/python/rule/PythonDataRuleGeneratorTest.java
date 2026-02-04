@@ -252,7 +252,7 @@ public class PythonDataRuleGeneratorTest {
                     def condition_0_(self):
                         item = self
                         def _then_fn0():
-                            return rune_all_elements(Foo(rune_resolve_attr(self, "price")), "=", 5.0)
+                            return rune_all_elements(com_rosetta_test_model_functions_Foo(rune_resolve_attr(self, "price")), "=", 5.0)
 
                         def _else_fn0():
                             return True
@@ -290,7 +290,7 @@ public class PythonDataRuleGeneratorTest {
                     def condition_0_(self):
                         item = self
                         def _then_fn0():
-                            return rune_all_elements(Foo(rune_resolve_attr(self, "price")), "=", 5.0)
+                            return rune_all_elements(com_rosetta_test_model_functions_Foo(rune_resolve_attr(self, "price")), "=", 5.0)
 
                         def _else_fn0():
                             return True

@@ -705,6 +705,78 @@ public class PythonFunctionsTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    @Test
+    public void testFunctionWithFunctionCall() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        func BaseFunction:
+                            inputs:
+                                value number (1..1)
+                            output:
+                                result number (1..1)
+                            set result:
+                                value * 2
+                        func MainFunction:
+                            inputs:
+                                value number (1..1)
+                            output:
+                                result number (1..1)
+                            set result:
+                                BaseFunction(value)
+                            """);
+
+        String expectedBundleBaseFunction = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_BaseFunction(value: Decimal) -> Decimal:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    value : Decimal
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    result = (rune_resolve_attr(self, "value") * 2)
+
+
+                    return result
+                """;
+        String expectedBundleMainFunction = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_MainFunction(value: Decimal) -> Decimal:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    value : Decimal
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    result = com_rosetta_test_model_functions_BaseFunction(rune_resolve_attr(self, "value"))
+
+
+                    return result
+                """;
+
+        String expectedBundleString = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(expectedBundleString, expectedBundleBaseFunction);
+        testUtils.assertGeneratedContainsExpectedString(expectedBundleString, expectedBundleMainFunction);
+    }
+
     @Disabled
     @Test
     public void testFilterOperation() {
