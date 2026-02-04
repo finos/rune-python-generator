@@ -22,6 +22,9 @@ from rosetta_dsl.test.functions.add_operation.Quantity import Quantity
 from rosetta_dsl.test.functions.add_operation.functions.FilterQuantity import (
     FilterQuantity,
 )
+from rosetta_dsl.test.functions.KeyEntity import KeyEntity
+from rosetta_dsl.test.functions.RefEntity import RefEntity
+from rosetta_dsl.test.functions.functions.MetadataFunction import MetadataFunction
 
 
 def test_abs_positive():
@@ -123,6 +126,13 @@ def test_add_operation():
     fq = FilterQuantity(quantities=list_of_quantities, unit=fx_jpy)
     assert len(fq) == 1
     assert fq[0].unit.currency == "JPY"
+
+
+def test_metadata_function():
+    """Test metadata function"""
+    key_entity = KeyEntity(value=5, key="key")
+    ref_entity = RefEntity(target=key_entity, ext_key="key")
+    assert MetadataFunction(ref=ref_entity) == "5"
 
 
 if __name__ == "__main__":

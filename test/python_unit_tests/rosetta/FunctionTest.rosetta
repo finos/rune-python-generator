@@ -139,3 +139,20 @@ func MainFunction:
         result number (1..1)
     set result:
         BaseFunction(value)
+
+type KeyEntity:
+    [metadata key]
+    value int (1..1)
+
+type RefEntity:
+    ke KeyEntity (1..1)
+        [metadata refKey]
+
+
+func MetadataFunction:
+    inputs:
+        ref RefEntity (1..1)
+    output:
+        result string (1..1)
+    set result:
+        ref->value
