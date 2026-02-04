@@ -121,8 +121,8 @@ def test_add_operation():
         Quantity(unit=fx_usd),
     ]
     fq = FilterQuantity(quantities=list_of_quantities, unit=fx_jpy)
-    assert len(fq) == 3
-    assert fq[1].unit.currency == "JPY"
+    assert len(fq) == 1
+    assert fq[0].unit.currency == "JPY"
 
 
 if __name__ == "__main__":

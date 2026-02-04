@@ -14,4 +14,4 @@ func FilterQuantity:
     output:
         filteredQuantities Quantity (0..*)
 
-    add filteredQuantities: quantities filter item -> unit -> currency exists
+    add filteredQuantities: quantities filter item -> unit = unit
