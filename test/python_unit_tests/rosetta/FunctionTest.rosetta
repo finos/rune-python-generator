@@ -146,8 +146,7 @@ type KeyEntity:
 
 type RefEntity:
     ke KeyEntity (1..1)
-        [metadata refKey]
-
+        [metadata reference]
 
 func MetadataFunction:
     inputs:
