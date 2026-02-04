@@ -52,8 +52,6 @@ ${PYEXE} -m pip install -r requirements.txt || error
 
 echo "***** Get and Install Runtime"
 
-RUNE_RUNTIME_FILE="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime/rune_runtime-1.0.19.dev6+g53b62b399-py3-none-any.whl"
-
 if [ -n "$RUNE_RUNTIME_FILE" ]; then
     # --- Local Installation Logic ---
     echo "Using local runtime source: $RUNE_RUNTIME_FILE"
