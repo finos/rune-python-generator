@@ -1,4 +1,4 @@
-from rune.runtime.metadata import Reference
+from rune.runtime.metadata import Reference, IntWithMeta
 from rosetta_dsl.test.functions.KeyEntity import KeyEntity
 from rosetta_dsl.test.functions.RefEntity import RefEntity
 from rosetta_dsl.test.functions.functions.MetadataFunction import MetadataFunction
@@ -6,6 +6,6 @@ from rosetta_dsl.test.functions.functions.MetadataFunction import MetadataFuncti
 
 def test_metadata_function():
     """Test metadata function"""
-    key_entity = KeyEntity(value=5, key="key-123")  # noqa: F841
+    key_entity = KeyEntity(value=IntWithMeta(value=5, key="key-123"))
     ref_entity = RefEntity(ke=Reference(target=key_entity, ext_key="key-123"))
     assert MetadataFunction(ref=ref_entity) == 5
