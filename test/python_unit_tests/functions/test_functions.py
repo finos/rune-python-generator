@@ -17,6 +17,11 @@ from rosetta_dsl.test.functions.functions.MinMaxWithPostCondition import (
 from rosetta_dsl.test.functions.functions.ArithmeticOperation import ArithmeticOperation
 from rosetta_dsl.test.functions.ArithmeticOperationEnum import ArithmeticOperationEnum
 from rosetta_dsl.test.functions.functions.MainFunction import MainFunction
+from rosetta_dsl.test.functions.add_operation.UnitType import UnitType
+from rosetta_dsl.test.functions.add_operation.Quantity import Quantity
+from rosetta_dsl.test.functions.add_operation.functions.FilterQuantity import (
+    FilterQuantity,
+)
 
 
 def test_abs_positive():
@@ -105,6 +110,21 @@ def test_function_with_function_call():
     assert MainFunction(value=5) == 10
 
 
+def test_add_operation():
+    """Test add operation"""
+    fx_eur = UnitType(currency="EUR")
+    fx_jpy = UnitType(currency="JPY")
+    fx_usd = UnitType(currency="USD")
+    list_of_quantities = [
+        Quantity(unit=fx_eur),
+        Quantity(unit=fx_jpy),
+        Quantity(unit=fx_usd),
+    ]
+    fq = FilterQuantity(quantities=list_of_quantities, unit=fx_jpy)
+    assert len(fq) == 3
+    assert fq[1].unit.currency == "JPY"
+
+
 if __name__ == "__main__":
     test_abs_positive()
     test_abs_negative()
@@ -118,4 +138,5 @@ if __name__ == "__main__":
     test_min_max_post_conditions()
     test_arithmetic_operation()
     test_function_with_function_call()
+    test_add_operation()
 # EOF

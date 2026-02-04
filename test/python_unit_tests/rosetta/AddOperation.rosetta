@@ -1,0 +1,17 @@
+namespace rosetta_dsl.test.functions.add_operation : <"generate Python unit tests from Rosetta.">
+
+type UnitType:
+    currency string (0..1)
+
+type Quantity:
+    value number (0..1)
+    unit UnitType (0..1)
+
+func FilterQuantity:
+    inputs:
+        quantities Quantity (0..*)
+        unit UnitType (1..1)
+    output:
+        filteredQuantities Quantity (0..*)
+
+    add filteredQuantities: quantities filter item -> unit -> currency exists
