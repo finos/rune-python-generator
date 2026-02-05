@@ -155,3 +155,18 @@ func MetadataFunction:
         result int (1..1)
     set result:
         ref->ke->value
+
+type IncompleteObject:
+    value1 int (1..1)
+    value2 int (1..1)
+
+func TestIncompleteObjectReturn:
+    inputs:
+        value1 int (1..1)
+    output:
+        result IncompleteObject (1..1)
+    set result:
+        IncompleteObject {
+            value1: value1
+        }
+        
