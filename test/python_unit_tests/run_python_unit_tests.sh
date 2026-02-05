@@ -88,7 +88,7 @@ PROJECT_ROOT_PATH="$MY_PATH/../.."
 PYTHON_SETUP_PATH="$MY_PATH/../python_setup"
 
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
-INPUT_ROSETTA_PATH="$PROJECT_ROOT_PATH/test/python_unit_tests/rosetta"
+INPUT_ROSETTA_PATH="$PROJECT_ROOT_PATH/test/python_unit_tests/features"
 PYTHON_TESTS_TARGET_PATH="$PROJECT_ROOT_PATH/target/python-tests/unit_tests"
 
 # Validate inputs/existence
