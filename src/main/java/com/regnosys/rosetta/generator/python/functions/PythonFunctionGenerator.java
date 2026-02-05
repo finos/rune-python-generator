@@ -350,8 +350,6 @@ public class PythonFunctionGenerator {
         } else {
             String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
             if (!setNames.contains(attributeRoot.getName())) {
-                System.out.println(
-                        "***** need to create object for " + attributeRoot.getName() + " of type " + bundleName);
                 setNames.add(attributeRoot.getName());
                 writer.appendLine(attributeRoot.getName() + equalsSign + "_get_rune_object('"
                         + bundleName + "', " +
@@ -392,7 +390,6 @@ public class PythonFunctionGenerator {
         RosettaFeature feature = path.getFeature();
         if (feature instanceof RosettaTyped typed) {
             String bundleName = RuneToPythonMapper.getBundleObjectName(typed.getTypeCall().getType());
-            System.out.println("***** need to create object for " + feature.getName() + " of type " + bundleName);
             Segment nextPath = path.getNext();
             return "_get_rune_object('"
                     + bundleName

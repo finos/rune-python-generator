@@ -801,7 +801,7 @@ public class PythonFunctionsTest {
                                     filter quantities -> unit all = unit
                             """);
 
-        String expected = """
+        String expectedBundle = """
                 @replaceable
                 @validate_call
                 def com_rosetta_test_model_functions_FilterQuantity(quantities: list[com_rosetta_test_model_Quantity] | None, unit: com_rosetta_test_model_UnitType) -> list[com_rosetta_test_model_Quantity]:
@@ -826,7 +826,53 @@ public class PythonFunctionsTest {
 
                     return filteredQuantities
                 """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expected);
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+
+    }
+
+    @Test
+    public void testObjectCreationFromFields() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                                        type BaseObject:
+                                            value1 int (1..1)
+                                            value2 int (1..1)
+                                        func TestObjectCreationFromFields:
+                                            inputs:
+                                                baseObject BaseObject (1..1)
+                                            output:
+                                                result BaseObject (1..1)
+                                            set result:
+                                                BaseObject {
+                                                    value1: baseObject->value1,
+                                                    value2: baseObject->value2
+                                                }
+                        """);
+
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_functions_TestObjectCreationFromFields(baseObject: com_rosetta_test_model_BaseObject) -> com_rosetta_test_model_BaseObject:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    baseObject : com.rosetta.test.model.BaseObject
+
+                    Returns
+                    -------
+                    result : com.rosetta.test.model.BaseObject
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+
+                    result = com_rosetta_test_model_BaseObject(value1=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value1\"), value2=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value2\"))
+
+
+                    return result
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
 
     }
 
