@@ -1,0 +1,103 @@
+namespace rosetta_dsl.test.semantic.collections : <"generate Python unit tests from Rosetta.">
+
+type CountItem:
+    name string (0..1)
+    value int (0..1)
+
+type CountContainer:
+    field1 int (0..*)
+    field2 CountItem (0..*)
+
+type CountTest:
+    bValue CountContainer (1..*)
+    condition TestCond:
+        if bValue -> field2 count > 0 
+            then True
+        else False
+
+type SumTest:
+    aValue int (1..1)
+    bValue int (1..1)
+    target int (1..1)
+    condition TestCond:
+        if [aValue, bValue] sum = target
+        then True
+        else False
+
+type MinTest:
+    a int (1..1)
+    condition Test:
+        if [a, 1] min = 1
+           then True
+        else False
+
+type MaxTest:
+    a int (1..1)
+    condition Test:
+        if [a, 1, 20] max = 20
+           then True
+        else False
+
+type LastTest:
+    aValue int (1..1)
+    bValue int (1..1)
+    cValue int (1..1)
+    target int (1..1)
+    condition TestCond:
+        if [aValue, bValue, cValue] last = target
+        then True
+        else False
+
+type SortTest:
+    condition Test:
+        if [3, 2, 1] sort first = 1
+            then True
+        else False
+
+type JoinTest:
+    field1 string (1..1)
+    field2 string (1..1)
+    condition TestCond:
+        if "" join [field1, field2] = "ab"
+        then True
+        else False
+
+type FilterItem:
+    fi int (1..1)
+
+type FilterTest:
+    fis FilterItem (1..*)
+    target int (1..1)
+    condition TestCondFilter:
+        if [fis filter i [i->fi = target]] count = 1
+        then True
+        else False
+
+type FlattenItem:
+    field1 int (0..1)
+    field2 int (0..1)
+    field3 int (0..1)
+
+type FlattenContainer:
+    fieldList FlattenItem (0..*)
+
+type FlattenBar:
+    numbers int (0..*)
+
+type FlattenFoo:
+    bars FlattenBar (0..*)
+    condition TestCondFoo:
+        [1, 2, 3] = (bars
+            extract numbers
+            then flatten)
+
+type FlattenTest: <"Test flatten operation in a condition">
+    bValue FlattenContainer (0..*) <"Test value">
+    field3 int (1..1) <"Test field 3">
+    condition FlattenTestCond: <"Test condition">
+        if field3 > 0
+            then bValue
+                extract fieldList
+                then flatten
+        else
+           False

@@ -706,7 +706,7 @@ public class PythonFunctionsTest {
     }
 
     @Test
-    public void testFunctionWithFunctionCall() {
+    public void testFunctionWithFunctionCallingFunction() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                         func BaseFunction:
@@ -777,8 +777,12 @@ public class PythonFunctionsTest {
         testUtils.assertGeneratedContainsExpectedString(expectedBundleString, expectedBundleMainFunction);
     }
 
+    /**
+     * Test the 'add' operation in a Rosetta function, which is used to accumulate
+     * values into an output list.
+     */
     @Test
-    public void testAddOperation() {
+    public void testGenerateFunctionWithAddOperation() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                         type Quantity:
@@ -823,58 +827,6 @@ public class PythonFunctionsTest {
                     return filteredQuantities
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expected);
-
-    }
-
-    @Disabled
-    @Test
-    public void testFilterOperation2() {
-        String python = testUtils.generatePythonFromString(
-                """
-                        type QuantitySchedule: <"Specifies a quantity as a single value to be associated to a financial product, for example a transfer amount resulting from a trade. This data type extends QuantitySchedule and requires that only the single amount value exists.">
-                                value number (0..1) <"Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.">
-                                unit UnitType (0..1) <"Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).">
-                        type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
-                                  currency string(0..1)
-                        func FilterQuantityByCurrencyExists: <"Filter list of quantities based on unit type.">
-                            inputs:
-                                quantities QuantitySchedule (0..*) <"List of quantities to filter.">
-                            output:
-                                filteredQuantities QuantitySchedule (0..*)
-
-                            add filteredQuantities:
-                                quantities
-                                    filter item -> unit -> currency exists
-                        """)
-                .toString();
-
-        String expected = """
-                @replaceable
-                def FilterQuantityByCurrencyExists(quantities: list[QuantitySchedule] | None) -> QuantitySchedule:
-                    \"\"\"
-                    Filter list of quantities based on unit type.
-
-                    Parameters\s
-                    ----------
-                    quantities : QuantitySchedule
-                    List of quantities to filter.
-
-                    Returns
-                    -------
-                    filteredQuantities : QuantitySchedule
-
-                    \"\"\"
-                    self = inspect.currentframe()
-
-
-                    filteredQuantities = rune_filter(rune_resolve_attr(self, "quantities"), lambda item: rune_attr_exists(rune_resolve_attr(rune_resolve_attr(item, "unit"), "currency")))
-
-
-                    return filteredQuantities
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-                """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
 
     }
 
@@ -952,137 +904,5 @@ public class PythonFunctionsTest {
                 """;
         testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
 
-    }
-
-    @Disabled
-    @Test
-    public void testGenerateFunctionWithPostCondition() {
-        String python = testUtils.generatePythonFromString(
-                """
-                        func NewFloatingPayout: <"Function specification to create the interest rate (floating) payout part of an Equity Swap according to the 2018 ISDA CDM Equity Confirmation template.">
-                            inputs: masterConfirmation EquitySwapMasterConfirmation2018 (0..1)
-                            output: interestRatePayout InterestRatePayout (1..1)
-
-                            post-condition InterestRatePayoutTerms: <"Interest rate payout must inherit terms from the Master Confirmation Agreement when it exists.">
-                                if masterConfirmation exists then
-                                //interestRatePayout -> calculationPeriodDates = masterConfirmation -> equityCalculationPeriod and
-                                interestRatePayout -> paymentDates = masterConfirmation -> equityCashSettlementDates
-                        type EquitySwapMasterConfirmation2018:
-                            equityCashSettlementDates PaymentDates (1..1)
-                        type PaymentDates:
-                            date date(0..1)
-                        type InterestRatePayout:
-                            paymentDates PaymentDates(0..1)
-                        """)
-                .get("src/com/rosetta/test/model/functions/NewFloatingPayout.py").toString();
-
-        String expected = """
-                @replaceable
-                def NewFloatingPayout(masterConfirmation: EquitySwapMasterConfirmation2018 | None) -> InterestRatePayout:
-                    \"\"\"
-                    Function specification to create the interest rate (floating) payout part of an Equity Swap according to the 2018 ISDA CDM Equity Confirmation template.
-
-                    Parameters\s
-                    ----------
-                    masterConfirmation : EquitySwapMasterConfirmation2018
-
-                    Returns
-                    -------
-                    interestRatePayout : InterestRatePayout
-
-                    \"\"\"
-                    _post_registry = {}
-                    self = inspect.currentframe()
-
-
-                    interestRatePayout = rune_resolve_attr(self, "interestRatePayout")
-
-                    # post-conditions
-
-                    @rune_local_condition(_post_registry)
-                    def condition_0_InterestRatePayoutTerms(self):
-                        \"\"\"
-                        Interest rate payout must inherit terms from the Master Confirmation Agreement when it exists.
-                        \"\"\"
-                        def _then_fn0():
-                            return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "interestRatePayout"), "paymentDates"), "=", rune_resolve_attr(rune_resolve_attr(self, "masterConfirmation"), "equityCashSettlementDates"))
-
-                        def _else_fn0():
-                            return True
-
-                        return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, "masterConfirmation")), _then_fn0, _else_fn0)
-                    # Execute all registered post-conditions
-                    rune_execute_local_conditions(_post_registry, 'Post-condition')
-
-                    return interestRatePayout
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
-                """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
-
-    }
-
-    @Disabled
-    @Test
-    public void functionCallTest() {
-        String python = testUtils.generatePythonFromString(
-                """
-                        type InterestRatePayout: <" A class to specify all of the terms necessary to define and calculate a cash flow based on a fixed, a floating or an inflation index rate. The interest rate payout can be applied to interest rate swaps and FRA (which both have two associated interest rate payouts), credit default swaps (to represent the fee leg when subject to periodic payments) and equity swaps (to represent the funding leg). The associated globalKey denotes the ability to associate a hash value to the InterestRatePayout instantiations for the purpose of model cross-referencing, in support of functionality such as the event effect and the lineage.">
-                                            [metadata key]
-                                            rateSpecification RateSpecification (0..1) <"The specification of the rate value(s) applicable to the contract using either a floating rate calculation, a single fixed rate, a fixed rate schedule, or an inflation rate calculation.">
-
-                                        type RateSpecification: <" A class to specify the fixed interest rate, floating interest rate or inflation rate.">
-                                            floatingRate FloatingRateSpecification (0..1) <"The floating interest rate specification, which includes the definition of the floating rate index. the tenor, the initial value, and, when applicable, the spread, the rounding convention, the averaging method and the negative interest rate treatment.">
-
-                                        type FloatingRateSpecification: <"A class defining a floating interest rate through the specification of the floating rate index, the tenor, the multiplier schedule, the spread, the qualification of whether a specific rate treatment and/or a cap or floor apply.">
-                                            [metadata key]
-
-                                            rateOption FloatingRateOption (0..1)
-
-                                        type FloatingRateOption: <"Specification of a floating rate option as a floating rate index and tenor.">
-                                            value int(1..1)
-                                func FixedAmount:
-                                  [calculation]
-                                  inputs:
-                                    interestRatePayout InterestRatePayout (1..1)
-                                    date date (1..1)
-                                  output:
-                                    fixedAmount number (1..1)
-
-                                  alias dayCountFraction: DayCountFraction(interestRatePayout, date)
-                                func DayCountFraction:
-                                     inputs:
-                                         interestRatePayout InterestRatePayout (1..1)
-                                         date date(1..1)
-                                     output:
-                                         a number(1..1)
-                        """)
-                .toString();
-
-        String expected = """
-                @replaceable
-                def DayCountFraction(interestRatePayout: InterestRatePayout, date: datetime.date) -> Decimal:
-                    \"\"\"
-
-                    Parameters\s
-                    ----------
-                    interestRatePayout : InterestRatePayout
-
-                    date : date
-
-                    Returns
-                    -------
-                    a : number
-
-                    \"\"\"
-                    self = inspect.currentframe()
-
-
-                    a = rune_resolve_attr(self, "a")
-
-
-                    return a""";
-
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
     }
 }
