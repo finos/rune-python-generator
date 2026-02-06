@@ -72,6 +72,27 @@ func TestAlias:
     set result:
         Alias
 
+type ComplexTypeA:
+    valueA number(1..1)
+
+type ComplexTypeB:
+    valueB number(1..1)
+
+type ComplexTypeC:
+    valueA number(1..1)
+    valueB number(1..1)
+
+func TestComplexTypeInputs:
+    inputs:
+        a ComplexTypeA (1..1)
+        b ComplexTypeB (1..1)
+    output:
+        c ComplexTypeC (1..1)
+    set c->valueA:
+        a->valueA
+    set c->valueB:
+        b->valueB
+
 type A:
     valueA number(1..1)
 

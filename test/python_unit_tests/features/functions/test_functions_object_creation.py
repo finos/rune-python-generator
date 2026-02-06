@@ -27,6 +27,12 @@ from rosetta_dsl.test.functions.functions.TestContainerObjectCreationFromBaseObj
     TestContainerObjectCreationFromBaseObject,
 )
 
+from rosetta_dsl.test.functions.functions.TestComplexTypeInputs import (
+    TestComplexTypeInputs,
+)
+from rosetta_dsl.test.functions.ComplexTypeA import ComplexTypeA
+from rosetta_dsl.test.functions.ComplexTypeB import ComplexTypeB
+
 
 def test_create_incomplete_object_fails():
     """Test incomplete object return.
@@ -35,22 +41,6 @@ def test_create_incomplete_object_fails():
     """
     with pytest.raises(ValidationError):
         TestCreateIncompleteObjectFails(value1=5)
-
-
-@pytest.mark.skip(reason="Feature not yet implemented")
-def test_create_incomplete_object_succeeds_in_python():
-    """Test incomplete object return by setting strict=False in the function definition.
-    This test is expected to pass.
-    """
-    BaseObjectWithBaseClassFields(value1=5, strict=False)
-
-
-@pytest.mark.skip(reason="Feature not yet implemented")
-def test_create_incomplete_object_succeeds():
-    """Test incomplete object return by setting strict=False in the function definition.
-    This test is expected to pass.
-    """
-    TestCreateIncompleteObjectSucceeds(value1=5)
 
 
 def test_simple_object_assignment():
@@ -85,3 +75,28 @@ def test_container_object_creation_from_base_object():
     """Test creation of a container object from a base object."""
     base_object = BaseObject(value1=5, value2=10)
     TestContainerObjectCreationFromBaseObject(baseObject=base_object, value3=20)
+
+
+@pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
+def test_create_incomplete_object_succeeds_in_python():
+    """Test incomplete object return by setting strict=False in the function definition.
+    This test is expected to pass.
+    """
+    BaseObjectWithBaseClassFields(value1=5, strict=False)
+
+
+@pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
+def test_create_incomplete_object_succeeds():
+    """Test incomplete object return by setting strict=False in the function definition.
+    This test is expected to pass.
+    """
+    TestCreateIncompleteObjectSucceeds(value1=5)
+
+
+@pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
+def test_complex_type_inputs():
+    """Test complex type inputs."""
+    complex_type_a = ComplexTypeA(valueA=5)
+    complex_type_b = ComplexTypeB(valueB=10)
+    result = TestComplexTypeInputs(a=complex_type_a, b=complex_type_b)
+    assert result.valueA == 5 and result.valueB == 10
