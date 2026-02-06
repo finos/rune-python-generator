@@ -81,7 +81,7 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.75.3</rosetta.dsl.version>
+        <rosetta.dsl.version>9.76.1</rosetta.dsl.version>
 
         <xtext.version>2.41.0</xtext.version>
         <guice.version>6.0.0</guice.version>
