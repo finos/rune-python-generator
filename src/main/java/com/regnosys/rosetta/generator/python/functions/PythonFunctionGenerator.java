@@ -106,9 +106,9 @@ public class PythonFunctionGenerator {
 
         writer.appendBlock(generateConditions(rf));
 
-        generateIfBlocks(writer, rf);
-        generateAlias(writer, rf);
-        generateOperations(writer, rf);
+        int[] level = { 0 };
+        generateAlias(writer, rf, level);
+        generateOperations(writer, rf, level);
         generateOutput(writer, rf);
 
         writer.unindent();
@@ -238,16 +238,6 @@ public class PythonFunctionGenerator {
         return enumImports;
     }
 
-    private void generateIfBlocks(PythonCodeWriter writer, Function function) {
-        List<Integer> levelList = new ArrayList<>(Collections.singletonList(0));
-        for (ShortcutDeclaration shortcut : function.getShortcuts()) {
-            writer.appendBlock(expressionGenerator.generateThenElseForFunction(shortcut.getExpression(), levelList));
-        }
-        for (Operation operation : function.getOperations()) {
-            writer.appendBlock(expressionGenerator.generateThenElseForFunction(operation.getExpression(), levelList));
-        }
-    }
-
     private String generateConditions(Function function) {
         if (!function.getConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
@@ -275,30 +265,36 @@ public class PythonFunctionGenerator {
         return "";
     }
 
-    private void generateAlias(PythonCodeWriter writer, Function function) {
-        int level = 0;
-
+    private void generateAlias(PythonCodeWriter writer, Function function, int[] level) {
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
             expressionGenerator.setIfCondBlocks(new ArrayList<>());
-            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level, false);
+            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level[0], false);
 
+            for (String block : expressionGenerator.getIfCondBlocks()) {
+                writer.appendBlock(block);
+                writer.newLine();
+            }
             if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
-                level += 1;
+                level[0] += expressionGenerator.getIfCondBlocks().size();
             }
             writer.appendLine(shortcut.getName() + " = " + expression);
         }
     }
 
-    private void generateOperations(PythonCodeWriter writer, Function function) {
-        int level = 0;
+    private void generateOperations(PythonCodeWriter writer, Function function, int[] level) {
         if (function.getOutput() != null) {
             List<String> setNames = new ArrayList<>();
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
-                String expression = expressionGenerator.generateExpression(operation.getExpression(), level, false);
+                expressionGenerator.setIfCondBlocks(new ArrayList<>());
+                String expression = expressionGenerator.generateExpression(operation.getExpression(), level[0], false);
 
+                for (String block : expressionGenerator.getIfCondBlocks()) {
+                    writer.appendBlock(block);
+                    writer.newLine();
+                }
                 if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
-                    level += 1;
+                    level[0] += expressionGenerator.getIfCondBlocks().size();
                 }
                 if (operation.isAdd()) {
                     generateAddOperation(writer, root, operation, function, expression, setNames);

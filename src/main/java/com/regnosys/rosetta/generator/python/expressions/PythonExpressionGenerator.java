@@ -400,21 +400,6 @@ public class PythonExpressionGenerator {
         return result.toString();
     }
 
-    public String generateThenElseForFunction(RosettaExpression expr, List<Integer> ifLevel) {
-        ifCondBlocks.clear();
-        generateExpression(expr, ifLevel.get(0), false);
-
-        PythonCodeWriter writer = new PythonCodeWriter();
-        if (!ifCondBlocks.isEmpty()) {
-            ifLevel.set(0, ifLevel.get(0) + 1);
-            for (String arg : ifCondBlocks) {
-                writer.appendBlock(arg);
-                writer.newLine();
-            }
-        }
-        return writer.toString();
-    }
-
     private boolean isConstraintCondition(Condition cond) {
         return isOneOf(cond) || isChoice(cond);
     }
