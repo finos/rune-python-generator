@@ -2,40 +2,48 @@ namespace rosetta_dsl.test.semantic.collections.extensions : <"generate Python u
 
 func ListFirst:
     inputs:
-        list int(0..*)
+        items int(0..*)
     output:
         res int(0..1)
     set res:
-        list first
+        items first
 
 func ListLast:
     inputs:
-        list int(0..*)
+        items int(0..*)
     output:
         res int(0..1)
     set res:
-        list last
+        items last
 
 func ListDistinct:
     inputs:
-        list int(0..*)
+        items int(0..*)
     output:
         res int(0..*)
     set res:
-        list distinct
+        items distinct
 
 func ListSum:
     inputs:
-        list int(0..*)
+        items int(0..*)
     output:
         res int(1..1)
     set res:
-        list sum
+        items sum
 
 func ListOnlyElement:
     inputs:
-        list int(0..*)
+        items int(0..*)
     output:
         res int(0..1)
     set res:
-        list only-element
+        items only-element
+
+func ListReverse:
+    inputs:
+        items int(0..*)
+    output:
+        res int(0..*)
+    set res:
+        items reverse

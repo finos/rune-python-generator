@@ -76,6 +76,8 @@ public class PythonExpressionGenerator {
             return generateThenOperation(then, ifLevel, isLambda);
         } else if (expr instanceof SumOperation sum) {
             return "sum(" + generateExpression(sum.getArgument(), ifLevel, isLambda) + ")";
+        } else if (expr instanceof ReverseOperation reverse) {
+            return "list(reversed(" + generateExpression(reverse.getArgument(), ifLevel, isLambda) + "))";
         } else if (expr instanceof SwitchOperation switchOp) {
             return generateSwitchOperation(switchOp, ifLevel, isLambda);
         } else if (expr instanceof ToEnumOperation toEnum) {
