@@ -22,37 +22,50 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.xtext.validation.CheckMode;
+import org.eclipse.xtext.validation.IResourceValidator;
+import org.eclipse.xtext.validation.Issue;
+import org.eclipse.xtext.util.CancelIndicator;
 
 /**
  * Command-line interface for generating Python code from Rosetta models.
  * <p>
- * This CLI tool loads Rosetta model files (either from a directory or a single file),
- * invokes the {@link PythonCodeGenerator}, and writes the generated Python code to the specified target directory.
- * It is intended for use by developers and build systems to automate the translation of Rosetta DSL models to Python.
+ * This CLI tool loads Rosetta model files (either from a directory or a single
+ * file),
+ * invokes the {@link PythonCodeGenerator}, and writes the generated Python code
+ * to the specified target directory.
+ * It is intended for use by developers and build systems to automate the
+ * translation of Rosetta DSL models to Python.
  * </p>
  *
  * <h2>Usage</h2>
+ * 
  * <pre>
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s &lt;source-dir&gt; -t &lt;target-dir&gt;
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -f &lt;source-file&gt; -t &lt;target-dir&gt;
  * </pre>
  * <ul>
- *   <li><b>-s, --dir &lt;source-dir&gt;</b>: Source directory containing Rosetta files (all <code>.rosetta</code> files will be processed)</li>
- *   <li><b>-f, --file &lt;source-file&gt;</b>: Single Rosetta file to process</li>
- *   <li><b>-t, --tgt &lt;target-dir&gt;</b>: Target directory for generated Python code (defaults to <code>./python</code> if not specified)</li>
- *   <li><b>-h</b>: Print usage/help</li>
+ * <li><b>-s, --dir &lt;source-dir&gt;</b>: Source directory containing Rosetta
+ * files (all <code>.rosetta</code> files will be processed)</li>
+ * <li><b>-f, --file &lt;source-file&gt;</b>: Single Rosetta file to
+ * process</li>
+ * <li><b>-t, --tgt &lt;target-dir&gt;</b>: Target directory for generated
+ * Python code (defaults to <code>./python</code> if not specified)</li>
+ * <li><b>-h</b>: Print usage/help</li>
  * </ul>
  *
  * <h2>Example</h2>
+ * 
  * <pre>
  *   java -jar target/python-0.0.0.main-SNAPSHOT-shaded.jar -s src/main/rosetta -t build/python
  * </pre>
  *
  * <h2>Notes</h2>
  * <ul>
- *   <li>Either <b>-s</b> or <b>-f</b> must be specified.</li>
- *   <li>The tool will clean the target directory before writing new files.</li>
- *   <li>Requires a Java 11+ runtime and all dependencies on the classpath (or use the shaded/uber jar).</li>
+ * <li>Either <b>-s</b> or <b>-f</b> must be specified.</li>
+ * <li>The tool will clean the target directory before writing new files.</li>
+ * <li>Requires a Java 11+ runtime and all dependencies on the classpath (or use
+ * the shaded/uber jar).</li>
  * </ul>
  *
  * @author Plamen Neykov
@@ -64,11 +77,15 @@ public class PythonCodeGeneratorCLI {
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
 
     public static void main(String[] args) {
+        System.out.println("***** Running PythonCodeGeneratorCLI v2 *****");
         Options options = new Options();
         Option help = new Option("h", "Print usage");
-        Option srcDirOpt = Option.builder("s").longOpt("dir").argName("srcDir").desc("Source Rosetta directory").hasArg().build();
-        Option srcFileOpt = Option.builder("f").longOpt("file").argName("srcFile").desc("Source Rosetta file").hasArg().build();
-        Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir").desc("Target Python directory (default: ./python)").hasArg().build();
+        Option srcDirOpt = Option.builder("s").longOpt("dir").argName("srcDir").desc("Source Rosetta directory")
+                .hasArg().build();
+        Option srcFileOpt = Option.builder("f").longOpt("file").argName("srcFile").desc("Source Rosetta file").hasArg()
+                .build();
+        Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir")
+                .desc("Target Python directory (default: ./python)").hasArg().build();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
@@ -104,7 +121,7 @@ public class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    private static void translateFromSourceDir (String srcDir, String tgtDir) {
+    private static void translateFromSourceDir(String srcDir, String tgtDir) {
         // Find all .rosetta files in a directory
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
@@ -125,7 +142,8 @@ public class PythonCodeGeneratorCLI {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
         }
     }
-    private static void translateFromSourceFile (String srcFile, String tgtDir) {
+
+    private static void translateFromSourceFile(String srcFile, String tgtDir) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
             LOGGER.error("Source file does not exist: {}", srcFile);
@@ -142,6 +160,7 @@ public class PythonCodeGeneratorCLI {
         List<Path> rosettaFiles = List.of(srcFilePath);
         processRosettaFiles(rosettaFiles, tgtDir);
     }
+
     // Common processing function
     private static void processRosettaFiles(List<Path> rosettaFiles, String tgtDir) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
@@ -155,8 +174,8 @@ public class PythonCodeGeneratorCLI {
         ResourceSet resourceSet = injector.getInstance(ResourceSet.class);
         List<Resource> resources = new LinkedList<>();
         RosettaBuiltinsService builtins = injector.getInstance(RosettaBuiltinsService.class);
-        resources.add (resourceSet.getResource(builtins.basicTypesURI, true));
-        resources.add (resourceSet.getResource(builtins.annotationsURI, true));
+        resources.add(resourceSet.getResource(builtins.basicTypesURI, true));
+        resources.add(resourceSet.getResource(builtins.annotationsURI, true));
         rosettaFiles.stream()
                 .map(path -> resourceSet.getResource(URI.createFileURI(path.toString()), true))
                 .forEach(resources::add);
@@ -173,9 +192,59 @@ public class PythonCodeGeneratorCLI {
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
+        IResourceValidator validator = injector.getInstance(IResourceValidator.class);
         Map<String, CharSequence> generatedPython = new HashMap<>();
-        pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
+
+        List<RosettaModel> validModels = new ArrayList<>();
+
         for (RosettaModel model : models) {
+            Resource resource = model.eResource();
+            boolean hasErrors = false;
+            try {
+                List<Issue> issues = validator.validate(resource, CheckMode.ALL, CancelIndicator.NullImpl);
+                for (Issue issue : issues) {
+                    switch (issue.getSeverity()) {
+                        case ERROR:
+                            LOGGER.error("Validation ERROR in {}: {} at {}", model.getName(), issue.getMessage(),
+                                    issue.getUriToProblem());
+                            hasErrors = true;
+                            break;
+                        case WARNING:
+                            LOGGER.warn("Validation WARNING in {}: {} at {}", model.getName(), issue.getMessage(),
+                                    issue.getUriToProblem());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Validation skipped for {} due to exception: {}", model.getName(), e.getMessage());
+                validModels.add(model);
+                continue;
+            }
+
+            if (hasErrors) {
+                LOGGER.error("Skipping model {} due to validation errors.", model.getName());
+            } else {
+                validModels.add(model);
+            }
+        }
+
+        if (validModels.isEmpty()) {
+            LOGGER.error("No valid models found after validation. Exiting.");
+            System.exit(1);
+        }
+
+        // Use validModels for generation
+        // Re-determine version based on valid models? Or keep original version?
+        // Assuming version is consistent across all loaded models or derived from the
+        // first one.
+        // The original code took version from models.getFirst().getVersion();
+
+        LOGGER.info("Proceeding with generation for {} valid models.", validModels.size());
+
+        pythonCodeGenerator.beforeAllGenerate(resourceSet, validModels, version);
+        for (RosettaModel model : validModels) {
             LOGGER.info("Processing: " + model.getName());
             generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
