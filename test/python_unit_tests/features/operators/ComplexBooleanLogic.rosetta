@@ -1,0 +1,18 @@
+namespace rosetta_dsl.test.semantic.operators.complex_boolean_logic : <"generate Python unit tests from Rosetta.">
+
+func NotOp: <"Tests negation by equality">
+    inputs:
+        b boolean(1..1)
+    output:
+        res boolean(1..1)
+    set res:
+        b = False
+
+func ComplexLogic: <"Tests complex boolean expression with negation by equality">
+    inputs:
+        a boolean(1..1)
+        b boolean(1..1)
+    output:
+        res boolean(1..1)
+    set res:
+        (a or b) and (a = False)

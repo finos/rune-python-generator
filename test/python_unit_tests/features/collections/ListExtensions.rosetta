@@ -1,0 +1,41 @@
+namespace rosetta_dsl.test.semantic.collections.extensions : <"generate Python unit tests from Rosetta.">
+
+func ListFirst:
+    inputs:
+        list int(0..*)
+    output:
+        res int(0..1)
+    set res:
+        list first
+
+func ListLast:
+    inputs:
+        list int(0..*)
+    output:
+        res int(0..1)
+    set res:
+        list last
+
+func ListDistinct:
+    inputs:
+        list int(0..*)
+    output:
+        res int(0..*)
+    set res:
+        list distinct
+
+func ListSum:
+    inputs:
+        list int(0..*)
+    output:
+        res int(1..1)
+    set res:
+        list sum
+
+func ListOnlyElement:
+    inputs:
+        list int(0..*)
+    output:
+        res int(0..1)
+    set res:
+        list only-element

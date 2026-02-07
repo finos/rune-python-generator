@@ -2,15 +2,19 @@
 
 function usage {
   cat <<EOF
-Usage: $(basename "$0") [options]
+Usage: $(basename "$0") [options] [path]
 
 Options:
   -r, --reuse-env                              Reuse the .pyenv environment if it exists
   -k, --no-clean, --skip-clean, --keep-venv  Skip the cleanup step (leave venv active; do not run cleanup script)
   -h, --help                                  Show this help
+
 Env:
   SKIP_CLEANUP=1                              Same as --no-clean
   REUSE_ENV=1                                 Same as -r
+
+Arguments:
+  [path]                                      Optional path (relative to script dir) to run tests for specific feature (e.g. features/model_structure)
 EOF
 }
 
@@ -37,6 +41,9 @@ if [[ "${REUSE_ENV:-}" == "1" || "${REUSE_ENV:-}" == "true" ]]; then
 else
   REUSE_ENV=0
 fi
+
+TEST_SUBDIR=""
+
 # CLI options
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -53,10 +60,20 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
-    *)
+    -*)
       echo "Unknown option: $1"
       usage
       exit 2
+      ;;
+    *)
+      if [[ -z "$TEST_SUBDIR" ]]; then
+        TEST_SUBDIR="$1"
+        shift
+      else
+        echo "Only one directory argument allowed: $1"
+        usage
+        exit 2
+      fi
       ;;
   esac
 done
@@ -88,7 +105,17 @@ PROJECT_ROOT_PATH="$MY_PATH/../.."
 PYTHON_SETUP_PATH="$MY_PATH/../python_setup"
 
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
-INPUT_ROSETTA_PATH="$PROJECT_ROOT_PATH/test/python_unit_tests/features"
+
+if [[ -n "$TEST_SUBDIR" ]]; then
+  INPUT_ROSETTA_PATH="$MY_PATH/$TEST_SUBDIR"
+  if [[ ! -d "$INPUT_ROSETTA_PATH" ]]; then
+    echo "Directory not found: $INPUT_ROSETTA_PATH"
+    exit 1
+  fi
+else
+  INPUT_ROSETTA_PATH="$MY_PATH/features"
+fi
+
 PYTHON_TESTS_TARGET_PATH="$PROJECT_ROOT_PATH/target/python-tests/unit_tests"
 
 # Validate inputs/existence
@@ -149,7 +176,14 @@ python -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
 # run tests
 echo "***** run unit tests"
 cd "$MY_PATH" || error
-python -m pytest -p no:cacheprovider "$MY_PATH"
+
+if [[ -n "$TEST_SUBDIR" ]]; then
+    TEST_TARGET="$MY_PATH/$TEST_SUBDIR"
+    echo "Running tests in: $TEST_TARGET"
+    python -m pytest -p no:cacheprovider "$TEST_TARGET"
+else
+    python -m pytest -p no:cacheprovider "$MY_PATH"
+fi
 
 if (( CLEANUP )); then
   echo "***** cleanup"
