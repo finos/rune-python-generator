@@ -54,13 +54,15 @@ type SortTest:
             then True
         else False
 
-type JoinTest:
-    field1 string (1..1)
-    field2 string (1..1)
-    condition TestCond:
-        if [field1, field2] join "" = "ab"
-        then True
-        else False
+func JoinTestFunction: <"Test join operation">
+    inputs:
+        field1 string (1..1)
+        field2 string (1..1)
+        delimiter string (1..1)
+    output:
+        result string (1..1)
+    set result:
+        [field1, field2] join delimiter
 
 type FilterItem:
     fi int (1..1)
@@ -73,12 +75,6 @@ type FilterTest:
         then True
         else False
 
-type FlattenItem:
-    field1 int (1..*)
-
-type FlattenContainer:
-    fieldList FlattenItem (1..*)
-
 type FlattenBar:
     numbers int (0..*)
 
@@ -89,13 +85,19 @@ type FlattenFoo:
             extract numbers
             then flatten)
 
-func FlattenTest: <"Test flatten operation in a condition">
+type FlattenItem:
+    items int (1..*)
+
+type FlattenContainer:
+    items FlattenItem (1..*)
+
+func FlattenTestFunction: <"Test flatten operation">
     inputs:
-        bValue FlattenContainer (1..*) <"Test value">
+        fc FlattenContainer (1..*) <"Test value">
     output:
         result int (1..*)
     set result:
-        bValue
-            extract fieldList
-            then extract field1
+        fc
+            extract items   
+            then extract items
             then flatten

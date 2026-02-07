@@ -348,8 +348,8 @@ public class PythonExpressionGenerator {
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
                 case "disjoint" -> "rune_disjoint(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + ", "
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
-                case "join" -> generateExpression(expr.getLeft(), ifLevel, isLambda) + ".join("
-                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
+                case "join" -> generateExpression(expr.getRight(), ifLevel, isLambda) + ".join("
+                        + generateExpression(expr.getLeft(), ifLevel, isLambda) + ")";
                 default -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " " + expr.getOperator() + " "
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
             };

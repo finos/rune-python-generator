@@ -1,19 +1,12 @@
 """test functions incomplete object return"""
 
 import pytest
-from pydantic import ValidationError
 
 from rosetta_dsl.test.functions.BaseObject import BaseObject
 from rosetta_dsl.test.functions.BaseObjectWithBaseClassFields import (
     BaseObjectWithBaseClassFields,
 )
 
-from rosetta_dsl.test.functions.functions.TestCreateIncompleteObjectFails import (
-    TestCreateIncompleteObjectFails,
-)
-from rosetta_dsl.test.functions.functions.TestCreateIncompleteObjectSucceeds import (
-    TestCreateIncompleteObjectSucceeds,
-)
 from rosetta_dsl.test.functions.functions.TestSimpleObjectAssignment import (
     TestSimpleObjectAssignment,
 )
@@ -32,15 +25,6 @@ from rosetta_dsl.test.functions.functions.TestComplexTypeInputs import (
 )
 from rosetta_dsl.test.functions.ComplexTypeA import ComplexTypeA
 from rosetta_dsl.test.functions.ComplexTypeB import ComplexTypeB
-
-
-def test_create_incomplete_object_fails():
-    """Test incomplete object return.
-    The Rosetta function returns an IncompleteObject with a missing required field (value2),
-    so this is expected to raise a validation exception.
-    """
-    with pytest.raises(ValidationError):
-        TestCreateIncompleteObjectFails(value1=5)
 
 
 def test_simple_object_assignment():

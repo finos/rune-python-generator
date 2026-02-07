@@ -12,6 +12,8 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 import org.apache.commons.cli.*;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.EObject;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
 import org.eclipse.emf.common.util.URI;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -205,13 +207,34 @@ public class PythonCodeGeneratorCLI {
                 for (Issue issue : issues) {
                     switch (issue.getSeverity()) {
                         case ERROR:
-                            LOGGER.error("Validation ERROR in {}: {} at {}", model.getName(), issue.getMessage(),
-                                    issue.getUriToProblem());
+                            EObject offender = resource.getEObject(issue.getUriToProblem().fragment());
+                            String identification = (offender instanceof RosettaNamed)
+                                    ? ((RosettaNamed) offender).getName()
+                                    : (offender != null ? offender.eClass().getName() : "Unknown");
+
+                            // Traverse up to find context (e.g. function or type name) if the offender
+                            // itself isn't the root context
+                            if (offender != null && !(offender instanceof com.regnosys.rosetta.rosetta.RosettaModel)) {
+                                EObject current = offender.eContainer();
+                                while (current != null) {
+                                    if (current instanceof RosettaNamed) {
+                                        String contextName = ((RosettaNamed) current).getName();
+                                        if (contextName != null && !contextName.equals(identification)) {
+                                            identification += " (in " + contextName + ")";
+                                        }
+                                        break;
+                                    }
+                                    current = current.eContainer();
+                                }
+                            }
+
+                            LOGGER.error("Validation ERROR in {} (Line {}): {} on element '{}'",
+                                    model.getName(), issue.getLineNumber(), issue.getMessage(), identification);
                             hasErrors = true;
                             break;
                         case WARNING:
-                            LOGGER.warn("Validation WARNING in {}: {} at {}", model.getName(), issue.getMessage(),
-                                    issue.getUriToProblem());
+                            LOGGER.warn("Validation WARNING in {} (Line {}): {}", model.getName(),
+                                    issue.getLineNumber(), issue.getMessage());
                             break;
                         default:
                             break;

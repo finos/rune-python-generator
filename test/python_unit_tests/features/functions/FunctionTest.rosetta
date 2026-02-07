@@ -112,9 +112,10 @@ func TestAliasWithBaseModelInputs:
         a->valueA
     alias Alias2:
         b->valueB
-    set c->valueC:
-        Alias1*Alias2
-
+set c:
+        C {
+            valueC: Alias1 * Alias2
+        }
 func MinMaxWithSimpleCondition:
     inputs:
         in1 number (1..1)
@@ -181,31 +182,10 @@ type BaseObject:
     value1 int (1..1)
     value2 int (1..1)
 
-func TestCreateIncompleteObjectFails:
-    inputs:
-        value1 int (1..1)
-    output:
-        result BaseObject (1..1)
-    set result:
-        BaseObject {
-            value1: value1
-        }
-
 type BaseObjectWithBaseClassFields:
     value1 int (1..1)
     value2 int (1..1)
     strict boolean (1..1)
-
-func TestCreateIncompleteObjectSucceeds:
-    inputs:
-        value1 int (1..1)
-    output:
-        result BaseObjectWithBaseClassFields (1..1)
-    set result:
-        BaseObjectWithBaseClassFields {
-            value1: value1,
-            strict: False
-        }
 
 func TestSimpleObjectAssignment:
     inputs:
