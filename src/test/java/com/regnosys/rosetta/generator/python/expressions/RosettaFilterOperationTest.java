@@ -27,7 +27,15 @@ public class RosettaFilterOperationTest {
                     condition FilterCheck:
                         (items filter [ val > 5 ] then count) = 0
                 """,
-                "return rune_all_elements((lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
+                """
+                        class com_rosetta_test_model_TestFilter(BaseDataClass):
+                            _FQRTN = 'com.rosetta.test.model.TestFilter'
+                            items: Optional[list[Annotated[com_rosetta_test_model_Item, com_rosetta_test_model_Item.serializer(), com_rosetta_test_model_Item.validator()]]] = Field(None, description='')
+
+                            @rune_condition
+                            def condition_0_FilterCheck(self):
+                                item = self
+                                return rune_all_elements((lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, "items"), lambda item: rune_all_elements(rune_resolve_attr(item, "val"), ">", 5))), "=", 0)""");
     }
 
     @Test
@@ -41,6 +49,27 @@ public class RosettaFilterOperationTest {
                     set result:
                         items filter [ val > 5 ] then count
                 """,
-                "result = (lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_TestNestedNested(items: list[com_rosetta_test_model_Item] | None) -> int:
+                            \"\"\"
+
+                            Parameters
+                            ----------
+                            items : list[com.rosetta.test.model.Item]
+
+                            Returns
+                            -------
+                            result : int
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = (lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, "items"), lambda item: rune_all_elements(rune_resolve_attr(item, "val"), ">", 5)))
+
+
+                            return result""");
     }
 }

@@ -168,8 +168,10 @@ public class RuneToPythonMapper {
 
     public static String getBundleObjectName(RosettaNamed rn) {
         String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn);
-        return (rn instanceof RosettaEnumeration) ? fullyQualifiedObjectName
-                : fullyQualifiedObjectName.replace(".", "_");
+        if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
+            return fullyQualifiedObjectName;
+        }
+        return fullyQualifiedObjectName.replace(".", "_");
     }
 
     /**

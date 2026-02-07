@@ -54,9 +54,44 @@ public class RosettaExistsExpressionTest {
     }
 
     @Test
+    public void testAbsentBasic() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        type Bar:
+                            field number (0..1)
+
+                        func AbsentBasic:
+                            inputs: bar Bar (1..1)
+                            output: result boolean (1..1)
+                            set result:
+                                bar -> field is absent
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_AbsentBasic(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
+
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = (not rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field")))
+
+
+                            return result""");
+    }
+
+    @Test
     public void testSingleExists() {
-        // UPDATED: Expecting "single" argument
-        //
         testUtils.assertBundleContainsExpectedString(
                 """
                         type Bar:
@@ -94,8 +129,6 @@ public class RosettaExistsExpressionTest {
 
     @Test
     public void testMultipleExists() {
-        // UPDATED: Expecting "multiple" argument
-        //
         testUtils.assertBundleContainsExpectedString(
                 """
                         type Bar:
@@ -223,7 +256,27 @@ public class RosettaExistsExpressionTest {
                                 bar -> sub -> field single exists
                         """,
                 """
-                        result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bar"), "sub"), "field"), "single")""");
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_DeepExists(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
+
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bar"), "sub"), "field"), "single")
+
+
+                            return result""");
     }
 
     @Test
@@ -240,6 +293,28 @@ public class RosettaExistsExpressionTest {
                                 arg1 exists or arg2 exists
                         """,
                 """
-                        result = (rune_attr_exists(rune_resolve_attr(self, "arg1")) or rune_attr_exists(rune_resolve_attr(self, "arg2")))""");
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_ExistsArg(arg1: Decimal | None, arg2: Decimal | None) -> bool:
+                            \"\"\"
+
+                            Parameters
+                            ----------
+                            arg1 : Decimal
+
+                            arg2 : Decimal
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = (rune_attr_exists(rune_resolve_attr(self, "arg1")) or rune_attr_exists(rune_resolve_attr(self, "arg2")))
+
+
+                            return result""");
     }
 }

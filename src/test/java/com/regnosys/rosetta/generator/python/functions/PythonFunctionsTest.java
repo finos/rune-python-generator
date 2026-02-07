@@ -922,31 +922,30 @@ public class PythonFunctionsTest {
 
         String expected = """
                 @replaceable
-                def ResolveInterestRateObservationIdentifiers(payout: InterestRatePayout, date: datetime.date) -> ObservationIdentifier:
+                @validate_call
+                def com_rosetta_test_model_functions_ResolveInterestRateObservationIdentifiers(payout: com_rosetta_test_model_InterestRatePayout, date: datetime.date) -> com_rosetta_test_model_ObservationIdentifier:
                     \"\"\"
                     Defines which attributes on the InterestRatePayout should be used to locate and resolve the underlier's price, for example for the reset process.
 
-                    Parameters\s
+                    Parameters
                     ----------
-                    payout : InterestRatePayout
+                    payout : com.rosetta.test.model.InterestRatePayout
 
-                    date : date
+                    date : datetime.date
 
                     Returns
                     -------
-                    identifiers : ObservationIdentifier
+                    identifiers : com.rosetta.test.model.ObservationIdentifier
 
                     \"\"\"
                     self = inspect.currentframe()
 
 
-                    identifiers = _get_rune_object('ObservationIdentifier', 'observable', _get_rune_object('Observable', 'rateOption', rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "payout"), "rateSpecification"), "floatingRate"), "rateOption")))
+                    identifiers = _get_rune_object('com_rosetta_test_model_ObservationIdentifier', 'observable', _get_rune_object('com_rosetta_test_model_Observable', 'rateOption', rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "payout"), "rateSpecification"), "floatingRate"), "rateOption")))
                     identifiers = set_rune_attr(rune_resolve_attr(self, 'identifiers'), 'observationDate', rune_resolve_attr(self, "date"))
 
 
                     return identifiers
-
-                sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)
                 """;
         testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
 
