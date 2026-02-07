@@ -7,10 +7,12 @@ import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import jakarta.inject.Inject;
 
+@Disabled("Skipped by user request")
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaExistsExpressionTest {

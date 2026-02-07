@@ -170,14 +170,17 @@ public class PythonExpressionGenerator {
 
     private String generateFilterOperation(FilterOperation expr, int ifLevel, boolean isLambda) {
         String argument = generateExpression(expr.getArgument(), ifLevel, isLambda);
+        String param = expr.getFunction().getParameters().isEmpty() ? "item"
+                : expr.getFunction().getParameters().get(0).getName();
         String filterExpression = generateExpression(expr.getFunction().getBody(), ifLevel, true);
-        return "rune_filter(" + argument + ", lambda item: " + filterExpression + ")";
+        return "rune_filter(" + argument + ", lambda " + param + ": " + filterExpression + ")";
     }
 
     private String generateMapOperation(MapOperation expr, int ifLevel, boolean isLambda) {
         InlineFunction inlineFunc = expr.getFunction();
+        String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
         String funcBody = generateExpression(inlineFunc.getBody(), ifLevel, true);
-        String lambdaFunction = "lambda item: " + funcBody;
+        String lambdaFunction = "lambda " + param + ": " + funcBody;
         String argument = generateExpression(expr.getArgument(), ifLevel, isLambda);
         return "list(map(" + lambdaFunction + ", " + argument + "))";
     }
@@ -274,7 +277,9 @@ public class PythonExpressionGenerator {
             return generateEnumString(evalue);
         } else if (symbol instanceof RosettaCallableWithArgs callable) {
             return generateCallableWithArgsCall(callable, expr, ifLevel, isLambda);
-        } else if (symbol instanceof ShortcutDeclaration || symbol instanceof ClosureParameter) {
+        } else if (symbol instanceof ClosureParameter) {
+            return symbol.getName();
+        } else if (symbol instanceof ShortcutDeclaration) {
             return "rune_resolve_attr(self, \"" + symbol.getName() + "\")";
         } else {
             throw new UnsupportedOperationException(
