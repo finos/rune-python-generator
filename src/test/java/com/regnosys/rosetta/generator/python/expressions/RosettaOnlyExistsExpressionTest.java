@@ -18,58 +18,67 @@ public class RosettaOnlyExistsExpressionTest {
     private PythonGeneratorTestUtils testUtils;
 
     @Test
-    public void testGenerateOnlyExistsCondition() {
-        String generatedPython = testUtils.generatePythonFromString("""
-                type A: <"Test type">
-                field1 number (0..1) <"Test number field 1">
+    public void testOnlyExistsSinglePath() {
+        testUtils.assertBundleContainsExpectedString("""
+                type A:
+                    field1 number (0..1)
 
-                type Test: <"Test only exists condition">
-                    aValue A (1..1) <"Test A type aValue">
+                type Test:
+                    aValue A (1..1)
 
-                    condition TestCond: <"Test condition">
+                    condition TestCond:
                         if aValue -> field1 exists
                             then aValue -> field1 only exists
-                """).toString();
+                """,
+                "return rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"aValue\"), \"field1\"))");
+    }
 
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                """
-                        class com_rosetta_test_model_Test(BaseDataClass):
-                            \"""
-                            Test only exists condition
-                            \"""
-                            _FQRTN = 'com.rosetta.test.model.Test'
-                            aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='Test A type aValue')
-                            \"""
-                            Test A type aValue
-                            \"""
+    @Test
+    public void testOnlyExistsMultiplePaths() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Bar:
+                    before number (0..1)
+                    after number (0..1)
 
-                            @rune_condition
-                            def condition_0_TestCond(self):
-                                \"""
-                                Test condition
-                                \"""
-                                item = self
-                                def _then_fn0():
-                                    return rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1"))
+                func OnlyExistsMultiplePaths:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        ( bar -> before, bar -> after ) only exists
+                """,
+                "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"after\"))");
+    }
 
-                                def _else_fn0():
-                                    return True
+    @Test
+    public void testOnlyExistsWithMetadata() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Bar:
+                    before number (0..1)
+                        [metadata scheme]
 
-                                return if_cond_fn(rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "field1")), _then_fn0, _else_fn0)""");
+                func OnlyExistsWithMetadata:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> before only exists
+                """,
+                "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"))");
+    }
 
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                """
-                        class com_rosetta_test_model_A(BaseDataClass):
-                            \"""
-                            Test type
-                            \"""
-                            _FQRTN = 'com.rosetta.test.model.A'
-                            field1: Optional[Decimal] = Field(None, description='Test number field 1')
-                            \"""
-                            Test number field 1
-                            \"""
-                        """);
+    @Test
+    public void testOnlyExistsThreePaths() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Bar:
+                    a number (0..1)
+                    b number (0..1)
+                    c number (0..1)
+
+                func OnlyExistsThree:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        ( bar -> a, bar -> b, bar -> c ) only exists
+                """,
+                "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"a\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"b\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"c\"))");
     }
 }

@@ -3,6 +3,7 @@ package com.regnosys.rosetta.generator.python.expressions;
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 import com.regnosys.rosetta.rosetta.*;
 import com.regnosys.rosetta.rosetta.expression.*;
+import com.regnosys.rosetta.rosetta.expression.ExistsModifier;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
 import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
@@ -110,14 +111,22 @@ public class PythonExpressionGenerator {
         } else if (expr instanceof RosettaEnumValueReference enumRef) {
             return enumRef.getEnumeration().getName() + "." + EnumHelper.convertValue(enumRef.getValue());
         } else if (expr instanceof RosettaExistsExpression exists) {
-            return "rune_attr_exists(" + generateExpression(exists.getArgument(), ifLevel, isLambda) + ")";
+            String arg = generateExpression(exists.getArgument(), ifLevel, isLambda);
+            if (exists.getModifier() == ExistsModifier.SINGLE) {
+                return "rune_attr_exists(" + arg + ", \"single\")";
+            } else if (exists.getModifier() == ExistsModifier.MULTIPLE) {
+                return "rune_attr_exists(" + arg + ", \"multiple\")";
+            }
+            return "rune_attr_exists(" + arg + ")";
         } else if (expr instanceof RosettaFeatureCall featureCall) {
             return generateFeatureCall(featureCall, ifLevel, isLambda);
         } else if (expr instanceof RosettaOnlyElement onlyElement) {
             return "rune_get_only_element(" + generateExpression(onlyElement.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof RosettaOnlyExistsExpression onlyExists) {
-            return "rune_check_one_of(self, " + generateExpression(onlyExists.getArgs().get(0), ifLevel, isLambda)
-                    + ")";
+            String args = onlyExists.getArgs().stream()
+                    .map(arg -> generateExpression(arg, ifLevel, isLambda))
+                    .collect(Collectors.joining(", "));
+            return "rune_check_one_of(self, " + args + ")";
         } else if (expr instanceof RosettaSymbolReference symbolRef) {
             return generateSymbolReference(symbolRef, ifLevel, isLambda);
         } else if (expr instanceof RosettaImplicitVariable implicit) {
