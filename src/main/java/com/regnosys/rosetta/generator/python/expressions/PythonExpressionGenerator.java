@@ -45,7 +45,7 @@ public class PythonExpressionGenerator {
         } else if (expr instanceof RosettaIntLiteral i) {
             return String.valueOf(i.getValue());
         } else if (expr instanceof RosettaNumberLiteral n) {
-            return n.getValue().toString();
+            return "Decimal('" + n.getValue().toString() + "')";
         } else if (expr instanceof RosettaStringLiteral s) {
             return "\"" + s.getValue() + "\"";
         } else if (expr instanceof AsKeyOperation asKey) {

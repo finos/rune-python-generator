@@ -116,6 +116,23 @@ public class PythonFunctionTypeTest {
     }
 
     @Test
+    public void testNumericPrecisionWithDecimals() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        func TestPrecision:
+                            output:
+                                result number (1..1)
+                            set result:
+                                0.1 + 0.2
+                        """);
+        String generated = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "def com_rosetta_test_model_functions_TestPrecision() -> Decimal:");
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = (Decimal('0.1') + Decimal('0.2'))");
+        testUtils.assertGeneratedContainsExpectedString(generated, "return result");
+    }
+
+    @Test
     public void testGenerateFunctionWithEnum() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """

@@ -60,7 +60,10 @@ Rune `number` and `int` are often handled inconsistently across different langua
 
 ### Comparison
 *   **Current Baseline**: Rune `number` is sometimes mapped to `float`, which causes precision loss (e.g., `0.1 + 0.2 != 0.3`).
-*   **Proposed**: Rune `number` is **strictly** mapped to `Decimal`. Rune `int` is mapped to `int`. This ensures financial accuracy and matches the expectations of the Rune runtime.
+*   **Proposed**: Rune `number` is **strictly** mapped to `Decimal`. Rune `int` is mapped to `int`. 
+    *   **Literals**: Numeric literals are explicitly generated as `Decimal('0.1')` instead of raw floats to preserve precision and prevent `TypeError` during operations with other `Decimal` fields.
+    *   **Constraints**: Pydantic `Field` constraints (`ge`, `le`) for numeric types are also generated as `Decimal` objects.
+    *   **Consistency**: This ensures financial accuracy and full compatibility with the Rune runtime's expectation of `Decimal` for all fractional values.
 
 ---
 
@@ -131,7 +134,8 @@ If `ComplexTypeC` has `valueB` as a required field (cardinality 1..1), the first
 
 ## Issue: Inconsistent Numeric Types
 *   **Description**: Mapping of Rune `number` was inconsistent (sometimes `int`, `float`, or `Decimal`), causing precision loss and test failures.
-*   **Status**: Fixed. `RuneToPythonMapper` strictly enforces mapping `number` to `Decimal`.
+*   **Status**: Fixed. Mapping is enforced in `RuneToPythonMapper`, literal generation in `PythonExpressionGenerator`, and constraints in `PythonAttributeProcessor`. 
+
 
 ## Issue: Constructor Keyword Arguments SyntaxError
 *   **Description**: Constructor expressions were generating duplicate `unknown` keyword arguments for null Rune keys.

@@ -205,8 +205,10 @@ public class PythonAttributeProcessor {
             if (!numberType.isInteger()) {
                 numberType.getDigits().ifPresent(value -> attrProp.put("max_digits", value.toString()));
                 numberType.getFractionalDigits().ifPresent(value -> attrProp.put("decimal_places", value.toString()));
-                numberType.getInterval().getMin().ifPresent(value -> attrProp.put("ge", value.toPlainString()));
-                numberType.getInterval().getMax().ifPresent(value -> attrProp.put("le", value.toPlainString()));
+                numberType.getInterval().getMin()
+                        .ifPresent(value -> attrProp.put("ge", "Decimal('" + value.toPlainString() + "')"));
+                numberType.getInterval().getMax()
+                        .ifPresent(value -> attrProp.put("le", "Decimal('" + value.toPlainString() + "')"));
             }
         }
         return attrProp;
