@@ -48,6 +48,9 @@ PYTHON_SETUP_PATH="$MY_PATH/../../python_setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 cd ${MY_PATH} || error
 
+
+source "$MY_PATH/../../common.sh" || { echo "Failed to source common.sh"; exit 1; }
+
 # Parse command-line arguments for --skip-cdm
 SKIP_CDM=0
 for arg in "$@"; do
@@ -62,18 +65,7 @@ else
     echo "Skipping get_cdm.sh as requested."
 fi
 
-if [[ ! -f "$JAR_PATH" ]]; then
-  echo "Could not find generator jar at: $JAR_PATH"
-  echo "Building with maven..."
-  if ! (cd "$PROJECT_ROOT_PATH" && mvn clean package); then
-    echo "Maven build failed - exiting."
-    exit 1
-  fi
-  if [[ ! -f "$JAR_PATH" ]]; then
-    echo "Maven build completed but $JAR_PATH still missing - exiting."
-    exit 1
-  fi
-fi
+ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"
 
 echo "***** build CDM"
 java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
@@ -99,7 +91,11 @@ python -m pip wheel --no-deps --only-binary :all: . || processError
 echo "***** cleanup"
 
 deactivate
-source $PYTHON_SETUP_PATH/cleanup_python_env.sh
+if [[ "${REUSE_ENV}" != "1" && "${REUSE_ENV}" != "true" ]]; then
+    source $PYTHON_SETUP_PATH/cleanup_python_env.sh
+else
+    echo "Skipping cleanup (REUSE_ENV set)"
+fi
 
 echo ""
 echo ""

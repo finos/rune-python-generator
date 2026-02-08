@@ -45,8 +45,16 @@ VENV_PATH="../../$VENV_NAME"
 if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
 source "$MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/${PY_SCRIPTS}/activate" || error
 
+
 # install cdm package
 PYTHONCDMDIR="../../target/python-cdm"
 
+# Construct pip install command
+PIP_ARGS=( "$MY_PATH/$PYTHONCDMDIR"/python_cdm-*-py3-none-any.whl "--force-reinstall" "--pre" )
+
+if [[ -n "$RUNE_RUNTIME_DIR" && -d "$RUNE_RUNTIME_DIR" ]]; then
+    PIP_ARGS+=( "--find-links" "$RUNE_RUNTIME_DIR" )
+fi
+
 echo "**** Install CDM package ****"
-python -m pip install $MY_PATH/$PYTHONCDMDIR/python_cdm-*-py3-none-any.whl
+python -m pip install "${PIP_ARGS[@]}"
