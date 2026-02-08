@@ -1,0 +1,19 @@
+namespace rosetta_dsl.test.semantic.test_enum_usage : <"generate Python unit tests from Rosetta.">
+
+enum TrafficLight:
+    Red
+    Yellow
+    Green
+
+type TrafficLightType:
+    val TrafficLight(1..1)
+
+func CheckLight:
+    inputs:
+        color TrafficLight(1..1)
+    output:
+        res string(1..1)
+    set res:
+        if color = TrafficLight -> Red
+        then "Stop"
+        else "Go"
