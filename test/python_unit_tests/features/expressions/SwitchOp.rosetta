@@ -1,0 +1,13 @@
+namespace rosetta_dsl.test.semantic.expressions.switch_op
+
+func SwitchTest: <"Test switch operation">
+    inputs:
+        x int (1..1)
+    output:
+        res string (1..1)
+    
+    set res:
+        x switch
+            1 then "One",
+            2 then "Two",
+            default "Other"

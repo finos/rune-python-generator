@@ -39,19 +39,22 @@ public class RosettaSwitchExpressionTest {
                             @rune_condition
                             def condition_0_Test(self):
                                 item = self
-                                def _then_1():
-                                    return True
-                                def _then_2():
-                                    return True
-                                def _then_default():
-                                    return False
-                                switchAttribute = rune_resolve_attr(self, "a")
-                                if switchAttribute == 1:
-                                    return _then_1()
-                                elif switchAttribute == 2:
-                                    return _then_2()
-                                else:
-                                    return _then_default()
+                                def _switch_fn_0():
+                                    def _then_1():
+                                        return True
+                                    def _then_2():
+                                        return True
+                                    def _then_default():
+                                        return False
+                                    switchAttribute = rune_resolve_attr(self, "a")
+                                    if switchAttribute == 1:
+                                        return _then_1()
+                                    elif switchAttribute == 2:
+                                        return _then_2()
+                                    else:
+                                        return _then_default()
+
+                                return _switch_fn_0()
                         """);
     }
 }

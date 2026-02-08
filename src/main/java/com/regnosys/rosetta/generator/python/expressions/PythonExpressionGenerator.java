@@ -239,44 +239,6 @@ public class PythonExpressionGenerator {
         throw new UnsupportedOperationException("Unsupported SwitchCaseGuard type");
     }
 
-    private String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
-        String attr = generateExpression(expr.getArgument(), 0, isLambda);
-        PythonCodeWriter writer = new PythonCodeWriter();
-        isSwitchCond = true;
-
-        var cases = expr.getCases();
-        for (int i = 0; i < cases.size(); i++) {
-            var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
-            String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), 0, isLambda)
-                    : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda);
-
-            writer.appendLine("def " + funcName + "():");
-
-            writer.indent();
-            writer.appendLine("return " + thenExprDef);
-            writer.unindent();
-        }
-
-        writer.appendLine("switchAttribute = " + attr);
-
-        for (int i = 0; i < cases.size(); i++) {
-            var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
-            if (currentCase.isDefault()) {
-                writer.appendLine("else:");
-            } else {
-                SwitchCaseGuard guard = currentCase.getGuard();
-                String prefix = (i == 0) ? "if " : "elif ";
-                writer.appendLine(prefix + getGuardExpression(guard, isLambda) + ":");
-            }
-            writer.indent();
-            writer.appendLine("return " + funcName + "()");
-            writer.unindent();
-        }
-        return writer.toString();
-    }
-
     private String generateSymbolReference(RosettaSymbolReference expr, int ifLevel, boolean isLambda) {
 
         RosettaSymbol symbol = expr.getSymbol();
@@ -366,6 +328,9 @@ public class PythonExpressionGenerator {
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
                 case "join" -> generateExpression(expr.getRight(), ifLevel, isLambda) + ".join("
                         + generateExpression(expr.getLeft(), ifLevel, isLambda) + ")";
+                case "default" -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " if "
+                        + generateExpression(expr.getLeft(), ifLevel, isLambda) + " is not None else "
+                        + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
                 default -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " " + expr.getOperator() + " "
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
             };
@@ -461,17 +426,16 @@ public class PythonExpressionGenerator {
         return writer.toString();
     }
 
+    private int switchCounter = 0;
+
     private String generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear();
-        isSwitchCond = false;
+        switchCounter = 0;
         String expr = generateExpression(c.getExpression(), 0, false);
 
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.indent();
-        if (isSwitchCond) {
-            writer.appendBlock(expr);
-            return writer.toString();
-        }
+
         if (!ifCondBlocks.isEmpty()) {
             for (String arg : ifCondBlocks) {
                 writer.appendBlock(arg);
@@ -480,5 +444,52 @@ public class PythonExpressionGenerator {
         }
         writer.appendLine("return " + expr);
         return writer.toString();
+    }
+
+    // ... (helper methods like isConstraintCondition, etc. remain unchanged) ...
+
+    private String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
+        String attr = generateExpression(expr.getArgument(), 0, isLambda);
+        PythonCodeWriter writer = new PythonCodeWriter();
+
+        String switchFuncName = "_switch_fn_" + switchCounter++;
+
+        writer.appendLine("def " + switchFuncName + "():");
+        writer.indent();
+
+        var cases = expr.getCases();
+        for (int i = 0; i < cases.size(); i++) {
+            var currentCase = cases.get(i);
+            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
+            String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), 0, isLambda)
+                    : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda);
+
+            writer.appendLine("def " + funcName + "():");
+            writer.indent();
+            writer.appendLine("return " + thenExprDef);
+            writer.unindent();
+        }
+
+        writer.appendLine("switchAttribute = " + attr);
+
+        for (int i = 0; i < cases.size(); i++) {
+            var currentCase = cases.get(i);
+            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
+            if (currentCase.isDefault()) {
+                writer.appendLine("else:");
+            } else {
+                SwitchCaseGuard guard = currentCase.getGuard();
+                String prefix = (i == 0) ? "if " : "elif ";
+                writer.appendLine(prefix + getGuardExpression(guard, isLambda) + ":");
+            }
+            writer.indent();
+            writer.appendLine("return " + funcName + "()");
+            writer.unindent();
+        }
+
+        writer.unindent();
+
+        ifCondBlocks.add(writer.toString());
+        return switchFuncName + "()";
     }
 }
