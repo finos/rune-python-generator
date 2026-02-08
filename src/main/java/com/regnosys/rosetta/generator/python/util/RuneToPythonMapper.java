@@ -166,12 +166,20 @@ public class RuneToPythonMapper {
         return typeName;
     }
 
-    public static String getBundleObjectName(RosettaNamed rn) {
+    public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes) {
         String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn);
         if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
             return fullyQualifiedObjectName;
         }
-        return fullyQualifiedObjectName.replace(".", "_");
+        String bundleName = fullyQualifiedObjectName.replace(".", "_");
+        if (useQuotes) {
+            return "\"" + bundleName + "\"";
+        }
+        return bundleName;
+    }
+
+    public static String getBundleObjectName(RosettaNamed rn) {
+        return getBundleObjectName(rn, false);
     }
 
     /**
@@ -186,12 +194,15 @@ public class RuneToPythonMapper {
     }
 
     /**
-     * Convert from Rune RType to Python type.
+     * Convert from Rune RType to Python type with optional quoting for forward
+     * references.
      *
-     * @param rt the Rune RType object
+     * @param rt        the Rune RType object
+     * @param useQuotes whether to wrap the type name in quotes for forward
+     *                  references
      * @return the Python type name string, or null if rt is null
      */
-    public static String toPythonType(RType rt) {
+    public static String toPythonType(RType rt, boolean useQuotes) {
         if (rt == null)
             return null;
         var pythonType = toPythonBasicTypeInnerFunction(rt.getName());
@@ -199,8 +210,25 @@ public class RuneToPythonMapper {
             String rtName = rt.getName();
             pythonType = rt.getNamespace().toString() + "." + rtName;
             pythonType = (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType;
+
+            if (!isRosettaBasicType(rt) && !(rt instanceof REnumType)) {
+                pythonType = getFlattenedTypeName(rt, pythonType);
+                if (useQuotes) {
+                    pythonType = "\"" + pythonType + "\"";
+                }
+            }
         }
         return pythonType;
+    }
+
+    /**
+     * Convert from Rune RType to Python type.
+     *
+     * @param rt the Rune RType object
+     * @return the Python type name string, or null if rt is null
+     */
+    public static String toPythonType(RType rt) {
+        return toPythonType(rt, false);
     }
 
     /**

@@ -5,8 +5,10 @@ import com.regnosys.rosetta.rosetta.expression.*;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
 
+import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RFunction;
 import com.regnosys.rosetta.types.RObjectFactory;
+import com.regnosys.rosetta.types.RType;
 import jakarta.inject.Inject;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.EcoreUtil2;
@@ -14,8 +16,6 @@ import org.eclipse.xtext.EcoreUtil2;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-// TODO: do we need to process RosettaFunctionalOperation?
 
 /**
  * Determine the Rosetta dependencies for a Rosetta object
@@ -42,7 +42,14 @@ public class PythonFunctionDependencyProvider {
         } else if (object instanceof RosettaOnlyExistsExpression onlyExists) {
             onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports));
         } else if (object instanceof RosettaFunctionalOperation functional) {
-            // NOP
+            if (functional.getArgument() != null) {
+                addDependencies(functional.getArgument(), enumImports);
+            }
+            if (functional instanceof FilterOperation filter) {
+                addDependencies(filter.getFunction(), enumImports);
+            } else if (functional instanceof MapOperation map) {
+                addDependencies(map.getFunction(), enumImports);
+            }
         } else if (object instanceof RosettaUnaryOperation unary) {
             addDependencies(unary.getArgument(), enumImports);
         } else if (object instanceof RosettaFeatureCall featureCall) {
@@ -71,9 +78,18 @@ public class PythonFunctionDependencyProvider {
                 object instanceof RosettaRecordType ||
                 object instanceof RosettaTypeAlias) {
             return;
-        } else {
-            throw new IllegalArgumentException(object.eClass().getName()
-                    + ": generating dependency in a function for this type is not yet implemented.");
+        } else if (object != null) {
+            // Recurse into all children for unknown EObjects to ensure thorough dependency
+            // collection
+            object.eContents().forEach(child -> addDependencies(child, enumImports));
+        }
+    }
+
+    public void addDependencies(RType type, Set<String> enumImports) {
+        if (type instanceof REnumType enumType) {
+            String name = enumType.getName();
+            String prefix = enumType.getNamespace().toString();
+            enumImports.add("import " + prefix + "." + name);
         }
     }
 
