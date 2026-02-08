@@ -79,6 +79,10 @@ public class PythonCodeGeneratorCLI {
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
 
     public static void main(String[] args) {
+        System.exit(new PythonCodeGeneratorCLI().execute(args));
+    }
+
+    public int execute(String[] args) {
         System.out.println("***** Running PythonCodeGeneratorCLI v2 *****");
         Options options = new Options();
         Option help = new Option("h", "Print usage");
@@ -88,33 +92,44 @@ public class PythonCodeGeneratorCLI {
                 .build();
         Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir")
                 .desc("Target Python directory (default: ./python)").hasArg().build();
+        Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors")
+                .desc("Continue generation even if validation errors occur").build();
+        Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings")
+                .desc("Treat validation warnings as errors").build();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
         options.addOption(srcFileOpt);
         options.addOption(tgtDirOpt);
+        options.addOption(allowErrorsOpt);
+        options.addOption(failOnWarningsOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
             CommandLine cmd = parser.parse(options, args);
             if (cmd.hasOption("h")) {
                 printUsage(options);
-                return;
+                return 0;
             }
             String tgtDir = cmd.getOptionValue("t", "./python");
+            boolean allowErrors = cmd.hasOption("e");
+            boolean failOnWarnings = cmd.hasOption("w");
+
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
-                translateFromSourceDir(srcDir, tgtDir);
+                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings);
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
-                translateFromSourceFile(srcFile, tgtDir);
+                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings);
             } else {
                 System.err.println("Either a source directory (-s) or source file (-f) must be specified.");
                 printUsage(options);
+                return 1;
             }
         } catch (ParseException e) {
             System.err.println("Failed to parse command line arguments: " + e.getMessage());
             printUsage(options);
+            return 1;
         }
     }
 
@@ -123,53 +138,59 @@ public class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    private static void translateFromSourceDir(String srcDir, String tgtDir) {
+    protected int translateFromSourceDir(String srcDir, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
         // Find all .rosetta files in a directory
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
             LOGGER.error("Source directory does not exist: {}", srcDir);
-            System.exit(1);
+            return 1;
         }
         if (!Files.isDirectory(srcDirPath)) {
             LOGGER.error("Source directory is not a directory: {}", srcDir);
-            System.exit(1);
+            return 1;
         }
         try {
             List<Path> rosettaFiles = Files.walk(srcDirPath)
                     .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
                     .collect(Collectors.toList());
-            processRosettaFiles(rosettaFiles, tgtDir);
+            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
         } catch (IOException e) {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
+            return 1;
         }
     }
 
-    private static void translateFromSourceFile(String srcFile, String tgtDir) {
+    protected int translateFromSourceFile(String srcFile, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
             LOGGER.error("Source file does not exist: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         if (Files.isDirectory(srcFilePath)) {
             LOGGER.error("Source file is a directory: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         if (!srcFilePath.toString().endsWith(".rosetta")) {
             LOGGER.error("Source file does not end with .rosetta: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         List<Path> rosettaFiles = List.of(srcFilePath);
-        processRosettaFiles(rosettaFiles, tgtDir);
+        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
+    }
+
+    protected IResourceValidator getValidator(Injector injector) {
+        return injector.getInstance(IResourceValidator.class);
     }
 
     // Common processing function
-    private static void processRosettaFiles(List<Path> rosettaFiles, String tgtDir) {
+    protected int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, boolean allowErrors,
+            boolean failOnWarnings) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
         if (rosettaFiles.isEmpty()) {
             System.err.println("No .rosetta files found to process.");
-            System.exit(1);
+            return 1;
         }
 
         Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
@@ -188,13 +209,13 @@ public class PythonCodeGeneratorCLI {
         List<RosettaModel> models = modelLoader.getRosettaModels(resources);
         if (models.isEmpty()) {
             LOGGER.error("No valid Rosetta models found.");
-            System.exit(1);
+            return 1;
         }
         String version = models.getFirst().getVersion();
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
-        IResourceValidator validator = injector.getInstance(IResourceValidator.class);
+        IResourceValidator validator = getValidator(injector);
         Map<String, CharSequence> generatedPython = new HashMap<>();
 
         List<RosettaModel> validModels = new ArrayList<>();
@@ -235,6 +256,9 @@ public class PythonCodeGeneratorCLI {
                         case WARNING:
                             LOGGER.warn("Validation WARNING in {} (Line {}): {}", model.getName(),
                                     issue.getLineNumber(), issue.getMessage());
+                            if (failOnWarnings) {
+                                hasErrors = true;
+                            }
                             break;
                         default:
                             break;
@@ -246,24 +270,23 @@ public class PythonCodeGeneratorCLI {
                 continue;
             }
 
-            if (hasErrors) {
-                LOGGER.error("Skipping model {} due to validation errors.", model.getName());
+            if (hasErrors && !allowErrors) {
+                LOGGER.error("Skipping model {} due to validation errors (allowErrors=false).", model.getName());
             } else {
+                if (hasErrors) {
+                    LOGGER.warn("Proceeding with model {} despite validation errors (allowErrors=true).",
+                            model.getName());
+                }
                 validModels.add(model);
             }
         }
 
         if (validModels.isEmpty()) {
             LOGGER.error("No valid models found after validation. Exiting.");
-            System.exit(1);
+            return 1;
         }
 
         // Use validModels for generation
-        // Re-determine version based on valid models? Or keep original version?
-        // Assuming version is consistent across all loaded models or derived from the
-        // first one.
-        // The original code took version from models.getFirst().getVersion();
-
         LOGGER.info("Proceeding with generation for {} valid models.", validModels.size());
 
         pythonCodeGenerator.beforeAllGenerate(resourceSet, validModels, version);
@@ -276,6 +299,7 @@ public class PythonCodeGeneratorCLI {
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
         writePythonFiles(generatedPython, tgtDir);
+        return 0;
     }
 
     private static void writePythonFiles(Map<String, CharSequence> generatedPython, String tgtDir) {
@@ -356,4 +380,5 @@ public class PythonCodeGeneratorCLI {
             return Guice.createInjector(new PythonRosettaRuntimeModule());
         }
     }
+
 }
