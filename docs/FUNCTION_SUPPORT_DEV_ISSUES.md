@@ -120,6 +120,25 @@ Use **String Forward References + `model_rebuild()`** (The official "Pydantic Wa
 
 ---
 
+### 3. Support for External Data Sources
+
+#### Issue: Unmapped External Function Calls (`[codeImplementation]`)
+**Problem**: The Rosetta runtime allows functions to be marked with `[codeImplementation]`, indicating logic provided by the host language (e.g., loading XML codelists in Java). The Python generator does not yet emit the syntax to delegate these calls to Python external implementations.
+*   **Manifestation**: Validation functions like `ValidateFpMLCodingSchemeDomain` are either omitted or generate empty/invalid bodies.
+*   **Recommendation**: Update the generator to emit calls to a standard Python registry/dispatcher for external functions.
+
+#### Issue: Conditions on Basic Types (Strings)
+**Problem**: The DSL allows attaching validation logic directly to basic types (e.g., `typeAlias BusinessCenter: string condition IsValid...`). This feature, introduced to support data validation against external sources, is not supported in the Python generator.
+*   **Gap**: The generator may not correctly wrap simple types to attach validators or trigger validation upon assignment.
+*   **Status**: **Unresolved Gap**.
+
+#### Issue: Missing Standard Library for External Data
+**Problem**: The CDM Python implementation lacks the infrastructure to replicate the Java version's ability to load external data (e.g., FpML coding schemes) and validate values against them.
+*   **Impact**: Even if the generator called the validation function, the runtime mechanism to perform the check does not exist.
+*   **Recommendation**: Implement a Python equivalent of the Java `CodelistLoader` and expose it via the runtime library.
+
+---
+
 ## Backlog
 
 ### Enum Wrappers (Global Proposal)
