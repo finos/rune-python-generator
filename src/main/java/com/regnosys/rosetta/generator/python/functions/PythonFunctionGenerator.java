@@ -10,6 +10,10 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
+import com.regnosys.rosetta.rosetta.expression.*;
+import com.regnosys.rosetta.types.RObjectFactory;
+import org.jgrapht.graph.GraphCycleProhibitedException;
 
 import java.util.*;
 
@@ -27,6 +31,9 @@ public class PythonFunctionGenerator {
 
     @Inject
     private PythonExpressionGenerator expressionGenerator;
+
+    @Inject
+    private RObjectFactory rObjectFactory;
 
     /**
      * Generate Python from the collection of Rosetta functions.
@@ -64,12 +71,69 @@ public class PythonFunctionGenerator {
                 result.put(functionName, pythonFunction);
                 dependencyDAG.addVertex(functionName);
                 context.addFunctionName(functionName);
+
+                addFunctionDependencies(dependencyDAG, functionName, rf);
             } catch (Exception ex) {
                 LOGGER.error("Exception occurred generating rf {}", rf.getName(), ex);
                 throw new RuntimeException("Error generating Python for function " + rf.getName(), ex);
             }
         }
         return result;
+    }
+
+    private void addFunctionDependencies(Graph<String, DefaultEdge> dependencyDAG, String functionName, Function rf) {
+        Set<RosettaNamed> dependencies = new HashSet<>();
+
+        rf.getInputs().forEach(input -> {
+            if (input.getTypeCall() != null && input.getTypeCall().getType() != null) {
+                dependencies.add(input.getTypeCall().getType());
+            }
+        });
+        if (rf.getOutput() != null && rf.getOutput().getTypeCall() != null
+                && rf.getOutput().getTypeCall().getType() != null) {
+            dependencies.add(rf.getOutput().getTypeCall().getType());
+        }
+
+        Iterator<?> allContents = rf.eAllContents();
+        while (allContents.hasNext()) {
+            Object content = allContents.next();
+            if (content instanceof RosettaSymbolReference ref) {
+                if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
+                        || ref.getSymbol() instanceof RosettaEnumeration) {
+                    dependencies.add((RosettaNamed) ref.getSymbol());
+                }
+            } else if (content instanceof RosettaConstructorExpression cons) {
+                if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
+                    dependencies.add(cons.getTypeCall().getType());
+                }
+            }
+        }
+
+        for (RosettaNamed dep : dependencies) {
+            String depName = "";
+            if (dep instanceof Data) {
+                depName = rObjectFactory.buildRDataType((Data) dep).getQualifiedName().toString();
+            } else if (dep instanceof Function) {
+                depName = RuneToPythonMapper.getFullyQualifiedObjectName((Function) dep);
+            } else if (dep instanceof RosettaEnumeration) {
+                depName = rObjectFactory.buildREnumType((RosettaEnumeration) dep).getQualifiedName().toString();
+            }
+
+            if (!depName.isEmpty() && !functionName.equals(depName)) {
+                addDependency(dependencyDAG, functionName, depName);
+            }
+        }
+    }
+
+    private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
+        dependencyDAG.addVertex(dependencyName);
+        if (!className.equals(dependencyName)) {
+            try {
+                dependencyDAG.addEdge(dependencyName, className);
+            } catch (GraphCycleProhibitedException e) {
+                // Ignore
+            }
+        }
     }
 
     private String generateFunction(Function rf, String version, Set<String> enumImports) {

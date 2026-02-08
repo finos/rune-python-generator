@@ -11,6 +11,9 @@ import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.RObjectFactory;
 import jakarta.inject.Inject;
+import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.REnumType;
+import com.regnosys.rosetta.types.RType;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.GraphCycleProhibitedException;
@@ -75,11 +78,31 @@ public class PythonModelObjectGenerator {
 
                     addDependency(dependencyDAG, className, superClassName);
                 }
+
+                addAttributeDependencies(dependencyDAG, className, rc);
             } catch (Exception e) {
                 throw new RuntimeException("Error generating Python for class " + rc.getName(), e);
             }
         }
         return result;
+    }
+
+    private void addAttributeDependencies(Graph<String, DefaultEdge> dependencyDAG, String className, Data rc) {
+        RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
+        for (RAttribute attr : buildRDataType.getOwnAttributes()) {
+            RType rt = attr.getRMetaAnnotatedType().getRType();
+            if (rt instanceof RDataType || rt instanceof REnumType) {
+                String dependencyName = "";
+                if (rt instanceof RDataType) {
+                    dependencyName = ((RDataType) rt).getQualifiedName().toString();
+                } else {
+                    dependencyName = ((REnumType) rt).getQualifiedName().toString();
+                }
+                if (!dependencyName.isEmpty() && !className.equals(dependencyName)) {
+                    addDependency(dependencyDAG, className, dependencyName);
+                }
+            }
+        }
     }
 
     private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
@@ -124,7 +147,7 @@ public class PythonModelObjectGenerator {
                 writer.append(", ");
             }
             switch (metaData.getName()) {
-                case "key" -> writer.append("'@key', '@key:external'");
+                case "key", "id" -> writer.append("'@key', '@key:external'");
                 case "scheme" -> writer.append("'@scheme'");
             }
         }
