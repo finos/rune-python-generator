@@ -74,7 +74,7 @@ public class PythonFunctionGenerator {
 
                 addFunctionDependencies(dependencyDAG, functionName, rf);
             } catch (Exception ex) {
-                LOGGER.error("Exception occurred generating rf {}", rf.getName(), ex);
+                LOGGER.error("Exception occurred generating function {}", rf.getName(), ex);
                 throw new RuntimeException("Error generating Python for function " + rf.getName(), ex);
             }
         }

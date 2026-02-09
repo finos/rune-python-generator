@@ -133,6 +133,8 @@ public class PythonExpressionGenerator {
             return generateSymbolReference(symbolRef, ifLevel, isLambda);
         } else if (expr instanceof RosettaImplicitVariable implicit) {
             return implicit.getName();
+        } else if (expr instanceof WithMetaOperation withMeta) {
+            return generateWithMetaOperation(withMeta, ifLevel, isLambda);
         } else {
             throw new UnsupportedOperationException(
                     "Unsupported expression type of " + expr.getClass().getSimpleName());
@@ -491,5 +493,24 @@ public class PythonExpressionGenerator {
 
         ifCondBlocks.add(writer.toString());
         return switchFuncName + "()";
+    }
+
+    private String generateWithMetaOperation(WithMetaOperation expr, int ifLevel, boolean isLambda) {
+        String arg = generateExpression(expr.getArgument(), ifLevel, isLambda);
+        String entries = expr.getEntries().stream()
+                .map(entry -> {
+                    String key = entry.getKey().getName();
+                    String mappedKey = switch (key) {
+                        case "scheme" -> "@scheme";
+                        case "id", "key" -> "@key";
+                        case "reference" -> "@ref";
+                        case "location" -> "@key:scoped";
+                        case "address" -> "@ref:scoped";
+                        default -> key;
+                    };
+                    return "'" + mappedKey + "': " + generateExpression(entry.getValue(), ifLevel, isLambda);
+                })
+                .collect(Collectors.joining(", "));
+        return "rune_with_meta(" + arg + ", {" + entries + "})";
     }
 }

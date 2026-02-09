@@ -50,6 +50,9 @@ public class PythonFunctionDependencyProvider {
             } else if (functional instanceof MapOperation map) {
                 addDependencies(map.getFunction(), enumImports);
             }
+        } else if (object instanceof WithMetaOperation withMeta) {
+            addDependencies(withMeta.getArgument(), enumImports);
+            withMeta.getEntries().forEach(entry -> addDependencies(entry.getValue(), enumImports));
         } else if (object instanceof RosettaUnaryOperation unary) {
             addDependencies(unary.getArgument(), enumImports);
         } else if (object instanceof RosettaFeatureCall featureCall) {
