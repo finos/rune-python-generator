@@ -1,0 +1,18 @@
+"""Circular dependency failure test"""
+
+import pytest
+
+
+def test_circular_dependency_fails():
+    """
+    Test that circular dependencies fail as expected due to missing forward references.
+
+    EXPECTED TO FAIL: One of the classes will be defined before the other in the bundle.
+    Even if import succeeds due to 'from __future__ import annotations',
+    instantiation will trigger Pydantic to evaluate the type hints, which will throw NameError.
+    """
+    from rosetta_dsl.test.model.circular_failure.CircularA import CircularA
+
+    with pytest.raises(NameError, match="name '.*CircularA' is not defined"):
+        # This will trigger Pydantic to resolve type hints
+        a = CircularA(b={"a": None})

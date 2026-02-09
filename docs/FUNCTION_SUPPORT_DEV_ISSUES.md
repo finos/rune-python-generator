@@ -1,5 +1,208 @@
 # Development Documentation: Function Support Dev Issues
 
+
+## Unresolved Issues and Proposals
+
+Title: Fragile Object Building (Direct Constructors)
+
+### Problem Description:
+The generator relies on a magic `_get_rune_object` helper which bypasses IDE checks and is hard to debug. This helper attempts to resolve model classes from the global namespace, which is fragile and leads to isolation issues when multiple bundles are present.
+
+### Steps to Reproduce:
+Example Rune code: (See JUnit Test `testComplexSetConstructors`)
+```rosetta
+type ObservationIdentifier:
+    observable Observable (1..1)
+    observationDate date (1..1)
+
+func ResolveObservation:
+    inputs: date date (1..1)
+    output: identifiers ObservationIdentifier (1..1)
+    set identifiers -> observationDate:
+        date
+```
+
+1. Define a Rosetta function that creator a new object (e.g., using `set`).
+2. Observe the generated code calling `_get_rune_object`.
+
+**Test Case:**
+* JUnit: `PythonFunctionTypeTest.testComplexSetConstructors` (Disabled) ([Link](https://github.com/finos/rune-python-generator/blob/feature/function_support/src/test/java/com/regnosys/rosetta/generator/python/functions/PythonFunctionTypeTest.java))
+
+### Expected Result:
+The generator should emit direct Python constructor calls (e.g., `MyClass(attr=val)`) or standard Pydantic methods, providing full IDE support and transparency.
+
+### Actual Result:
+Generated code uses `_get_rune_object(base_model, attribute, value)`, which is opaque to static analysis.
+
+### Additional Context:
+This is an architectural debt item to improve the quality and maintainability of generated code.
+
+---
+
+Title: Partial Object Construction (Stepwise Initialization)
+
+### Problem Description:
+Rosetta functions often populate an output object through multiple `set` operations. Pydantic's default constructor (used by the legacy `_get_rune_object`) enforces validation of all required fields immediately. If the object is missing other required fields during the first `set` operation, Pydantic throws a `ValidationError`. Additionally, `_get_rune_object` fails with a `KeyError` because it cannot resolve classes from the generated `_bundle` module's namespace.
+
+### Steps to Reproduce:
+Example Rune code: [IncompleteObjects.rosetta](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/language/IncompleteObjects.rosetta)
+
+1. Define a Rosetta type with multiple required fields.
+2. Define a Rosetta function that sets these fields one by one.
+3. Call the function in Python.
+
+**Test Case:**
+* Python: `test/python_unit_tests/features/language/test_incomplete_objects.py` ([Link](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/language/test_incomplete_objects.py))
+* Rosetta: `test/python_unit_tests/features/language/IncompleteObjects.rosetta` ([Link](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/language/IncompleteObjects.rosetta))
+
+### Expected Result:
+The object should be constructed successfully in steps, with validation deferred until the object is fully populated or explicitly validated.
+
+### Actual Result:
+* **KeyError**: `_get_rune_object` cannot find the model class in the `rune.runtime.utils` namespace.
+* **ValidationError**: If the class is found, Pydantic fails immediately on the first `set` because required fields are still `None`.
+
+### Additional Context:
+Partial fix implemented in `PythonFunctionGenerator.java` by switching to `model_construct()`, but full removal of `_get_rune_object` is still pending.
+
+---
+
+Title: Circular Dependencies / Out-of-Order Definitions (The "Topological Sort" Limitation)
+
+### Problem Description:
+The generator uses a Directed Acyclic Graph (DAG) to order definitions in `_bundle.py`. However, the current implementation only includes edges for **inheritance (SuperTypes)**. It ignores **Attribute types**, leading to out-of-order definitions. Furthermore, Rosetta allows recursive/circular types (A has B, B has A), which a DAG cannot resolve by design. Inheritance-based cycles are particularly fatal as base classes must be defined before children.
+
+### Steps to Reproduce:
+
+1. Define two types that refer to each other as attributes.
+2. Define a child type that inherits from a parent, while the parent refers to the child.
+3. Import the generated classes.
+
+* **Attribute Cycle**: [CircularFailure.rosetta](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/model_structure/CircularFailure.rosetta.manifest_fail)
+```rosetta
+type CircularA:
+    b CircularB (1..1)
+
+type CircularB:
+    a CircularA (1..1)
+```
+**Test Cases:**
+
+* JUnit: `PythonCircularDependencyTest.testAttributeCircularDependency` ([testAttributeCircularDependency](https://github.com/finos/rune-python-generator/blob/feature/function_support/src/test/java/com/regnosys/rosetta/generator/python/object/PythonCircularDependencyTest.java))
+* Python: `test_inheritance_cycle.py.manifest_fail` ([test_inheritance_cycle](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/model_structure/test_inheritance_cycle.py.manifest_fail))
+
+* **Inheritance Cycle**: [InheritanceCycle.rosetta](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/model_structure/InheritanceCycle.rosetta.manifest_fail)
+```rosetta
+type Parent:
+    child Child (0..1)
+
+type Child extends Parent:
+    val int (1..1)
+```
+
+**Test Cases:**
+
+* JUnit: `PythonCircularDependencyTest.testInheritanceCircularDependency` ([testInheritanceCircularDependency](https://github.com/finos/rune-python-generator/blob/feature/function_support/src/test/java/com/regnosys/rosetta/generator/python/object/PythonCircularDependencyTest.java))
+* Python: `test_circular_failure.py.manifest_fail` ([test_circular_failure](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/model_structure/test_circular_failure.py.manifest_fail))
+
+### Expected Result:
+Definitions should be correctly ordered or forward-referenced using String type hints to allow successful import of the bundle.
+
+### Actual Result:
+`NameError: name '...Parent' is not defined` occurs because the generator emitted `Child` before `Parent`.
+
+### Additional Context:
+Recommendation is to move to **String Forward References + `model_rebuild()`** for all attribute types.
+
+---
+
+Title: FQN Type Hints for Clean API (Dots vs. Underscores)
+
+### Problem Description:
+The current generator uses "bundle-mangled" names with underscores (e.g., `cdm_base_datetime_AdjustableDate`) in function and constructor signatures to avoid collisions. This makes the generated Python API feel non-standard compared to Rosetta.
+
+### Steps to Reproduce:
+Example Rune code: Standard Rosetta type definition.
+```rosetta
+namespace cdm.base.datetime
+
+type AdjustableDate:
+   unadjustedDate date (1..1)
+```
+
+1. Generate code for a function taking a complex Rosetta type.
+2. Inspect the generated Python function signature.
+
+**Test Case:**
+* Observation: Check generated `_bundle.py` for underscore-separated class names vs dotted FQNs.
+
+### Expected Result:
+Type hints should use fully qualified, period-delimited names (as strings) that match the Rosetta namespaces: `val: "cdm.base.datetime.AdjustableDate"`.
+
+### Actual Result:
+Function signature uses `val: cdm_base_datetime_AdjustableDate`.
+
+### Additional Context:
+This approach requires the **String Forward Reference** solution to be in place.
+
+---
+
+Title: Unmapped External Function Calls ([codeImplementation])
+
+### Problem Description:
+The Rosetta runtime allows functions to be marked with `[codeImplementation]`, indicating logic provided by the host language. The Python generator does not yet emit the syntax to delegate these calls to Python external implementations.
+
+### Steps to Reproduce:
+Example Rune code: [import-overlap.rosetta](https://github.com/finos/rune-dsl/blob/feature/function_support/rune-integration-tests/src/test/resources/generation-regression-tests/name-escaping/model/import-overlap.rosetta)
+```rosetta
+func MyFunc:
+  [codeImplementation]
+  output:
+    result int (1..1)
+```
+
+1. Define a Rosetta function with the `[codeImplementation]` annotation.
+2. Attempt to generate Python code for this function.
+
+### Expected Result:
+The generator should emit a call to a standard Python registry or dispatcher where the user can provide the implementation.
+
+### Actual Result:
+The generator produces an empty body or fails to map the implementation.
+
+### Additional Context:
+Critical for CDM validation functions like `ValidateFpMLCodingSchemeDomain`.
+
+---
+
+Title: Conditions on Basic Types (Strings)
+
+### Problem Description:
+Rosetta allows attaching conditions directly to basic type aliases (e.g., `typeAlias BusinessCenter: string condition IsValid`). The Python generator does not yet support wrapping simple types to trigger these validators upon assignment.
+
+### Steps to Reproduce:
+Example Rune code: (Type alias with condition)
+```rosetta
+typeAlias Currency:
+    string
+
+    condition C:
+        item count = 3
+```
+
+1. Define a `typeAlias` on a basic type (string, number, etc.) with an attached `condition`.
+2. Generate Python code and check the Pydantic field definition for the alias.
+
+### Expected Result:
+The assignment should be intercepted and validated according to the condition.
+
+### Actual Result:
+No validation occurs as the type is treated as a plain Python `str`.
+
+### Additional Context:
+This is a missing feature in the current Python model generation.
+
+---
 ## Resolved Issues
 
 ### 1. Inconsistent Numeric Types (Literals and Constraints)
@@ -64,105 +267,33 @@ Type string generation was scattered across multiple classes, making it impossib
 *   **Status**: Fixed ([`4d394c5`](https://github.com/finos/rune-python-generator/commit/4d394c5))
 
 ---
+Title: Enum Wrappers (Global Proposal)
 
-## Unresolved Issues and Proposals
+### Problem Description:
+Plain Enums in the current implementation do not have a uniform wrapper at runtime. This leads to inconsistent behavior when trying to attach metadata dynamically to any enum instance, whereas complex types always have a metadata dictionary.
 
-### 1. Constructor-Related Issues
+### Steps to Reproduce:
+Example Rune code: [EnumMetadata.rosetta](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/model_structure/EnumMetadata.rosetta)
 
-#### Issue: Fragile Object Building (Direct Constructors)
-**Problem**: The generator relies on a magic `_get_rune_object` helper which bypasses IDE checks and is hard to debug.
-*   **Recommendation**: Refactor `PythonFunctionGenerator` to use direct Python constructor calls (e.g., `MyClass(attr=val)`).
-*   **Status**: **Unresolved**. The codebase currently uses `_get_rune_object`.
+1. Define an Enum without explicit metadata.
+2. Attempt to treat it as a metadata-carrying object at runtime.
 
-#### Issue: Partial Object Construction (Stepwise Initialization)
-**Problem**: Pydantic's default constructor (used by `_get_rune_object`) enforces validation of all required fields immediately. This breaks Rosetta functions that populate an output object through multiple `set` operations, as the first assignment fails if other required fields are still missing.
+### Expected Result:
+All enums should behave consistently at runtime, ideally wrapped in a proxy that can hold a metadata payload.
 
-**Manifestations discovered during testing**: 
-*   **KeyError**: `_get_rune_object` fails to resolve model classes because it searches the `rune.runtime.utils` module's `globals()` instead of the generated `_bundle` module's namespace.
-*   **ValidationError**: Even if the class is found, using the standard constructor (as `_get_rune_object` does) triggers immediate validation, preventing the construction of objects whose attributes are set in multiple steps.
+### Actual Result:
+Only Enums with explicit metadata annotations are wrapped; plain ones remain as standard Python `Enum` members.
 
-**Manifesting Test**: `test/python_unit_tests/features/language/IncompleteObjects.rosetta`
+**Test Case:**
+* JUnit: `PythonEnumMetadataTest.testEnumWithoutMetadata` (Disabled) ([Link](https://github.com/finos/rune-python-generator/blob/feature/function_support/src/test/java/com/regnosys/rosetta/generator/python/object/PythonEnumMetadataTest.java))
+* Python: `test_enum_metadata.py::test_enum_metadata_behavior` (Skipped) ([Link](https://github.com/finos/rune-python-generator/blob/feature/function_support/test/python_unit_tests/features/model_structure/test_enum_metadata.py))
 
-**Recommendation**: 
-1.  Refactor `PythonFunctionGenerator` to emit direct constructor calls: `ClassName.model_construct(**{attr: val})`. 
-2.  Using `model_construct` bypasses initial validation, allowing the object to be safely built in steps before final consumption/return.
-3.  This eliminates the dependency on the global `_get_rune_object` helper and resolves the namespace isolation issue.
-
-#### Issue: Constructor Keyword Arguments SyntaxError
-**Problem**: Python forbids duplicate or invalid keyword arguments.
-*   **Recommendation**: Use unique counters for missing/duplicate keys.
-*   **Proposed Fix**: The generator should use unique fallback keys (`unknown_0`, `unknown_1`, etc.) when property names are missing or invalid.
-*   **Recommended Code Changes**: Use an `AtomicInteger` for unique fallback keys in `PythonExpressionGenerator.java`.
-** RESOLVED - not allowed in the syntax
-
-
----
-
-### 2. Bundle Generation and Dependency Issues
-
-#### Issue: Circular Dependencies / Out-of-Order Definitions (The "Topological Sort" Limitation)
-**Manifestation**: `NameError: name 'cdm_base_datetime_BusinessCenterTime' is not defined` during CDM import.
-
-**Problem**: The generator uses a Directed Acyclic Graph (DAG) to order definitions in `_bundle.py`. However, the current implementation only adds edges for **inheritance (SuperTypes)**. It ignores **Attribute types**, leading to out-of-order definitions. Furthermore, Rosetta allows recursive/circular types (e.g., A has attribute B, B has attribute A), which a DAG cannot resolve by design.
-
-**Reproducing Tests**:
-*   **JUnit**: `PythonFunctionOrderTest.testFunctionDependencyOrder` (asserts ClassA defined before ClassB).
-*   **Python**: `test_functions_order.py` (triggers NameError during Pydantic decorator execution).
-
-**Proposed Alternatives & Recommendation**:
-Use **String Forward References + `model_rebuild()`** (The official "Pydantic Way" for v2).
-*   **The Hybrid DAG Strategy**: We will continue to use the DAG to organize the definition order of classes, but we will limit its scope to **Inheritance only** (`SuperType`). By using String Forward References for attributes, we eliminate the need for the DAG to handle the complex "web" of references, avoiding cycle detection failures while ensuring that parent classes are always defined before their children.
-
-#### Issue: FQN Type Hints for Clean API (Dots vs. Underscores)
-**Problem**: The current generator uses "bundle-mangled" names with underscores (e.g., `cdm_base_datetime_AdjustableDate`) in function and constructor signatures to avoid collisions. 
-
-**Proposal**: Use fully qualified, period-delimited names (e.g., `"cdm.base.datetime.AdjustableDate"`) in all signatures. 
-*   **Mechanism**: Utilize a `_type_registry` mapping at the end of the `_bundle.py` that links Rosetta FQNs to the bundled Python class definitions.
-*   **Dependency**: This approach **requires** implementing the **String Forward Reference** solution for circular dependencies. 
-*   **Benefits**: API Purity (matches CDM/Rosetta names exactly), Consistency, and Encapsulation.
-
-#### Issue: Bundle Loading Performance (Implicit Overhead)
-**Problem**: The current "Bundle" architecture results in significant "load-all-at-once" overhead for large models like CDM.
-
-**Proposal**: Evolve the bundle architecture to support **Partitioned Loading** or **Lazy Rebuilds**.
-*   **Status**: **Unresolved**. Prerequisite is the fix for Circular Dependencies via String Forward References.
-
----
-
----
-
-### 3. Support for External Data Sources
-
-#### Issue: Unmapped External Function Calls (`[codeImplementation]`)
-**Problem**: The Rosetta runtime allows functions to be marked with `[codeImplementation]`, indicating logic provided by the host language (e.g., loading XML codelists in Java). The Python generator does not yet emit the syntax to delegate these calls to Python external implementations.
-*   **Manifestation**: Validation functions like `ValidateFpMLCodingSchemeDomain` are either omitted or generate empty/invalid bodies.
-*   **Recommendation**: Update the generator to emit calls to a standard Python registry/dispatcher for external functions.
-
-#### Issue: Conditions on Basic Types (Strings)
-**Problem**: The DSL allows attaching validation logic directly to basic types (e.g., `typeAlias BusinessCenter: string condition IsValid...`). This feature, introduced to support data validation against external sources, is not supported in the Python generator.
-*   **Gap**: The generator may not correctly wrap simple types to attach validators or trigger validation upon assignment.
-*   **Status**: **Unresolved Gap**.
-
-#### Issue: Missing Standard Library for External Data
-**Problem**: The CDM Python implementation lacks the infrastructure to replicate the Java version's ability to load external data (e.g., FpML coding schemes) and validate values against them.
-*   **Impact**: Even if the generator called the validation function, the runtime mechanism to perform the check does not exist.
-*   **Recommendation**: Implement a Python equivalent of the Java `CodelistLoader` and expose it via the runtime library.
+### Additional Context:
+This is a proposed architectural change to ensure uniform metadata handling across the entire model.
 
 ---
 
 ## Backlog
 
-### Enum Wrappers (Global Proposal)
-*   **Problem**: While explicit metadata is now supported via `Annotated`, plain Enums do not have a uniform wrapper object at runtime. This leads to inconsistent behavior if code expects to attach metadata dynamically to any enum instance.
-*   **Proposal**: Wrap *all* enums in a proxy class (`_EnumWrapper`) that holds the enum value and a metadata dictionary.
-*   **Relevant Tests**:
-    *   Java: `PythonEnumMetadataTest.testEnumWithoutMetadata` (Disabled)
-    *   Python: `test_enum_metadata.py::test_enum_metadata_behavior` (Skipped)
-*   **Usage Note**: This is a proposed architectural change, not a defect fix.
-
----
-
-### General Support Suggestions
-
-*   **Type Unification Support**: Evaluate if `BaseDataClass` inheriting from a metadata mixin provides a scalable way to handle metadata across various model sizes.
-*   **Operator Support**: Consider standardizing helper functions like `rune_with_meta` and `rune_default` to simplify generated code.
+*   **Bundle Loading Performance**: The current "Bundle" architecture results in significant "load-all-at-once" overhead for large models like CDM. Prerequisite for optimization is the fix for Circular Dependencies.
+*   **Missing Standard Library for External Data**: CDM needs a Python equivalent of the Java `CodelistLoader` to support external scheme validation.

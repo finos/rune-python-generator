@@ -1,0 +1,7 @@
+namespace rosetta_dsl.test.model.circular_failure
+
+type CircularA:
+    b CircularB (1..1)
+
+type CircularB:
+    a CircularA (1..1)
