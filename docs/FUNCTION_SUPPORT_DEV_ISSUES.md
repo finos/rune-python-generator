@@ -74,16 +74,27 @@ Type string generation was scattered across multiple classes, making it impossib
 *   **Recommendation**: Refactor `PythonFunctionGenerator` to use direct Python constructor calls (e.g., `MyClass(attr=val)`).
 *   **Status**: **Unresolved**. The codebase currently uses `_get_rune_object`.
 
+#### Issue: Partial Object Construction (Stepwise Initialization)
+**Problem**: Pydantic's default constructor (used by `_get_rune_object`) enforces validation of all required fields immediately. This breaks Rosetta functions that populate an output object through multiple `set` operations, as the first assignment fails if other required fields are still missing.
+
+**Manifestations discovered during testing**: 
+*   **KeyError**: `_get_rune_object` fails to resolve model classes because it searches the `rune.runtime.utils` module's `globals()` instead of the generated `_bundle` module's namespace.
+*   **ValidationError**: Even if the class is found, using the standard constructor (as `_get_rune_object` does) triggers immediate validation, preventing the construction of objects whose attributes are set in multiple steps.
+
+**Manifesting Test**: `test/python_unit_tests/features/language/IncompleteObjects.rosetta`
+
+**Recommendation**: 
+1.  Refactor `PythonFunctionGenerator` to emit direct constructor calls: `ClassName.model_construct(**{attr: val})`. 
+2.  Using `model_construct` bypasses initial validation, allowing the object to be safely built in steps before final consumption/return.
+3.  This eliminates the dependency on the global `_get_rune_object` helper and resolves the namespace isolation issue.
+
 #### Issue: Constructor Keyword Arguments SyntaxError
 **Problem**: Python forbids duplicate or invalid keyword arguments.
 *   **Recommendation**: Use unique counters for missing/duplicate keys.
 *   **Proposed Fix**: The generator should use unique fallback keys (`unknown_0`, `unknown_1`, etc.) when property names are missing or invalid.
 *   **Recommended Code Changes**: Use an `AtomicInteger` for unique fallback keys in `PythonExpressionGenerator.java`.
+** RESOLVED - not allowed in the syntax
 
-#### Issue: Partial Object Construction (Required Fields)
-**Problem**: Pydantic's default constructor enforces validation immediately, breaking multi-step `set` operations.
-*   **Recommendation**: Use `model_construct()`.
-*   **Proposed Solution**: Use `model_construct(**kwargs)` for initial object creation to skip validation, allowing the object to be filled via subsequent `set` calls before final consumption.
 
 ---
 
