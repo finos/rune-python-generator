@@ -9,6 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import jakarta.inject.Inject;
 import java.util.Map;
 
+/**
+ * Every element of this test needs to check the entire generated Python.
+ * This class focuses on basic function generation logic.
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionBasicTest {

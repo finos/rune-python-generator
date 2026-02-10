@@ -8,6 +8,11 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+/**
+ * Every element of this test needs to check the entire generated Python.
+ * This class tests basic type generation and ensuring Rosetta type references
+ * are correctly handled through the three-phase process.
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonBasicTypeGeneratorTest {
@@ -171,6 +176,22 @@ public class PythonBasicTypeGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
                 """
+                        class com_rosetta_test_model_TestType2(BaseDataClass):
+                            _FQRTN = 'com.rosetta.test.model.TestType2'
+                            testType2Value1: list[Decimal] = Field(..., description='Test number list', min_length=1)
+                            \"""
+                            Test number list
+                            \"""
+                            testType2Value2: Optional[datetime.date] = Field(None, description='Test date')
+                            \"""
+                            Test date
+                            \"""
+                            testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Optional test enum')
+                            \"""
+                            Optional test enum
+                            \"""
+
+
                         class com_rosetta_test_model_TestType(BaseDataClass):
                             \"""
                             Test type description.
@@ -188,7 +209,7 @@ public class PythonBasicTypeGeneratorTest {
                             \"""
                             Test string list
                             \"""
-                            testTypeValue4: Annotated[com_rosetta_test_model_TestType2, com_rosetta_test_model_TestType2.serializer(), com_rosetta_test_model_TestType2.validator()] = Field(..., description='Test TestType2')
+                            testTypeValue4: com_rosetta_test_model_TestType2 = Field(..., description='Test TestType2')
                             \"""
                             Test TestType2
                             \"""
@@ -196,24 +217,12 @@ public class PythonBasicTypeGeneratorTest {
                             \"""
                             Optional test enum
                             \"""
-                        """);
-        testUtils.assertGeneratedContainsExpectedString(
-                pythonString,
-                """
-                        class com_rosetta_test_model_TestType2(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestType2'
-                            testType2Value1: list[Decimal] = Field(..., description='Test number list', min_length=1)
-                            \"""
-                            Test number list
-                            \"""
-                            testType2Value2: Optional[datetime.date] = Field(None, description='Test date')
-                            \"""
-                            Test date
-                            \"""
-                            testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Optional test enum')
-                            \"""
-                            Optional test enum
-                            \"""
+
+                        # Phase 2: Delayed Annotation Updates
+                        com_rosetta_test_model_TestType.__annotations__["testTypeValue4"] = Annotated[com_rosetta_test_model_TestType2, com_rosetta_test_model_TestType2.serializer(), com_rosetta_test_model_TestType2.validator()]
+
+                        # Phase 3: Rebuild
+                        com_rosetta_test_model_TestType.model_rebuild()
                         """);
     }
 
@@ -236,23 +245,6 @@ public class PythonBasicTypeGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
                 """
-                        class com_rosetta_test_model_MeasureBase(BaseDataClass):
-                            \"""
-                            Provides an abstract base class shared by Price and Quantity.
-                            \"""
-                            _FQRTN = 'com.rosetta.test.model.MeasureBase'
-                            amount: Decimal = Field(..., description='Specifies an amount to be qualified and used in a Price or Quantity definition.')
-                            \"""
-                            Specifies an amount to be qualified and used in a Price or Quantity definition.
-                            \"""
-                            unitOfAmount: Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()] = Field(..., description='Qualifies the unit by which the amount is measured.')
-                            \"""
-                            Qualifies the unit by which the amount is measured.
-                            \"""
-                        """);
-        testUtils.assertGeneratedContainsExpectedString(
-                pythonString,
-                """
                         class com_rosetta_test_model_UnitType(BaseDataClass):
                             \"""
                             Defines the unit to be used for price, quantity, or other purposes
@@ -262,10 +254,23 @@ public class PythonBasicTypeGeneratorTest {
                             \"""
                             Defines the currency to be used as a unit for a price, quantity, or other purpose.
                             \"""
-                        """);
-        testUtils.assertGeneratedContainsExpectedString(
-                pythonString,
-                """
+
+
+                        class com_rosetta_test_model_MeasureBase(BaseDataClass):
+                            \"""
+                            Provides an abstract base class shared by Price and Quantity.
+                            \"""
+                            _FQRTN = 'com.rosetta.test.model.MeasureBase'
+                            amount: Decimal = Field(..., description='Specifies an amount to be qualified and used in a Price or Quantity definition.')
+                            \"""
+                            Specifies an amount to be qualified and used in a Price or Quantity definition.
+                            \"""
+                            unitOfAmount: com_rosetta_test_model_UnitType = Field(..., description='Qualifies the unit by which the amount is measured.')
+                            \"""
+                            Qualifies the unit by which the amount is measured.
+                            \"""
+
+
                         class com_rosetta_test_model_Quantity(com_rosetta_test_model_MeasureBase):
                             \"""
                             Specifies a quantity to be associated to a financial product, for example a trade amount or a cashflow amount resulting from a trade.
@@ -275,10 +280,23 @@ public class PythonBasicTypeGeneratorTest {
                             \"""
                             Defines the number to be multiplied by the amount to derive a total quantity.
                             \"""
-                            multiplierUnit: Optional[Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]] = Field(None, description='Qualifies the multiplier with the applicable unit. For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).')
+                            multiplierUnit: Optional[com_rosetta_test_model_UnitType] = Field(None, description='Qualifies the multiplier with the applicable unit. For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).')
                             \"""
                             Qualifies the multiplier with the applicable unit.  For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).
                             \"""
+
+                        # Phase 2: Delayed Annotation Updates
+                        com_rosetta_test_model_MeasureBase.__annotations__["unitOfAmount"] = Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]
+
+                        # Phase 3: Rebuild
+                        com_rosetta_test_model_MeasureBase.model_rebuild()
+
+
+                        # Phase 2: Delayed Annotation Updates
+                        com_rosetta_test_model_Quantity.__annotations__["multiplierUnit"] = Optional[Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]]
+
+                        # Phase 3: Rebuild
+                        com_rosetta_test_model_Quantity.model_rebuild()
                         """);
     }
 

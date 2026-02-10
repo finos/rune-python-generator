@@ -8,6 +8,10 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+/**
+ * Every element of this test needs to check the entire generated Python.
+ * This class focuses on object condition generation syntax.
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonObjectConditionGeneratorTest {
@@ -151,7 +155,7 @@ public class PythonObjectConditionGeneratorTest {
                             _FQRTN = 'com.rosetta.test.model.B'
                             intValue1: Optional[int] = Field(None, description='')
                             intValue2: Optional[int] = Field(None, description='')
-                            aValue: Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()] = Field(..., description='')
+                            aValue: com_rosetta_test_model_A = Field(..., description='')
 
                             @rune_condition
                             def condition_0_Rule(self):
@@ -180,7 +184,14 @@ public class PythonObjectConditionGeneratorTest {
                                 FpML specifies a choice between adjustedDate and [unadjustedDate (required), dateAdjutsments (required), adjustedDate (optional)].
                                 \"""
                                 item = self
-                                return ((rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "a0")) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and rune_attr_exists(rune_resolve_attr(self, "intValue1")))) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and (not rune_attr_exists(rune_resolve_attr(self, "intValue1")))))""");
+                                return ((rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "a0")) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and rune_attr_exists(rune_resolve_attr(self, "intValue1")))) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and (not rune_attr_exists(rune_resolve_attr(self, "intValue1")))))
+
+                        # Phase 2: Delayed Annotation Updates
+                        com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
+
+                        # Phase 3: Rebuild
+                        com_rosetta_test_model_B.model_rebuild()
+                        """);
     }
 
     @Test

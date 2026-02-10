@@ -23,23 +23,24 @@ public class PythonAttributeProcessor {
     @Inject
     private TypeSystem typeSystem;
 
-    public String generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints) {
+    public AttributeProcessingResult generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
         if (allAttributes.isEmpty() && rc.getConditions().isEmpty()) {
-            return "pass";
+            return new AttributeProcessingResult("pass", Collections.emptyList());
         }
 
         PythonCodeWriter writer = new PythonCodeWriter();
+        List<String> annotationUpdates = new ArrayList<>();
         for (RAttribute ra : allAttributes) {
-            generateAttribute(writer, rc, ra, keyRefConstraints);
+            generateAttribute(writer, rc, ra, keyRefConstraints, annotationUpdates);
         }
-        return writer.toString();
+        return new AttributeProcessingResult(writer.toString(), annotationUpdates);
     }
 
     private void generateAttribute(PythonCodeWriter writer, Data rc, RAttribute ra,
-            Map<String, List<String>> keyRefConstraints) {
+            Map<String, List<String>> keyRefConstraints, List<String> annotationUpdates) {
         RType rt = ra.getRMetaAnnotatedType().getRType();
 
         if (rt instanceof RAliasType) {
@@ -60,7 +61,7 @@ public class PythonAttributeProcessor {
         Map<String, String> cardinalityMap = processCardinality(ra);
         ArrayList<String> validators = processMetaDataAttributes(ra, attrTypeName, keyRefConstraints);
 
-        createAttributeString(writer, ra, attrTypeName, rt, validators, attrProp, cardinalityMap);
+        createAttributeString(writer, ra, attrTypeName, rt, validators, attrProp, cardinalityMap, annotationUpdates);
     }
 
     private void createAttributeString(
@@ -70,10 +71,15 @@ public class PythonAttributeProcessor {
             RType rt,
             ArrayList<String> validators,
             Map<String, String> attrProp,
-            Map<String, String> cardinalityMap) {
+            Map<String, String> cardinalityMap,
+            List<String> annotationUpdates) {
 
         String propString = createPropString(attrProp);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
+        RCardinality cardinality = ra.getCardinality();
+        int min = cardinality.getMin();
+        int max = cardinality.getMax().orElse(-1);
+        boolean isList = (cardinality.isMulti() || max > 1);
 
         String attrTypeName = (!validators.isEmpty())
                 ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
@@ -81,33 +87,37 @@ public class PythonAttributeProcessor {
 
         String attrTypeNameOut = RuneToPythonMapper.getFlattenedTypeName(rt, attrTypeName);
 
+        boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
+
         String metaPrefix = "";
         String metaSuffix = "";
 
         if (!validators.isEmpty()) {
             metaPrefix = getMetaDataPrefix(validators);
             metaSuffix = getMetaDataSuffix(validators, attrTypeNameOut);
-        } else if (!RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType)) {
+        } else if (isDelayed) {
             metaPrefix = "Annotated[";
             metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
         }
 
-        String baseType = metaPrefix + attrTypeNameOut + metaSuffix;
-        RCardinality cardinality = ra.getCardinality();
-        int min = cardinality.getMin();
-        int max = cardinality.getMax().orElse(-1);
-        boolean isList = (cardinality.isMulti() || max > 1);
-
-        // If it is a list and we have properties (e.g. max_digits), these properties
-        // belong to the element, not the list.
-        // So we wrap the element type in Annotated[Type, Field(...properties...)].
+        String fullBaseType = metaPrefix + attrTypeNameOut + metaSuffix;
         boolean propertiesAppliedToInnerType = false;
         if (isList && !attrProp.isEmpty()) {
-            baseType = "Annotated[" + baseType + ", Field(" + propString + ")]";
+            fullBaseType = "Annotated[" + fullBaseType + ", Field(" + propString + ")]";
             propertiesAppliedToInnerType = true;
         }
 
-        String pythonType = RuneToPythonMapper.formatPythonType(baseType, min, max, false);
+        String pythonType;
+        if (isDelayed) {
+            // Phase 2 update statement
+            String fullType = RuneToPythonMapper.formatPythonType(fullBaseType, min, max, false);
+            annotationUpdates.add("__annotations__[\"" + attrName + "\"] = " + fullType);
+
+            // Phase 1 (Clean) type
+            pythonType = RuneToPythonMapper.formatPythonType(attrTypeNameOut, min, max, false);
+        } else {
+            pythonType = RuneToPythonMapper.formatPythonType(fullBaseType, min, max, false);
+        }
 
         String attrDesc = (ra.getDefinition() == null)
                 ? ""

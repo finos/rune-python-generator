@@ -11,6 +11,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Disabled;
 
+/**
+ * This is an Anchor test.
+ * Every element of this test needs to check the entire generated Python.
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonCircularDependencyTest {
@@ -35,8 +39,31 @@ public class PythonCircularDependencyTest {
 
         String bundle = gf.get("src/com/_bundle.py").toString();
 
-        assertTrue(bundle.contains("class com_rosetta_test_model_CircularA"), "CircularA should be generated");
-        assertTrue(bundle.contains("class com_rosetta_test_model_CircularB"), "CircularB should be generated");
+        testUtils.assertGeneratedContainsExpectedString(
+                bundle,
+                """
+                        class com_rosetta_test_model_CircularB(BaseDataClass):
+                            _FQRTN = 'com.rosetta.test.model.CircularB'
+                            a: com_rosetta_test_model_CircularA = Field(..., description='')
+
+
+                        class com_rosetta_test_model_CircularA(BaseDataClass):
+                            _FQRTN = 'com.rosetta.test.model.CircularA'
+                            b: com_rosetta_test_model_CircularB = Field(..., description='')
+
+                        # Phase 2: Delayed Annotation Updates
+                        com_rosetta_test_model_CircularB.__annotations__["a"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]
+
+                        # Phase 3: Rebuild
+                        com_rosetta_test_model_CircularB.model_rebuild()
+
+
+                        # Phase 2: Delayed Annotation Updates
+                        com_rosetta_test_model_CircularA.__annotations__["b"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]
+
+                        # Phase 3: Rebuild
+                        com_rosetta_test_model_CircularA.model_rebuild()
+                        """);
     }
 
     @Test

@@ -10,6 +10,10 @@ import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 
 import jakarta.inject.Inject;
 
+/**
+ * Every element of this test needs to check the entire generated Python.
+ * This class focuses on expression-to-python logic for switch expressions.
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaSwitchExpressionTest {

@@ -64,7 +64,7 @@ public class PythonModelObjectGenerator {
 
             // Generate Python for the class
             try {
-                String pythonClass = generateClass(rc, nameSpace, version, enumImports);
+                String pythonClass = generateClass(rc, nameSpace, version, enumImports, context);
 
                 // construct the class name using "." as a delimiter
                 String className = model.getName() + "." + rc.getName();
@@ -116,7 +116,8 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private String generateClass(Data rc, String nameSpace, String version, Set<String> enumImports) {
+    private String generateClass(Data rc, String nameSpace, String version, Set<String> enumImports,
+            PythonCodeGeneratorContext context) {
         if (rc == null) {
             throw new RuntimeException("Rosetta class not initialized");
         }
@@ -130,7 +131,7 @@ public class PythonModelObjectGenerator {
 
         pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports);
 
-        return generateBody(rc);
+        return generateBody(rc, context);
     }
 
     private String getClassMetaDataString(Data rc) {
@@ -186,7 +187,7 @@ public class PythonModelObjectGenerator {
         return writer.toString();
     }
 
-    private String generateBody(Data rc) {
+    private String generateBody(Data rc, PythonCodeGeneratorContext context) {
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
@@ -214,7 +215,15 @@ public class PythonModelObjectGenerator {
 
         writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedObjectName(rc) + "'");
 
-        writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints));
+        AttributeProcessingResult attrResult = pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints);
+        writer.appendBlock(attrResult.getAttributeCode());
+
+        String bundleName = RuneToPythonMapper.getBundleObjectName(rc);
+        List<String> updates = attrResult.getAnnotationUpdates().stream()
+                .map(update -> bundleName + "." + update)
+                .collect(Collectors.toList());
+
+        context.addPostDefinitionUpdates(bundleName, updates);
 
         String constraints = keyRefConstraintsToString(keyRefConstraints);
         if (!constraints.isEmpty()) {

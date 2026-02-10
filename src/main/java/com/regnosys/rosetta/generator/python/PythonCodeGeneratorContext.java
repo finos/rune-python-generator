@@ -17,6 +17,7 @@ public class PythonCodeGeneratorContext {
     private Graph<String, DefaultEdge> dependencyDAG = null;
     private Set<String> enumImports = null;
     private HashSet<String> functionNames = null;
+    private Map<String, List<String>> postDefinitionUpdates = null;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new ArrayList<>();
@@ -24,6 +25,7 @@ public class PythonCodeGeneratorContext {
         this.dependencyDAG = new DirectedAcyclicGraph<>(DefaultEdge.class);
         this.enumImports = new HashSet<>();
         this.functionNames = new HashSet<>();
+        this.postDefinitionUpdates = new HashMap<>();
     }
 
     public List<String> getSubfolders() {
@@ -40,6 +42,14 @@ public class PythonCodeGeneratorContext {
 
     public Set<String> getEnumImports() {
         return enumImports;
+    }
+
+    public Map<String, List<String>> getPostDefinitionUpdates() {
+        return postDefinitionUpdates;
+    }
+
+    public void addPostDefinitionUpdates(String className, List<String> updates) {
+        postDefinitionUpdates.computeIfAbsent(className, k -> new ArrayList<>()).addAll(updates);
     }
 
     public void addSubfolder(String subfolder) {

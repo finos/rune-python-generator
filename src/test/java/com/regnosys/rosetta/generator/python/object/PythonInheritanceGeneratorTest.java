@@ -7,8 +7,12 @@ import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.Disabled;
 
+/**
+ * This test class contains a mix of Anchor and Component tests.
+ * Anchor tests (e.g., testGenerateTypesExtends) must verify the complete
+ * three-phase output.
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonInheritanceGeneratorTest {
@@ -81,6 +85,30 @@ public class PythonInheritanceGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
                 """
+                        class com_rosetta_test_model_TestType3(BaseDataClass):
+                            _FQRTN = 'com.rosetta.test.model.TestType3'
+                            TestType3Value1: Optional[str] = Field(None, description='Test string')
+                            \"""
+                            Test string
+                            \"""
+                            TestType4Value2: list[int] = Field(..., description='Test int', min_length=1)
+                            \"""
+                            Test int
+                            \"""
+
+
+                        class com_rosetta_test_model_TestType2(com_rosetta_test_model_TestType3):
+                            _FQRTN = 'com.rosetta.test.model.TestType2'
+                            TestType2Value1: Optional[Decimal] = Field(None, description='Test number')
+                            \"""
+                            Test number
+                            \"""
+                            TestType2Value2: list[datetime.date] = Field(..., description='Test date', min_length=1)
+                            \"""
+                            Test date
+                            \"""
+
+
                         class com_rosetta_test_model_TestType(com_rosetta_test_model_TestType2):
                             _FQRTN = 'com.rosetta.test.model.TestType'
                             TestTypeValue1: str = Field(..., description='Test string')
@@ -92,39 +120,10 @@ public class PythonInheritanceGeneratorTest {
                             Test int
                             \"""
                         """);
-        testUtils.assertGeneratedContainsExpectedString(
-                pythonString,
-                """
-                        class com_rosetta_test_model_TestType2(com_rosetta_test_model_TestType3):
-                            _FQRTN = 'com.rosetta.test.model.TestType2'
-                            TestType2Value1: Optional[Decimal] = Field(None, description='Test number')
-                            \"""
-                            Test number
-                            \"""
-                            TestType2Value2: list[datetime.date] = Field(..., description='Test date', min_length=1)
-                            \"""
-                            Test date
-                            \"""
-                        """);
-        testUtils.assertGeneratedContainsExpectedString(
-                pythonString,
-                """
-                        class com_rosetta_test_model_TestType3(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestType3'
-                            TestType3Value1: Optional[str] = Field(None, description='Test string')
-                            \"""
-                            Test string
-                            \"""
-                            TestType4Value2: list[int] = Field(..., description='Test int', min_length=1)
-                            \"""
-                            Test int
-                            \"""
-                        """);
     }
 
-    @Disabled("testGenerateTypesExtends2")
     @Test
-    public void testGenerateTypesExtends2() {
+    public void testInheritanceWithDelayedUpdates() {
         String pythonString = testUtils.generatePythonFromString(
                 """
                         enum CapacityUnitEnum: <"Provides enumerated values for capacity units, generally used in the context of defining quantities for commodities.">
@@ -170,15 +169,11 @@ public class PythonInheritanceGeneratorTest {
                     Provides an abstract type to define a measure as a number associated to a unit. This type is abstract because all its attributes are optional. The types that extend it can specify further existence constraints.
                     \"""
                     _FQRTN = 'com.rosetta.test.model.MeasureBase'
-
                     value: Optional[Decimal] = Field(None, description='Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.')
                     \"""
                     Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.
                     \"""
                     unit: Optional[com_rosetta_test_model_UnitType] = Field(None, description='Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).')
-                    \"""
-                    Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).
-                    \"""
                 """;
 
         String expectedTestType2 = """
@@ -197,63 +192,25 @@ public class PythonInheritanceGeneratorTest {
                         return rune_attr_exists(rune_resolve_attr(self, "value"))
                 """;
 
-        String expectedTestType3 = """
-                class WeatherUnitEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
-                    \"""
-                    Provides enumerated values for weather units, generally used in the context of defining quantities for commodities.
-                    \"""
-                    CDD = "CDD"
-                    \"""
-                    Denotes Cooling Degree Days as a standard unit.
-                    \"""
-                    CPD = "CPD"
-                    \"""
-                    Denotes Critical Precipitation Day as a standard unit.
-                    \"""
-                    HDD = "HDD"
-                    \"""
-                    Heating Degree Day as a standard unit.
-                    \"""
-                """;
-
-        String expectedTestType4 = """
-                class FinancialUnitEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
-                    \"""
-                    Provides enumerated values for financial units, generally used in the context of defining quantities for securities.
-                    \"""
-                    CONTRACT = "Contract"
-                    \"""
-                    Denotes financial contracts, such as listed futures and options.
-                    \"""
-                    CONTRACTUAL_PRODUCT = "ContractualProduct"
-                    \"""
-                    Denotes a Contractual Product as defined in the CDM.  This unit type would be used when the price applies to the whole product, for example, in the case of a premium expressed as a cash amount.
-                    \"""
-                    INDEX_UNIT = "IndexUnit"
-                    \"""
-                    Denotes a price expressed in index points, e.g. for a stock index.
-                    \"""
-                """;
         String expectedTestType5 = """
-                class UnitType(BaseDataClass):
+                class com_rosetta_test_model_UnitType(BaseDataClass):
                     \"""
                     Defines the unit to be used for price, quantity, or other purposes
                     \"""
                     _FQRTN = 'com.rosetta.test.model.UnitType'
-
-                    capacityUnit: Optional[com.metadata.test.model.CapacityUnitEnum.CapacityUnitEnum] = Field(None, description='Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.')
+                    capacityUnit: Optional[com.rosetta.test.model.CapacityUnitEnum.CapacityUnitEnum] = Field(None, description='Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.')
                     \"""
                     Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.
                     \"""
-                    weatherUnit: Optional[com.metadata.test.model.WeatherUnitEnum.WeatherUnitEnum] = Field(None, description='Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.')
+                    weatherUnit: Optional[com.rosetta.test.model.WeatherUnitEnum.WeatherUnitEnum] = Field(None, description='Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.')
                     \"""
                     Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.
                     \"""
-                    financialUnit: Optional[com.metadata.test.model.FinancialUnitEnum.FinancialUnitEnum] = Field(None, description='Provides an enumerated value for financial units, generally used in the context of defining quantities for securities.')
+                    financialUnit: Optional[com.rosetta.test.model.FinancialUnitEnum.FinancialUnitEnum] = Field(None, description='Provides an enumerated value for financial units, generally used in the context of defining quantities for securities.')
                     \"""
                     Provides an enumerated value for financial units, generally used in the context of defining quantities for securities.
                     \"""
-                    currency: Optional[AttributeWithMeta[str] | str] = Field(None, description='Defines the currency to be used as a unit for a price, quantity, or other purpose.')
+                    currency: Optional[Annotated[StrWithMeta, StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))]] = Field(None, description='Defines the currency to be used as a unit for a price, quantity, or other purpose.')
                     \"""
                     Defines the currency to be used as a unit for a price, quantity, or other purpose.
                     \"""
@@ -267,30 +224,17 @@ public class PythonInheritanceGeneratorTest {
                         return rune_check_one_of(self, 'capacityUnit', 'weatherUnit', 'financialUnit', 'currency', necessity=True)
                 """;
 
-        String expectedTestType6 = """
-                class CapacityUnitEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
-                    \"""
-                    Provides enumerated values for capacity units, generally used in the context of defining quantities for commodities.
-                    \"""
-                    ALW = "ALW"
-                    \"""
-                    Denotes Allowances as standard unit.
-                    \"""
-                    BBL = "BBL"
-                    \"""
-                    Denotes a Barrel as a standard unit.
-                    \"""
-                    BCF = "BCF"
-                    \"""
-                    Denotes Billion Cubic Feet as a standard unit.
-                    \"""
+        String expectedPhase2 = """
+                # Phase 2: Delayed Annotation Updates
+                com_rosetta_test_model_MeasureBase.__annotations__["unit"] = Optional[Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]]
+
+                # Phase 3: Rebuild
+                com_rosetta_test_model_MeasureBase.model_rebuild()
                 """;
 
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType1);
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2);
-        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3);
-        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType4);
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType5);
-        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType6);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedPhase2);
     }
 }

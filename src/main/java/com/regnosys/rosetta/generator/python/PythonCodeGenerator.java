@@ -182,6 +182,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         if (nameSpaceObjects != null && !nameSpaceObjects.isEmpty() && dependencyDAG != null && enumImports != null) {
             result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
             PythonCodeWriter bundleWriter = new PythonCodeWriter();
+            PythonCodeWriter updateWriter = new PythonCodeWriter();
             TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
                     dependencyDAG);
 
@@ -199,12 +200,27 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
                     isFirst = false;
                 }
                 String name = topologicalOrderIterator.next();
+                String bundleClassName = name.replace('.', '_');
                 CharSequence object = nameSpaceObjects.get(name);
                 if (object != null) {
                     // append the class to the bundle
                     bundleWriter.newLine();
                     bundleWriter.newLine();
                     bundleWriter.appendBlock(object.toString());
+
+                    // Phase 2 & 3: Delayed updates and rebuilds
+                    List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
+                    if (updates != null && !updates.isEmpty()) {
+                        updateWriter.newLine();
+                        updateWriter.appendLine("# Phase 2: Delayed Annotation Updates");
+                        for (String update : updates) {
+                            updateWriter.appendLine(update);
+                        }
+                        updateWriter.newLine();
+                        updateWriter.appendLine("# Phase 3: Rebuild");
+                        updateWriter.appendLine(bundleClassName + ".model_rebuild()");
+                        updateWriter.newLine();
+                    }
 
                     // create the stub
                     String[] parsedName = name.split("\\.");
@@ -220,7 +236,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
                     stubWriter.append("from ");
                     stubWriter.append(parsedName[0]);
                     stubWriter.append("._bundle import ");
-                    stubWriter.append(name.replace('.', '_'));
+                    stubWriter.append(bundleClassName);
                     stubWriter.append(" as ");
                     stubWriter.append(parsedName[parsedName.length - 1]);
                     if (isFunction) {
@@ -236,6 +252,12 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
                     result.put(stubFileName, stubWriter.toString());
                 }
             }
+
+            // Append Phase 2 & 3 updates to the bundle
+            if (!updateWriter.toString().isEmpty()) {
+                bundleWriter.appendBlock(updateWriter.toString());
+            }
+
             if (context.hasFunctions()) {
                 bundleWriter.newLine();
                 bundleWriter.appendLine(

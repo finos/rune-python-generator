@@ -1,10 +1,10 @@
 package com.regnosys.rosetta.generator.python.util;
 
-import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.types.RAttribute;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.types.RAttribute;
 
 public class PythonCodeGeneratorUtil {
 
