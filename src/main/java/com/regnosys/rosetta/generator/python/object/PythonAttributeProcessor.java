@@ -56,10 +56,6 @@ public class PythonAttributeProcessor {
         }
 
         String attrTypeName = RuneToPythonMapper.toPythonType(rt);
-        if (rt instanceof RNumberType numberType && numberType.isInteger() && !"int".equals(attrTypeName)) {
-            attrTypeName = "int";
-        }
-
         if (attrTypeName == null) {
             throw new RuntimeException(
                     "Attribute type is null for " + ra.getName() + " in class " + rc.getName());
@@ -67,20 +63,21 @@ public class PythonAttributeProcessor {
 
         Map<String, String> attrProp = processProperties(rt);
         Map<String, String> cardinalityMap = processCardinality(ra);
-        ArrayList<String> validators = processMetaDataAttributes(ra, attrTypeName, keyRefConstraints);
+        MetaDataResult metaDataResult = processMetaDataAttributes(ra, attrTypeName, keyRefConstraints);
 
-        return createAttributeString(ra, attrTypeName, rt, validators, attrProp, cardinalityMap, annotationUpdates);
+        return createAttributeString(ra, attrTypeName, rt, metaDataResult, attrProp, cardinalityMap, annotationUpdates);
     }
 
     private String createAttributeString(
             RAttribute ra,
             String attrTypeNameIn,
             RType rt,
-            ArrayList<String> validators,
+            MetaDataResult metaDataResult,
             Map<String, String> attrProp,
             Map<String, String> cardinalityMap,
             List<String> annotationUpdates) {
 
+        ArrayList<String> validators = metaDataResult.getValidators();
         String propString = createPropString(attrProp);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
         RCardinality cardinality = ra.getCardinality();
@@ -93,6 +90,10 @@ public class PythonAttributeProcessor {
                 : attrTypeNameIn;
 
         String attrTypeNameOut = RuneToPythonMapper.getFlattenedTypeName(rt, attrTypeName);
+        String typeHint = attrTypeNameOut;
+        if (metaDataResult.hasReference()) {
+            typeHint += " | BaseReference";
+        }
 
         boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
 
@@ -107,7 +108,7 @@ public class PythonAttributeProcessor {
             metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
         }
 
-        String fullBaseType = metaPrefix + attrTypeNameOut + metaSuffix;
+        String fullBaseType = metaPrefix + typeHint + metaSuffix;
         boolean propertiesAppliedToInnerType = false;
         if (isList && !attrProp.isEmpty()) {
             fullBaseType = "Annotated[" + fullBaseType + ", Field(" + propString + ")]";
@@ -121,7 +122,7 @@ public class PythonAttributeProcessor {
             annotationUpdates.add("__annotations__[\"" + attrName + "\"] = " + fullType);
 
             // Phase 1 (Clean) type
-            pythonType = RuneToPythonMapper.formatPythonType(attrTypeNameOut, min, max, false);
+            pythonType = RuneToPythonMapper.formatPythonType(typeHint, min, max, false);
         } else {
             pythonType = RuneToPythonMapper.formatPythonType(fullBaseType, min, max, false);
         }
@@ -176,14 +177,15 @@ public class PythonAttributeProcessor {
         return (validators.isEmpty()) ? "" : "Annotated[";
     }
 
-    private ArrayList<String> processMetaDataAttributes(
+    private MetaDataResult processMetaDataAttributes(
             RAttribute ra,
             String attrTypeName,
             Map<String, List<String>> keyRefConstraints) {
-        RMetaAnnotatedType attrRMAT = ra.getRMetaAnnotatedType();
         ArrayList<String> validators = new ArrayList<>();
         ArrayList<String> otherMeta = new ArrayList<>();
+        final boolean[] hasReference = { false };
 
+        RMetaAnnotatedType attrRMAT = ra.getRMetaAnnotatedType();
         if (attrRMAT.hasAttributeMeta()) {
             attrRMAT.getMetaAttributes().forEach(ma -> {
                 switch (ma.getName()) {
@@ -194,10 +196,14 @@ public class PythonAttributeProcessor {
                     case "reference" -> {
                         validators.add("@ref");
                         validators.add("@ref:external");
+                        hasReference[0] = true;
                     }
                     case "scheme" -> otherMeta.add("@scheme");
                     case "location" -> validators.add("@key:scoped");
-                    case "address" -> validators.add("@ref:scoped");
+                    case "address" -> {
+                        validators.add("@ref:scoped");
+                        hasReference[0] = true;
+                    }
                     default -> throw new IllegalStateException("Unsupported metadata attribute: " + ma.getName());
                 }
             });
@@ -206,7 +212,7 @@ public class PythonAttributeProcessor {
             keyRefConstraints.put(ra.getName(), new ArrayList<>(validators));
         }
         validators.addAll(otherMeta);
-        return validators;
+        return new MetaDataResult(validators, hasReference[0]);
     }
 
     private Map<String, String> processProperties(RType rt) {
@@ -308,6 +314,24 @@ public class PythonAttributeProcessor {
                     enumImports.add("import " + ((REnumType) rt).getQualifiedName());
                 }
             }
+        }
+    }
+
+    private static class MetaDataResult {
+        private final ArrayList<String> validators;
+        private final boolean hasReference;
+
+        public MetaDataResult(ArrayList<String> validators, boolean hasReference) {
+            this.validators = validators;
+            this.hasReference = hasReference;
+        }
+
+        public ArrayList<String> getValidators() {
+            return validators;
+        }
+
+        public boolean hasReference() {
+            return hasReference;
         }
     }
 }

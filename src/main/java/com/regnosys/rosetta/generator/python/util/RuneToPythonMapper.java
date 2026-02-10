@@ -9,6 +9,7 @@ import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 
 import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.builtin.RNumberType;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.simple.Function;
 
@@ -93,8 +94,8 @@ public class RuneToPythonMapper {
      * Inner private function to convert from Rosetta type to Python type.
      * Returns null if no matching type.
      */
-    private static String toPythonBasicTypeInnerFunction(String rosettaType) {
-        switch (rosettaType) {
+    private static String toPythonBasicTypeInnerFunction(String typeName) {
+        switch (typeName) {
             case "string":
             case "eventType":
             case "calculation":
@@ -205,7 +206,12 @@ public class RuneToPythonMapper {
     public static String toPythonType(RType rt, boolean useQuotes) {
         if (rt == null)
             return null;
-        var pythonType = toPythonBasicTypeInnerFunction(rt.getName());
+        String typeName = rt.getName();
+        // if it is a number type and it is an integer, then it is an int
+        if (rt instanceof RNumberType numberType && numberType.isInteger()) {
+            typeName = "int";
+        }
+        var pythonType = toPythonBasicTypeInnerFunction(typeName);
         if (pythonType == null) {
             String rtName = rt.getName();
             pythonType = rt.getNamespace().toString() + "." + rtName;
