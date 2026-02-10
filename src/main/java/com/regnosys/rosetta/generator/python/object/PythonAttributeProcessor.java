@@ -23,6 +23,14 @@ public class PythonAttributeProcessor {
     @Inject
     private TypeSystem typeSystem;
 
+    /**
+     * Generate Python code for all attributes of a given Data type.
+     * 
+     * @param rc                The Data type to generate attributes for.
+     * @param keyRefConstraints A map of key reference constraints.
+     * @return An AttributeProcessingResult containing the generated Python code and
+     *         a list of annotation updates.
+     */
     public AttributeProcessingResult generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
@@ -34,12 +42,12 @@ public class PythonAttributeProcessor {
         PythonCodeWriter writer = new PythonCodeWriter();
         List<String> annotationUpdates = new ArrayList<>();
         for (RAttribute ra : allAttributes) {
-            generateAttribute(writer, rc, ra, keyRefConstraints, annotationUpdates);
+            writer.appendBlock(generateAttribute(rc, ra, keyRefConstraints, annotationUpdates));
         }
         return new AttributeProcessingResult(writer.toString(), annotationUpdates);
     }
 
-    private void generateAttribute(PythonCodeWriter writer, Data rc, RAttribute ra,
+    private String generateAttribute(Data rc, RAttribute ra,
             Map<String, List<String>> keyRefConstraints, List<String> annotationUpdates) {
         RType rt = ra.getRMetaAnnotatedType().getRType();
 
@@ -61,11 +69,10 @@ public class PythonAttributeProcessor {
         Map<String, String> cardinalityMap = processCardinality(ra);
         ArrayList<String> validators = processMetaDataAttributes(ra, attrTypeName, keyRefConstraints);
 
-        createAttributeString(writer, ra, attrTypeName, rt, validators, attrProp, cardinalityMap, annotationUpdates);
+        return createAttributeString(ra, attrTypeName, rt, validators, attrProp, cardinalityMap, annotationUpdates);
     }
 
-    private void createAttributeString(
-            PythonCodeWriter writer,
+    private String createAttributeString(
             RAttribute ra,
             String attrTypeNameIn,
             RType rt,
@@ -142,13 +149,13 @@ public class PythonAttributeProcessor {
         }
 
         lineBuilder.append(")");
-        writer.appendLine(lineBuilder.toString());
 
         if (ra.getDefinition() != null) {
-            writer.appendLine("\"\"\"");
-            writer.appendLine(ra.getDefinition());
-            writer.appendLine("\"\"\"");
+            lineBuilder.append("\n\"\"\"\n");
+            lineBuilder.append(ra.getDefinition());
+            lineBuilder.append("\n\"\"\"");
         }
+        return lineBuilder.toString();
     }
 
     private String getMetaDataSuffix(ArrayList<String> validators, String attrTypeName) {

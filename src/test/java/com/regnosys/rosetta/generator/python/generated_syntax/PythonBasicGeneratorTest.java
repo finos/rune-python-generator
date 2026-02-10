@@ -59,7 +59,6 @@ public class PythonBasicGeneratorTest {
     @Test
     public void testBasicSingleProxy() {
         Map<String, CharSequence> python = getPython();
-        // check proxies
         testUtils.assertGeneratedContainsExpectedString(
                 python.get("src/test/generated_syntax/basic/BasicSingle.py").toString(),
                 """
@@ -73,7 +72,6 @@ public class PythonBasicGeneratorTest {
     @Test
     public void testBasicListProxy() {
         Map<String, CharSequence> python = getPython();
-        // check proxies
         testUtils.assertGeneratedContainsExpectedString(
                 python.get("src/test/generated_syntax/basic/BasicList.py").toString(),
                 """
@@ -87,7 +85,6 @@ public class PythonBasicGeneratorTest {
     @Test
     public void testRootProxy() {
         Map<String, CharSequence> python = getPython();
-        // check proxies
         testUtils.assertGeneratedContainsExpectedString(
                 python.get("src/test/generated_syntax/basic/Root.py").toString(),
                 """
@@ -107,7 +104,7 @@ public class PythonBasicGeneratorTest {
     @Test
     public void testExpectedBundleBasic() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
+        String bundle = python.get("src/test/_bundle.py").toString();
         String expectedBasicSingle = """
                 class test_generated_syntax_basic_BasicSingle(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.basic.BasicSingle'
@@ -118,13 +115,13 @@ public class PythonBasicGeneratorTest {
                     stringType: str = Field(..., description='')
                     timeType: datetime.time = Field(..., description='')
                 """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedBasicSingle);
+        testUtils.assertGeneratedContainsExpectedString(bundle, expectedBasicSingle);
     }
 
     @Test
     public void testExpectedBundleList() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
+        String bundle = python.get("src/test/_bundle.py").toString();
         String expectedBasicList = """
                 class test_generated_syntax_basic_BasicList(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.basic.BasicList'
@@ -134,20 +131,29 @@ public class PythonBasicGeneratorTest {
                     parameterisedStringTypes: list[Annotated[str, Field(min_length=1, pattern=r'^[a-zA-Z]*$', max_length=20)]] = Field(..., description='', min_length=1)
                     stringTypes: list[str] = Field(..., description='', min_length=1)
                     timeTypes: list[datetime.time] = Field(..., description='', min_length=1)
-                    """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedBasicList);
+                """;
+        testUtils.assertGeneratedContainsExpectedString(bundle, expectedBasicList);
     }
 
     @Test
     public void testExpectedBundleRoot() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
-        String expectedRoot = """
+        String bundle = python.get("src/test/_bundle.py").toString();
+
+        // Phase 1, 2, and 3 for Root should be tested as a complete logical sequence
+        String expectedRootFull = """
                 class test_generated_syntax_basic_Root(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.basic.Root'
-                    basicSingle: Optional[Annotated[test_generated_syntax_basic_BasicSingle, test_generated_syntax_basic_BasicSingle.serializer(), test_generated_syntax_basic_BasicSingle.validator()]] = Field(None, description='')
-                    basicList: Optional[Annotated[test_generated_syntax_basic_BasicList, test_generated_syntax_basic_BasicList.serializer(), test_generated_syntax_basic_BasicList.validator()]] = Field(None, description='')
+                    basicSingle: Optional[test_generated_syntax_basic_BasicSingle] = Field(None, description='')
+                    basicList: Optional[test_generated_syntax_basic_BasicList] = Field(None, description='')
+
+                # Phase 2: Delayed Annotation Updates
+                test_generated_syntax_basic_Root.__annotations__["basicSingle"] = Optional[Annotated[test_generated_syntax_basic_BasicSingle, test_generated_syntax_basic_BasicSingle.serializer(), test_generated_syntax_basic_BasicSingle.validator()]]
+                test_generated_syntax_basic_Root.__annotations__["basicList"] = Optional[Annotated[test_generated_syntax_basic_BasicList, test_generated_syntax_basic_BasicList.serializer(), test_generated_syntax_basic_BasicList.validator()]]
+
+                # Phase 3: Rebuild
+                test_generated_syntax_basic_Root.model_rebuild()
                 """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedRoot);
+        testUtils.assertGeneratedContainsExpectedString(bundle, expectedRootFull);
     }
 }

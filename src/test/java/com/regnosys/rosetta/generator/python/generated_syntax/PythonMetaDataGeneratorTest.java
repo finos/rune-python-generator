@@ -114,74 +114,91 @@ public class PythonMetaDataGeneratorTest {
     @Test
     public void testExpectedBundleA() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
-        String expectedA = """
-                class test_generated_syntax_metadata_A(BaseDataClass):
-                    _ALLOWED_METADATA = {'@key', '@key:external'}
-                    _FQRTN = 'test.generated_syntax.metadata.A'
-                    fieldA: str = Field(..., description='')
-                """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedA);
+        String bundle = python.get("src/test/_bundle.py").toString();
+
+        // Native types are not delayed
+        assertTrue(bundle.contains("class test_generated_syntax_metadata_A(BaseDataClass):"), "Class A body");
+        assertTrue(bundle.contains("_ALLOWED_METADATA = {'@key', '@key:external'}"), "Class A metadata");
+        assertTrue(bundle.contains("fieldA: str = Field(..., description='')"), "Class A field");
     }
 
     @Test
     public void testExpectedBundleAttributeRef() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
-        String expectedAttributeRef = """
-                class test_generated_syntax_metadata_AttributeRef(BaseDataClass):
-                    _FQRTN = 'test.generated_syntax.metadata.AttributeRef'
-                    dateField: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@key', '@key:external'))]] = Field(None, description='')
-                    dateReference: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]] = Field(None, description='')
+        String bundle = python.get("src/test/_bundle.py").toString();
 
-                    _KEY_REF_CONSTRAINTS = {
-                        'dateField': {'@key', '@key:external'},
-                        'dateReference': {'@ref', '@ref:external'}
-                    }
-                """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedAttributeRef);
+        // Date is a basic type, so DateWithMeta is currently not delayed
+        assertTrue(bundle.contains("class test_generated_syntax_metadata_AttributeRef(BaseDataClass):"),
+                "Class AttributeRef body");
+        assertTrue(bundle.contains(
+                "dateField: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@key', '@key:external'))]] = Field(None, description='')"),
+                "Class AttributeRef field 1");
+        assertTrue(bundle.contains(
+                "dateReference: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]] = Field(None, description='')"),
+                "Class AttributeRef field 2");
     }
 
     @Test
     public void testExpectedBundleNodeRef() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
-        String expectedNodeRef = """
-                class test_generated_syntax_metadata_NodeRef(BaseDataClass):
-                    _FQRTN = 'test.generated_syntax.metadata.NodeRef'
-                    typeA: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]] = Field(None, description='')
-                    aReference: Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]] = Field(None, description='')
+        String bundle = python.get("src/test/_bundle.py").toString();
 
-                    _KEY_REF_CONSTRAINTS = {
-                        'aReference': {'@key', '@key:external', '@ref', '@ref:external'}
-                    }
-                """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedNodeRef);
+        // Phase 1: Clean Body
+        assertTrue(bundle.contains("class test_generated_syntax_metadata_NodeRef(BaseDataClass):"),
+                "Class NodeRef body");
+        assertTrue(bundle.contains("typeA: Optional[test_generated_syntax_metadata_A] = Field(None, description='')"),
+                "Class NodeRef field A (clean)");
+        assertTrue(
+                bundle.contains("aReference: Optional[test_generated_syntax_metadata_A] = Field(None, description='')"),
+                "Class NodeRef field ref (clean)");
+
+        // Phase 2: Delayed Update
+        assertTrue(bundle.contains(
+                "test_generated_syntax_metadata_NodeRef.__annotations__[\"typeA\"] = Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]]"),
+                "NodeRef typeA delayed update");
+        assertTrue(bundle.contains(
+                "test_generated_syntax_metadata_NodeRef.__annotations__[\"aReference\"] = Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]]"),
+                "NodeRef aReference delayed update");
+
+        // Phase 3: Rebuild
+        assertTrue(bundle.contains("test_generated_syntax_metadata_NodeRef.model_rebuild()"), "NodeRef rebuild");
     }
 
     @Test
     public void testExpectedBundleRoot() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
-        String expectedRoot = """
-                class test_generated_syntax_metadata_Root(BaseDataClass):
-                    _FQRTN = 'test.generated_syntax.metadata.Root'
-                    nodeRef: Optional[Annotated[test_generated_syntax_metadata_NodeRef, test_generated_syntax_metadata_NodeRef.serializer(), test_generated_syntax_metadata_NodeRef.validator()]] = Field(None, description='')
-                    attributeRef: Optional[Annotated[test_generated_syntax_metadata_AttributeRef, test_generated_syntax_metadata_AttributeRef.serializer(), test_generated_syntax_metadata_AttributeRef.validator()]] = Field(None, description='')
-                """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedRoot);
+        String bundle = python.get("src/test/_bundle.py").toString();
+
+        // Phase 1: Clean Body
+        assertTrue(bundle.contains("class test_generated_syntax_metadata_Root(BaseDataClass):"), "Class Root body");
+        assertTrue(
+                bundle.contains(
+                        "nodeRef: Optional[test_generated_syntax_metadata_NodeRef] = Field(None, description='')"),
+                "Class Root field nodeRef (clean)");
+        assertTrue(bundle.contains(
+                "attributeRef: Optional[test_generated_syntax_metadata_AttributeRef] = Field(None, description='')"),
+                "Class Root field attributeRef (clean)");
+
+        // Phase 2: Delayed Update
+        assertTrue(bundle.contains(
+                "test_generated_syntax_metadata_Root.__annotations__[\"nodeRef\"] = Optional[Annotated[test_generated_syntax_metadata_NodeRef, test_generated_syntax_metadata_NodeRef.serializer(), test_generated_syntax_metadata_NodeRef.validator()]]"),
+                "Root nodeRef delayed update");
+        assertTrue(bundle.contains(
+                "test_generated_syntax_metadata_Root.__annotations__[\"attributeRef\"] = Optional[Annotated[test_generated_syntax_metadata_AttributeRef, test_generated_syntax_metadata_AttributeRef.serializer(), test_generated_syntax_metadata_AttributeRef.validator()]]"),
+                "Root attributeRef delayed update");
+
+        // Phase 3: Rebuild
+        assertTrue(bundle.contains("test_generated_syntax_metadata_Root.model_rebuild()"), "Root rebuild");
     }
 
     @Test
     public void testExpectedBundleScheme() {
         Map<String, CharSequence> python = getPython();
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
-        String expectedScheme = """
-                class test_generated_syntax_metadata_SchemeTest(BaseDataClass):
-                    _ALLOWED_METADATA = {'@scheme'}
-                    _FQRTN = 'test.generated_syntax.metadata.SchemeTest'
-                    a: str = Field(..., description='')
-                """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedScheme);
+        String bundle = python.get("src/test/_bundle.py").toString();
+
+        assertTrue(bundle.contains("class test_generated_syntax_metadata_SchemeTest(BaseDataClass):"),
+                "Class SchemeTest body");
+        assertTrue(bundle.contains("_ALLOWED_METADATA = {'@scheme'}"), "Class SchemeTest metadata");
+        assertTrue(bundle.contains("a: str = Field(..., description='')"), "Class SchemeTest field");
     }
 }

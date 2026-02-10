@@ -7,6 +7,7 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import jakarta.inject.Inject;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Map;
 
 @ExtendWith(InjectionExtension.class)
@@ -35,8 +36,9 @@ public class PythonWithMetaTest {
                                 f with-meta { scheme: "myScheme" }
                         """);
         String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated,
-                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})");
+        assertTrue(
+                generated.contains("res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})"),
+                "rune_with_meta logic");
     }
 
     @Test
@@ -61,8 +63,9 @@ public class PythonWithMetaTest {
                                 f with-meta { scheme: (MyEnum -> Value1) to-string }
                         """);
         String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated,
-                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': rune_str(com.test.MyEnum.MyEnum.VALUE_1)})");
-        testUtils.assertGeneratedContainsExpectedString(generated, "import com.test.MyEnum");
+        assertTrue(generated.contains(
+                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': rune_str(com.test.MyEnum.MyEnum.VALUE_1)})"),
+                "rune_with_meta with expr");
+        assertTrue(generated.contains("import com.test.MyEnum"), "Enum import");
     }
 }

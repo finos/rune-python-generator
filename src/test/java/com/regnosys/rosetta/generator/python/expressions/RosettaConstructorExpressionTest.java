@@ -34,11 +34,17 @@ public class RosettaConstructorExpressionTest {
                 """
                         class com_rosetta_test_model_TestConst(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.TestConst'
-                            f: Annotated[com_rosetta_test_model_Foo, com_rosetta_test_model_Foo.serializer(), com_rosetta_test_model_Foo.validator()] = Field(..., description='')
+                            f: com_rosetta_test_model_Foo = Field(..., description='')
 
                             @rune_condition
                             def condition_0_ConstCheck(self):
                                 item = self
-                                return rune_all_elements(rune_resolve_attr(self, "f"), "=", com_rosetta_test_model_Foo(a=1, b=2))""");
+                                return rune_all_elements(rune_resolve_attr(self, "f"), "=", com_rosetta_test_model_Foo(a=1, b=2))
+
+                        # Phase 2: Delayed Annotation Updates
+                        com_rosetta_test_model_TestConst.__annotations__["f"] = Annotated[com_rosetta_test_model_Foo, com_rosetta_test_model_Foo.serializer(), com_rosetta_test_model_Foo.validator()]
+
+                        # Phase 3: Rebuild
+                        com_rosetta_test_model_TestConst.model_rebuild()""");
     }
 }

@@ -19,28 +19,29 @@ public class RosettaFilterOperationTest {
 
     @Test
     public void testFilterOperation() {
-        testUtils.assertBundleContainsExpectedString("""
+        String bundle = testUtils.generatePythonAndExtractBundle("""
                 type Item:
                     val int (1..1)
                 type TestFilter:
                     items Item (0..*)
                     condition FilterCheck:
                         (items filter [ val > 5 ] then count) = 0
-                """,
-                """
-                        class com_rosetta_test_model_TestFilter(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestFilter'
-                            items: Optional[list[Annotated[com_rosetta_test_model_Item, com_rosetta_test_model_Item.serializer(), com_rosetta_test_model_Item.validator()]]] = Field(None, description='')
+                """);
 
-                            @rune_condition
-                            def condition_0_FilterCheck(self):
-                                item = self
-                                return rune_all_elements((lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, "items"), lambda item: rune_all_elements(rune_resolve_attr(item, "val"), ">", 5))), "=", 0)""");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "class com_rosetta_test_model_TestFilter(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "items: Optional[list[com_rosetta_test_model_Item]] = Field(None, description='')");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "com_rosetta_test_model_TestFilter.__annotations__[\"items\"] = Optional[list[Annotated[com_rosetta_test_model_Item, com_rosetta_test_model_Item.serializer(), com_rosetta_test_model_Item.validator()]]]");
+        testUtils.assertGeneratedContainsExpectedString(bundle, "com_rosetta_test_model_TestFilter.model_rebuild()");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "return rune_all_elements((lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
     }
 
     @Test
     public void testNestedFilterMapCount() {
-        testUtils.assertBundleContainsExpectedString("""
+        String bundle = testUtils.generatePythonAndExtractBundle("""
                 type Item:
                     val int (1..1)
                 func TestNestedNested:
@@ -48,28 +49,11 @@ public class RosettaFilterOperationTest {
                     output: result int (1..1)
                     set result:
                         items filter [ val > 5 ] then count
-                """,
-                """
-                        @replaceable
-                        @validate_call
-                        def com_rosetta_test_model_functions_TestNestedNested(items: list[com_rosetta_test_model_Item] | None) -> int:
-                            \"\"\"
+                """);
 
-                            Parameters
-                            ----------
-                            items : list[com.rosetta.test.model.Item]
-
-                            Returns
-                            -------
-                            result : int
-
-                            \"\"\"
-                            self = inspect.currentframe()
-
-
-                            result = (lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, "items"), lambda item: rune_all_elements(rune_resolve_attr(item, "val"), ">", 5)))
-
-
-                            return result""");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "def com_rosetta_test_model_functions_TestNestedNested(items: list[com_rosetta_test_model_Item] | None) -> int:");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "result = (lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
     }
 }

@@ -68,7 +68,7 @@ public class RosettaContainsOperationTest {
                     \"""
                 """;
 
-        String expectedB = """
+        String expectedB_Phase1 = """
                 class com_rosetta_test_model_B(BaseDataClass):
                     \"""
                     Test type B
@@ -78,19 +78,27 @@ public class RosettaContainsOperationTest {
                     \"""
                     Test int field 2
                     \"""
-                    aValue: list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]] = Field(..., description='Test A type aValue', min_length=1)
+                    aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
                     \"""
                     Test A type aValue
                     \"""
                 """;
 
-        String expectedTest = """
+        String expectedB_Phase2_3 = """
+                # Phase 2: Delayed Annotation Updates
+                com_rosetta_test_model_B.__annotations__["aValue"] = list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]]
+
+                # Phase 3: Rebuild
+                com_rosetta_test_model_B.model_rebuild()
+                """;
+
+        String expectedTest_Phase1 = """
                 class com_rosetta_test_model_Test(BaseDataClass):
                     \"""
                     Test filter operation condition
                     \"""
                     _FQRTN = 'com.rosetta.test.model.Test'
-                    bValue: list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]] = Field(..., description='Test B type bValue', min_length=1)
+                    bValue: list[com_rosetta_test_model_B] = Field(..., description='Test B type bValue', min_length=1)
                     \"""
                     Test B type bValue
                     \"""
@@ -111,11 +119,21 @@ public class RosettaContainsOperationTest {
                         def _else_fn0():
                             return True
 
-                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", True), _then_fn0, _else_fn0)""";
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", True), _then_fn0, _else_fn0)
+                """;
+
+        String expectedTest_Phase2_3 = """
+                # Phase 2: Delayed Annotation Updates
+                com_rosetta_test_model_Test.__annotations__["bValue"] = list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]]
+
+                # Phase 3: Rebuild
+                com_rosetta_test_model_Test.model_rebuild()""";
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedC);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedA);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedB);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTest);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedB_Phase1);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedB_Phase2_3);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTest_Phase1);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTest_Phase2_3);
     }
 }
