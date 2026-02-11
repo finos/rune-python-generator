@@ -42,10 +42,9 @@ public class PythonModelObjectGenerator {
      * Generate Python from the collection of Rosetta classes (of type Data).
      * 
      * @param rClasses the collection of Rosetta Classes for this model
-     * @param version  the version for this collection of classes
      * @return a Map of all the generated Python indexed by the class name
      */
-    public Map<String, String> generate(Iterable<Data> rClasses, String version,
+    public Map<String, String> generate(Iterable<Data> rClasses,
             PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
@@ -64,7 +63,7 @@ public class PythonModelObjectGenerator {
 
             // Generate Python for the class
             try {
-                String pythonClass = generateClass(rc, nameSpace, version, enumImports, context);
+                String pythonClass = generateClass(rc, nameSpace, enumImports, context);
 
                 // construct the class name using "." as a delimiter
                 String className = model.getName() + "." + rc.getName();
@@ -116,7 +115,7 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private String generateClass(Data rc, String nameSpace, String version, Set<String> enumImports,
+    private String generateClass(Data rc, String nameSpace, Set<String> enumImports,
             PythonCodeGeneratorContext context) {
         if (rc == null) {
             throw new RuntimeException("Rosetta class not initialized");

@@ -122,8 +122,6 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             contexts.put(nameSpace, context);
         }
 
-        String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
-
         Map<String, CharSequence> result = new HashMap<>();
 
         List<Data> rosettaClasses = model.getElements().stream().filter(Data.class::isInstance).map(Data.class::cast)
@@ -144,9 +142,9 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         }
 
         Map<String, CharSequence> currentObjects = context.getObjects();
-        currentObjects.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion, context));
-        result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
-        Map<String, String> currentFunctions = funcGenerator.generate(rosettaFunctions, cleanVersion, context);
+        currentObjects.putAll(pojoGenerator.generate(rosettaClasses, context));
+        result.putAll(enumGenerator.generate(rosettaEnums));
+        Map<String, String> currentFunctions = funcGenerator.generate(rosettaFunctions, context);
         currentObjects.putAll(currentFunctions);
 
         return result;
