@@ -11,6 +11,9 @@ import com.regnosys.rosetta.generator.external.ExternalGenerators;
 
 public final class DefaultExternalGeneratorsProvider implements Provider<ExternalGenerators> {
 
+	/**
+	 * The DefaultExternalGeneratorsProvider.
+	 */
 	@Inject
 	private PythonCodeGenerator pythonGenerator;
 
@@ -19,8 +22,14 @@ public final class DefaultExternalGeneratorsProvider implements Provider<Externa
 		return new DefaultGenerators();
 	}
 
+	/**
+	 * The DefaultGenerators class.
+	 */
 	private final class DefaultGenerators implements ExternalGenerators {
 
+		/**
+		 * The list of generators.
+		 */
 		private List<ExternalGenerator> gens = Arrays.asList(pythonGenerator);
 
 		@Override

@@ -13,9 +13,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaExistsExpressionTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for exists basic.
+     */
     @Test
     public void testExistsBasic() {
         testUtils.assertBundleContainsExpectedString(
@@ -53,6 +59,9 @@ public class RosettaExistsExpressionTest {
                             return result""");
     }
 
+    /**
+     * Test case for absent basic.
+     */
     @Test
     public void testAbsentBasic() {
         testUtils.assertBundleContainsExpectedString(
@@ -90,6 +99,9 @@ public class RosettaExistsExpressionTest {
                             return result""");
     }
 
+    /**
+     * Test case for single exists.
+     */
     @Test
     public void testSingleExists() {
         testUtils.assertBundleContainsExpectedString(
@@ -127,6 +139,9 @@ public class RosettaExistsExpressionTest {
                             return result""");
     }
 
+    /**
+     * Test case for multiple exists.
+     */
     @Test
     public void testMultipleExists() {
         testUtils.assertBundleContainsExpectedString(
@@ -164,6 +179,9 @@ public class RosettaExistsExpressionTest {
                             return result""");
     }
 
+    /**
+     * Test case for exists with metadata.
+     */
     @Test
     public void testExistsWithMetadata() {
         testUtils.assertBundleContainsExpectedString(
@@ -202,6 +220,9 @@ public class RosettaExistsExpressionTest {
                             return result""");
     }
 
+    /**
+     * Test case for exists with logical operators.
+     */
     @Test
     public void testExistsWithLogicalOperators() {
         testUtils.assertBundleContainsExpectedString(
@@ -240,6 +261,9 @@ public class RosettaExistsExpressionTest {
                             return result""");
     }
 
+    /**
+     * Test case for deep path single exists.
+     */
     @Test
     public void testDeepPathSingleExists() {
         testUtils.assertBundleContainsExpectedString(
@@ -279,6 +303,9 @@ public class RosettaExistsExpressionTest {
                             return result""");
     }
 
+    /**
+     * Test case for exists in function arguments.
+     */
     @Test
     public void testExistsInFunctionArguments() {
         testUtils.assertBundleContainsExpectedString(

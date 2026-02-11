@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
@@ -39,25 +39,40 @@ import com.regnosys.rosetta.types.RObjectFactory;
 
 import jakarta.inject.Inject;
 
-public class PythonFunctionGenerator {
+public final class PythonFunctionGenerator {
 
+    /**
+     * The logger.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator.class);
 
+    /**
+     * The function dependency provider.
+     */
     @Inject
     private PythonFunctionDependencyProvider functionDependencyProvider;
 
+    /**
+     * The expression generator.
+     */
     @Inject
     private PythonExpressionGenerator expressionGenerator;
 
+    /**
+     * The object factory.
+     */
     @Inject
     private RObjectFactory rObjectFactory;
 
     /**
-     * @param functionunctions the collection of Rosetta functions to generate
+     * Generates Python code for a collection of Rosetta functions.
+     * 
+     * @param functions the collection of Rosetta functions to generate
+     * @param context   the Python code generator context
      * @return a Map of all the generated Python indexed by the file name
      */
 
-    public Map<String, String> generate(Iterable<Function> functionunctions,
+    public Map<String, String> generate(Iterable<Function> functions,
             PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
@@ -71,7 +86,7 @@ public class PythonFunctionGenerator {
 
         Map<String, String> result = new HashMap<>();
 
-        for (Function function : functionunctions) {
+        for (Function function : functions) {
             RosettaModel model = (RosettaModel) function.eContainer();
             if (model == null) {
                 LOGGER.warn("Function {} has no container, skipping", function.getName());
@@ -112,32 +127,26 @@ public class PythonFunctionGenerator {
         Iterator<?> allContents = function.eAllContents();
         while (allContents.hasNext()) {
             Object content = allContents.next();
-            switch (content) {
-                case RosettaSymbolReference ref -> {
-                    if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
-                            || ref.getSymbol() instanceof RosettaEnumeration) {
-                        dependencies.add((RosettaNamed) ref.getSymbol());
-                    }
+            if (content instanceof RosettaSymbolReference ref) {
+                if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
+                        || ref.getSymbol() instanceof RosettaEnumeration) {
+                    dependencies.add((RosettaNamed) ref.getSymbol());
                 }
-                case RosettaConstructorExpression cons -> {
-                    if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
-                        dependencies.add(cons.getTypeCall().getType());
-                    }
-                }
-                default -> {
+            } else if (content instanceof RosettaConstructorExpression cons) {
+                if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
+                    dependencies.add(cons.getTypeCall().getType());
                 }
             }
         }
 
         for (RosettaNamed dep : dependencies) {
             String depName = "";
-            switch (dep) {
-                case Data data -> depName = rObjectFactory.buildRDataType(data).getQualifiedName().toString();
-                case Function function1 -> depName = RuneToPythonMapper.getFullyQualifiedObjectName(function1);
-                case RosettaEnumeration rosettaEnumeration ->
-                    depName = rObjectFactory.buildREnumType(rosettaEnumeration).getQualifiedName().toString();
-                default -> {
-                }
+            if (dep instanceof Data data) {
+                depName = rObjectFactory.buildRDataType(data).getQualifiedName().toString();
+            } else if (dep instanceof Function function1) {
+                depName = RuneToPythonMapper.getFullyQualifiedObjectName(function1);
+            } else if (dep instanceof RosettaEnumeration rosettaEnumeration) {
+                depName = rObjectFactory.buildREnumType(rosettaEnumeration).getQualifiedName().toString();
             }
 
             if (!depName.isEmpty() && !functionName.equals(depName)) {
@@ -205,7 +214,7 @@ public class PythonFunctionGenerator {
         if (isCodeImplementation) {
             writer.appendLine(generateExternalFunctionCall(function));
         } else {
-            int[] level = { 0 };
+            int[] level = {0};
             writer.appendBlock(generateAlias(function, level));
             writer.appendBlock(generateOperations(function, level));
         }
@@ -468,15 +477,20 @@ public class PythonFunctionGenerator {
             String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
             if (!setNames.contains(attributeRoot.getName())) {
                 setNames.add(attributeRoot.getName());
-                writer.appendLine(attributeRoot.getName() + equalsSign + "_get_rune_object('"
-                        + bundleName + "', " +
-                        getNextPathElementName(operation.getPath()) + ", "
-                        + buildObject(expression, operation.getPath()) + ")");
+                writer.appendLine(attributeRoot.getName()
+                        + equalsSign
+                        + "_get_rune_object('"
+                        + bundleName
+                        + "', "
+                        + getNextPathElementName(operation.getPath())
+                        + ", "
+                        + buildObject(expression, operation.getPath())
+                        + ")");
             } else {
                 writer.appendLine(attributeRoot.getName() + equalsSign + "set_rune_attr(rune_resolve_attr(self, '"
                         + attributeRoot.getName()
-                        + "'), " +
-                        generateAttributesPath(operation.getPath()) + ", " + expression + ")");
+                        + "'), "
+                        + generateAttributesPath(operation.getPath()) + ", " + expression + ")");
             }
         }
         return writer.toString();

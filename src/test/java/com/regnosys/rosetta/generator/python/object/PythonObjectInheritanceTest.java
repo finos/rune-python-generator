@@ -12,9 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonObjectInheritanceTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for multiple parents.
+     */
     @Test
     public void testPythonClassGenerationWithMultipleParents() {
         String pythonString = testUtils.generatePythonFromString(
@@ -55,6 +61,9 @@ public class PythonObjectInheritanceTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedD);
     }
 
+    /**
+     * Test case for super classes.
+     */
     @Test
     public void testSuperClasses() {
         String pythonString = testUtils.generatePythonFromString(
@@ -92,6 +101,9 @@ public class PythonObjectInheritanceTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo);
     }
 
+    /**
+     * Test case for enum value.
+     */
     @Test
     public void testEnumValue() {
         String pythonString = testUtils.generatePythonFromString(

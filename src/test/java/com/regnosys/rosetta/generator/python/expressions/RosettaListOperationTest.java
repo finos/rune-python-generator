@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaListOperationTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for aggregations.
+     */
     @Test
     public void testAggregations() {
         testUtils.assertBundleContainsExpectedString("""
@@ -53,6 +59,9 @@ public class RosettaListOperationTest {
                         """);
     }
 
+    /**
+     * Test case for accessors.
+     */
     @Test
     public void testAccessors() {
         testUtils.assertBundleContainsExpectedString("""
@@ -88,6 +97,9 @@ public class RosettaListOperationTest {
                         """);
     }
 
+    /**
+     * Test case for sort operation.
+     */
     @Test
     public void testSortOperation() {
         testUtils.assertBundleContainsExpectedString("""
@@ -122,6 +134,9 @@ public class RosettaListOperationTest {
                         """);
     }
 
+    /**
+     * Test case for list comparison.
+     */
     @Test
     public void testListComparison() {
         testUtils.assertBundleContainsExpectedString("""
@@ -160,6 +175,9 @@ public class RosettaListOperationTest {
                         """);
     }
 
+    /**
+     * Test case for collection literal.
+     */
     @Test
     public void testCollectionLiteral() {
         testUtils.assertBundleContainsExpectedString("""
@@ -191,6 +209,9 @@ public class RosettaListOperationTest {
                         """);
     }
 
+    /**
+     * Test case for reverse operation.
+     */
     @Test
     public void testReverseOperation() {
         testUtils.assertBundleContainsExpectedString("""

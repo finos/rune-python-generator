@@ -14,11 +14,57 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonMetaDataGeneratorTest {
 
+        /**
+         * Test utils for generating Python.
+         */
         @Inject
         private PythonGeneratorTestUtils testUtils;
 
+        /**
+         * Generated Python.
+         */
         private Map<String, CharSequence> python = null;
 
+        /**
+         * Initialize generated Python.
+         */
+
+        private void initPython() {
+                if (python == null) {
+                        python = testUtils.generatePythonFromString(
+                                        """
+                                                        namespace test.generated_syntax.metadata : <"generate Python unit tests from Rosetta.">
+
+                                                        type A:
+                                                            [metadata key]
+                                                            fieldA string (1..1)
+
+                                                        type NodeRef:
+                                                            typeA A (0..1)
+                                                            aReference A (0..1)
+                                                                [metadata reference]
+
+                                                        type AttributeRef:
+                                                            dateField date (0..1)
+                                                                [metadata id]
+                                                            dateReference date (0..1)
+                                                                [metadata reference]
+
+                                                        type Root:
+                                                            [rootType]
+                                                            nodeRef NodeRef (0..1)
+                                                            attributeRef AttributeRef (0..1)
+
+                                                        type SchemeTest:
+                                                            [metadata scheme]
+                                                            a string (1..1)
+                                                        """);
+                }
+        }
+
+        /**
+         * Get generated Python.
+         */
         private Map<String, CharSequence> getPython() {
                 if (python == null) {
                         python = testUtils.generatePythonFromString(
@@ -53,9 +99,12 @@ public class PythonMetaDataGeneratorTest {
                 return python;
         }
 
+        /**
+         * Test case for A proxy.
+         */
         @Test
         public void testAProxy() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 testUtils.assertGeneratedContainsExpectedString(
                                 python.get("src/test/generated_syntax/metadata/A.py").toString(),
                                 """
@@ -66,9 +115,12 @@ public class PythonMetaDataGeneratorTest {
                                                 """);
         }
 
+        /**
+         * Test case for NodeRef proxy.
+         */
         @Test
         public void testNodeRefProxy() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 testUtils.assertGeneratedContainsExpectedString(
                                 python.get("src/test/generated_syntax/metadata/NodeRef.py").toString(),
                                 """
@@ -79,9 +131,12 @@ public class PythonMetaDataGeneratorTest {
                                                 """);
         }
 
+        /**
+         * Test case for AttributeRef proxy.
+         */
         @Test
         public void testAttributeRefProxy() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 testUtils.assertGeneratedContainsExpectedString(
                                 python.get("src/test/generated_syntax/metadata/AttributeRef.py").toString(),
                                 """
@@ -92,9 +147,12 @@ public class PythonMetaDataGeneratorTest {
                                                 """);
         }
 
+        /**
+         * Test case for Root proxy.
+         */
         @Test
         public void testRootProxy() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 testUtils.assertGeneratedContainsExpectedString(
                                 python.get("src/test/generated_syntax/metadata/Root.py").toString(),
                                 """
@@ -105,15 +163,22 @@ public class PythonMetaDataGeneratorTest {
                                                 """);
         }
 
+        /**
+         * Test case for bundle existence.
+         */
         @Test
         public void testBundleExists() {
-                Map<String, CharSequence> python = getPython();
-                assertTrue(python.containsKey("src/test/_bundle.py"), "The bundle should be in the generated Python");
+                initPython();
+                assertTrue(python.containsKey("src/test/_bundle.py"),
+                                "The bundle should be in the generated Python");
         }
 
+        /**
+         * Test case for bundle A.
+         */
         @Test
         public void testExpectedBundleA() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 String bundle = python.get("src/test/_bundle.py").toString();
 
                 // Native types are not delayed
@@ -124,9 +189,12 @@ public class PythonMetaDataGeneratorTest {
                 testUtils.assertGeneratedContainsExpectedString(bundle, "fieldA: str = Field(..., description='')");
         }
 
+        /**
+         * Test case for bundle AttributeRef.
+         */
         @Test
         public void testExpectedBundleAttributeRef() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 String bundle = python.get("src/test/_bundle.py").toString();
 
                 // Date is a basic type, so DateWithMeta is currently not delayed
@@ -138,9 +206,12 @@ public class PythonMetaDataGeneratorTest {
                                 "dateReference: Optional[Annotated[DateWithMeta | BaseReference, DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]] = Field(None, description='')");
         }
 
+        /**
+         * Test case for bundle NodeRef.
+         */
         @Test
         public void testExpectedBundleNodeRef() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 String bundle = python.get("src/test/_bundle.py").toString();
 
                 // Phase 1: Clean Body
@@ -162,9 +233,12 @@ public class PythonMetaDataGeneratorTest {
                                 "test_generated_syntax_metadata_NodeRef.model_rebuild()");
         }
 
+        /**
+         * Test case for bundle Root.
+         */
         @Test
         public void testExpectedBundleRoot() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 String bundle = python.get("src/test/_bundle.py").toString();
 
                 // Phase 1: Clean Body
@@ -186,9 +260,12 @@ public class PythonMetaDataGeneratorTest {
                                 "test_generated_syntax_metadata_Root.model_rebuild()");
         }
 
+        /**
+         * Test case for bundle SchemeTest.
+         */
         @Test
         public void testExpectedBundleScheme() {
-                Map<String, CharSequence> python = getPython();
+                initPython();
                 String bundle = python.get("src/test/_bundle.py").toString();
 
                 testUtils.assertGeneratedContainsExpectedString(bundle,

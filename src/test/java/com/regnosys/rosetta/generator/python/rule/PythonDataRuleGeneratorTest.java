@@ -12,319 +12,359 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonDataRuleGeneratorTest {
 
-        @Inject
-        private PythonGeneratorTestUtils testUtils;
+    /**
+     * PythonGeneratorTestUtils is used to generate Python code from Rosetta models.
+     */
+    @Inject
+    private PythonGeneratorTestUtils testUtils;
 
-        @Test
-        public void shouldGenerateConditionWithIfElseIf() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Foo:
-                                                    bar string (0..1)
-                                                    baz string (0..1)
+    /**
+     * Test case for conditions with if-else-if statements.
+     */
+    @Test
+    public void shouldGenerateConditionWithIfElseIf() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Foo:
+                            bar string (0..1)
+                            baz string (0..1)
 
-                                                    condition:
-                                                        if bar="Y" then baz exists
-                                                        else if (bar="I" or bar="N") then baz is absent
-                                                """).toString();
+                            condition:
+                                if bar="Y" then baz exists
+                                else if (bar="I" or bar="N") then baz is absent
+                        """).toString();
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Foo(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "bar: Optional[str] = Field(None, description='')");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "baz: Optional[str] = Field(None, description='')");
-                testUtils.assertGeneratedContainsExpectedString(pythonString, "@rune_condition");
-                testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_(self):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"bar\"), \"=\", \"Y\"), _then_fn0, _else_fn0)");
-        }
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Foo(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "bar: Optional[str] = Field(None, description='')");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "baz: Optional[str] = Field(None, description='')");
+        testUtils.assertGeneratedContainsExpectedString(pythonString, "@rune_condition");
+        testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_(self):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"bar\"), \"=\", \"Y\"), _then_fn0, _else_fn0)");
+    }
 
-        @Test
-        public void shouldGenerateConditionWithNestedIfElseIf() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Foo:
-                                                    bar string (0..1)
-                                                    baz string (0..1)
+    /**
+     * Test case for conditions with nested if-else-if statements.
+     */
 
-                                                    condition:
-                                                        if bar exists then
-                                                            if bar="Y" then baz exists
-                                                            else if (bar="I" or bar="N") then baz is absent
-                                                """).toString();
+    @Test
+    public void shouldGenerateConditionWithNestedIfElseIf() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Foo:
+                            bar string (0..1)
+                            baz string (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Foo(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_(self):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, \"bar\")), _then_fn0, _else_fn0)");
-        }
+                            condition:
+                                if bar exists then
+                                    if bar="Y" then baz exists
+                                    else if (bar="I" or bar="N") then baz is absent
+                        """).toString();
 
-        @Test
-        public void quoteExists() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Quote:
-                                                    quotePrice QuotePrice (0..1)
-                                                    condition Quote_Price:
-                                                        if quotePrice exists
-                                                        then quotePrice -> bidPrice exists or quotePrice -> offerPrice exists
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Foo(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_(self):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, \"bar\")), _then_fn0, _else_fn0)");
+    }
 
-                                                type QuotePrice:
-                                                    bidPrice number (0..1)
-                                                    offerPrice number (0..1)
-                                                """)
-                                .toString();
+    /**
+     * Test case for conditions with exists statements.
+     */
+    @Test
+    public void testExists() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Quote:
+                            quotePrice QuotePrice (0..1)
+                            condition Quote_Price:
+                                if quotePrice exists
+                                then quotePrice -> bidPrice exists or quotePrice -> offerPrice exists
 
-                // Phase 1: Clean Body
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Quote(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
+                        type QuotePrice:
+                            bidPrice number (0..1)
+                            offerPrice number (0..1)
+                        """)
+                .toString();
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_QuotePrice(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "bidPrice: Optional[Decimal] = Field(None, description='')");
+        // Phase 1: Clean Body
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Quote(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
 
-                // Phase 2: Delayed Update
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_QuotePrice(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "bidPrice: Optional[Decimal] = Field(None, description='')");
 
-                // Phase 3: Rebuild
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "com_rosetta_test_model_Quote.model_rebuild()");
+        // Phase 2: Delayed Update
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
 
-                // Condition
-                testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
-        }
+        // Phase 3: Rebuild
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "com_rosetta_test_model_Quote.model_rebuild()");
 
-        @Test
-        public void nestedAnds() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Quote:
-                                                    quotePrice QuotePrice (0..1)
-                                                    condition Quote_Price:
-                                                        if quotePrice exists
-                                                        then (
-                                                            quotePrice -> price1 exists
-                                                            and quotePrice -> price2 exists
-                                                            and quotePrice -> price3 exists
-                                                        )
+        // Condition
+        testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
+    }
 
-                                                type QuotePrice:
-                                                    price1 number (0..1)
-                                                    price2 number (0..1)
-                                                    price3 number (0..1)
+    /**
+     * Test case for conditions with nested and statements.
+     */
+    @Test
+    public void nestedAnds() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Quote:
+                            quotePrice QuotePrice (0..1)
+                            condition Quote_Price:
+                                if quotePrice exists
+                                then (
+                                    quotePrice -> price1 exists
+                                    and quotePrice -> price2 exists
+                                    and quotePrice -> price3 exists
+                                )
 
-                                                """).toString();
+                        type QuotePrice:
+                            price1 number (0..1)
+                            price2 number (0..1)
+                            price3 number (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Quote(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
-                testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
-        }
+                        """).toString();
 
-        @Test
-        public void numberAttributeisHandled() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Quote:
-                                                    quotePrice QuotePrice (0..1)
-                                                    condition Quote_Price:
-                                                        if quotePrice exists
-                                                        then quotePrice -> bidPrice = 0.0
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Quote(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
+        testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
+    }
 
-                                                type QuotePrice:
-                                                    bidPrice number (0..1)
-                                                """).toString();
+    /**
+     * Test case for conditions with number attribute statements.
+     */
+    @Test
+    public void numberAttributeisHandled() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Quote:
+                            quotePrice QuotePrice (0..1)
+                            condition Quote_Price:
+                                if quotePrice exists
+                                then quotePrice -> bidPrice = 0.0
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"quotePrice\"), \"bidPrice\"), \"=\", Decimal('0.0'))");
-        }
+                        type QuotePrice:
+                            bidPrice number (0..1)
+                        """).toString();
 
-        @Test
-        public void dataRuleWithDoIfAndFunction() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                func Foo:
-                                                    inputs:
-                                                        price number (0..1)
-                                                    output:
-                                                        something number (1..1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"quotePrice\"), \"bidPrice\"), \"=\", Decimal('0.0'))");
+    }
 
-                                                type Quote:
-                                                    price number (0..1)
+    /**
+     * Test case for conditions with function statements.
+     */
+    @Test
+    public void dataRuleWithDoIfAndFunction() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        func Foo:
+                            inputs:
+                                price number (0..1)
+                            output:
+                                something number (1..1)
 
-                                                    condition:
-                                                        if price exists
-                                                        then Foo( price ) = 5.0
-                                                """).toString();
+                        type Quote:
+                            price number (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Quote(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return rune_all_elements(com_rosetta_test_model_functions_Foo(rune_resolve_attr(self, \"price\")), \"=\", Decimal('5.0'))");
-        }
+                            condition:
+                                if price exists
+                                then Foo( price ) = 5.0
+                        """).toString();
 
-        @Test
-        public void dataRuleWithDoIfAndFunctionAndElse() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                func Foo:
-                                                    inputs:
-                                                        price number (0..1)
-                                                    output:
-                                                        something number (1..1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Quote(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return rune_all_elements(com_rosetta_test_model_functions_Foo(rune_resolve_attr(self, \"price\")), \"=\", Decimal('5.0'))");
+    }
 
-                                                type Quote:
-                                                    price number (0..1)
+    /**
+     * Test case for conditions with function statements and else.
+     */
+    @Test
+    public void dataRuleWithDoIfAndFunctionAndElse() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        func Foo:
+                            inputs:
+                                price number (0..1)
+                            output:
+                                something number (1..1)
 
-                                                    condition:
-                                                        if price exists
-                                                        then Foo( price ) = 5.0
-                                                        else True
-                                                """).toString();
+                        type Quote:
+                            price number (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Quote(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, \"price\")), _then_fn0, _else_fn0)");
-        }
+                            condition:
+                                if price exists
+                                then Foo( price ) = 5.0
+                                else True
+                        """).toString();
 
-        @Test
-        public void dataRuleCoinHead() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Coin:
-                                                    head boolean (0..1)
-                                                    tail boolean (0..1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Quote(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, \"price\")), _then_fn0, _else_fn0)");
+    }
 
-                                                    condition CoinHeadRule:
-                                                        if head = True
-                                                        then tail = False
+    /**
+     * Test case for conditions with boolean attribute statements.
+     */
+    @Test
+    public void dataRuleCoinHead() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Coin:
+                            head boolean (0..1)
+                            tail boolean (0..1)
 
-                                                """).toString();
+                            condition CoinHeadRule:
+                                if head = True
+                                then tail = False
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Coin(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"head\"), \"=\", True), _then_fn0, _else_fn0)");
-        }
+                        """).toString();
 
-        @Test
-        public void dataRuleCoinTail() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Coin:
-                                                    head boolean (0..1)
-                                                    tail boolean (0..1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Coin(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"head\"), \"=\", True), _then_fn0, _else_fn0)");
+    }
 
-                                                    condition CoinTailRule:
-                                                        if tail = True
-                                                        then head = False
-                                                """).toString();
+    /**
+     * Test case for conditions with boolean attribute statements and else.
+     */
+    @Test
+    public void dataRuleCoinTail() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Coin:
+                            head boolean (0..1)
+                            tail boolean (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Coin(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"tail\"), \"=\", True), _then_fn0, _else_fn0)");
-        }
+                            condition CoinTailRule:
+                                if tail = True
+                                then head = False
+                        """).toString();
 
-        @Test
-        public void dataRuleCoinEdge() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Coin:
-                                                    head boolean (0..1)
-                                                    tail boolean (0..1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Coin(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"tail\"), \"=\", True), _then_fn0, _else_fn0)");
+    }
 
-                                                    condition EdgeRule:
-                                                        if tail = False
-                                                        then head = False
-                                                """).toString();
+    /**
+     * Test case for conditions with boolean attribute statements and else.
+     */
+    @Test
+    public void dataRuleCoinEdge() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Coin:
+                            head boolean (0..1)
+                            tail boolean (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Coin(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"tail\"), \"=\", False), _then_fn0, _else_fn0)");
-        }
+                            condition EdgeRule:
+                                if tail = False
+                                then head = False
+                        """).toString();
 
-        @Test
-        public void conditionCount() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type CondTest:
-                                                    multiAttr number (1..*)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Coin(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"tail\"), \"=\", False), _then_fn0, _else_fn0)");
+    }
 
-                                                    condition:
-                                                        multiAttr count >= 0
-                                                """).toString();
+    /**
+     * Test case for conditions with count statements.
+     */
+    @Test
+    public void conditionCount() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type CondTest:
+                            multiAttr number (1..*)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_CondTest(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return rune_all_elements(rune_count(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
-        }
+                            condition:
+                                multiAttr count >= 0
+                        """).toString();
 
-        @Test
-        public void checkConditionWithInheritedAttribute() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Foo:
-                                                    x string (0..1)
-                                                    y string (0..1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_CondTest(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return rune_all_elements(rune_count(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
+    }
 
-                                                    condition:
-                                                        x exists
+    @Test
+    public void checkConditionWithInheritedAttribute() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Foo:
+                            x string (0..1)
+                            y string (0..1)
 
-                                                type Bar extends Foo:
-                                                    z string (0..1)
+                            condition:
+                                x exists
 
-                                                    condition:
-                                                        y exists
-                                                """).toString();
+                        type Bar extends Foo:
+                            z string (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Foo(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return rune_attr_exists(rune_resolve_attr(self, \"y\"))");
-        }
+                            condition:
+                                y exists
+                        """).toString();
 
-        @Test
-        public void shouldCheckInheritedCondition() {
-                String pythonString = testUtils.generatePythonFromString(
-                                """
-                                                type Foo:
-                                                    x string (0..1)
-                                                    y string (0..1)
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Foo(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return rune_attr_exists(rune_resolve_attr(self, \"y\"))");
+    }
 
-                                                    condition:
-                                                        x exists
+    /**
+     * Test case for conditions with inherited attribute statements.
+     */
+    @Test
+    public void shouldCheckInheritedCondition() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        type Foo:
+                            x string (0..1)
+                            y string (0..1)
 
-                                                type Bar extends Foo:
-                                                    z string (0..1)
+                            condition:
+                                x exists
 
-                                                    condition:
-                                                        y exists
-                                                """).toString();
+                        type Bar extends Foo:
+                            z string (0..1)
 
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Foo(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):");
-                testUtils.assertGeneratedContainsExpectedString(pythonString,
-                                "return rune_attr_exists(rune_resolve_attr(self, \"y\"))");
-        }
+                            condition:
+                                y exists
+                        """).toString();
+
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Foo(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):");
+        testUtils.assertGeneratedContainsExpectedString(pythonString,
+                "return rune_attr_exists(rune_resolve_attr(self, \"y\"))");
+    }
 }

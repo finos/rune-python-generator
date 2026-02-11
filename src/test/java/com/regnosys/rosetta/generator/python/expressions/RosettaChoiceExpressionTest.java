@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaChoiceExpressionTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for choice expression.
+     */
     @Test
     public void testGenerateChoiceCondition() {
         testUtils.assertBundleContainsExpectedString("""
@@ -51,6 +57,9 @@ public class RosettaChoiceExpressionTest {
                                 return rune_check_one_of(self, 'field1', 'field2', 'field3', necessity=False)""");
     }
 
+    /**
+     * Test case for one-of condition.
+     */
     @Test
     public void testGenerateOneOfCondition() {
         testUtils.assertBundleContainsExpectedString("""

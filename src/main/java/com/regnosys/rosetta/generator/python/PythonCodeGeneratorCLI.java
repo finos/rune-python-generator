@@ -1,5 +1,40 @@
 package com.regnosys.rosetta.generator.python;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FileUtils;
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.xtext.util.CancelIndicator;
+import org.eclipse.xtext.validation.CheckMode;
+import org.eclipse.xtext.validation.IResourceValidator;
+import org.eclipse.xtext.validation.Issue;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
@@ -9,25 +44,7 @@ import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
 import com.regnosys.rosetta.generator.external.ExternalGenerator;
 import com.regnosys.rosetta.generator.external.ExternalGenerators;
 import com.regnosys.rosetta.rosetta.RosettaModel;
-import org.apache.commons.cli.*;
-import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.eclipse.emf.ecore.EObject;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
-import org.eclipse.emf.common.util.URI;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
-import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
-import org.eclipse.xtext.validation.CheckMode;
-import org.eclipse.xtext.validation.IResourceValidator;
-import org.eclipse.xtext.validation.Issue;
-import org.eclipse.xtext.util.CancelIndicator;
 
 /**
  * Command-line interface for generating Python code from Rosetta models.
@@ -75,8 +92,18 @@ import org.eclipse.xtext.util.CancelIndicator;
  * @see PythonCodeGenerator
  */
 
-public class PythonCodeGeneratorCLI {
+public final class PythonCodeGeneratorCLI {
+    /**
+     * Logger for the PythonCodeGeneratorCLI class.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private PythonCodeGeneratorCLI() {
+        throw new IllegalStateException("Utility class");
+    }
 
     public static void main(String[] args) {
         System.out.println("***** Running PythonCodeGeneratorCLI v2 *****");
@@ -337,7 +364,10 @@ public class PythonCodeGeneratorCLI {
         }
     }
 
-    public static class PythonCodeGeneratorInstance implements Provider<ExternalGenerators> {
+    /**
+     * Provider for ExternalGenerators.
+     */
+    public static final class PythonCodeGeneratorInstance implements Provider<ExternalGenerators> {
         @Override
         public ExternalGenerators get() {
             return new ExternalGenerators() {

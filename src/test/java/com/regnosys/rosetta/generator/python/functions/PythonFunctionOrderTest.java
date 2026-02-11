@@ -15,9 +15,15 @@ import org.junit.jupiter.api.Disabled;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionOrderTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for function dependency order.
+     */
     @Test
     public void testFunctionDependencyOrder() {
         // Define ClassB which depends on ClassA, and a function which depends on both.
@@ -54,6 +60,9 @@ public class PythonFunctionOrderTest {
         assertTrue(classBIndex < funcIndex, "ClassB should be defined before MyFunc");
     }
 
+    /**
+     * Test case for circular dependency order.
+     */
     @Test
     @Disabled("Circular dependencies are currently not supported and will cause a topological sort error or runtime NameError")
     public void testCircularDependencyOrder() {

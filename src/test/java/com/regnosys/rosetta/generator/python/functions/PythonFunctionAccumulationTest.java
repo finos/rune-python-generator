@@ -1,13 +1,16 @@
 package com.regnosys.rosetta.generator.python.functions;
 
-import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
-import com.regnosys.rosetta.tests.RosettaInjectorProvider;
+import java.util.Map;
+
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
+import com.regnosys.rosetta.tests.RosettaInjectorProvider;
+
 import jakarta.inject.Inject;
-import java.util.Map;
 
 /**
  * Every element of this test needs to check the entire generated Python.
@@ -17,23 +20,29 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionAccumulationTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for function with append to list.
+     */
     @Test
     public void testGenerateFunctionWithAppendToList() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        func AppendToList: <\"Append a single value to a list of numbers.\">
-                            inputs:
-                                list number (0..*) <\"Input list.\">
-                                value number (1..1) <\"Value to add to a list.\">
-                            output:
-                                result number (0..*) <\"Resulting list.\">
+                func AppendToList: <\"Append a single value to a list of numbers.\">
+                    inputs:
+                        list number (0..*) <\"Input list.\">
+                        value number (1..1) <\"Value to add to a list.\">
+                    output:
+                        result number (0..*) <\"Resulting list.\">
 
-                            add result: list
-                            add result: value
-                        """);
+                    add result: list
+                    add result: value
+                """);
 
         String expectedBundle = """
                 @replaceable
@@ -67,6 +76,9 @@ public class PythonFunctionAccumulationTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for function with add operation.
+     */
     @Test
     public void testGenerateFunctionWithAddOperation() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(

@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaConversionTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for basic conversions.
+     */
     @Test
     public void testBasicConversions() {
         testUtils.assertBundleContainsExpectedString("""
@@ -39,6 +45,9 @@ public class RosettaConversionTest {
                                 return (rune_all_elements(rune_str(rune_resolve_attr(self, "val")), "=", "1") and rune_all_elements(int(rune_resolve_attr(self, "s")), "=", 1))""");
     }
 
+    /**
+     * Test case for date conversions.
+     */
     @Test
     public void testDateConversions() {
         testUtils.assertBundleContainsExpectedString("""
@@ -60,6 +69,9 @@ public class RosettaConversionTest {
                                 return ((rune_all_elements(datetime.datetime.strptime(rune_resolve_attr(self, "s"), "%Y-%m-%d").date(), "=", datetime.datetime.strptime("2023-11-20", "%Y-%m-%d").date()) and rune_all_elements(datetime.datetime.strptime(rune_resolve_attr(self, "s"), "%Y-%m-%d %H:%M:%S"), "=", datetime.datetime.strptime("2023-11-20 12:00:00", "%Y-%m-%d %H:%M:%S"))) and rune_all_elements(datetime.datetime.strptime(rune_resolve_attr(self, "s"), "%H:%M:%S").time(), "=", datetime.datetime.strptime("12:00:00", "%H:%M:%S").time()))""");
     }
 
+    /**
+     * Test case for enum conversion.
+     */
     @Test
     public void testEnumConversion() {
         testUtils.assertBundleContainsExpectedString("""

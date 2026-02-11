@@ -6,7 +6,10 @@ import java.time.format.DateTimeFormatter;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.types.RAttribute;
 
-public class PythonCodeGeneratorUtil {
+public final class PythonCodeGeneratorUtil {
+
+    private PythonCodeGeneratorUtil() {
+    }
 
     public static String fileComment(String version) {
         return """
@@ -84,10 +87,12 @@ public class PythonCodeGeneratorUtil {
 
     public static String createVersionFile(String version) {
         String versionComma = version.replace('.', ',');
-        return "version = (" + versionComma + ",0)\n" +
-                "version_str = '" + version + "-0'\n" +
-                "__version__ = '" + version + "'\n" +
-                "__build_time__ = '" + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
+        return "version = ("
+                + versionComma + ",0)\n"
+                + "version_str = '" + version + "-0'\n"
+                + "__version__ = '" + version + "'\n"
+                + "__build_time__ = '"
+                + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
     }
 
     public static String getNamespace(RosettaModel rm) {

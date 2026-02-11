@@ -1,40 +1,57 @@
 package com.regnosys.rosetta.generator.python.object;
 
-import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
-import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
-import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
-import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.rosetta.simple.Data;
-import com.regnosys.rosetta.types.RDataType;
-import com.regnosys.rosetta.types.RObjectFactory;
-import jakarta.inject.Inject;
-import com.regnosys.rosetta.types.RAttribute;
-import com.regnosys.rosetta.types.REnumType;
-import com.regnosys.rosetta.types.RType;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.GraphCycleProhibitedException;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
+import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.simple.Data;
+import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.RDataType;
+import com.regnosys.rosetta.types.REnumType;
+import com.regnosys.rosetta.types.RObjectFactory;
+import com.regnosys.rosetta.types.RType;
+
+import jakarta.inject.Inject;
 
 /**
  * Generate Python from Rune Types
  */
 public class PythonModelObjectGenerator {
 
+    /**
+     * The R object factory.
+     */
     @Inject
     private RObjectFactory rObjectFactory;
 
+    /**
+     * The Python expression generator.
+     */
     @Inject
     private PythonExpressionGenerator expressionGenerator;
 
+    /**
+     * The Python attribute processor.
+     */
     @Inject
     private PythonAttributeProcessor pythonAttributeProcessor;
 
+    /**
+     * The Python choice alias processor.
+     */
     @Inject
     private PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
@@ -42,10 +59,10 @@ public class PythonModelObjectGenerator {
      * Generate Python from the collection of Rosetta classes (of type Data).
      * 
      * @param rClasses the collection of Rosetta Classes for this model
+     * @param context  the Python code generator context
      * @return a Map of all the generated Python indexed by the class name
      */
-    public Map<String, String> generate(Iterable<Data> rClasses,
-            PythonCodeGeneratorContext context) {
+    public Map<String, String> generate(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
             throw new RuntimeException("Dependency DAG not initialized");
@@ -133,8 +150,13 @@ public class PythonModelObjectGenerator {
         return generateBody(rc, context);
     }
 
+    /**
+     * Generates the _ALLOWED_METADATA string for the type.
+     * 
+     * @param rc the Rosetta class
+     * @return the _ALLOWED_METADATA string
+     */
     private String getClassMetaDataString(Data rc) {
-        // generate _ALLOWED_METADATA string for the type
         RDataType rcRData = rObjectFactory.buildRDataType(rc);
         PythonCodeWriter writer = new PythonCodeWriter();
         boolean first = true;
@@ -146,9 +168,11 @@ public class PythonModelObjectGenerator {
             } else {
                 writer.append(", ");
             }
-            switch (metaData.getName()) {
-                case "key", "id" -> writer.append("'@key', '@key:external'");
-                case "scheme" -> writer.append("'@scheme'");
+            String metaDataName = metaData.getName();
+            if (metaDataName.equals("key") || metaDataName.equals("id")) {
+                writer.append("'@key', '@key:external'");
+            } else if (metaDataName.equals("scheme")) {
+                writer.append("'@scheme'");
             }
         }
         if (!first) {

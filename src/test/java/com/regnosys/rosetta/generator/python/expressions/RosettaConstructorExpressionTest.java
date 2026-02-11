@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaConstructorExpressionTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for constructor expression.
+     */
     @Test
     public void testConstructorExpression() {
         String generatedPython = testUtils.generatePythonFromString("""

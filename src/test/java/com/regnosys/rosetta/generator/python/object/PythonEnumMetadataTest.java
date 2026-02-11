@@ -14,9 +14,15 @@ import org.junit.jupiter.api.Disabled;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonEnumMetadataTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for enum with metadata id.
+     */
     @Test
     public void testEnumWithMetadataId() {
         // This test captures the "Unresolved Issue" where enums with [metadata id]
@@ -48,6 +54,9 @@ public class PythonEnumMetadataTest {
                 "'currency': {'@key', '@key:external'}");
     }
 
+    /**
+     * Test case for enum without metadata.
+     */
     @Test
     @Disabled("Blocked by Enum Wrapper implementation - see Backlog")
     public void testEnumWithoutMetadata() {

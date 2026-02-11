@@ -13,9 +13,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionConditionTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for simple condition.
+     */
     @Test
     public void testSimpleCondition() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -87,6 +93,9 @@ public class PythonFunctionConditionTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for post condition.
+     */
     @Test
     public void testPostCondition() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -156,6 +165,9 @@ public class PythonFunctionConditionTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for multiple conditions.
+     */
     @Test
     public void testMultipleConditions() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(

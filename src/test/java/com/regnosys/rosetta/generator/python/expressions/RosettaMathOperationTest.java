@@ -18,9 +18,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaMathOperationTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for math operations.
+     */
     @Test
     public void testMathOperations() {
         String generatedPython = testUtils.generatePythonFromString("""
@@ -51,6 +57,9 @@ public class RosettaMathOperationTest {
                                 return if_cond_fn(((rune_all_elements((rune_resolve_attr(self, "a") * rune_resolve_attr(self, "b")), "=", 10) and rune_all_elements((rune_resolve_attr(self, "a") - rune_resolve_attr(self, "b")), "=", 3)) and rune_all_elements((rune_resolve_attr(self, "a") / rune_resolve_attr(self, "b")), "=", 2)), _then_fn0, _else_fn0)""");
     }
 
+    /**
+     * Test case for arithmetic operator.
+     */
     @Test
     public void testArithmeticOperator() {
         // This was already full output style

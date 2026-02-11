@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaOnlyElementTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for only-element condition.
+     */
     @Test
     public void testGenerateOnlyElementCondition() {
         String generatedPython = testUtils.generatePythonFromString("""

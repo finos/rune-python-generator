@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaDisjointOperationTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for disjoint binary expression condition.
+     */
     @Test
     public void testGenerateBinDisjointCondition() {
         testUtils.assertBundleContainsExpectedString("""

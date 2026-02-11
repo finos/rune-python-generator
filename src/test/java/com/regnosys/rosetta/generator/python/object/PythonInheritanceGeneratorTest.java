@@ -17,9 +17,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonInheritanceGeneratorTest {
 
+    /**
+     * PythonGeneratorTestUtils is used to generate Python code from Rosetta models.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for extending a type with the same attribute.
+     */
     @Test
     public void testExtendATypeWithSameAttribute() {
         testUtils.assertBundleContainsExpectedString(
@@ -51,6 +57,9 @@ public class PythonInheritanceGeneratorTest {
                             a: Optional[str] = Field(None, description='')""");
     }
 
+    /**
+     * Test case for setting attributes on an empty class with inheritance.
+     */
     @Test
     public void testSetAttributesOnEmptyClassWithInheritance() {
         testUtils.assertBundleContainsExpectedString(
@@ -66,6 +75,9 @@ public class PythonInheritanceGeneratorTest {
                             pass""");
     }
 
+    /**
+     * Test case for generating types with inheritance.
+     */
     @Test
     public void testGenerateTypesExtends() {
         String pythonString = testUtils.generatePythonFromString(
@@ -122,6 +134,9 @@ public class PythonInheritanceGeneratorTest {
                         """);
     }
 
+    /**
+     * Test case for inheritance with delayed updates.
+     */
     @Test
     public void testInheritanceWithDelayedUpdates() {
         String pythonString = testUtils.generatePythonFromString(

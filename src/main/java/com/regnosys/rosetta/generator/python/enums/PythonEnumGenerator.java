@@ -1,13 +1,17 @@
 package com.regnosys.rosetta.generator.python.enums;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
-
-import java.util.*;
 
 public class PythonEnumGenerator {
 

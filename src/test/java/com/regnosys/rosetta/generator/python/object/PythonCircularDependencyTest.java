@@ -19,9 +19,15 @@ import org.junit.jupiter.api.Disabled;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonCircularDependencyTest {
 
+    /**
+     * PythonGeneratorTestUtils is used to generate Python code from Rosetta models.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for attribute circular dependency.
+     */
     @Test
     public void testAttributeCircularDependency() {
         // This test demonstrates a circular dependency via attributes.
@@ -66,6 +72,10 @@ public class PythonCircularDependencyTest {
                         """);
     }
 
+    /**
+     * Test case for inheritance circular dependency.
+     * This test demonstrates a circular dependency via inheritance.
+     */
     @Test
     @Disabled("This currently generates an invalid order (Child before Parent) because the DAG ignores the cycle.")
     public void testInheritanceCircularDependency() {

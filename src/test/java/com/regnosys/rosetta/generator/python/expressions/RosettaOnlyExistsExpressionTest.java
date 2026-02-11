@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaOnlyExistsExpressionTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for only-exists single path.
+     */
     @Test
     public void testOnlyExistsSinglePath() {
         testUtils.assertBundleContainsExpectedString("""
@@ -33,6 +39,9 @@ public class RosettaOnlyExistsExpressionTest {
                 "return rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"aValue\"), \"field1\"))");
     }
 
+    /**
+     * Test case for only-exists multiple paths.
+     */
     @Test
     public void testOnlyExistsMultiplePaths() {
         testUtils.assertBundleContainsExpectedString("""
@@ -49,6 +58,9 @@ public class RosettaOnlyExistsExpressionTest {
                 "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"after\"))");
     }
 
+    /**
+     * Test case for only-exists with metadata.
+     */
     @Test
     public void testOnlyExistsWithMetadata() {
         testUtils.assertBundleContainsExpectedString("""
@@ -65,6 +77,9 @@ public class RosettaOnlyExistsExpressionTest {
                 "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"))");
     }
 
+    /**
+     * Test case for only-exists three paths.
+     */
     @Test
     public void testOnlyExistsThreePaths() {
         testUtils.assertBundleContainsExpectedString("""

@@ -13,9 +13,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionAliasTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for simple alias.
+     */
     @Test
     public void testAliasSimple() {
 
@@ -70,6 +76,9 @@ public class PythonFunctionAliasTest {
 
     }
 
+    /**
+     * Test case for alias with type output.
+     */
     @Test
     public void testAliasWithTypeOutput() {
 

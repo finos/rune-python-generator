@@ -5,9 +5,18 @@ package com.regnosys.rosetta.generator.python.util;
  * This class maintains an internal indentation level and ensures all added
  * lines are prefixed with the correct number of spaces.
  */
-public class PythonCodeWriter {
+public final class PythonCodeWriter {
+    /**
+     * The string builder to use for building the Python code.
+     */
     private final StringBuilder sb = new StringBuilder();
+    /**
+     * The current indentation level.
+     */
     private int level = 0;
+    /**
+     * The number of spaces to use for each indentation level.
+     */
     private static final String SPACES = "    "; // Python standard 4-space indent
 
     /**
@@ -51,8 +60,9 @@ public class PythonCodeWriter {
      * @param line The content of the line to append.
      */
     public void appendLine(String line) {
-        if (line == null)
+        if (line == null) {
             return;
+        }
         if (!line.isEmpty()) {
             sb.append(SPACES.repeat(level));
             sb.append(line);

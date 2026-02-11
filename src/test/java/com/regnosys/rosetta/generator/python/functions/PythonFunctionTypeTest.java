@@ -14,9 +14,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionTypeTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for generated function Abs.
+     */
     @Test
     public void testGeneratedFunctionTypeAsInput() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -65,6 +71,9 @@ public class PythonFunctionTypeTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for generated function Abs.
+     */
     @Test
     public void testGeneratedFunctionTypeAsOutput() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -115,6 +124,9 @@ public class PythonFunctionTypeTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for numeric precision with decimals.
+     */
     @Test
     public void testNumericPrecisionWithDecimals() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -132,6 +144,9 @@ public class PythonFunctionTypeTest {
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");
     }
 
+    /**
+     * Test case for generating function with enum.
+     */
     @Test
     public void testGenerateFunctionWithEnum() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -232,6 +247,9 @@ public class PythonFunctionTypeTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for object creation from fields.
+     */
     @Test
     public void testObjectCreationFromFields() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -277,6 +295,9 @@ public class PythonFunctionTypeTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for complex set constructors.
+     */
     @Disabled
     @Test
     public void testComplexSetConstructors() {

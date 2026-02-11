@@ -15,16 +15,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonExceptionsTest {
 
+    /**
+     * PythonGeneratorTestUtils is used to generate Python code from Rosetta models.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for a non-existing attribute type.
+     */
     @Test
     public void testNonExistentAttributeType() {
-        // Migration note: The original Xtend test expected "Attribute type is null"
-        // exception.
-        // In the migrated environment, this generates valid code using
-        // 'com_rosetta_model_nothing'.
-        // We catch the AssertionError that occurs when validation fails.
         try {
             testUtils.generatePythonFromString(
                     """
@@ -38,7 +39,9 @@ public class PythonExceptionsTest {
         }
     }
 
-    // Conditional test: Using a non-existing attribute in a condition
+    /**
+     * Test case for a non-existing attribute used in a condition.
+     */
     @Test
     public void testUNonExistentSymbolUsage() {
         try {
@@ -56,7 +59,9 @@ public class PythonExceptionsTest {
         }
     }
 
-    // Conditional test: Adding a non-existing attribute in a condition
+    /**
+     * Test case for a non-existing type used as a super type.
+     */
     @Test
     public void testNonExistentTypeSuperType() {
         try {

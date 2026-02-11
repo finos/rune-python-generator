@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaContainsOperationTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for binary contains operation.
+     */
     @Test
     public void testGenerateBinContainsCondition() {
         String generatedPython = testUtils.generatePythonFromString("""
@@ -68,7 +74,7 @@ public class RosettaContainsOperationTest {
                     \"""
                 """;
 
-        String expectedB_Phase1 = """
+        String expectedBPhase1 = """
                 class com_rosetta_test_model_B(BaseDataClass):
                     \"""
                     Test type B
@@ -84,7 +90,7 @@ public class RosettaContainsOperationTest {
                     \"""
                 """;
 
-        String expectedB_Phase2_3 = """
+        String expectedBPhase23 = """
                 # Phase 2: Delayed Annotation Updates
                 com_rosetta_test_model_B.__annotations__["aValue"] = list[Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]]
 
@@ -92,7 +98,7 @@ public class RosettaContainsOperationTest {
                 com_rosetta_test_model_B.model_rebuild()
                 """;
 
-        String expectedTest_Phase1 = """
+        String expectedTestPhase1 = """
                 class com_rosetta_test_model_Test(BaseDataClass):
                     \"""
                     Test filter operation condition
@@ -122,7 +128,7 @@ public class RosettaContainsOperationTest {
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", True), _then_fn0, _else_fn0)
                 """;
 
-        String expectedTest_Phase2_3 = """
+        String expectedTestPhase23 = """
                 # Phase 2: Delayed Annotation Updates
                 com_rosetta_test_model_Test.__annotations__["bValue"] = list[Annotated[com_rosetta_test_model_B, com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]]
 
@@ -131,9 +137,9 @@ public class RosettaContainsOperationTest {
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedC);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedA);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedB_Phase1);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedB_Phase2_3);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTest_Phase1);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTest_Phase2_3);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedBPhase1);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedBPhase23);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTestPhase1);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTestPhase23);
     }
 }

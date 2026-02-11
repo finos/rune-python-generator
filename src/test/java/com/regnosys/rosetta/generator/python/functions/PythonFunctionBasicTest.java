@@ -17,9 +17,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionBasicTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for generated function with adding numbers.
+     */
     @Test
     public void testGeneratedFunctionWithAddingNumbers() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -64,6 +70,9 @@ public class PythonFunctionBasicTest {
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
+    /**
+     * Test case for function with function calling function.
+     */
     @Test
     public void testFunctionWithFunctionCallingFunction() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(

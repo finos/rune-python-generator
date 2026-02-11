@@ -13,9 +13,15 @@ import jakarta.inject.Inject;
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionExternalTest {
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for external function support.
+     */
     @Test
     public void testExternalFunctionSupport() {
         String python = testUtils.generatePythonFromString(

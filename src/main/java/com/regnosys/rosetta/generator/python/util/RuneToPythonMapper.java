@@ -18,7 +18,10 @@ import com.regnosys.rosetta.rosetta.simple.Function;
  * corresponding Python types.
  * This class also handles name mangling for Python keywords and reserved words.
  */
-public class RuneToPythonMapper {
+public final class RuneToPythonMapper {
+    /**
+     * The set of Python keywords and soft keywords.
+     */
     private static final Set<String> PYTHON_KEYWORDS = new HashSet<>();
 
     /**
@@ -204,8 +207,9 @@ public class RuneToPythonMapper {
      * @return the Python type name string, or null if rt is null
      */
     public static String toPythonType(RType rt, boolean useQuotes) {
-        if (rt == null)
+        if (rt == null) {
             return null;
+        }
         String typeName = rt.getName();
         // if it is a number type and it is an integer, then it is an int
         if (rt instanceof RNumberType numberType && numberType.isInteger()) {

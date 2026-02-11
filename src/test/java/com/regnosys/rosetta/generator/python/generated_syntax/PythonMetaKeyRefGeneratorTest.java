@@ -14,9 +14,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonMetaKeyRefGeneratorTest {
 
+        /**
+         * Test utils for generating Python.
+         */
         @Inject
         private PythonGeneratorTestUtils testUtils;
 
+        /**
+         * Test case for generating meta key ref.
+         */
         @Test
         public void testGeneration() {
                 Map<String, CharSequence> python = testUtils.generatePythonFromString(

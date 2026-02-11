@@ -1,44 +1,127 @@
 package com.regnosys.rosetta.generator.python.expressions;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
-import com.regnosys.rosetta.rosetta.*;
-import com.regnosys.rosetta.rosetta.expression.*;
+import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.rosetta.RosettaCallableWithArgs;
+import com.regnosys.rosetta.rosetta.RosettaEnumValue;
+import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.RosettaFeature;
+import com.regnosys.rosetta.rosetta.RosettaSymbol;
+import com.regnosys.rosetta.rosetta.expression.AsKeyOperation;
+import com.regnosys.rosetta.rosetta.expression.ChoiceOperation;
+import com.regnosys.rosetta.rosetta.expression.ClosureParameter;
+import com.regnosys.rosetta.rosetta.expression.DistinctOperation;
 import com.regnosys.rosetta.rosetta.expression.ExistsModifier;
+import com.regnosys.rosetta.rosetta.expression.FilterOperation;
+import com.regnosys.rosetta.rosetta.expression.FirstOperation;
+import com.regnosys.rosetta.rosetta.expression.FlattenOperation;
+import com.regnosys.rosetta.rosetta.expression.InlineFunction;
+import com.regnosys.rosetta.rosetta.expression.LastOperation;
+import com.regnosys.rosetta.rosetta.expression.ListLiteral;
+import com.regnosys.rosetta.rosetta.expression.MapOperation;
+import com.regnosys.rosetta.rosetta.expression.MaxOperation;
+import com.regnosys.rosetta.rosetta.expression.MinOperation;
+import com.regnosys.rosetta.rosetta.expression.ModifiableBinaryOperation;
+import com.regnosys.rosetta.rosetta.expression.Necessity;
+import com.regnosys.rosetta.rosetta.expression.OneOfOperation;
+import com.regnosys.rosetta.rosetta.expression.ReverseOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaAbsentExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaBinaryOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaBooleanLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaConditionalExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaCountOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaDeepFeatureCall;
+import com.regnosys.rosetta.rosetta.expression.RosettaExistsExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaFeatureCall;
+import com.regnosys.rosetta.rosetta.expression.RosettaImplicitVariable;
+import com.regnosys.rosetta.rosetta.expression.RosettaIntLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaNumberLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaOnlyElement;
+import com.regnosys.rosetta.rosetta.expression.RosettaOnlyExistsExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaStringLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
+import com.regnosys.rosetta.rosetta.expression.SortOperation;
+import com.regnosys.rosetta.rosetta.expression.SumOperation;
+import com.regnosys.rosetta.rosetta.expression.SwitchCaseGuard;
+import com.regnosys.rosetta.rosetta.expression.SwitchOperation;
+import com.regnosys.rosetta.rosetta.expression.ThenOperation;
+import com.regnosys.rosetta.rosetta.expression.ToDateOperation;
+import com.regnosys.rosetta.rosetta.expression.ToDateTimeOperation;
+import com.regnosys.rosetta.rosetta.expression.ToEnumOperation;
+import com.regnosys.rosetta.rosetta.expression.ToIntOperation;
+import com.regnosys.rosetta.rosetta.expression.ToStringOperation;
+import com.regnosys.rosetta.rosetta.expression.ToTimeOperation;
+import com.regnosys.rosetta.rosetta.expression.ToZonedDateTimeOperation;
+import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
 import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
-import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Generate Python for Rune Expressions
  */
-public class PythonExpressionGenerator {
+public final class PythonExpressionGenerator {
 
+    /**
+     * The list of if condition blocks.
+     */
     private List<String> ifCondBlocks = new ArrayList<>();
+    /**
+     * Whether the current expression is a switch condition.
+     */
     private boolean isSwitchCond = false;
 
+    /**
+     * Gets the list of if condition blocks.
+     * 
+     * @return The list of if condition blocks.
+     */
     public List<String> getIfCondBlocks() {
         return ifCondBlocks;
     }
 
+    /**
+     * Sets the list of if condition blocks.
+     * 
+     * @param ifCondBlocks The list of if condition blocks.
+     */
     public void setIfCondBlocks(List<String> ifCondBlocks) {
         this.ifCondBlocks = ifCondBlocks;
     }
 
+    /**
+     * Checks if the current expression is a switch condition.
+     * 
+     * @return True if the current expression is a switch condition, false
+     *         otherwise.
+     */
     public boolean isSwitchCond() {
         return isSwitchCond;
     }
 
+    /**
+     * Generates Python code for a Rune expression.
+     * 
+     * @param expr     The Rune expression to generate Python code for.
+     * @param ifLevel  The level of if conditions.
+     * @param isLambda Whether the expression is a lambda.
+     * @return The generated Python code.
+     */
     public String generateExpression(RosettaExpression expr, int ifLevel, boolean isLambda) {
 
-        if (expr == null)
+        if (expr == null) {
             return "None";
+        }
 
         if (expr instanceof RosettaBooleanLiteral bool) {
             return bool.isValue() ? "True" : "False";
@@ -354,12 +437,12 @@ public class PythonExpressionGenerator {
         return result.toString();
     }
 
-    public String generateFunctionConditions(List<Condition> conditions, String condition_type) {
+    public String generateFunctionConditions(List<Condition> conditions, String conditionType) {
 
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : conditions) {
-            result.append(generateFunctionConditionBoilerPlate(cond, nConditions, condition_type));
+            result.append(generateFunctionConditionBoilerPlate(cond, nConditions, conditionType));
             result.append(generateIfThenElseOrSwitch(cond));
 
             nConditions++;
@@ -395,10 +478,10 @@ public class PythonExpressionGenerator {
         return writer.toString();
     }
 
-    private String generateFunctionConditionBoilerPlate(Condition cond, int nConditions, String condition_type) {
+    private String generateFunctionConditionBoilerPlate(Condition cond, int nConditions, String conditionType) {
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.newLine();
-        writer.appendLine("@rune_local_condition(" + condition_type + ")");
+        writer.appendLine("@rune_local_condition(" + conditionType + ")");
         String name = cond.getName() != null ? cond.getName() : "";
         writer.appendLine("def condition_" + nConditions + "_" + name + "():");
         writer.indent();
@@ -428,8 +511,17 @@ public class PythonExpressionGenerator {
         return writer.toString();
     }
 
+    /**
+     * The switch counter.
+     */
     private int switchCounter = 0;
 
+    /**
+     * Generates an if-then-else or switch statement for a condition.
+     * 
+     * @param c The condition to generate an if-then-else or switch statement for.
+     * @return The generated if-then-else or switch statement.
+     */
     private String generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear();
         switchCounter = 0;

@@ -18,9 +18,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaShortcutTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for function alias.
+     */
     @Test
     public void testFunctionAlias() {
         testUtils.assertBundleContainsExpectedString("""

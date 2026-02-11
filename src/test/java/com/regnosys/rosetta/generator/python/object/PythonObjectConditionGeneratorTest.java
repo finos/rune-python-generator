@@ -16,9 +16,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonObjectConditionGeneratorTest {
 
+    /**
+     * PythonGeneratorTestUtils is used to generate Python code from Rosetta models.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for conditions.
+     */
     @Test
     public void testConditions1() {
         testUtils.assertBundleContainsExpectedString(

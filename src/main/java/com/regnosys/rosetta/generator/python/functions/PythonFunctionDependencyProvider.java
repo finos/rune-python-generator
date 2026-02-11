@@ -1,29 +1,64 @@
 package com.regnosys.rosetta.generator.python.functions;
 
-import com.regnosys.rosetta.rosetta.*;
-import com.regnosys.rosetta.rosetta.expression.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.xtext.EcoreUtil2;
+
+import com.regnosys.rosetta.rosetta.RosettaBasicType;
+import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.RosettaExternalFunction;
+import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.RosettaRecordType;
+import com.regnosys.rosetta.rosetta.RosettaRule;
+import com.regnosys.rosetta.rosetta.RosettaSymbol;
+import com.regnosys.rosetta.rosetta.RosettaTypeAlias;
+import com.regnosys.rosetta.rosetta.expression.FilterOperation;
+import com.regnosys.rosetta.rosetta.expression.InlineFunction;
+import com.regnosys.rosetta.rosetta.expression.ListLiteral;
+import com.regnosys.rosetta.rosetta.expression.MapOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaBinaryOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaConditionalExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaDeepFeatureCall;
+import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaFeatureCall;
+import com.regnosys.rosetta.rosetta.expression.RosettaFunctionalOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaImplicitVariable;
+import com.regnosys.rosetta.rosetta.expression.RosettaLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaOnlyExistsExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
+import com.regnosys.rosetta.rosetta.expression.RosettaUnaryOperation;
+import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
-
 import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RFunction;
 import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
-import jakarta.inject.Inject;
-import org.eclipse.emf.ecore.EObject;
-import org.eclipse.xtext.EcoreUtil2;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import jakarta.inject.Inject;
 
 /**
- * Determine the Rosetta dependencies for a Rosetta object
+ * Determine the Rosetta dependencies for a Function
  */
-public class PythonFunctionDependencyProvider {
+public final class PythonFunctionDependencyProvider {
+    /**
+     * RObjectFactory is used to build RType objects from Rosetta objects.
+     */
     @Inject
     private RObjectFactory rTypeBuilderFactory;
 
+    /**
+     * @param object
+     * @param enumImports
+     */
     public void addDependencies(EObject object, Set<String> enumImports) {
         if (object instanceof RosettaEnumeration enumeration) {
             String name = enumeration.getName();
@@ -70,16 +105,16 @@ public class PythonFunctionDependencyProvider {
             }
             constructor.getValues()
                     .forEach(valuePair -> addDependencies(valuePair.getValue(), enumImports));
-        } else if (object instanceof Function ||
-                object instanceof Data ||
-                object instanceof RosettaExternalFunction ||
-                object instanceof RosettaLiteral ||
-                object instanceof RosettaImplicitVariable ||
-                object instanceof RosettaSymbol ||
-                object instanceof RosettaDeepFeatureCall ||
-                object instanceof RosettaBasicType ||
-                object instanceof RosettaRecordType ||
-                object instanceof RosettaTypeAlias) {
+        } else if (object instanceof Function
+                || object instanceof Data
+                || object instanceof RosettaExternalFunction
+                || object instanceof RosettaLiteral
+                || object instanceof RosettaImplicitVariable
+                || object instanceof RosettaSymbol
+                || object instanceof RosettaDeepFeatureCall
+                || object instanceof RosettaBasicType
+                || object instanceof RosettaRecordType
+                || object instanceof RosettaTypeAlias) {
             return;
         } else if (object != null) {
             // Recurse into all children for unknown EObjects to ensure thorough dependency

@@ -13,9 +13,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonChoiceGeneratorTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for generating choice.
+     */
     @Test
     public void testGeneration() {
         Map<String, CharSequence> python = testUtils.generatePythonFromString(

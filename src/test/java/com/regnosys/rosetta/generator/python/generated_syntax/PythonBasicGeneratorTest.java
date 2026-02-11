@@ -14,11 +14,20 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonBasicGeneratorTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Generated Python.
+     */
     private Map<String, CharSequence> python = null;
 
+    /**
+     * Returns the generated Python.
+     */
     private Map<String, CharSequence> getPython() {
         if (python == null) {
             python = testUtils.generatePythonFromString(
@@ -56,11 +65,14 @@ public class PythonBasicGeneratorTest {
         return python;
     }
 
+    /**
+     * Test case for BasicSingle proxy.
+     */
     @Test
     public void testBasicSingleProxy() {
-        Map<String, CharSequence> python = getPython();
+        Map<String, CharSequence> generatedPython = getPython();
         testUtils.assertGeneratedContainsExpectedString(
-                python.get("src/test/generated_syntax/basic/BasicSingle.py").toString(),
+                generatedPython.get("src/test/generated_syntax/basic/BasicSingle.py").toString(),
                 """
                         # pylint: disable=unused-import
                         from test._bundle import test_generated_syntax_basic_BasicSingle as BasicSingle
@@ -69,11 +81,14 @@ public class PythonBasicGeneratorTest {
                         """);
     }
 
+    /**
+     * Test case for BasicList proxy.
+     */
     @Test
     public void testBasicListProxy() {
-        Map<String, CharSequence> python = getPython();
+        Map<String, CharSequence> generatedPython = getPython();
         testUtils.assertGeneratedContainsExpectedString(
-                python.get("src/test/generated_syntax/basic/BasicList.py").toString(),
+                generatedPython.get("src/test/generated_syntax/basic/BasicList.py").toString(),
                 """
                         # pylint: disable=unused-import
                         from test._bundle import test_generated_syntax_basic_BasicList as BasicList
@@ -82,11 +97,14 @@ public class PythonBasicGeneratorTest {
                         """);
     }
 
+    /**
+     * Test case for Root proxy.
+     */
     @Test
     public void testRootProxy() {
-        Map<String, CharSequence> python = getPython();
+        Map<String, CharSequence> generatedPython = getPython();
         testUtils.assertGeneratedContainsExpectedString(
-                python.get("src/test/generated_syntax/basic/Root.py").toString(),
+                generatedPython.get("src/test/generated_syntax/basic/Root.py").toString(),
                 """
                         # pylint: disable=unused-import
                         from test._bundle import test_generated_syntax_basic_Root as Root
@@ -95,16 +113,22 @@ public class PythonBasicGeneratorTest {
                         """);
     }
 
+    /**
+     * Test case for bundle.
+     */
     @Test
     public void testBundleExists() {
-        Map<String, CharSequence> python = getPython();
-        assertTrue(python.containsKey("src/test/_bundle.py"), "The bundle should be in the generated Python");
+        Map<String, CharSequence> generatedPython = getPython();
+        assertTrue(generatedPython.containsKey("src/test/_bundle.py"), "The bundle should be in the generated Python");
     }
 
+    /**
+     * Test case for bundle.
+     */
     @Test
     public void testExpectedBundleBasic() {
-        Map<String, CharSequence> python = getPython();
-        String bundle = python.get("src/test/_bundle.py").toString();
+        Map<String, CharSequence> generatedPython = getPython();
+        String bundle = generatedPython.get("src/test/_bundle.py").toString();
         String expectedBasicSingle = """
                 class test_generated_syntax_basic_BasicSingle(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.basic.BasicSingle'
@@ -118,10 +142,13 @@ public class PythonBasicGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(bundle, expectedBasicSingle);
     }
 
+    /**
+     * Test case for bundle.
+     */
     @Test
     public void testExpectedBundleList() {
-        Map<String, CharSequence> python = getPython();
-        String bundle = python.get("src/test/_bundle.py").toString();
+        Map<String, CharSequence> generatedPython = getPython();
+        String bundle = generatedPython.get("src/test/_bundle.py").toString();
         String expectedBasicList = """
                 class test_generated_syntax_basic_BasicList(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.basic.BasicList'
@@ -135,10 +162,13 @@ public class PythonBasicGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(bundle, expectedBasicList);
     }
 
+    /**
+     * Test case for bundle.
+     */
     @Test
     public void testExpectedBundleRoot() {
-        Map<String, CharSequence> python = getPython();
-        String bundle = python.get("src/test/_bundle.py").toString();
+        Map<String, CharSequence> generatedPython = getPython();
+        String bundle = generatedPython.get("src/test/_bundle.py").toString();
 
         // Phase 1, 2, and 3 for Root should be tested as a complete logical sequence
         String expectedRootFull = """

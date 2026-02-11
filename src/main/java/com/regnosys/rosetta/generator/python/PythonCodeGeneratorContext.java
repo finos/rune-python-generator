@@ -11,12 +11,30 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-public class PythonCodeGeneratorContext {
+public final class PythonCodeGeneratorContext {
+    /**
+     * The list of subfolders.
+     */
     private List<String> subfolders = null;
-    private Map<String, CharSequence> objects = null; // Python code for types by nameSpace, by type name
+    /**
+     * The map of Python code for types by nameSpace, by type name.
+     */
+    private Map<String, CharSequence> objects = null;
+    /**
+     * The dependency DAG.
+     */
     private Graph<String, DefaultEdge> dependencyDAG = null;
+    /**
+     * The set of enum imports.
+     */
     private Set<String> enumImports = null;
+    /**
+     * The set of function names.
+     */
     private HashSet<String> functionNames = null;
+    /**
+     * The map of post definition updates.
+     */
     private Map<String, List<String>> postDefinitionUpdates = null;
 
     public PythonCodeGeneratorContext() {

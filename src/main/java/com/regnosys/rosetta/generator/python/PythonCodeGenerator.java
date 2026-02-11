@@ -1,35 +1,44 @@
 package com.regnosys.rosetta.generator.python;
 
-// TODO: function support
-// TODO: review and consolidate unit tests
-// TODO: review migrating choice alias processor to PythonModelObjectGenerator
+import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.INIT;
+import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.PYPROJECT_TOML;
+import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.PYTHON;
+import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.SRC;
 
-import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.traverse.TopologicalOrderIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.regnosys.rosetta.generator.external.AbstractExternalGenerator;
 import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.functions.PythonFunctionGenerator;
 import com.regnosys.rosetta.generator.python.object.PythonModelObjectGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.*;
-
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
 
-import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+// todo: function support
+// todo: review and consolidate unit tests
+// todo: review migrating choice alias processor to PythonModelObjectGenerator
 
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
-
-import org.jgrapht.traverse.TopologicalOrderIterator;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import jakarta.inject.Inject;
 
 /**
  * PythonCodeGenerator is an external generator for the Rosetta DSL that
@@ -84,19 +93,37 @@ import java.util.stream.Collectors;
  * @see com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI
  */
 
-public class PythonCodeGenerator extends AbstractExternalGenerator {
+public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
+    /**
+     * The Python model object generator.
+     */
     @Inject
     private PythonModelObjectGenerator pojoGenerator;
+    /**
+     * The Python function generator.
+     */
     @Inject
     private PythonFunctionGenerator funcGenerator;
+    /**
+     * The Python enum generator.
+     */
     @Inject
     private PythonEnumGenerator enumGenerator;
 
+    /**
+     * The logger.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenerator.class);
 
+    /**
+     * The contexts.
+     */
     private Map<String, PythonCodeGeneratorContext> contexts = null;
 
+    /**
+     * The PythonCodeGenerator constructor.
+     */
     public PythonCodeGenerator() {
         super(PYTHON);
         contexts = new HashMap<>();

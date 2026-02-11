@@ -32,6 +32,7 @@ export PYTHONDONTWRITEBYTECODE=1
 ENV_BUILD_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "${ENV_BUILD_PATH}" || error
 
+
 echo "***** setup virtual environment in [project_root]/.pyenv"
 VENV_NAME=".pyenv"
 VENV_PATH="../../$VENV_NAME"
@@ -43,14 +44,38 @@ else
     PY_SCRIPTS='Scripts'
 fi
 
-rm -rf "${VENV_PATH}"
-${PYEXE} -m venv --clear "${VENV_PATH}" || error
-source "${VENV_PATH}/${PY_SCRIPTS}/activate" || error
+
+if [[ "${REUSE_ENV}" == "1" || "${REUSE_ENV}" == "true" ]]; then
+    if [ -d "${VENV_PATH}" ]; then
+        echo "Reusing existing virtual environment at ${VENV_PATH}"
+        source "${VENV_PATH}/${PY_SCRIPTS}/activate" || error
+        PYEXE=python
+        # Skip package installation if reusing? Or verify?
+        # Assuming reuse means "trust current state", but pip install requirements is usually safe/fast.
+        # Let's proceed to pip install content but skip venv creation.
+    else
+        echo "REUSE_ENV set but ${VENV_PATH} not found. Creating new venv."
+        rm -rf "${VENV_PATH}"
+        ${PYEXE} -m venv --clear "${VENV_PATH}" || error
+        source "${VENV_PATH}/${PY_SCRIPTS}/activate" || error
+        PYEXE=python
+    fi
+else
+    echo "Creating fresh virtual environment (removing ${VENV_PATH})"
+    rm -rf "${VENV_PATH}"
+    ${PYEXE} -m venv --clear "${VENV_PATH}" || error
+    source "${VENV_PATH}/${PY_SCRIPTS}/activate" || error
+    PYEXE=python
+fi
 
 ${PYEXE} -m pip install --upgrade pip || error
 ${PYEXE} -m pip install -r requirements.txt || error
 
 echo "***** Get and Install Runtime"
+
+
+RUNE_RUNTIME_FILE="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime/rune_runtime-1.0.19.dev14+g6786f61a4.d20260210-py3-none-any.whl"
+export RUNE_RUNTIME_DIR=$(dirname "$RUNE_RUNTIME_FILE")
 
 if [ -n "$RUNE_RUNTIME_FILE" ]; then
     # --- Local Installation Logic ---

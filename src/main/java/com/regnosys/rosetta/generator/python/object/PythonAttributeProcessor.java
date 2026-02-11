@@ -1,25 +1,46 @@
 package com.regnosys.rosetta.generator.python.object;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.simple.Data;
-import com.regnosys.rosetta.types.*;
+import com.regnosys.rosetta.types.RAliasType;
+import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.RCardinality;
+import com.regnosys.rosetta.types.RDataType;
+import com.regnosys.rosetta.types.REnumType;
+import com.regnosys.rosetta.types.RMetaAnnotatedType;
+import com.regnosys.rosetta.types.RObjectFactory;
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.TypeSystem;
 import com.regnosys.rosetta.types.builtin.RNumberType;
 import com.regnosys.rosetta.types.builtin.RStringType;
-import com.regnosys.rosetta.types.REnumType;
-import jakarta.inject.Inject;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import jakarta.inject.Inject;
 
 /**
  * Generate Python for Rune Attributes
  */
-public class PythonAttributeProcessor {
+public final class PythonAttributeProcessor {
 
+    /**
+     * The R object factory.
+     */
     @Inject
     private RObjectFactory rObjectFactory;
 
+    /**
+     * The type system.
+     */
     @Inject
     private TypeSystem typeSystem;
 
@@ -177,13 +198,21 @@ public class PythonAttributeProcessor {
         return (validators.isEmpty()) ? "" : "Annotated[";
     }
 
+    /**
+     * Processes the meta-data attributes of a given attribute.
+     * 
+     * @param ra                The attribute to process.
+     * @param attrTypeName      The name of the attribute type.
+     * @param keyRefConstraints A map of key reference constraints.
+     * @return A MetaDataResult containing the validators and other meta-data.
+     */
     private MetaDataResult processMetaDataAttributes(
             RAttribute ra,
             String attrTypeName,
             Map<String, List<String>> keyRefConstraints) {
         ArrayList<String> validators = new ArrayList<>();
         ArrayList<String> otherMeta = new ArrayList<>();
-        final boolean[] hasReference = { false };
+        final boolean[] hasReference = new boolean[] { false };
 
         RMetaAnnotatedType attrRMAT = ra.getRMetaAnnotatedType();
         if (attrRMAT.hasAttributeMeta()) {
@@ -220,8 +249,9 @@ public class PythonAttributeProcessor {
         if (rt instanceof RStringType stringType) {
             stringType.getPattern().ifPresent(value -> attrProp.put("pattern", "r'^" + value + "*$'"));
             stringType.getInterval().getMin().ifPresent(value -> {
-                if (value > 0)
+                if (value > 0) {
                     attrProp.put("min_length", value.toString());
+                }
             });
             stringType.getInterval().getMax().ifPresent(value -> attrProp.put("max_length", value.toString()));
         } else if (rt instanceof RNumberType numberType) {
@@ -297,10 +327,10 @@ public class PythonAttributeProcessor {
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
         for (RAttribute attr : allAttributes) {
-            if (!attr.getName().equals("reference") &&
-                    !attr.getName().equals("meta") &&
-                    !attr.getName().equals("scheme") &&
-                    !RuneToPythonMapper.isRosettaBasicType(attr)) {
+            if (!attr.getName().equals("reference")
+                    && !attr.getName().equals("meta")
+                    && !attr.getName().equals("scheme")
+                    && !RuneToPythonMapper.isRosettaBasicType(attr)) {
                 RType rt = attr.getRMetaAnnotatedType().getRType();
                 if (rt instanceof RAliasType) {
                     rt = typeSystem.stripFromTypeAliases(rt);
@@ -318,10 +348,22 @@ public class PythonAttributeProcessor {
     }
 
     private static class MetaDataResult {
+        /**
+         * The validators for the attribute.
+         */
         private final ArrayList<String> validators;
+        /**
+         * Whether the attribute has a reference.
+         */
         private final boolean hasReference;
 
-        public MetaDataResult(ArrayList<String> validators, boolean hasReference) {
+        /**
+         * Creates a new MetaDataResult.
+         * 
+         * @param validators   The validators for the attribute.
+         * @param hasReference Whether the attribute has a reference.
+         */
+        MetaDataResult(ArrayList<String> validators, boolean hasReference) {
             this.validators = validators;
             this.hasReference = hasReference;
         }

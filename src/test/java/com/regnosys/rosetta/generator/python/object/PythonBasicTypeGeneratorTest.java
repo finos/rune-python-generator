@@ -17,9 +17,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonBasicTypeGeneratorTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for string type.
+     */
     @Test
     public void testGenerateBasicTypeString() {
         testUtils.assertBundleContainsExpectedString(
@@ -35,6 +41,9 @@ public class PythonBasicTypeGeneratorTest {
                             list: list[str] = Field(..., description='', min_length=1)""");
     }
 
+    /**
+     * Test case for int type.
+     */
     @Test
     public void testGenerateBasicTypeInt() {
         testUtils.assertBundleContainsExpectedString(
@@ -50,6 +59,9 @@ public class PythonBasicTypeGeneratorTest {
                             list: list[int] = Field(..., description='', min_length=1)""");
     }
 
+    /**
+     * Test case for number type.
+     */
     @Test
     public void testGenerateBasicTypeNumber() {
         testUtils.assertBundleContainsExpectedString(
@@ -65,6 +77,9 @@ public class PythonBasicTypeGeneratorTest {
                             list: list[Decimal] = Field(..., description='', min_length=1)""");
     }
 
+    /**
+     * Test case for boolean type.
+     */
     @Test
     public void testGenerateBasicTypeBoolean() {
         testUtils.assertBundleContainsExpectedString(
@@ -80,6 +95,9 @@ public class PythonBasicTypeGeneratorTest {
                             list: list[bool] = Field(..., description='', min_length=1)""");
     }
 
+    /**
+     * Test case for date type.
+     */
     @Test
     public void testGenerateBasicTypeDate() {
         testUtils.assertBundleContainsExpectedString(
@@ -95,6 +113,9 @@ public class PythonBasicTypeGeneratorTest {
                             list: list[datetime.date] = Field(..., description='', min_length=1)""");
     }
 
+    /**
+     * Test case for datetime type.
+     */
     @Test
     public void testGenerateBasicTypeDateTime() {
         testUtils.assertBundleContainsExpectedString(
@@ -112,6 +133,9 @@ public class PythonBasicTypeGeneratorTest {
                             zoned: Optional[datetime.datetime] = Field(None, description='')""");
     }
 
+    /**
+     * Test case for time type.
+     */
     @Test
     public void testGenerateBasicTypeTime() {
         testUtils.assertBundleContainsExpectedString(
@@ -127,6 +151,9 @@ public class PythonBasicTypeGeneratorTest {
                             list: list[datetime.time] = Field(..., description='', min_length=1)""");
     }
 
+    /**
+     * Test case for omitting global key annotation when not defined.
+     */
     @Test
     public void testOmitGlobalKeyAnnotationWhenNotDefined() {
         testUtils.assertBundleContainsExpectedString(
@@ -140,6 +167,9 @@ public class PythonBasicTypeGeneratorTest {
                             withoutGlobalKey: str = Field(..., description='')""");
     }
 
+    /**
+     * Test case for generating Rosetta calculation type as string.
+     */
     @Test
     public void testGenerateRosettaCalculationTypeAsString() {
         testUtils.assertBundleContainsExpectedString(
@@ -153,6 +183,9 @@ public class PythonBasicTypeGeneratorTest {
                             bar: Optional[str] = Field(None, description='')""");
     }
 
+    /**
+     * Test case for generating types.
+     */
     @Test
     public void testGenerateTypes() {
         String pythonString = testUtils.generatePythonFromString(
@@ -226,6 +259,9 @@ public class PythonBasicTypeGeneratorTest {
                         """);
     }
 
+    /**
+     * Test case for generating types method 2.
+     */
     @Test
     public void testGenerateTypesMethod2() {
         String pythonString = testUtils.generatePythonFromString(
@@ -300,6 +336,9 @@ public class PythonBasicTypeGeneratorTest {
                         """);
     }
 
+    /**
+     * Test case for multiline attribute definition.
+     */
     @Test
     public void testMultilineAttributeDefinition() {
         testUtils.assertBundleContainsExpectedString(

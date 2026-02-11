@@ -14,9 +14,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaConditionalExpressionTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for if-then condition.
+     */
     @Test
     public void testGenerateIfThenCondition() {
         testUtils.assertBundleContainsExpectedString("""

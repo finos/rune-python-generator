@@ -18,9 +18,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaSwitchExpressionTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for switch basic.
+     */
     @Test
     public void testGenerateSwitch() {
         testUtils.assertBundleContainsExpectedString("""

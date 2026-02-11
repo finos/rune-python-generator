@@ -12,9 +12,15 @@ import java.util.Map;
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonKeyRefTest {
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for KeyRef.
+     */
     @Test
     public void testKeyRef() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(

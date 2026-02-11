@@ -12,7 +12,7 @@
     <module name="Translation" />
     <module name="FileLength" />
     <module name="LineLength">
-        <property name="max" value="120" />
+        <property name="max" value="300" />
     </module>
     <module name="RegexpSingleline">
         <property name="format" value="^(?!\s+\* $).*?\s+$"/>

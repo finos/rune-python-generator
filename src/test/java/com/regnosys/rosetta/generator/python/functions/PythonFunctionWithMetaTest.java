@@ -13,9 +13,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionWithMetaTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for function with meta.
+     */
     @Test
     public void testFunctionWithMeta() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -39,6 +45,9 @@ public class PythonFunctionWithMetaTest {
                 "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})");
     }
 
+    /**
+     * Test case for function with meta enum dependency.
+     */
     @Test
     public void testFunctionWithMetaEnumDependency() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(

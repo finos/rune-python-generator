@@ -13,9 +13,15 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionControlFlowTest {
 
+    /**
+     * Test utils for generating Python code.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for generated function Abs.
+     */
     @Test
     public void testGeneratedFunctionAbs() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(

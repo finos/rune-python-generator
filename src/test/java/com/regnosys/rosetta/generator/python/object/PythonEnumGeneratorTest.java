@@ -16,9 +16,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonEnumGeneratorTest {
 
+    /**
+     * Test utils for generating Python.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /**
+     * Test case for complex model with enum cycles.
+     */
     @Test
     public void testComplexModelWithEnumCycles() {
         String pythonString = testUtils.generatePythonFromString(
@@ -143,6 +149,9 @@ public class PythonEnumGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType5);
     }
 
+    /**
+     * Test case for enum with metadata and conditions.
+     */
     @Test
     public void testEnumWithMetadataAndConditions() {
         String pythonString = testUtils.generatePythonFromString(
