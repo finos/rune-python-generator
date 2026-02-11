@@ -74,7 +74,6 @@ ${PYEXE} -m pip install -r requirements.txt || error
 echo "***** Get and Install Runtime"
 
 
-RUNE_RUNTIME_FILE="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime/rune_runtime-1.0.19.dev14+g6786f61a4.d20260210-py3-none-any.whl"
 export RUNE_RUNTIME_DIR=$(dirname "$RUNE_RUNTIME_FILE")
 
 if [ -n "$RUNE_RUNTIME_FILE" ]; then
