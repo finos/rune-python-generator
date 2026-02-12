@@ -201,9 +201,9 @@ public class PythonMetaDataGeneratorTest {
                 testUtils.assertGeneratedContainsExpectedString(bundle,
                                 "class test_generated_syntax_metadata_AttributeRef(BaseDataClass):");
                 testUtils.assertGeneratedContainsExpectedString(bundle,
-                                "dateField: Optional[Annotated[DateWithMeta, DateWithMeta.serializer(), DateWithMeta.validator(('@key', '@key:external'))]] = Field(None, description='')");
+                                "dateField: Annotated[Optional[DateWithMeta], DateWithMeta.serializer(), DateWithMeta.validator(('@key', '@key:external'))]");
                 testUtils.assertGeneratedContainsExpectedString(bundle,
-                                "dateReference: Optional[Annotated[DateWithMeta | BaseReference, DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]] = Field(None, description='')");
+                                "dateReference: Annotated[Optional[DateWithMeta | BaseReference], DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]");
         }
 
         /**
@@ -224,9 +224,9 @@ public class PythonMetaDataGeneratorTest {
 
                 // Phase 2: Delayed Update
                 testUtils.assertGeneratedContainsExpectedString(bundle,
-                                "test_generated_syntax_metadata_NodeRef.__annotations__[\"typeA\"] = Optional[Annotated[test_generated_syntax_metadata_A, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]]");
+                                "test_generated_syntax_metadata_NodeRef.__annotations__[\"typeA\"] = Annotated[Optional[test_generated_syntax_metadata_A], test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]");
                 testUtils.assertGeneratedContainsExpectedString(bundle,
-                                "test_generated_syntax_metadata_NodeRef.__annotations__[\"aReference\"] = Optional[Annotated[test_generated_syntax_metadata_A | BaseReference, test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]]");
+                                "test_generated_syntax_metadata_NodeRef.__annotations__[\"aReference\"] = Annotated[Optional[test_generated_syntax_metadata_A | BaseReference], test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]");
 
                 // Phase 3: Rebuild
                 testUtils.assertGeneratedContainsExpectedString(bundle,
@@ -251,9 +251,9 @@ public class PythonMetaDataGeneratorTest {
 
                 // Phase 2: Delayed Update
                 testUtils.assertGeneratedContainsExpectedString(bundle,
-                                "test_generated_syntax_metadata_Root.__annotations__[\"nodeRef\"] = Optional[Annotated[test_generated_syntax_metadata_NodeRef, test_generated_syntax_metadata_NodeRef.serializer(), test_generated_syntax_metadata_NodeRef.validator()]]");
+                                "test_generated_syntax_metadata_Root.__annotations__[\"nodeRef\"] = Annotated[Optional[test_generated_syntax_metadata_NodeRef], test_generated_syntax_metadata_NodeRef.serializer(), test_generated_syntax_metadata_NodeRef.validator()]");
                 testUtils.assertGeneratedContainsExpectedString(bundle,
-                                "test_generated_syntax_metadata_Root.__annotations__[\"attributeRef\"] = Optional[Annotated[test_generated_syntax_metadata_AttributeRef, test_generated_syntax_metadata_AttributeRef.serializer(), test_generated_syntax_metadata_AttributeRef.validator()]]");
+                                "test_generated_syntax_metadata_Root.__annotations__[\"attributeRef\"] = Annotated[Optional[test_generated_syntax_metadata_AttributeRef], test_generated_syntax_metadata_AttributeRef.serializer(), test_generated_syntax_metadata_AttributeRef.validator()]");
 
                 // Phase 3: Rebuild
                 testUtils.assertGeneratedContainsExpectedString(bundle,

@@ -3,7 +3,6 @@ package com.regnosys.rosetta.generator.python.object;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +18,7 @@ import com.regnosys.rosetta.types.RCardinality;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RMetaAnnotatedType;
+import com.regnosys.rosetta.types.RMetaAttribute;
 import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.TypeSystem;
@@ -63,139 +63,126 @@ public final class PythonAttributeProcessor {
         PythonCodeWriter writer = new PythonCodeWriter();
         List<String> annotationUpdates = new ArrayList<>();
         for (RAttribute ra : allAttributes) {
-            writer.appendBlock(generateAttribute(rc, ra, keyRefConstraints, annotationUpdates));
+            AttributeResult result = generateAttribute(rc, ra, keyRefConstraints);
+            writer.appendBlock(result.attributeCode());
+            result.annotationUpdate().ifPresent(annotationUpdates::add);
         }
         return new AttributeProcessingResult(writer.toString(), annotationUpdates);
     }
 
-    private String generateAttribute(Data rc, RAttribute ra,
-            Map<String, List<String>> keyRefConstraints, List<String> annotationUpdates) {
-        RType rt = ra.getRMetaAnnotatedType().getRType();
+    private AttributeResult generateAttribute(Data rc, RAttribute ra,
+            Map<String, List<String>> keyRefConstraints) {
+        MetaDataResult metaDataResult = processMetaDataAttributes(ra, keyRefConstraints);
+        return createAttributeResult(ra, metaDataResult);
+    }
 
+    private AttributeResult createAttributeResult(RAttribute ra, MetaDataResult metaDataResult) {
+        String attrName = RuneToPythonMapper.mangleName(ra.getName());
+        PythonTypeHint hint = deriveTypeHint(ra, metaDataResult);
+
+        RType rt = ra.getRMetaAnnotatedType().getRType();
+        if (rt instanceof RAliasType) {
+            rt = typeSystem.stripFromTypeAliases(rt);
+        }
+        boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
+
+        String pythonType;
+        Optional<String> annotationUpdate = Optional.empty();
+        if (isDelayed) {
+            pythonType = hint.build(false);
+            String update = String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true));
+            annotationUpdate = Optional.of(update);
+        } else {
+            pythonType = hint.build(true);
+        }
+
+        String fieldDecl = generateFieldDeclaration(ra, attrName, pythonType, hint.fieldProperties().isPresent());
+        return new AttributeResult(fieldDecl, annotationUpdate);
+    }
+
+    private PythonTypeHint deriveTypeHint(RAttribute ra, MetaDataResult metaDataResult) {
+        RType rt = ra.getRMetaAnnotatedType().getRType();
         if (rt instanceof RAliasType) {
             rt = typeSystem.stripFromTypeAliases(rt);
         }
 
-        String attrTypeName = RuneToPythonMapper.toPythonType(rt);
-        if (attrTypeName == null) {
-            throw new RuntimeException(
-                    "Attribute type is null for " + ra.getName() + " in class " + rc.getName());
+        String attrTypeNameIn = RuneToPythonMapper.toPythonType(rt);
+        if (attrTypeNameIn == null) {
+            throw new RuntimeException("Attribute type is null for " + ra.getName());
         }
 
-        Map<String, String> attrProp = processProperties(rt);
-        Map<String, String> cardinalityMap = processCardinality(ra);
-        MetaDataResult metaDataResult = processMetaDataAttributes(ra, attrTypeName, keyRefConstraints);
-
-        return createAttributeString(ra, attrTypeName, rt, metaDataResult, attrProp, cardinalityMap, annotationUpdates);
-    }
-
-    private String createAttributeString(
-            RAttribute ra,
-            String attrTypeNameIn,
-            RType rt,
-            MetaDataResult metaDataResult,
-            Map<String, String> attrProp,
-            Map<String, String> cardinalityMap,
-            List<String> annotationUpdates) {
-
-        ArrayList<String> validators = metaDataResult.getValidators();
-        String propString = createPropString(attrProp);
-        String attrName = RuneToPythonMapper.mangleName(ra.getName());
+        ValidationProperties validationProps = processProperties(rt);
+        List<String> validators = metaDataResult.getValidators();
         RCardinality cardinality = ra.getCardinality();
-        int min = cardinality.getMin();
         int max = cardinality.getMax().orElse(-1);
         boolean isList = (cardinality.isMulti() || max > 1);
 
-        String attrTypeName = (!validators.isEmpty())
+        String baseTypeName = (!validators.isEmpty())
                 ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
                 : attrTypeNameIn;
+        baseTypeName = RuneToPythonMapper.getFlattenedTypeName(rt, baseTypeName);
 
-        String attrTypeNameOut = RuneToPythonMapper.getFlattenedTypeName(rt, attrTypeName);
-        String typeHint = attrTypeNameOut;
-        if (metaDataResult.hasReference()) {
-            typeHint += " | BaseReference";
-        }
+        String propString = validationProps.toFieldArgs();
+        Optional<String> fieldProps = (isList && !propString.isEmpty()) ? Optional.of(propString) : Optional.empty();
 
         boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
+        boolean needsRuneAnns = isDelayed || !validators.isEmpty();
+        Optional<String> runeAnns = needsRuneAnns ? Optional.of(getRuneAnnotationArgs(validators, baseTypeName))
+                : Optional.empty();
 
-        String metaPrefix = "";
-        String metaSuffix = "";
+        return new PythonTypeHint(
+                baseTypeName,
+                metaDataResult.hasReference(),
+                fieldProps,
+                isList,
+                cardinality.getMin() == 0,
+                runeAnns);
+    }
 
-        if (!validators.isEmpty()) {
-            metaPrefix = getMetaDataPrefix(validators);
-            metaSuffix = getMetaDataSuffix(validators, attrTypeNameOut);
-        } else if (isDelayed) {
-            metaPrefix = "Annotated[";
-            metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
+    private String generateFieldDeclaration(RAttribute ra, String attrName, String pythonType,
+            boolean propertiesAppliedToInnerType) {
+        RType rt = ra.getRMetaAnnotatedType().getRType();
+        if (rt instanceof RAliasType) {
+            rt = typeSystem.stripFromTypeAliases(rt);
         }
-
-        String fullBaseType = metaPrefix + typeHint + metaSuffix;
-        boolean propertiesAppliedToInnerType = false;
-        if (isList && !attrProp.isEmpty()) {
-            fullBaseType = "Annotated[" + fullBaseType + ", Field(" + propString + ")]";
-            propertiesAppliedToInnerType = true;
-        }
-
-        String pythonType;
-        if (isDelayed) {
-            // Phase 2 update statement
-            String fullType = RuneToPythonMapper.formatPythonType(fullBaseType, min, max, false);
-            annotationUpdates.add("__annotations__[\"" + attrName + "\"] = " + fullType);
-
-            // Phase 1 (Clean) type
-            pythonType = RuneToPythonMapper.formatPythonType(typeHint, min, max, false);
-        } else {
-            pythonType = RuneToPythonMapper.formatPythonType(fullBaseType, min, max, false);
-        }
+        ValidationProperties validationProps = processProperties(rt);
+        CardinalityInfo cardinalityInfo = processCardinality(ra);
+        String propString = validationProps.toFieldArgs();
 
         String attrDesc = (ra.getDefinition() == null)
                 ? ""
                 : ra.getDefinition().replaceAll("\\s+", " ").replace("'", "\\'");
 
-        StringBuilder lineBuilder = new StringBuilder();
-        lineBuilder.append(attrName).append(": ");
-        lineBuilder.append(pythonType);
-
-        lineBuilder.append(" = Field(");
-        lineBuilder.append(cardinalityMap.get("fieldDefault"));
-        lineBuilder.append(", description='");
-        lineBuilder.append(attrDesc);
-        lineBuilder.append("'");
-        lineBuilder.append(cardinalityMap.get("cardinalityString"));
-
-        // Only append propString to the outer Field if it hasn't been applied to the
-        // inner type
-        if (!propString.isEmpty() && !propertiesAppliedToInnerType) {
-            lineBuilder.append(", ");
-            lineBuilder.append(propString);
-        }
-
-        lineBuilder.append(")");
+        String fieldProps = (!propString.isEmpty() && !propertiesAppliedToInnerType) ? ", " + propString : "";
+        String fieldDecl = String.format("%s: %s = Field(%s, description='%s'%s%s)",
+                attrName,
+                pythonType,
+                cardinalityInfo.fieldDefault(),
+                attrDesc,
+                cardinalityInfo.cardinalityString(),
+                fieldProps);
 
         if (ra.getDefinition() != null) {
-            lineBuilder.append("\n\"\"\"\n");
-            lineBuilder.append(ra.getDefinition());
-            lineBuilder.append("\n\"\"\"");
+            fieldDecl += String.format("\n\"\"\"\n%s\n\"\"\"", ra.getDefinition());
         }
-        return lineBuilder.toString();
+        return fieldDecl;
     }
 
-    private String getMetaDataSuffix(ArrayList<String> validators, String attrTypeName) {
+    private String getRuneAnnotationArgs(List<String> validators, String typeName) {
+        String serializer = String.format("%s.serializer()", typeName);
+        String validator;
         if (validators.isEmpty()) {
-            return "";
+            validator = String.format("%s.validator()", typeName);
+        } else {
+            String joinedValidators = validators.stream()
+                    .map(v -> String.format("'%s'", v))
+                    .collect(Collectors.joining(", "));
+            if (validators.size() == 1) {
+                joinedValidators += ", ";
+            }
+            validator = String.format("%s.validator((%s))", typeName, joinedValidators);
         }
-        String joinedValidators = validators.stream()
-                .map(v -> "'" + v + "'")
-                .collect(Collectors.joining(", "));
-
-        String trailingComma = (validators.size() == 1) ? ", " : "";
-
-        return ", " + attrTypeName + ".serializer(), " + attrTypeName + ".validator((" + joinedValidators
-                + trailingComma + "))]";
-    }
-
-    private String getMetaDataPrefix(ArrayList<String> validators) {
-        return (validators.isEmpty()) ? "" : "Annotated[";
+        return String.format("%s, %s", serializer, validator);
     }
 
     /**
@@ -208,15 +195,14 @@ public final class PythonAttributeProcessor {
      */
     private MetaDataResult processMetaDataAttributes(
             RAttribute ra,
-            String attrTypeName,
             Map<String, List<String>> keyRefConstraints) {
-        ArrayList<String> validators = new ArrayList<>();
-        ArrayList<String> otherMeta = new ArrayList<>();
-        final boolean[] hasReference = new boolean[] { false };
+        List<String> validators = new ArrayList<>();
+        List<String> otherMeta = new ArrayList<>();
 
         RMetaAnnotatedType attrRMAT = ra.getRMetaAnnotatedType();
+        boolean hasReference = false;
         if (attrRMAT.hasAttributeMeta()) {
-            attrRMAT.getMetaAttributes().forEach(ma -> {
+            for (RMetaAttribute ma : attrRMAT.getMetaAttributes()) {
                 switch (ma.getName()) {
                     case "key", "id" -> {
                         validators.add("@key");
@@ -225,56 +211,50 @@ public final class PythonAttributeProcessor {
                     case "reference" -> {
                         validators.add("@ref");
                         validators.add("@ref:external");
-                        hasReference[0] = true;
+                        hasReference = true;
                     }
                     case "scheme" -> otherMeta.add("@scheme");
                     case "location" -> validators.add("@key:scoped");
                     case "address" -> {
                         validators.add("@ref:scoped");
-                        hasReference[0] = true;
+                        hasReference = true;
                     }
                     default -> throw new IllegalStateException("Unsupported metadata attribute: " + ma.getName());
                 }
-            });
+            }
         }
         if (!validators.isEmpty()) {
             keyRefConstraints.put(ra.getName(), new ArrayList<>(validators));
         }
         validators.addAll(otherMeta);
-        return new MetaDataResult(validators, hasReference[0]);
+        return new MetaDataResult(validators, hasReference);
     }
 
-    private Map<String, String> processProperties(RType rt) {
-        Map<String, String> attrProp = new HashMap<>();
-        if (rt instanceof RStringType stringType) {
-            stringType.getPattern().ifPresent(value -> attrProp.put("pattern", "r'^" + value + "*$'"));
-            stringType.getInterval().getMin().ifPresent(value -> {
-                if (value > 0) {
-                    attrProp.put("min_length", value.toString());
+    private ValidationProperties processProperties(RType rt) {
+        ValidationProperties.Builder builder = ValidationProperties.builder();
+        switch (rt) {
+            case RStringType stringType -> {
+                stringType.getPattern().ifPresent(value -> builder.pattern(String.format("r'^%s*$'", value)));
+                stringType.getInterval().getMin().filter(v -> v > 0).ifPresent(v -> builder.minLength(v));
+                stringType.getInterval().getMax().ifPresent(v -> builder.maxLength(v));
+            }
+            case RNumberType numberType -> {
+                if (!numberType.isInteger()) {
+                    numberType.getDigits().ifPresent(v -> builder.maxDigits(v));
+                    numberType.getFractionalDigits().ifPresent(v -> builder.decimalPlaces(v));
+                    numberType.getInterval().getMin()
+                            .ifPresent(v -> builder.ge(String.format("Decimal('%s')", v.toPlainString())));
+                    numberType.getInterval().getMax()
+                            .ifPresent(v -> builder.le(String.format("Decimal('%s')", v.toPlainString())));
                 }
-            });
-            stringType.getInterval().getMax().ifPresent(value -> attrProp.put("max_length", value.toString()));
-        } else if (rt instanceof RNumberType numberType) {
-            if (!numberType.isInteger()) {
-                numberType.getDigits().ifPresent(value -> attrProp.put("max_digits", value.toString()));
-                numberType.getFractionalDigits().ifPresent(value -> attrProp.put("decimal_places", value.toString()));
-                numberType.getInterval().getMin()
-                        .ifPresent(value -> attrProp.put("ge", "Decimal('" + value.toPlainString() + "')"));
-                numberType.getInterval().getMax()
-                        .ifPresent(value -> attrProp.put("le", "Decimal('" + value.toPlainString() + "')"));
+            }
+            default -> {
             }
         }
-        return attrProp;
+        return builder.build();
     }
 
-    private String createPropString(Map<String, String> attrProp) {
-        return attrProp.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining(", "));
-    }
-
-    private Map<String, String> processCardinality(RAttribute ra) {
-        Map<String, String> cardinalityMap = new HashMap<>();
+    private CardinalityInfo processCardinality(RAttribute ra) {
         RCardinality cardinality = ra.getCardinality();
         int lowerBound = cardinality.getMin();
         Optional<Integer> upperCardinality = cardinality.getMax();
@@ -284,35 +264,37 @@ public final class PythonAttributeProcessor {
         String cardinalityString = "";
 
         // Default constraints
-        if (lowerBound == 0) {
-            fieldDefault = "None";
-            if (cardinality.isMulti() || upperBoundIsGTOne) {
-                if (upperBoundIsGTOne) {
-                    cardinalityString = ", max_length=" + upperCardinality.get().toString();
+        switch (lowerBound) {
+            case 0 -> {
+                fieldDefault = "None";
+                if (cardinality.isMulti() || upperBoundIsGTOne) {
+                    if (upperBoundIsGTOne) {
+                        cardinalityString = String.format(", max_length=%d", upperCardinality.get());
+                    }
                 }
             }
-        } else if (lowerBound == 1) {
-            fieldDefault = "...";
-            if (cardinality.isMulti() || upperBoundIsGTOne) {
-                cardinalityString = ", min_length=1";
-                if (upperBoundIsGTOne) {
-                    cardinalityString += ", max_length=" + upperCardinality.get().toString();
+            case 1 -> {
+                fieldDefault = "...";
+                if (cardinality.isMulti() || upperBoundIsGTOne) {
+                    cardinalityString = ", min_length=1";
+                    if (upperBoundIsGTOne) {
+                        cardinalityString += String.format(", max_length=%d", upperCardinality.get());
+                    }
                 }
             }
-        } else {
-            fieldDefault = "...";
-            cardinalityString = ", min_length=" + lowerBound;
-            if (upperCardinality.isPresent()) {
-                int upperBound = upperCardinality.get();
-                if (upperBound > 1) {
-                    cardinalityString += ", max_length=" + upperBound;
+            default -> {
+                fieldDefault = "...";
+                cardinalityString = String.format(", min_length=%d", lowerBound);
+                if (upperCardinality.isPresent()) {
+                    int upperBound = upperCardinality.get();
+                    if (upperBound > 1) {
+                        cardinalityString += String.format(", max_length=%d", upperBound);
+                    }
                 }
             }
         }
 
-        cardinalityMap.put("cardinalityString", cardinalityString);
-        cardinalityMap.put("fieldDefault", fieldDefault);
-        return cardinalityMap;
+        return new CardinalityInfo(fieldDefault, cardinalityString);
     }
 
     public void getImportsFromAttributes(Data rc, Set<String> enumImports) {
@@ -340,8 +322,8 @@ public final class PythonAttributeProcessor {
                             "Attribute type is null for " + attr.getName() + " for class " + rc.getName());
                 }
 
-                if (rt instanceof REnumType) {
-                    enumImports.add("import " + ((REnumType) rt).getQualifiedName());
+                if (rt instanceof REnumType rEnumType) {
+                    enumImports.add(String.format("import %s", rEnumType.getQualifiedName()));
                 }
             }
         }
@@ -351,7 +333,7 @@ public final class PythonAttributeProcessor {
         /**
          * The validators for the attribute.
          */
-        private final ArrayList<String> validators;
+        private final List<String> validators;
         /**
          * Whether the attribute has a reference.
          */
@@ -363,17 +345,127 @@ public final class PythonAttributeProcessor {
          * @param validators   The validators for the attribute.
          * @param hasReference Whether the attribute has a reference.
          */
-        MetaDataResult(ArrayList<String> validators, boolean hasReference) {
+        MetaDataResult(List<String> validators, boolean hasReference) {
             this.validators = validators;
             this.hasReference = hasReference;
         }
 
-        public ArrayList<String> getValidators() {
+        public List<String> getValidators() {
             return validators;
         }
 
         public boolean hasReference() {
             return hasReference;
+        }
+    }
+
+    private record CardinalityInfo(String fieldDefault, String cardinalityString) {
+    }
+
+    private record AttributeResult(String attributeCode, Optional<String> annotationUpdate) {
+    }
+
+    private record PythonTypeHint(
+            String baseType,
+            boolean hasReference,
+            Optional<String> fieldProperties,
+            boolean isList,
+            boolean isOptional,
+            Optional<String> runeAnnotations) {
+
+        public String build(boolean includeRuneAnnotations) {
+            String type = baseType;
+            if (hasReference) {
+                type += " | BaseReference";
+            }
+            if (fieldProperties.isPresent()) {
+                type = String.format("Annotated[%s, Field(%s)]", type, fieldProperties.get());
+            }
+            if (isList) {
+                type = String.format("list[%s]", type);
+            }
+            if (isOptional) {
+                type = String.format("Optional[%s]", type);
+            }
+            if (includeRuneAnnotations && runeAnnotations.isPresent()) {
+                type = String.format("Annotated[%s, %s]", type, runeAnnotations.get());
+            }
+            return type;
+        }
+    }
+
+    private record ValidationProperties(
+            Optional<String> pattern,
+            Optional<Integer> minLength,
+            Optional<Integer> maxLength,
+            Optional<Integer> maxDigits,
+            Optional<Integer> decimalPlaces,
+            Optional<String> ge,
+            Optional<String> le) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public String toFieldArgs() {
+            List<String> args = new ArrayList<>();
+            minLength.ifPresent(v -> args.add(String.format("min_length=%d", v)));
+            pattern.ifPresent(v -> args.add(String.format("pattern=%s", v)));
+            maxLength.ifPresent(v -> args.add(String.format("max_length=%d", v)));
+            maxDigits.ifPresent(v -> args.add(String.format("max_digits=%d", v)));
+            decimalPlaces.ifPresent(v -> args.add(String.format("decimal_places=%d", v)));
+            ge.ifPresent(v -> args.add(String.format("ge=%s", v)));
+            le.ifPresent(v -> args.add(String.format("le=%s", v)));
+            return String.join(", ", args);
+        }
+
+        public static class Builder {
+            private Optional<String> pattern = Optional.empty();
+            private Optional<Integer> minLength = Optional.empty();
+            private Optional<Integer> maxLength = Optional.empty();
+            private Optional<Integer> maxDigits = Optional.empty();
+            private Optional<Integer> decimalPlaces = Optional.empty();
+            private Optional<String> ge = Optional.empty();
+            private Optional<String> le = Optional.empty();
+
+            public Builder pattern(String pattern) {
+                this.pattern = Optional.of(pattern);
+                return this;
+            }
+
+            public Builder minLength(int minLength) {
+                this.minLength = Optional.of(minLength);
+                return this;
+            }
+
+            public Builder maxLength(int maxLength) {
+                this.maxLength = Optional.of(maxLength);
+                return this;
+            }
+
+            public Builder maxDigits(int maxDigits) {
+                this.maxDigits = Optional.of(maxDigits);
+                return this;
+            }
+
+            public Builder decimalPlaces(int decimalPlaces) {
+                this.decimalPlaces = Optional.of(decimalPlaces);
+                return this;
+            }
+
+            public Builder ge(String ge) {
+                this.ge = Optional.of(ge);
+                return this;
+            }
+
+            public Builder le(String le) {
+                this.le = Optional.of(le);
+                return this;
+            }
+
+            public ValidationProperties build() {
+                return new ValidationProperties(pattern, minLength, maxLength, maxDigits, decimalPlaces, ge, le);
+            }
         }
     }
 }

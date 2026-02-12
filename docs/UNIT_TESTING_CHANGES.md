@@ -2,13 +2,14 @@
 
 Date: 2026-02-10
 
-This documents a shift in strategy for unit testing the `rune-python-generator` project. 
+This documents a shift in strategy for unit testing the `rune-python-generator` project.
 
 Previously, all tests were "full code" tests, meaning they would generate the entire Python code for a given Rune model and then assert that broad sections of the generated code were exactly as expected. This approach was brittle and difficult to maintain, as even small changes in the generated code would break the tests.
 
 The new strategy is to use a combination of "full code" tests and "targeted" tests. "Full code" tests are used to confirm that the structure and content of the generated code is correct. "Targeted" tests are used when we want to assert that specific parts of the generated code are exactly as expected. This approach is more maintainable and less brittle, as it allows us to make small changes to the generated code without breaking all of the tests.
 
 Tests are categorized by **Test Type**:
+
 - **Logic**: Focuses on the generator's internal logic, such as complex branching, nested if-else structures, and rule accumulation.
 - **Functional**: Verifies specific Rosetta-to-Python operations (e.g., `count`, `distinct`, `filter`) and their mapping to Python/Rune library calls.
 - **Component**: Validates fundamental building blocks of the generation system, such as Enums or Inheritance hierarchies.
@@ -118,15 +119,15 @@ assertTrue(bundle.contains("com_rosetta_test_model_MeasureBase.__annotations__[\
 Expects `Annotated[str, MetaData("scheme")]` inline inside the class.
 
 **Revised approach:**
-If the attribute is a native type with metadata (e.g., `str`), it is currently NOT delayed, so the test might stay **Y**. 
+If the attribute is a native type with metadata (e.g., `str`), it is currently NOT delayed, so the test might stay **Y**.
 If it is a Rosetta type with metadata, it will be **N**.
 
 ## Guidelines for Revising Tests
 
-1.  **Avoid Exact Class Body Matches**: Do not compare the entire `class X:` block if it contains attributes referring to other Rosetta types.
-2.  **Use Anchors**: Assert on specific lines that are unique to the test case.
-3.  **Phase Verification**:
-    *   Verify the **Clean attribute** exists in the class body.
-    *   Verify the **Delayed annotation** exists elsewhere in the bundle (if it's a Rosetta type).
-    *   Verify the **Model rebuild** exists at the end of the bundle.
-4.  **Keep "Complete" reference tests**: At least one or two tests (like `PythonCircularReferenceImplementationTest`) should be considered "gold standard" and verify the entire output structure.
+1. **Avoid Exact Class Body Matches**: Do not compare the entire `class X:` block if it contains attributes referring to other Rosetta types.
+2. **Use Anchors**: Assert on specific lines that are unique to the test case.
+3. **Phase Verification**:
+    - Verify the **Clean attribute** exists in the class body.
+    - Verify the **Delayed annotation** exists elsewhere in the bundle (if it's a Rosetta type).
+    - Verify the **Model rebuild** exists at the end of the bundle.
+4. **Keep "Complete" reference tests**: At least one or two tests (like `PythonCircularReferenceImplementationTest`) should be considered "gold standard" and verify the entire output structure.

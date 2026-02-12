@@ -1,15 +1,18 @@
 package com.regnosys.rosetta.generator.python.object;
 
-import jakarta.inject.Inject;
-import com.regnosys.rosetta.tests.RosettaInjectorProvider;
-import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
+import java.util.Map;
+
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
+import com.regnosys.rosetta.tests.RosettaInjectorProvider;
+
+import jakarta.inject.Inject;
 
 /**
  * This is an Anchor test.
@@ -24,6 +27,40 @@ public class PythonCircularDependencyTest {
      */
     @Inject
     private PythonGeneratorTestUtils testUtils;
+
+    @Test
+    public void testForCircularDependency() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        namespace rosetta_dsl.test.model.circular_dependency
+
+                        type Bar1: <"Test Circular Dependency">
+                            number1 int(1..1)
+                            bar2 Bar2(0..1)
+                        type Bar2:
+                            number2 int(1..1)
+                            bar1 Bar1(0..1)
+                            condition Test:
+                                if bar1 exists
+                                    then bar1->number1 > 0
+                        """);
+
+        String bundle = gf.toString();
+
+        testUtils.assertGeneratedContainsExpectedString(
+                bundle,
+                """
+                        # Phase 2: Delayed Annotation Updates
+                        rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__["bar2"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]
+                        """);
+
+        testUtils.assertGeneratedContainsExpectedString(
+                bundle,
+                """
+                        # Phase 2: Delayed Annotation Updates
+                        rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__["bar1"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]
+                        """);
+    }
 
     /**
      * Test case for attribute circular dependency.

@@ -103,7 +103,7 @@ public class PythonDataRuleGeneratorTest {
 
         // Phase 2: Delayed Update
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
+                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Annotated[Optional[com_rosetta_test_model_QuotePrice], com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]");
 
         // Phase 3: Rebuild
         testUtils.assertGeneratedContainsExpectedString(pythonString,
@@ -142,7 +142,7 @@ public class PythonDataRuleGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
                 "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
+                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Annotated[Optional[com_rosetta_test_model_QuotePrice], com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]");
         testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
     }
 
@@ -166,7 +166,7 @@ public class PythonDataRuleGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
                 "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Optional[Annotated[com_rosetta_test_model_QuotePrice, com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]]");
+                "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Annotated[Optional[com_rosetta_test_model_QuotePrice], com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
                 "return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"quotePrice\"), \"bidPrice\"), \"=\", Decimal('0.0'))");
     }

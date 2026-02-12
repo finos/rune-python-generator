@@ -63,7 +63,7 @@ public class PythonEnumGeneratorTest {
                     A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).
                     \"""
                     _FQRTN = 'com.rosetta.test.model.LegalEntity'
-                    entityId: Optional[list[Annotated[StrWithMeta, StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))]]] = Field(None, description='A legal entity identifier (e.g. RED entity code).')
+                    entityId: Annotated[Optional[list[StrWithMeta]], StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))] = Field(None, description='A legal entity identifier (e.g. RED entity code).')
                     \"""
                     A legal entity identifier (e.g. RED entity code).
                     \"""
@@ -107,7 +107,7 @@ public class PythonEnumGeneratorTest {
 
         String expectedPhase2 = """
                 # Phase 2: Delayed Annotation Updates
-                com_rosetta_test_model_AncillaryEntity.__annotations__["legalEntity"] = Optional[Annotated[com_rosetta_test_model_LegalEntity, com_rosetta_test_model_LegalEntity.serializer(), com_rosetta_test_model_LegalEntity.validator()]]
+                com_rosetta_test_model_AncillaryEntity.__annotations__["legalEntity"] = Annotated[Optional[com_rosetta_test_model_LegalEntity], com_rosetta_test_model_LegalEntity.serializer(), com_rosetta_test_model_LegalEntity.validator()]
 
                 # Phase 3: Rebuild
                 com_rosetta_test_model_AncillaryEntity.model_rebuild()
@@ -188,7 +188,7 @@ public class PythonEnumGeneratorTest {
                     \"""
                     Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.
                     \"""
-                    weatherUnit: Optional[Annotated[com.rosetta.test.model.WeatherUnitEnum.WeatherUnitEnum, com.rosetta.test.model.WeatherUnitEnum.WeatherUnitEnum.serializer(), com.rosetta.test.model.WeatherUnitEnum.WeatherUnitEnum.validator(('@scheme', ))]] = Field(None, description='Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.')
+                    weatherUnit: Annotated[Optional[com.rosetta.test.model.WeatherUnitEnum.WeatherUnitEnum], com.rosetta.test.model.WeatherUnitEnum.WeatherUnitEnum.serializer(), com.rosetta.test.model.WeatherUnitEnum.WeatherUnitEnum.validator(('@scheme', ))] = Field(None, description='Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.')
                     \"""
                     Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.
                     \"""

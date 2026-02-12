@@ -3,15 +3,14 @@ package com.regnosys.rosetta.generator.python.util;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.regnosys.rosetta.types.RAttribute;
-import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
-
-import com.regnosys.rosetta.types.RType;
-import com.regnosys.rosetta.types.builtin.RNumberType;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.REnumType;
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.builtin.RNumberType;
 
 /**
  * A utility class for mapping Rune (Rosetta) types and attributes to their
@@ -286,20 +285,15 @@ public final class RuneToPythonMapper {
      *                        "Optional[...]").
      * @return the formatted Python type string
      */
-    public static String formatPythonType(String baseType, int min, int max, boolean isInputArgument) {
+    public static String formatCardinality(String baseType, int min, int max, boolean isInputArgument) {
         String type = baseType;
-        boolean isList = (max > 1 || max == -1 || max == 0);
 
-        if (isList) {
+        if (max > 1 || max == -1 || max == 0) {
             type = "list[" + type + "]";
         }
 
         if (min == 0) {
-            if (isInputArgument) {
-                type = type + " | None";
-            } else {
-                type = "Optional[" + type + "]";
-            }
+            type = (isInputArgument) ? type + " | None" : "Optional[" + type + "]";
         }
         return type;
     }

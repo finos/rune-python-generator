@@ -178,8 +178,8 @@ public class PythonBasicGeneratorTest {
                     basicList: Optional[test_generated_syntax_basic_BasicList] = Field(None, description='')
 
                 # Phase 2: Delayed Annotation Updates
-                test_generated_syntax_basic_Root.__annotations__["basicSingle"] = Optional[Annotated[test_generated_syntax_basic_BasicSingle, test_generated_syntax_basic_BasicSingle.serializer(), test_generated_syntax_basic_BasicSingle.validator()]]
-                test_generated_syntax_basic_Root.__annotations__["basicList"] = Optional[Annotated[test_generated_syntax_basic_BasicList, test_generated_syntax_basic_BasicList.serializer(), test_generated_syntax_basic_BasicList.validator()]]
+                test_generated_syntax_basic_Root.__annotations__["basicSingle"] = Annotated[Optional[test_generated_syntax_basic_BasicSingle], test_generated_syntax_basic_BasicSingle.serializer(), test_generated_syntax_basic_BasicSingle.validator()]
+                test_generated_syntax_basic_Root.__annotations__["basicList"] = Annotated[Optional[test_generated_syntax_basic_BasicList], test_generated_syntax_basic_BasicList.serializer(), test_generated_syntax_basic_BasicList.validator()]
 
                 # Phase 3: Rebuild
                 test_generated_syntax_basic_Root.model_rebuild()

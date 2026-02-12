@@ -244,7 +244,7 @@ public final class PythonFunctionGenerator {
         String inputs = function.getInputs().stream()
                 .map(input -> {
                     String inputBundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType());
-                    String inputType = RuneToPythonMapper.formatPythonType(
+                    String inputType = RuneToPythonMapper.formatCardinality(
                             inputBundleName,
                             input.getCard().getInf(),
                             input.getCard().getSup(),
@@ -257,7 +257,7 @@ public final class PythonFunctionGenerator {
         Attribute output = function.getOutput();
         if (output != null) {
             String outputBundleName = RuneToPythonMapper.getBundleObjectName(output.getTypeCall().getType());
-            String outputType = RuneToPythonMapper.formatPythonType(
+            String outputType = RuneToPythonMapper.formatCardinality(
                     outputBundleName,
                     1, // Force min=1 to suppress Optional/| None for return types
                     output.getCard().getSup(),
@@ -306,7 +306,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("Parameters");
         writer.appendLine("----------");
         for (Attribute input : inputs) {
-            String paramName = RuneToPythonMapper.formatPythonType(
+            String paramName = RuneToPythonMapper.formatCardinality(
                     RuneToPythonMapper.getFullyQualifiedObjectName(input.getTypeCall().getType()),
                     1, // Force min=1 to match legacy docstring format (no Optional)
                     input.getCard().getSup(),
@@ -320,7 +320,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("Returns");
         writer.appendLine("-------");
         if (output != null) {
-            String paramName = RuneToPythonMapper.formatPythonType(
+            String paramName = RuneToPythonMapper.formatCardinality(
                     RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType()),
                     1, // Force min=1 to match legacy docstring format (no Optional)
                     output.getCard().getSup(),

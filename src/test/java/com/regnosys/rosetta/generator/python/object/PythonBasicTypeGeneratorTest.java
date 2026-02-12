@@ -329,7 +329,7 @@ public class PythonBasicTypeGeneratorTest {
 
 
                         # Phase 2: Delayed Annotation Updates
-                        com_rosetta_test_model_Quantity.__annotations__["multiplierUnit"] = Optional[Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]]
+                        com_rosetta_test_model_Quantity.__annotations__["multiplierUnit"] = Annotated[Optional[com_rosetta_test_model_UnitType], com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]
 
                         # Phase 3: Rebuild
                         com_rosetta_test_model_Quantity.model_rebuild()

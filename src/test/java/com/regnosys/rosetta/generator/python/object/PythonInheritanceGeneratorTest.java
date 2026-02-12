@@ -225,7 +225,7 @@ public class PythonInheritanceGeneratorTest {
                     \"""
                     Provides an enumerated value for financial units, generally used in the context of defining quantities for securities.
                     \"""
-                    currency: Optional[Annotated[StrWithMeta, StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))]] = Field(None, description='Defines the currency to be used as a unit for a price, quantity, or other purpose.')
+                    currency: Annotated[Optional[StrWithMeta], StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))] = Field(None, description='Defines the currency to be used as a unit for a price, quantity, or other purpose.')
                     \"""
                     Defines the currency to be used as a unit for a price, quantity, or other purpose.
                     \"""
@@ -241,7 +241,7 @@ public class PythonInheritanceGeneratorTest {
 
         String expectedPhase2 = """
                 # Phase 2: Delayed Annotation Updates
-                com_rosetta_test_model_MeasureBase.__annotations__["unit"] = Optional[Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]]
+                com_rosetta_test_model_MeasureBase.__annotations__["unit"] = Annotated[Optional[com_rosetta_test_model_UnitType], com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]
 
                 # Phase 3: Rebuild
                 com_rosetta_test_model_MeasureBase.model_rebuild()
