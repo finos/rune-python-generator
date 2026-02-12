@@ -207,7 +207,8 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         if (nameSpaceObjects != null && !nameSpaceObjects.isEmpty() && dependencyDAG != null && enumImports != null) {
             result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
             PythonCodeWriter bundleWriter = new PythonCodeWriter();
-            PythonCodeWriter updateWriter = new PythonCodeWriter();
+            PythonCodeWriter annotationUpdateWriter = new PythonCodeWriter();
+            PythonCodeWriter rebuildWriter = new PythonCodeWriter();
             TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
                     dependencyDAG);
 
@@ -233,18 +234,13 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                     bundleWriter.newLine();
                     bundleWriter.appendBlock(object.toString());
 
-                    // Phase 2 & 3: Delayed updates and rebuilds
+                    // Collect Phase 2 & 3 updates
                     List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
                     if (updates != null && !updates.isEmpty()) {
-                        updateWriter.newLine();
-                        updateWriter.appendLine("# Phase 2: Delayed Annotation Updates");
                         for (String update : updates) {
-                            updateWriter.appendLine(update);
+                            annotationUpdateWriter.appendLine(update);
                         }
-                        updateWriter.newLine();
-                        updateWriter.appendLine("# Phase 3: Rebuild");
-                        updateWriter.appendLine(bundleClassName + ".model_rebuild()");
-                        updateWriter.newLine();
+                        rebuildWriter.appendLine(String.format("%s.model_rebuild()", bundleClassName));
                     }
 
                     // create the stub
@@ -279,8 +275,16 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
 
             // Append Phase 2 & 3 updates to the bundle
-            if (!updateWriter.toString().isEmpty()) {
-                bundleWriter.appendBlock(updateWriter.toString());
+            if (!annotationUpdateWriter.toString().isEmpty()) {
+                bundleWriter.newLine();
+                bundleWriter.appendLine("# Phase 2: Delayed Annotation Updates");
+                bundleWriter.appendBlock(annotationUpdateWriter.toString());
+            }
+
+            if (!rebuildWriter.toString().isEmpty()) {
+                bundleWriter.newLine();
+                bundleWriter.appendLine("# Phase 3: Rebuild");
+                bundleWriter.appendBlock(rebuildWriter.toString());
             }
 
             if (context.hasFunctions()) {

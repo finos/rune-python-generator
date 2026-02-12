@@ -90,12 +90,14 @@ public class RosettaContainsOperationTest {
                     \"""
                 """;
 
-        String expectedBPhase23 = """
+        String expectedPhases = """
                 # Phase 2: Delayed Annotation Updates
                 com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[list[com_rosetta_test_model_A], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
+                com_rosetta_test_model_Test.__annotations__["bValue"] = Annotated[list[com_rosetta_test_model_B], com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]
 
                 # Phase 3: Rebuild
                 com_rosetta_test_model_B.model_rebuild()
+                com_rosetta_test_model_Test.model_rebuild()
                 """;
 
         String expectedTestPhase1 = """
@@ -128,18 +130,10 @@ public class RosettaContainsOperationTest {
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", True), _then_fn0, _else_fn0)
                 """;
 
-        String expectedTestPhase23 = """
-                # Phase 2: Delayed Annotation Updates
-                com_rosetta_test_model_Test.__annotations__["bValue"] = Annotated[list[com_rosetta_test_model_B], com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]
-
-                # Phase 3: Rebuild
-                com_rosetta_test_model_Test.model_rebuild()""";
-
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedC);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedA);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedBPhase1);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedBPhase23);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTestPhase1);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTestPhase23);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedPhases);
     }
 }
