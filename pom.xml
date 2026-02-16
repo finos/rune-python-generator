@@ -84,7 +84,7 @@
         <rosetta.dsl.version>9.76.1</rosetta.dsl.version>
 
         <xtext.version>2.38.0</xtext.version>
-        <guice.version>6.0.0</guice.version>
+        <guice.version>7.0.0</guice.version>
 
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.21</logback.version>
