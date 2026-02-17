@@ -4,25 +4,19 @@ import pytest
 
 from rosetta_dsl.test.functions.BaseObject import BaseObject
 from rosetta_dsl.test.functions.BaseObjectWithBaseClassFields import (
-    BaseObjectWithBaseClassFields,
-)
+    BaseObjectWithBaseClassFields, )
 
 from rosetta_dsl.test.functions.functions.TestSimpleObjectAssignment import (
-    TestSimpleObjectAssignment,
-)
+    TestSimpleObjectAssignment, )
 from rosetta_dsl.test.functions.functions.TestObjectCreationFromFields import (
-    TestObjectCreationFromFields,
-)
+    TestObjectCreationFromFields, )
 from rosetta_dsl.test.functions.functions.TestContainerObjectCreation import (
-    TestContainerObjectCreation,
-)
+    TestContainerObjectCreation, )
 from rosetta_dsl.test.functions.functions.TestContainerObjectCreationFromBaseObject import (
-    TestContainerObjectCreationFromBaseObject,
-)
+    TestContainerObjectCreationFromBaseObject, )
 
 from rosetta_dsl.test.functions.functions.TestComplexTypeInputs import (
-    TestComplexTypeInputs,
-)
+    TestComplexTypeInputs, )
 from rosetta_dsl.test.functions.ComplexTypeA import ComplexTypeA
 from rosetta_dsl.test.functions.ComplexTypeB import ComplexTypeB
 
@@ -58,7 +52,8 @@ def test_container_object_creation():
 def test_container_object_creation_from_base_object():
     """Test creation of a container object from a base object."""
     base_object = BaseObject(value1=5, value2=10)
-    TestContainerObjectCreationFromBaseObject(baseObject=base_object, value3=20)
+    TestContainerObjectCreationFromBaseObject(baseObject=base_object,
+                                              value3=20)
 
 
 @pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
@@ -67,14 +62,6 @@ def test_create_incomplete_object_succeeds_in_python():
     This test is expected to pass.
     """
     BaseObjectWithBaseClassFields(value1=5, strict=False)
-
-
-@pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
-def test_create_incomplete_object_succeeds():
-    """Test incomplete object return by setting strict=False in the function definition.
-    This test is expected to pass.
-    """
-    TestCreateIncompleteObjectSucceeds(value1=5)
 
 
 @pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
