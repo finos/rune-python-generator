@@ -4,28 +4,39 @@ This document provides a comprehensive list and analysis of custom Java-defined 
 
 ## Summary Statistics
 
-| Java Class Grouping | cdm 6 counts | removed | added | master total | cdm 6 rune candidates | cdm 7 rune candidates |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1. Rosetta Functions | 33 | 0 | 0 | 33 | 19 | 19 |
-| 2. Ingestion Processors | 115 | 83 | 14 | 46 | 0 | 0 |
-| 3. Infrastructure & Utils | 1 | 0 | 3 | 4 | 0 | 0 |
-| **Total** | **149** | **83** | **17** | **83** | **19** | **19** |
+| Java Class Grouping | cdm 6 counts | removed | added | master total | rune candidates |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| 1. Rosetta Functions | 33 | 0 | 0 | 33 | 11 |
+| 2. Ingestion Processors | 115 | 83 | 14 | 46 | 0 |
+| 3. Infrastructure & Utils | 1 | 0 | 3 | 4 | 0 |
+| **Total** | **149** | **83** | **17** | **83** | **11** |
 
 ## Java Classes & Functions Table
 
-| Name | master | cdm 6 | delta | Summary | OS | Rune Candidate | Bound | Notes | dls |
+All Java defined code in CDM alphabetically by package
+
+Key to columns:
+
+- master: function present in Master branch
+- CDM 6: function present in CDM 6.x.x
+- Delta: there's a difference in the function in 6.x.x and Master
+- Rune Candidate: the function should be considered for migration to Rune
+- OS: the function uses lower level features unlikely to be available in Rune
+- Bound: the function is "loaded" in CdmRuntimeModule
+
+| Name | master | CDM 6 | delta | Summary | OS | Rune Candidate | Bound | Notes | dls |
 | :--- | :---: | :---: | :---: | :--- | :---: | :---: | :---: | :--- | :--- |
 | **cdm.base.datetime.functions** | | | | | | | | | |
-| [`AddDaysImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/AddDaysImpl.java) | Y | Y |  | Adds calendar days to a date. | N | Y | Y | Standard date arithmetic. | N |
-| [`BusinessCenterHolidaysEmptyDataProvider`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/BusinessCenterHolidaysEmptyDataProvider.java) | Y | Y | Y | Placeholder for business center holidays. | N | Y | Y | Currently throws an exception; logic can be defined in Rune. | N |
-| [`DateDifferenceImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/DateDifferenceImpl.java) | Y | Y |  | Calculates the number of days between two dates. | N | Y | Y | Standard date arithmetic. | N |
-| [`DayOfWeekImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/DayOfWeekImpl.java) | Y | Y |  | Determines the day of the week for a date. | N | Y | Y | Standard date function. | N |
-| [`LeapYearDateDifferenceImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/LeapYearDateDifferenceImpl.java) | Y | Y |  | Counts leap year days between two dates. | N | Y | Y | Standard date logic. | N |
+| [`AddDaysImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/AddDaysImpl.java) | Y | Y |  | Adds calendar days to a date. | N | N | Y | Standard date arithmetic. | N |
+| [`BusinessCenterHolidaysEmptyDataProvider`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/BusinessCenterHolidaysEmptyDataProvider.java) | Y | Y | Y | Placeholder for business center holidays. | N | N | Y | Currently throws an exception; logic can be defined in Rune. | N |
+| [`DateDifferenceImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/DateDifferenceImpl.java) | Y | Y |  | Calculates the number of days between two dates. | N | N | Y | Standard date arithmetic. | N |
+| [`DayOfWeekImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/DayOfWeekImpl.java) | Y | Y |  | Determines the day of the week for a date. | N | N | Y | Standard date function. | N |
+| [`LeapYearDateDifferenceImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/LeapYearDateDifferenceImpl.java) | Y | Y |  | Counts leap year days between two dates. | N | N | Y | Standard date logic. | N |
 | [`NowImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/NowImpl.java) | Y | Y |  | Returns the current system time in UTC. | Y | N | Y | Requires access to system clock. | N |
-| [`PopOffDateListImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/PopOffDateListImpl.java) | Y | Y |  | Removes the last element from a list of dates. | N | Y | Y | Basic list manipulation. | ? |
+| [`PopOffDateListImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/PopOffDateListImpl.java) | Y | Y |  | Removes the last element from a list of dates. | N | N | Y | Basic list manipulation. | ? |
 | [`ResolveAdjustableDateImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/ResolveAdjustableDateImpl.java) | Y | Y |  | Resolves a single adjustable date. | N | N | Y | Requires complex business day logic (OpenGamma Strata). | N |
 | [`ResolveAdjustableDatesImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/ResolveAdjustableDatesImpl.java) | Y | Y |  | Resolves multiple adjustable dates. | N | N | Y | Requires external holiday/calendar data (OpenGamma Strata). | N |
-| [`ToTimeImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/ToTimeImpl.java) | Y | Y |  | Constructs a LocalTime from hour, minute, and second integers. | N | Y | Y | Simple type construction. | N |
+| [`ToTimeImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/ToTimeImpl.java) | Y | Y |  | Constructs a LocalTime from hour, minute, and second integers. | N | N | Y | Simple type construction. | N |
 | [`TodayImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/datetime/functions/TodayImpl.java) | Y | Y |  | Returns the current system date. | Y | N | Y | Requires access to system clock. | N |
 | **cdm.base.math.functions** | | | | | | | | | |
 | [`ArithmeticOpImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/base/math/functions/ArithmeticOpImpl.java) | Y | Y |  | Map arithmetic operations to BigDecimal functions. | N | Y | N | Pure math logic. | ? - Python Decimal has native support for this and it isnt clear that CDM uses it |
@@ -81,7 +92,7 @@ This document provides a comprehensive list and analysis of custom Java-defined 
 | **cdm.event.workflow.processor** | | | | | | | | | |
 | [`FISMapperMappingProcessor`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/event/workflow/processor/FISMapperMappingProcessor.java) | Y | Y | Y | Workflow state mapping (FIS). | N | N | N | Infrastructure logic for data ingestion. |  |
 | **cdm.ingest.fpml.confirmation.common.functions** | | | | | | | | | |
-| [`StringContainsImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/ingest/fpml/confirmation/common/functions/StringContainsImpl.java) | Y | Y |  | Checks if a string contains another string. | N | Y | Y | Standard string manipulation. | N |
+| [`StringContainsImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/ingest/fpml/confirmation/common/functions/StringContainsImpl.java) | Y | Y |  | Checks if a string contains another string. | N | N | Y | Standard string manipulation. | N |
 | **cdm.ingest.fpml.confirmation.pricequantity.functions** | | | | | | | | | |
 | [`CreateAssetKeyImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/ingest/fpml/confirmation/pricequantity/functions/CreateAssetKeyImpl.java) | Y | Y |  | Generates a key string using object hash codes for an Asset. | Y | N | Y | Relies on Java's `hashCode()` implementation. | N |
 | [`CreateKeyForQuotedCurrencyPairImpl`](https://github.com/finos/common-domain-model/blob/master/rosetta-source/src/main/java/cdm/ingest/fpml/confirmation/pricequantity/functions/CreateKeyForQuotedCurrencyPairImpl.java) | Y | Y | Y | Generates a key string using object hash codes. | Y | N | Y | Relies on Java's `hashCode()` implementation. | N |
@@ -213,17 +224,17 @@ This document provides a comprehensive list and analysis of custom Java-defined 
 
 The Java-defined classes in the CDM library can be categorized by their interaction requirements:
 
-1.  **Platform/Environment Dependencies (OS = Y)**: Functions requiring access to the system clock (`Now`, `Today`) or core Java runtime internals (`hashCode` for key generation) are marked as OS-dependent.
-2.  **External Library Dependencies**: A significant number of scheduling functions (`CalculationPeriod`) and utilities (`AdjustableDateUtils`) rely on the **OpenGamma Strata** library. Replicating this in Rune is impractical due to the complexity of banking-grade holiday calendars and day-count logic.
-3.  **Infrastructure Orchestration & Utility Rationale**: Supporting classes (Group 3) are not recommended for Rune migration for three primary reasons:
-    *   **External Engine Dependencies**: Utilities like `AdjustableDateUtils` are wrappers for the **OpenGamma Strata** engine. Reimplementing these would require a complete banking-grade calendar and day-count engine in the DSL.
-    *   **Meta-Infrastructure Interaction**: These classes interact with low-level platform tools like the Rosetta `PostProcessor` and object pruning utilities. This is platform "plumbing" rather than domain-level business logic.
-    *   **Architectural Glue**: These classes manage the application lifecycle, including Dependency Injection (`@Inject`) and state orchestration across multiple workflow steps, which is outside the scope of the functional domain DSL.
-4.  **Ingestion Framework**: Ingestion processors handle the "dirty work" of parsing external formats. This logic is highly imperative, involves significant I/O (Jackson JSON mapping, Regex), and is better suited to Java's mature ecosystem for data transformation.
+1. **Platform/Environment Dependencies (OS = Y)**: Functions requiring access to the system clock (`Now`, `Today`) or core Java runtime internals (`hashCode` for key generation) are marked as OS-dependent.
+2. **External Library Dependencies**: A significant number of scheduling functions (`CalculationPeriod`) and utilities (`AdjustableDateUtils`) rely on the **OpenGamma Strata** library. Replicating this in Rune is impractical due to the complexity of banking-grade holiday calendars and day-count logic.
+3. **Infrastructure Orchestration & Utility Rationale**: Supporting classes (Group 3) are not recommended for Rune migration for three primary reasons:
+    - **External Engine Dependencies**: Utilities like `AdjustableDateUtils` are wrappers for the **OpenGamma Strata** engine. Reimplementing these would require a complete banking-grade calendar and day-count engine in the DSL.
+    - **Meta-Infrastructure Interaction**: These classes interact with low-level platform tools like the Rosetta `PostProcessor` and object pruning utilities. This is platform "plumbing" rather than domain-level business logic.
+    - **Architectural Glue**: These classes manage the application lifecycle, including Dependency Injection (`@Inject`) and state orchestration across multiple workflow steps, which is outside the scope of the functional domain DSL.
+4. **Ingestion Framework**: Ingestion processors handle the "dirty work" of parsing external formats. This logic is highly imperative, involves significant I/O (Jackson JSON mapping, Regex), and is better suited to Java's mature ecosystem for data transformation.
 
 ## Usage in Rosetta (Rune) Code
 
-The following table lists Rosetta-defined functions with native Java implementations and where they are invoked within the internal Rosetta model code. Indirect calls are marked with an asterisk (*).
+The following table lists Rosetta-defined functions with native Java implementations and where they are invoked within the internal Rosetta model code separated into direct and indirect calls.
 
 | Rosetta Function | Definition File | Call Count (D+I) | Call Locations (Master Branch) |
 | :--- | :--- | :---: | :--- |
