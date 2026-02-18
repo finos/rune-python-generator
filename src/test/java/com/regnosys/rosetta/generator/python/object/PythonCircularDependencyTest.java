@@ -29,6 +29,38 @@ public class PythonCircularDependencyTest {
     private PythonGeneratorTestUtils testUtils;
 
     @Test
+    public void testLazyConstruction() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                        namespace rosetta_dsl.test.semantic.object_construction
+                        type C:
+                            p1 int(1..1)
+                            p2 int(1..1)
+
+
+                        func TestLazyConstruction:
+                            output:
+                                result C(1..1)
+                            set result->p1: 1
+                            set result->p2: 2
+                        """);
+        String bundle = gf.get("src/rosetta_dsl/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(
+                bundle, "from rune.runtime.draft import Draft");
+        testUtils.assertGeneratedContainsExpectedString(
+                bundle,
+                """
+                            result = Draft(rosetta_dsl_test_semantic_object_construction_C)
+                            result.p1 = 1
+                            result.p2 = 2
+                            result = result.to_model()
+
+
+                            return result
+                        """);
+    }
+
+    @Test
     public void testForCircularDependency() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """

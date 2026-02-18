@@ -218,6 +218,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             while (topologicalOrderIterator.hasNext()) {
                 if (isFirst) {
                     bundleWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
+                    for (String imp : context.getAdditionalImports()) {
+                        bundleWriter.appendLine(imp);
+                    }
+
                     List<String> sortedEnumImports = new ArrayList<>(enumImports);
                     Collections.sort(sortedEnumImports);
                     for (String imp : sortedEnumImports) {

@@ -36,6 +36,10 @@ public final class PythonCodeGeneratorContext {
      * The map of post definition updates.
      */
     private Map<String, List<String>> postDefinitionUpdates = null;
+    /**
+     * Additional imports
+     */
+    private List<String> additionalImports = null;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new ArrayList<>();
@@ -44,6 +48,7 @@ public final class PythonCodeGeneratorContext {
         this.enumImports = new HashSet<>();
         this.functionNames = new HashSet<>();
         this.postDefinitionUpdates = new HashMap<>();
+        this.additionalImports = new ArrayList<>();
     }
 
     public List<String> getSubfolders() {
@@ -88,5 +93,15 @@ public final class PythonCodeGeneratorContext {
 
     public boolean hasFunctions() {
         return !functionNames.isEmpty();
+    }
+
+    public List<String> getAdditionalImports() {
+        return additionalImports;
+    }
+
+    public void addAdditionalImport(String importStatement) {
+        if (!additionalImports.contains(importStatement)) {
+            additionalImports.add(importStatement);
+        }
     }
 }

@@ -9,6 +9,7 @@ import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 
 import jakarta.inject.Inject;
+import java.util.Map;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
@@ -25,7 +26,7 @@ public class RosettaAsKeyOperationTest {
      */
     @Test
     public void testAsKeyOperation() {
-        testUtils.assertBundleContainsExpectedString("""
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
                 type Bar:
                     field string (0..1)
                         [metadata reference]
@@ -35,28 +36,11 @@ public class RosettaAsKeyOperationTest {
                     output: bar Bar (1..1)
                     set bar -> field:
                         val as-key
-                """,
-                """
-                        @replaceable
-                        @validate_call
-                        def com_rosetta_test_model_functions_TestAsKey(val: str) -> com_rosetta_test_model_Bar:
-                            \"\"\"
-
-                            Parameters
-                            ----------
-                            val : str
-
-                            Returns
-                            -------
-                            bar : com.rosetta.test.model.Bar
-
-                            \"\"\"
-                            self = inspect.currentframe()
-
-
-                            bar = _get_rune_object('com_rosetta_test_model_Bar', 'field', {rune_resolve_attr(self, "val"): True})
-
-
-                            return bar""");
+                """);
+        String generated = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated, "bar = Draft(com_rosetta_test_model_Bar)");
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "bar.field = {rune_resolve_attr(self, \"val\"): True}");
+        testUtils.assertGeneratedContainsExpectedString(generated, "bar = bar.to_model()");
     }
 }

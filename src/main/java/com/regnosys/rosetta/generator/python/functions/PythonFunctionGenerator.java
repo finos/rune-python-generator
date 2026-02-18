@@ -20,10 +20,8 @@ import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerat
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
-import com.regnosys.rosetta.rosetta.RosettaFeature;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
-import com.regnosys.rosetta.rosetta.RosettaTyped;
 import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
 import com.regnosys.rosetta.rosetta.simple.Annotated;
@@ -79,8 +77,7 @@ public final class PythonFunctionGenerator {
             throw new RuntimeException("Dependency DAG not initialized");
         }
 
-        Set<String> enumImports = context.getEnumImports();
-        if (enumImports == null) {
+        if (context.getEnumImports() == null) {
             throw new RuntimeException("Enum imports not initialized");
         }
 
@@ -94,7 +91,7 @@ public final class PythonFunctionGenerator {
             }
             // String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
             try {
-                String pythonFunction = generateFunction(function, enumImports);
+                String pythonFunction = generateFunction(function, context);
 
                 String functionName = RuneToPythonMapper.getFullyQualifiedObjectName(function);
                 result.put(functionName, pythonFunction);
@@ -175,14 +172,14 @@ public final class PythonFunctionGenerator {
         return hasCodeImplementationAnnotation;
     }
 
-    private String generateFunction(Function function, Set<String> enumImports) {
+    private String generateFunction(Function function, PythonCodeGeneratorContext context) {
         if (function == null) {
             throw new RuntimeException("Function is null");
         }
-        if (enumImports == null) {
+        if (context.getEnumImports() == null) {
             throw new RuntimeException("Enum imports is null");
         }
-        enumImports.addAll(collectFunctionDependencies(function));
+        context.getEnumImports().addAll(collectFunctionDependencies(function));
 
         PythonCodeWriter writer = new PythonCodeWriter();
 
@@ -214,9 +211,9 @@ public final class PythonFunctionGenerator {
         if (isCodeImplementation) {
             writer.appendLine(generateExternalFunctionCall(function));
         } else {
-            int[] level = {0};
+            int[] level = { 0 };
             writer.appendBlock(generateAlias(function, level));
-            writer.appendBlock(generateOperations(function, level));
+            writer.appendBlock(generateOperations(function, level, context));
         }
 
         writer.appendBlock(generateOutput(function, isCodeImplementation));
@@ -405,7 +402,7 @@ public final class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateOperations(Function function, int[] level) {
+    private String generateOperations(Function function, int[] level, PythonCodeGeneratorContext context) {
         if (function.getOutput() != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
             List<String> setNames = new ArrayList<>();
@@ -425,6 +422,12 @@ public final class PythonFunctionGenerator {
                     writer.appendBlock(generateAddOperation(root, operation, expression, setNames));
                 } else {
                     writer.appendBlock(generateSetOperation(root, operation, expression, setNames));
+                }
+            }
+            if (!setNames.isEmpty()) {
+                context.addAdditionalImport("from rune.runtime.draft import Draft");
+                for (String setName : setNames) {
+                    writer.appendLine(setName + " = " + setName + ".to_model()");
                 }
             }
             return writer.toString();
@@ -466,32 +469,31 @@ public final class PythonFunctionGenerator {
         return writer.toString();
     }
 
+    private String generateDottedPath(Segment path) {
+        List<String> segments = new ArrayList<>();
+        Segment current = path;
+        while (current != null) {
+            segments.add(current.getFeature().getName());
+            current = current.getNext();
+        }
+        return String.join(".", segments);
+    }
+
     private String generateSetOperation(AssignPathRoot root, Operation operation,
             String expression, List<String> setNames) {
         PythonCodeWriter writer = new PythonCodeWriter();
         Attribute attributeRoot = (Attribute) root;
-        String equalsSign = " = ";
+        String rootName = attributeRoot.getName();
+
         if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
-            writer.appendLine(attributeRoot.getName() + equalsSign + expression);
+            writer.appendLine(rootName + " = " + expression);
         } else {
             String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
-            if (!setNames.contains(attributeRoot.getName())) {
-                setNames.add(attributeRoot.getName());
-                writer.appendLine(attributeRoot.getName()
-                        + equalsSign
-                        + "_get_rune_object('"
-                        + bundleName
-                        + "', "
-                        + getNextPathElementName(operation.getPath())
-                        + ", "
-                        + buildObject(expression, operation.getPath())
-                        + ")");
-            } else {
-                writer.appendLine(attributeRoot.getName() + equalsSign + "set_rune_attr(rune_resolve_attr(self, '"
-                        + attributeRoot.getName()
-                        + "'), "
-                        + generateAttributesPath(operation.getPath()) + ", " + expression + ")");
+            if (!setNames.contains(rootName)) {
+                setNames.add(rootName);
+                writer.appendLine(rootName + " = Draft(" + bundleName + ")");
             }
+            writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
         }
         return writer.toString();
     }
@@ -510,30 +512,4 @@ public final class PythonFunctionGenerator {
         return result.toString();
     }
 
-    private String getNextPathElementName(Segment path) {
-        return (path == null) ? null : "'" + path.getFeature().getName() + "'";
-    }
-
-    private String buildObject(String expression, Segment path) {
-        if (path == null || path.getNext() == null) {
-            return expression;
-        }
-
-        RosettaFeature feature = path.getFeature();
-        if (feature instanceof RosettaTyped typed) {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(typed.getTypeCall().getType());
-            Segment nextPath = path.getNext();
-            return "_get_rune_object('"
-                    + bundleName
-                    + "', "
-                    + getNextPathElementName(nextPath)
-                    + ", "
-                    + buildObject(expression, nextPath)
-                    + ")";
-        }
-        String featureName = (feature != null) ? feature.getName() : "Null Feature";
-        Class<?> featureClass = (feature != null) ? feature.getClass() : null;
-        String className = (featureClass != null) ? featureClass.getSimpleName() : "Null Feature Class";
-        throw new IllegalArgumentException("Cannot build object for feature " + featureName + " of type " + className);
-    }
 }

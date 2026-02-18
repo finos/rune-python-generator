@@ -107,35 +107,10 @@ public class PythonFunctionAliasTest {
                                 Alias1*Alias2
                         """);
 
-        String expectedBundle = """
-                @replaceable
-                @validate_call
-                def com_rosetta_test_model_functions_TestAliasWithTypeOutput(a: com_rosetta_test_model_A, b: com_rosetta_test_model_B) -> com_rosetta_test_model_C:
-                    \"\"\"
-
-                    Parameters
-                    ----------
-                    a : com.rosetta.test.model.A
-
-                    b : com.rosetta.test.model.B
-
-                    Returns
-                    -------
-                    c : com.rosetta.test.model.C
-
-                    \"\"\"
-                    self = inspect.currentframe()
-
-
-                    Alias1 = rune_resolve_attr(rune_resolve_attr(self, "a"), "valueA")
-                    Alias2 = rune_resolve_attr(rune_resolve_attr(self, "b"), "valueB")
-                    c = _get_rune_object('com_rosetta_test_model_C', 'valueC', (rune_resolve_attr(self, "Alias1") * rune_resolve_attr(self, "Alias2")))
-
-
-                    return c
-                """;
-
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
-
+        String generated = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated, "c = Draft(com_rosetta_test_model_C)");
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "c.valueC = (rune_resolve_attr(self, \"Alias1\") * rune_resolve_attr(self, \"Alias2\"))");
+        testUtils.assertGeneratedContainsExpectedString(generated, "c = c.to_model()");
     }
 }
