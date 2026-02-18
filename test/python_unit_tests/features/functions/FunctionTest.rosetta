@@ -237,4 +237,3 @@ func TestContainerObjectCreationFromBaseObject:
             baseObject: baseObject,
             value3: value3
         }
-    

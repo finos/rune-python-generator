@@ -13,3 +13,13 @@ func MyFunc:
 
 type ClassA:
     val string (1..1)
+
+func TestListFunction:
+    inputs:
+        list1 number (1..*)
+        multiplier number (1..1)
+    output:
+        result number (1..*)
+    set result:
+        list1 extract [ item * multiplier ]
+
