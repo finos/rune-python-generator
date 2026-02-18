@@ -425,7 +425,7 @@ public final class PythonFunctionGenerator {
                 }
             }
             if (!setNames.isEmpty()) {
-                context.addAdditionalImport("from rune.runtime.draft import Draft");
+                context.addAdditionalImport("from rune.runtime.object_builder import ObjectBuilder");
                 for (String setName : setNames) {
                     writer.appendLine(setName + " = " + setName + ".to_model()");
                 }
@@ -491,7 +491,7 @@ public final class PythonFunctionGenerator {
             String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
             if (!setNames.contains(rootName)) {
                 setNames.add(rootName);
-                writer.appendLine(rootName + " = Draft(" + bundleName + ")");
+                writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
             }
             writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
         }

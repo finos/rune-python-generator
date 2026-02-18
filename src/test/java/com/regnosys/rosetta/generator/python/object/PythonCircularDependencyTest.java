@@ -46,11 +46,11 @@ public class PythonCircularDependencyTest {
                         """);
         String bundle = gf.get("src/rosetta_dsl/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(
-                bundle, "from rune.runtime.draft import Draft");
+                bundle, "from rune.runtime.object_builder import ObjectBuilder");
         testUtils.assertGeneratedContainsExpectedString(
                 bundle,
                 """
-                            result = Draft(rosetta_dsl_test_semantic_object_construction_C)
+                            result = ObjectBuilder(rosetta_dsl_test_semantic_object_construction_C)
                             result.p1 = 1
                             result.p2 = 2
                             result = result.to_model()

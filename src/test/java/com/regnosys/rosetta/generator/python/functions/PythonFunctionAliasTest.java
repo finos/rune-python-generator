@@ -108,7 +108,7 @@ public class PythonFunctionAliasTest {
                         """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated, "c = Draft(com_rosetta_test_model_C)");
+        testUtils.assertGeneratedContainsExpectedString(generated, "c = ObjectBuilder(com_rosetta_test_model_C)");
         testUtils.assertGeneratedContainsExpectedString(generated,
                 "c.valueC = (rune_resolve_attr(self, \"Alias1\") * rune_resolve_attr(self, \"Alias2\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "c = c.to_model()");

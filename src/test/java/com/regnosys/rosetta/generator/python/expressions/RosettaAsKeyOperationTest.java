@@ -38,7 +38,7 @@ public class RosettaAsKeyOperationTest {
                         val as-key
                 """);
         String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated, "bar = Draft(com_rosetta_test_model_Bar)");
+        testUtils.assertGeneratedContainsExpectedString(generated, "bar = ObjectBuilder(com_rosetta_test_model_Bar)");
         testUtils.assertGeneratedContainsExpectedString(generated,
                 "bar.field = {rune_resolve_attr(self, \"val\"): True}");
         testUtils.assertGeneratedContainsExpectedString(generated, "bar = bar.to_model()");
