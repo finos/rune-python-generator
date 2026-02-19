@@ -1,18 +1,16 @@
 """Switch expression unit tests"""
 
-from rosetta_dsl.test.semantic.expressions.switch_op.functions.SwitchTest import (
-    SwitchTest,
-)
+from rosetta_dsl.test.semantic.expressions.switch_op.SwitchTest import SwitchTest
 
 
 def test_switch_op():
     """Test switch operation."""
     # Test valid cases
-    assert SwitchTest(x=1) == "One"
-    assert SwitchTest(x=2) == "Two"
+    SwitchTest(x=1, target="One").validate_model()
+    SwitchTest(x=2, target="Two").validate_model()
 
     # Test default case
-    assert SwitchTest(x=3) == "Other"
+    SwitchTest(x=3, target="Other").validate_model()
 
 
 if __name__ == "__main__":

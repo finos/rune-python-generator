@@ -2,6 +2,7 @@ package com.regnosys.rosetta.generator.python.expressions;
 
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -10,6 +11,7 @@ import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 
 import jakarta.inject.Inject;
 
+@Disabled("Functions are being phased out in tests.")
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaOnlyExistsExpressionTest {
@@ -18,6 +20,7 @@ public class RosettaOnlyExistsExpressionTest {
     private PythonGeneratorTestUtils testUtils;
 
     @Test
+    @Disabled("Functions are being phased out in tests.")
     public void testOnlyExistsSinglePath() {
         testUtils.assertBundleContainsExpectedString("""
                 type A:

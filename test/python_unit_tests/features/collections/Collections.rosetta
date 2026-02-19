@@ -54,15 +54,23 @@ type SortTest:
             then True
         else False
 
-func JoinTestFunction: <"Test join operation">
-    inputs:
-        field1 string (1..1)
-        field2 string (1..1)
-        delimiter string (1..1)
-    output:
-        result string (1..1)
-    set result:
-        [field1, field2] join delimiter
+type JoinTest:
+    field1 string (1..1)
+    field2 string (1..1)
+    delimiter string (1..1)
+    target string (1..1)
+    condition TestCond:
+        if ([field1, field2] join delimiter) = target
+        then True
+        else False
+
+type FlattenTest:
+    fc FlattenContainer (1..*)
+    target int (0..*)
+    condition TestCond:
+        if (fc extract items then extract items then flatten) all = target
+        then True
+        else False
 
 type FilterItem:
     fi int (1..1)
@@ -81,23 +89,12 @@ type FlattenBar:
 type FlattenFoo:
     bars FlattenBar (0..*)
     condition TestCondFoo:
-        [1, 2, 3] = (bars
-            extract numbers
-            then flatten)
+        if [1, 2, 3] all = (bars extract numbers then flatten)
+        then True
+        else False
 
 type FlattenItem:
     items int (1..*)
 
 type FlattenContainer:
     items FlattenItem (1..*)
-
-func FlattenTestFunction: <"Test flatten operation">
-    inputs:
-        fc FlattenContainer (1..*) <"Test value">
-    output:
-        result int (1..*)
-    set result:
-        fc
-            extract items   
-            then extract items
-            then flatten

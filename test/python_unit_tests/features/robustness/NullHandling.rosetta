@@ -1,17 +1,13 @@
 namespace rosetta_dsl.test.semantic.robustness.null_handling : <"generate Python unit tests from Rosetta.">
 
-func IsAbsent:
-    inputs:
-        val string(0..1)
-    output:
-        res boolean(1..1)
-    set res:
-        val is absent
+type IsAbsentTest:
+    val string(0..1)
+    target boolean(1..1)
+    condition TestCond:
+        (val is absent) = target
 
-func IsAbsentList:
-    inputs:
-        list int(0..*)
-    output:
-        res boolean(1..1)
-    set res:
-        list is absent
+type IsAbsentListTest:
+    items int (0..*)
+    target boolean(1..1)
+    condition TestCond:
+        (items is absent) = target

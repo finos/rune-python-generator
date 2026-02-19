@@ -2,8 +2,8 @@
 
 import pytest
 from rosetta_dsl.test.semantic.model_structure.inheritance.Sub import Sub
-from rosetta_dsl.test.semantic.model_structure.inheritance.functions.ProcessSuper import (
-    ProcessSuper,
+from rosetta_dsl.test.semantic.model_structure.inheritance.InheritanceTest import (
+    InheritanceTest,
 )
 
 
@@ -20,10 +20,9 @@ def test_inheritance_structure():
 
 
 def test_polymorphism():
-    """Test passing Sub to a function expecting Super"""
+    """Test passing Sub to a field expecting Super"""
     sub = Sub(superAttr="hello", subAttr=20)
-    result = ProcessSuper(s=sub)
-    assert result == "hello"
+    InheritanceTest(s=sub, target="hello").validate_model()
 
 
 if __name__ == "__main__":

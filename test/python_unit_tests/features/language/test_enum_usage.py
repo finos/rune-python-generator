@@ -1,7 +1,7 @@
 """Enum usage unit tests"""
 
 from rosetta_dsl.test.semantic.test_enum_usage.TrafficLight import TrafficLight
-from rosetta_dsl.test.semantic.test_enum_usage.functions.CheckLight import CheckLight
+from rosetta_dsl.test.semantic.test_enum_usage.CheckLightTest import CheckLightTest
 
 
 def test_enum_values():
@@ -12,7 +12,6 @@ def test_enum_values():
 
 
 def test_enum_function():
-    """Test passing enum as function input."""
-    # Function should handle enum correctly
-    assert CheckLight(color=TrafficLight.RED) == "Stop"
-    assert CheckLight(color=TrafficLight.GREEN) == "Go"
+    """Test passing enum as input."""
+    CheckLightTest(color=TrafficLight.RED, target="Stop").validate_model()
+    CheckLightTest(color=TrafficLight.GREEN, target="Go").validate_model()

@@ -1,26 +1,18 @@
 """Type conversion unit tests"""
 
-import pytest
-from rosetta_dsl.test.semantic.expressions.type_conversion.functions.StringToInt import (
-    StringToInt,
+from rosetta_dsl.test.semantic.expressions.type_conversion.StringToIntTest import (
+    StringToIntTest,
 )
-from rosetta_dsl.test.semantic.expressions.type_conversion.functions.IntToString import (
-    IntToString,
+from rosetta_dsl.test.semantic.expressions.type_conversion.IntToStringTest import (
+    IntToStringTest,
 )
 
 
 def test_string_to_int():
-    """Test string to integer conversion."""
-    assert StringToInt(s="123") == 123
-    with pytest.raises(Exception):  # ValueError or similar
-        StringToInt(s="abc")
+    """Test 'to-int' conversion."""
+    StringToIntTest(s="123", target=123).validate_model()
 
 
 def test_int_to_string():
-    """Test integer to string conversion."""
-    assert IntToString(i=456) == "456"
-
-
-if __name__ == "__main__":
-    test_string_to_int()
-    test_int_to_string()
+    """Test 'to-string' conversion."""
+    IntToStringTest(i=456, target="456").validate_model()

@@ -1,45 +1,31 @@
-"""Comparison operator unit tests"""
+"""Comparison operators unit tests"""
 
-from rosetta_dsl.test.semantic.comparison_op.functions.LessThan import LessThan
-from rosetta_dsl.test.semantic.comparison_op.functions.LessThanOrEqual import (
-    LessThanOrEqual,
-)
-from rosetta_dsl.test.semantic.comparison_op.functions.GreaterThan import GreaterThan
-from rosetta_dsl.test.semantic.comparison_op.functions.GreaterThanOrEqual import (
-    GreaterThanOrEqual,
-)
+from rosetta_dsl.test.semantic.comparison_op.ComparisonTest import ComparisonTest
 
 
 def test_less_than():
-    """Test < operator"""
-    assert LessThan(a=1, b=2) is True
-    assert LessThan(a=2, b=1) is False
-    assert LessThan(a=1, b=1) is False
+    """Test '<' operator."""
+    ComparisonTest(a=5, b=10, op="LT", target=True).validate_model()
+    ComparisonTest(a=10, b=5, op="LT", target=False).validate_model()
+    ComparisonTest(a=5, b=5, op="LT", target=False).validate_model()
 
 
 def test_less_than_or_equal():
-    """Test <= operator"""
-    assert LessThanOrEqual(a=1, b=2) is True
-    assert LessThanOrEqual(a=2, b=1) is False
-    assert LessThanOrEqual(a=1, b=1) is True
+    """Test '<=' operator."""
+    ComparisonTest(a=5, b=10, op="LE", target=True).validate_model()
+    ComparisonTest(a=5, b=5, op="LE", target=True).validate_model()
+    ComparisonTest(a=10, b=5, op="LE", target=False).validate_model()
 
 
 def test_greater_than():
-    """Test > operator"""
-    assert GreaterThan(a=2, b=1) is True
-    assert GreaterThan(a=1, b=2) is False
-    assert GreaterThan(a=1, b=1) is False
+    """Test '>' operator."""
+    ComparisonTest(a=10, b=5, op="GT", target=True).validate_model()
+    ComparisonTest(a=5, b=10, op="GT", target=False).validate_model()
+    ComparisonTest(a=5, b=5, op="GT", target=False).validate_model()
 
 
 def test_greater_than_or_equal():
-    """Test >= operator"""
-    assert GreaterThanOrEqual(a=2, b=1) is True
-    assert GreaterThanOrEqual(a=1, b=2) is False
-    assert GreaterThanOrEqual(a=1, b=1) is True
-
-
-if __name__ == "__main__":
-    test_less_than()
-    test_less_than_or_equal()
-    test_greater_than()
-    test_greater_than_or_equal()
+    """Test '>=' operator."""
+    ComparisonTest(a=10, b=5, op="GE", target=True).validate_model()
+    ComparisonTest(a=5, b=5, op="GE", target=True).validate_model()
+    ComparisonTest(a=5, b=10, op="GE", target=False).validate_model()

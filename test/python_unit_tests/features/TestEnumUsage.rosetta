@@ -8,12 +8,10 @@ enum TrafficLight:
 type TrafficLightType:
     val TrafficLight(1..1)
 
-func CheckLight:
-    inputs:
-        color TrafficLight(1..1)
-    output:
-        res string(1..1)
-    set res:
-        if color = TrafficLight -> Red
+type CheckLightTest:
+    color TrafficLight(1..1)
+    target string(1..1)
+    condition TestCond:
+        (if color = TrafficLight -> Red
         then "Stop"
-        else "Go"
+        else "Go") = target

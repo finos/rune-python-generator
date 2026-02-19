@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.generator.python;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -14,6 +16,17 @@ class PythonCodeGeneratorCLITest {
 
     @TempDir
     Path tempDir;
+
+    @BeforeAll
+    static void setup() {
+        System.out.println(
+                ">>> Starting PythonCodeGeneratorCLITest. Expected error and warning logs may follow as part of validation testing.");
+    }
+
+    @AfterAll
+    static void tearDown() {
+        System.out.println(">>> Finished PythonCodeGeneratorCLITest.");
+    }
 
     @Test
     void testMissingArgsReturnsError() {

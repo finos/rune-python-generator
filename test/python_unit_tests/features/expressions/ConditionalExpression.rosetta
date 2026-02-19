@@ -1,23 +1,19 @@
 namespace rosetta_dsl.test.semantic.expressions.conditional : <"generate Python unit tests from Rosetta.">
 
-func ConditionalValue:
-    inputs:
-        param int(1..1)
-    output:
-        res string(1..1)
-    set res:
-        if param > 10
+type ConditionalValueTest:
+    param int(1..1)
+    target string(1..1)
+    condition TestCond:
+        (if param > 10
         then "High"
-        else "Low"
+        else "Low") = target
 
-func ConditionalNested:
-    inputs:
-        param int(1..1)
-    output:
-        res string(1..1)
-    set res:
-        if param > 10
+type ConditionalNestedTest:
+    param int(1..1)
+    target string(1..1)
+    condition TestCond:
+        (if param > 10
         then "High"
         else if param > 5
         then "Medium"
-        else "Low"
+        else "Low") = target

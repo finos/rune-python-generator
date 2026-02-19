@@ -10,14 +10,10 @@ from rosetta_dsl.test.semantic.collections.MinTest import MinTest
 from rosetta_dsl.test.semantic.collections.MaxTest import MaxTest
 from rosetta_dsl.test.semantic.collections.LastTest import LastTest
 from rosetta_dsl.test.semantic.collections.SortTest import SortTest
-from rosetta_dsl.test.semantic.collections.functions.JoinTestFunction import (
-    JoinTestFunction,
-)
+from rosetta_dsl.test.semantic.collections.JoinTest import JoinTest
 from rosetta_dsl.test.semantic.collections.FlattenItem import FlattenItem
 from rosetta_dsl.test.semantic.collections.FlattenContainer import FlattenContainer
-from rosetta_dsl.test.semantic.collections.functions.FlattenTestFunction import (
-    FlattenTestFunction,
-)
+from rosetta_dsl.test.semantic.collections.FlattenTest import FlattenTest
 from rosetta_dsl.test.semantic.collections.FlattenBar import FlattenBar
 from rosetta_dsl.test.semantic.collections.FlattenFoo import FlattenFoo
 from rosetta_dsl.test.semantic.collections.FilterItem import FilterItem
@@ -78,8 +74,7 @@ def test_sort_passes():
 
 def test_join_passes():
     """join tests passes"""
-    join_test = JoinTestFunction(field1="a", field2="b", delimiter="")
-    assert join_test == "ab"
+    JoinTest(field1="a", field2="b", delimiter="", target="ab").validate_model()
 
 
 def test_flatten_passes():
@@ -88,8 +83,9 @@ def test_flatten_passes():
     flatten_container = FlattenContainer(
         items=[flatten_item, flatten_item, flatten_item]
     )
-    result = FlattenTestFunction(fc=[flatten_container])
-    assert result == [1, 2, 3, 1, 2, 3, 1, 2, 3]
+    FlattenTest(
+        fc=[flatten_container], target=[1, 2, 3, 1, 2, 3, 1, 2, 3]
+    ).validate_model()
 
 
 def test_flatten_foo_passes():

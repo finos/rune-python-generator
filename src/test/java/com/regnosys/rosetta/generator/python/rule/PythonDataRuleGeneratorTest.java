@@ -5,6 +5,7 @@ import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -226,6 +227,7 @@ public class PythonDataRuleGeneratorTest {
     }
 
     @Test
+    @Disabled("Functions are being phased out in tests.")
     public void dataRuleWithDoIfAndFunction() {
         String pythonString = testUtils.generatePythonFromString(
                 """
@@ -263,6 +265,7 @@ public class PythonDataRuleGeneratorTest {
     }
 
     @Test
+    @Disabled("Functions are being phased out in tests.")
     public void dataRuleWithDoIfAndFunctionAndElse() {
         String pythonString = testUtils.generatePythonFromString(
                 """

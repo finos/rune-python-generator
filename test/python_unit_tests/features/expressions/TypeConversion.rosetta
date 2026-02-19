@@ -1,17 +1,13 @@
 namespace rosetta_dsl.test.semantic.expressions.type_conversion : <"generate Python unit tests from Rosetta.">
 
-func StringToInt:
-    inputs:
-        s string(1..1)
-    output:
-        res int(1..1)
-    set res:
-        s to-int
+type StringToIntTest:
+    s string(1..1)
+    target int(1..1)
+    condition TestCond:
+        (s to-int) = target
 
-func IntToString:
-    inputs:
-        i int(1..1)
-    output:
-        res string(1..1)
-    set res:
-        i to-string
+type IntToStringTest:
+    i int(1..1)
+    target string(1..1)
+    condition TestCond:
+        (i to-string) = target

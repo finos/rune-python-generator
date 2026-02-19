@@ -6,7 +6,8 @@ type Super:
 type Sub extends Super:
     subAttr int (1..1)
 
-func ProcessSuper:
-    inputs: s Super(1..1)
-    output: res string(1..1)
-    set res: s -> superAttr
+type InheritanceTest:
+    s Super (1..1)
+    target string (1..1)
+    condition TestCond:
+        s -> superAttr = target
