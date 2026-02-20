@@ -20,11 +20,24 @@ function error
 
 export PYTHONDONTWRITEBYTECODE=1
 
-type -P python > /dev/null && PYEXE=python || PYEXE=python3
-if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1; then
-        echo "Found $($PYEXE -V)"
-        echo "Expecting at least python 3.11 - exiting!"
-        exit 1
+# If a virtual environment is active, or if .pyenv/bin is in PATH, scrub it
+# This ensures we use a system python to create the new venv
+VENV_NAME=".pyenv"
+CLEAN_PATH=$(echo "$PATH" | sed -E "s|[^:]*/$VENV_NAME/[^:]*:?||g")
+
+if command -v python3 &>/dev/null; then
+  PYEXE=$(PATH="$CLEAN_PATH" command -v python3)
+elif command -v python &>/dev/null; then
+  PYEXE=$(PATH="$CLEAN_PATH" command -v python)
+else
+  echo "Python is not installed."
+  error
+fi
+
+if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' >/dev/null 2>&1; then
+  echo "Found $($PYEXE -V)"
+  echo "Expecting at least python 3.11 - exiting!"
+  exit 1
 fi
 
 MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -32,6 +45,7 @@ PROJECT_ROOT_PATH="$MY_PATH/../../.."
 CDM_SOURCE_PATH="$MY_PATH/../common-domain-model/rosetta-source/src/main/rosetta"
 PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
 PYTHON_SETUP_PATH="$MY_PATH/../../python_setup"
+JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 cd ${MY_PATH} || error
 
 # Parse command-line arguments for --skip-cdm
@@ -48,8 +62,21 @@ else
     echo "Skipping get_cdm.sh as requested."
 fi
 
+if [[ ! -f "$JAR_PATH" ]]; then
+  echo "Could not find generator jar at: $JAR_PATH"
+  echo "Building with maven..."
+  if ! (cd "$PROJECT_ROOT_PATH" && mvn clean package); then
+    echo "Maven build failed - exiting."
+    exit 1
+  fi
+  if [[ ! -f "$JAR_PATH" ]]; then
+    echo "Maven build completed but $JAR_PATH still missing - exiting."
+    exit 1
+  fi
+fi
+
 echo "***** build CDM"
-java -cp $PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
+java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
@@ -61,12 +88,13 @@ source $PYTHON_SETUP_PATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
-source $PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate || error
+if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
+source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
 
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH
 rm python_cdm-*.*.*-py3-none-any.whl
-$PYEXE -m pip wheel --no-deps --only-binary :all: . || processError
+python -m pip wheel --no-deps --only-binary :all: . || processError
 
 echo "***** cleanup"
 

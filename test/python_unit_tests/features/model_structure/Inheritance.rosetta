@@ -1,0 +1,13 @@
+namespace rosetta_dsl.test.semantic.model_structure.inheritance : <"generate Python unit tests from Rosetta.">
+
+type Super:
+    superAttr string (1..1)
+
+type Sub extends Super:
+    subAttr int (1..1)
+
+type InheritanceTest:
+    s Super (1..1)
+    target string (1..1)
+    condition TestCond:
+        s -> superAttr = target

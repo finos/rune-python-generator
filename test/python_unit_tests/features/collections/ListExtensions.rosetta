@@ -1,0 +1,37 @@
+namespace rosetta_dsl.test.semantic.collections.extensions : <"generate Python unit tests from Rosetta.">
+
+type ListFirstTest:
+    items int (0..*)
+    target int (0..1)
+    condition TestCond:
+        items first = target
+
+type ListLastTest:
+    items int (0..*)
+    target int (0..1)
+    condition TestCond:
+        items last = target
+
+type ListDistinctTest:
+    items int (0..*)
+    target int (0..*)
+    condition TestCond:
+        (items distinct) all = (target distinct)
+
+type ListSumTest:
+    items int (0..*)
+    target int (1..1)
+    condition TestCond:
+        items sum = target
+
+type ListOnlyElementTest:
+    items int (0..*)
+    target int (0..1)
+    condition TestCond:
+        items only-element = target
+
+type ListReverseTest:
+    items int (0..*)
+    target int (0..*)
+    condition TestCond:
+        (items reverse) all = target

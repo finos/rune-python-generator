@@ -1,7 +1,5 @@
 package com.regnosys.rosetta.generator.python.expressions;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import org.eclipse.xtext.testing.InjectWith;
@@ -19,150 +17,304 @@ public class RosettaExistsExpressionTest {
     private PythonGeneratorTestUtils testUtils;
 
     @Test
-    public void setUp() {
-        String pythonString = testUtils.generatePythonFromString(
+    public void testExistsBasic() {
+        testUtils.assertBundleContainsExpectedString(
                 """
-                        type Foo:
-                            bar Bar (0..*)
-                            baz Baz (0..1)
-
                         type Bar:
-                            before number (0..1)
-                            after number (0..1)
-                            other number (0..1)
-                            beforeWithScheme number (0..1)
-                                [metadata scheme]
-                            afterWithScheme number (0..1)
-                                [metadata scheme]
-                            beforeList number (0..*)
-                            afterList number (0..*)
-                            beforeListWithScheme number (0..*)
-                                [metadata scheme]
-                            afterListWithScheme number (0..*)
-                                [metadata scheme]
+                            field number (0..1)
 
-                        type Baz:
-                            bazValue number (0..1)
-                            other number (0..1)
-
-                        func Exists:
-                            inputs: foo Foo (1..1)
+                        func ExistsBasic:
+                            inputs: bar Bar (1..1)
                             output: result boolean (1..1)
                             set result:
-                                foo -> bar -> before exists
+                                bar -> field exists
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_ExistsBasic(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
+
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
+
+
+                            return result""");
+    }
+
+    @Test
+    public void testAbsentBasic() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        type Bar:
+                            field number (0..1)
+
+                        func AbsentBasic:
+                            inputs: bar Bar (1..1)
+                            output: result boolean (1..1)
+                            set result:
+                                bar -> field is absent
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_AbsentBasic(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
+
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = (not rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field")))
+
+
+                            return result""");
+    }
+
+    @Test
+    public void testSingleExists() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        type Bar:
+                            field number (0..1)
 
                         func SingleExists:
-                            inputs: foo Foo (1..1)
+                            inputs: bar Bar (1..1)
                             output: result boolean (1..1)
                             set result:
-                                foo -> bar -> before single exists
+                                bar -> field single exists
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_SingleExists(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
+
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"), "single")
+
+
+                            return result""");
+    }
+
+    @Test
+    public void testMultipleExists() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        type Bar:
+                            fieldList number (0..*)
 
                         func MultipleExists:
-                            inputs: foo Foo (1..1)
+                            inputs: bar Bar (1..1)
                             output: result boolean (1..1)
                             set result:
-                                foo -> bar -> before multiple exists
+                                bar -> fieldList multiple exists
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_MultipleExists(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
 
-                        func OnlyExists:
-                            inputs: foo Foo (1..1)
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "fieldList"), "multiple")
+
+
+                            return result""");
+    }
+
+    @Test
+    public void testExistsWithMetadata() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        type Bar:
+                            field number (0..1)
+                                [metadata scheme]
+
+                        func ExistsWithMetadata:
+                            inputs: bar Bar (1..1)
                             output: result boolean (1..1)
                             set result:
-                                foo -> bar -> before only exists
+                                bar -> field exists
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_ExistsWithMetadata(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
 
-                        func OnlyExistsMultiplePaths:
-                            inputs: foo Foo (1..1)
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
+
+
+                            return result""");
+    }
+
+    @Test
+    public void testExistsWithLogicalOperators() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        type Bar:
+                            field1 number (0..1)
+                            field2 number (0..1)
+
+                        func ExistsWithLogical:
+                            inputs: bar Bar (1..1)
                             output: result boolean (1..1)
                             set result:
-                                ( foo -> bar -> before, foo -> bar -> after ) only exists
+                                bar -> field1 exists and bar -> field2 exists
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_ExistsWithLogical(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
 
-                        func OnlyExistsPathWithScheme:
-                            inputs: foo Foo (1..1)
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = (rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field1")) and rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field2")))
+
+
+                            return result""");
+    }
+
+    @Test
+    public void testDeepPathSingleExists() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        type Sub:
+                            field number (0..1)
+                        type Bar:
+                            sub Sub (0..1)
+
+                        func DeepExists:
+                            inputs: bar Bar (1..1)
                             output: result boolean (1..1)
                             set result:
-                                ( foo -> bar -> before, foo -> bar -> afterWithScheme ) only exists
+                                bar -> sub -> field single exists
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_DeepExists(bar: com_rosetta_test_model_Bar) -> bool:
+                            \"\"\"
 
-                        func OnlyExistsBothPathsWithScheme:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
+                            Parameters
+                            ----------
+                            bar : com.rosetta.test.model.Bar
+
+                            Returns
+                            -------
+                            result : bool
+
+                            \"\"\"
+                            self = inspect.currentframe()
+
+
+                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bar"), "sub"), "field"), "single")
+
+
+                            return result""");
+    }
+
+    @Test
+    public void testExistsInFunctionArguments() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                        func ExistsArg:
+                            inputs:
+                                arg1 number (0..1)
+                                arg2 number (0..1)
+                            output:
+                                result boolean (1..1)
                             set result:
-                                ( foo -> bar -> beforeWithScheme, foo -> bar -> afterWithScheme ) only exists
+                                arg1 exists or arg2 exists
+                        """,
+                """
+                        @replaceable
+                        @validate_call
+                        def com_rosetta_test_model_functions_ExistsArg(arg1: Decimal | None, arg2: Decimal | None) -> bool:
+                            \"\"\"
 
-                        func OnlyExistsListMultiplePaths:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                ( foo -> bar -> before, foo -> bar -> afterList ) only exists
+                            Parameters
+                            ----------
+                            arg1 : Decimal
 
-                        func OnlyExistsListPathWithScheme:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                ( foo -> bar -> before, foo -> bar -> afterListWithScheme ) only exists
+                            arg2 : Decimal
 
-                        func OnlyExistsListBothPathsWithScheme:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                ( foo -> bar -> beforeListWithScheme, foo -> bar -> afterListWithScheme ) only exists
+                            Returns
+                            -------
+                            result : bool
 
-                        //            TODO tests compilation only, add unit test
-                        func MultipleSeparateOr_NoAliases_Exists:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                foo -> bar -> before exists or foo -> bar -> after exists
+                            \"\"\"
+                            self = inspect.currentframe()
 
-                        //         TODO tests compilation only, add unit test
-                        func MultipleOr_NoAliases_Exists:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                foo -> bar -> before exists or foo -> bar -> after exists or foo -> baz -> other exists
 
-                        //         TODO tests compilation only, add unit test
-                        func MultipleOrBranchNode_NoAliases_Exists:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                foo -> bar exists or foo -> baz exists
+                            result = (rune_attr_exists(rune_resolve_attr(self, "arg1")) or rune_attr_exists(rune_resolve_attr(self, "arg2")))
 
-                        //         TODO tests compilation only, add unit test
-                        func MultipleAnd_NoAliases_Exists:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                foo -> bar -> before exists and foo -> bar -> after exists and foo -> baz -> other exists
 
-                        //            TODO tests compilation only, add unit test
-                        func MultipleOrAnd_NoAliases_Exists:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                foo -> bar -> before exists or ( foo -> bar -> after exists and foo -> baz -> other exists )
-
-                        //            TODO tests compilation only, add unit test
-                        func MultipleOrAnd_NoAliases_Exists2:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                (foo -> bar -> before exists and foo -> bar -> after exists) or foo -> baz -> other exists or foo -> baz -> bazValue exists
-
-                        //            TODO tests compilation only, add unit test
-                        func MultipleOrAnd_NoAliases_Exists3:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                (foo -> bar -> before exists or foo -> bar -> after exists) or (foo -> baz -> other exists and foo -> baz -> bazValue exists)
-
-                        //            TODO tests compilation only, add unit test
-                        func MultipleExistsWithOrAnd:
-                            inputs: foo Foo (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                foo -> bar -> before exists or ( foo -> baz -> other exists and foo -> bar -> after exists ) or foo -> baz -> bazValue exists
-                        """)
-                .toString();
-
-        assertFalse(pythonString.isEmpty(), "Generated Python string should not be empty");
+                            return result""");
     }
 }

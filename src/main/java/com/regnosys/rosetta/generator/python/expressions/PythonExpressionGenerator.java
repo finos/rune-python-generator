@@ -3,13 +3,14 @@ package com.regnosys.rosetta.generator.python.expressions;
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 import com.regnosys.rosetta.rosetta.*;
 import com.regnosys.rosetta.rosetta.expression.*;
+import com.regnosys.rosetta.rosetta.expression.ExistsModifier;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
 import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,17 +20,8 @@ import java.util.stream.Collectors;
  */
 public class PythonExpressionGenerator {
 
-    private List<String> importsFound;
     private List<String> ifCondBlocks = new ArrayList<>();
     private boolean isSwitchCond = false;
-
-    public List<String> getImportsFound() {
-        return importsFound;
-    }
-
-    public void setImportsFound(List<String> importsFound) {
-        this.importsFound = importsFound;
-    }
 
     public List<String> getIfCondBlocks() {
         return ifCondBlocks;
@@ -44,6 +36,7 @@ public class PythonExpressionGenerator {
     }
 
     public String generateExpression(RosettaExpression expr, int ifLevel, boolean isLambda) {
+
         if (expr == null)
             return "None";
 
@@ -52,7 +45,7 @@ public class PythonExpressionGenerator {
         } else if (expr instanceof RosettaIntLiteral i) {
             return String.valueOf(i.getValue());
         } else if (expr instanceof RosettaNumberLiteral n) {
-            return n.getValue().toString();
+            return "Decimal('" + n.getValue().toString() + "')";
         } else if (expr instanceof RosettaStringLiteral s) {
             return "\"" + s.getValue() + "\"";
         } else if (expr instanceof AsKeyOperation asKey) {
@@ -83,11 +76,13 @@ public class PythonExpressionGenerator {
             return generateThenOperation(then, ifLevel, isLambda);
         } else if (expr instanceof SumOperation sum) {
             return "sum(" + generateExpression(sum.getArgument(), ifLevel, isLambda) + ")";
+        } else if (expr instanceof ReverseOperation reverse) {
+            return "list(reversed(" + generateExpression(reverse.getArgument(), ifLevel, isLambda) + "))";
         } else if (expr instanceof SwitchOperation switchOp) {
             return generateSwitchOperation(switchOp, ifLevel, isLambda);
         } else if (expr instanceof ToEnumOperation toEnum) {
-            return toEnum.getEnumeration().getName() + "(" + generateExpression(toEnum.getArgument(), ifLevel, isLambda)
-                    + ")";
+            return toEnum.getEnumeration().getName() + "("
+                    + generateExpression(toEnum.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof ToStringOperation toString) {
             return "rune_str(" + generateExpression(toString.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof ToDateOperation toDate) {
@@ -118,14 +113,22 @@ public class PythonExpressionGenerator {
         } else if (expr instanceof RosettaEnumValueReference enumRef) {
             return enumRef.getEnumeration().getName() + "." + EnumHelper.convertValue(enumRef.getValue());
         } else if (expr instanceof RosettaExistsExpression exists) {
-            return "rune_attr_exists(" + generateExpression(exists.getArgument(), ifLevel, isLambda) + ")";
+            String arg = generateExpression(exists.getArgument(), ifLevel, isLambda);
+            if (exists.getModifier() == ExistsModifier.SINGLE) {
+                return "rune_attr_exists(" + arg + ", \"single\")";
+            } else if (exists.getModifier() == ExistsModifier.MULTIPLE) {
+                return "rune_attr_exists(" + arg + ", \"multiple\")";
+            }
+            return "rune_attr_exists(" + arg + ")";
         } else if (expr instanceof RosettaFeatureCall featureCall) {
             return generateFeatureCall(featureCall, ifLevel, isLambda);
         } else if (expr instanceof RosettaOnlyElement onlyElement) {
             return "rune_get_only_element(" + generateExpression(onlyElement.getArgument(), ifLevel, isLambda) + ")";
         } else if (expr instanceof RosettaOnlyExistsExpression onlyExists) {
-            return "rune_check_one_of(self, " + generateExpression(onlyExists.getArgs().get(0), ifLevel, isLambda)
-                    + ")";
+            String args = onlyExists.getArgs().stream()
+                    .map(arg -> generateExpression(arg, ifLevel, isLambda))
+                    .collect(Collectors.joining(", "));
+            return "rune_check_one_of(self, " + args + ")";
         } else if (expr instanceof RosettaSymbolReference symbolRef) {
             return generateSymbolReference(symbolRef, ifLevel, isLambda);
         } else if (expr instanceof RosettaImplicitVariable implicit) {
@@ -155,9 +158,6 @@ public class PythonExpressionGenerator {
 
     private String generateFeatureCall(RosettaFeatureCall expr, int ifLevel, boolean isLambda) {
         if (expr.getFeature() instanceof RosettaEnumValue evalue) {
-            RosettaSymbol symbol = ((RosettaSymbolReference) expr.getReceiver()).getSymbol();
-            RosettaModel model = (RosettaModel) symbol.eContainer();
-            addImportsFromConditions(symbol.getName(), model.getName());
             return generateEnumString(evalue);
         }
         String right = expr.getFeature().getName();
@@ -181,14 +181,17 @@ public class PythonExpressionGenerator {
 
     private String generateFilterOperation(FilterOperation expr, int ifLevel, boolean isLambda) {
         String argument = generateExpression(expr.getArgument(), ifLevel, isLambda);
+        String param = expr.getFunction().getParameters().isEmpty() ? "item"
+                : expr.getFunction().getParameters().get(0).getName();
         String filterExpression = generateExpression(expr.getFunction().getBody(), ifLevel, true);
-        return "rune_filter(" + argument + ", lambda item: " + filterExpression + ")";
+        return "rune_filter(" + argument + ", lambda " + param + ": " + filterExpression + ")";
     }
 
     private String generateMapOperation(MapOperation expr, int ifLevel, boolean isLambda) {
         InlineFunction inlineFunc = expr.getFunction();
+        String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
         String funcBody = generateExpression(inlineFunc.getBody(), ifLevel, true);
-        String lambdaFunction = "lambda item: " + funcBody;
+        String lambdaFunction = "lambda " + param + ": " + funcBody;
         String argument = generateExpression(expr.getArgument(), ifLevel, isLambda);
         return "list(map(" + lambdaFunction + ", " + argument + "))";
     }
@@ -197,9 +200,12 @@ public class PythonExpressionGenerator {
         String type = (expr.getTypeCall() != null && expr.getTypeCall().getType() != null)
                 ? expr.getTypeCall().getType().getName()
                 : null;
+        String fullyQualifiedType = RuneToPythonMapper.getBundleObjectName(expr.getTypeCall().getType());
+        type = fullyQualifiedType;
         if (type != null) {
             return type + "(" + expr.getValues().stream()
-                    .map(pair -> pair.getKey().getName() + "=" + generateExpression(pair.getValue(), ifLevel, isLambda))
+                    .map(pair -> pair.getKey().getName() + "="
+                            + generateExpression(pair.getValue(), ifLevel, isLambda))
                     .collect(Collectors.joining(", ")) + ")";
         } else {
             return "{" + expr.getValues().stream()
@@ -219,8 +225,8 @@ public class PythonExpressionGenerator {
         }
         RosettaEnumValue enumGuard = caseGuard.getEnumGuard();
         if (enumGuard != null) {
-            return "switchAttribute == rune_resolve_attr(" + generateEnumString(enumGuard) + ",\"" + enumGuard.getName()
-                    + "\")";
+            return "switchAttribute == rune_resolve_attr(" + generateEnumString(enumGuard) + ",\""
+                    + enumGuard.getName() + "\")";
         }
         RosettaFeature optionGuard = caseGuard.getChoiceOptionGuard();
         if (optionGuard != null) {
@@ -233,44 +239,8 @@ public class PythonExpressionGenerator {
         throw new UnsupportedOperationException("Unsupported SwitchCaseGuard type");
     }
 
-    private String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
-        String attr = generateExpression(expr.getArgument(), 0, isLambda);
-        PythonCodeWriter writer = new PythonCodeWriter();
-        isSwitchCond = true;
-
-        var cases = expr.getCases();
-        for (int i = 0; i < cases.size(); i++) {
-            var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
-            String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), 0, isLambda)
-                    : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda);
-
-            writer.appendLine("def " + funcName + "():");
-            writer.indent();
-            writer.appendLine("return " + thenExprDef);
-            writer.unindent();
-        }
-
-        writer.appendLine("switchAttribute = " + attr);
-
-        for (int i = 0; i < cases.size(); i++) {
-            var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
-            if (currentCase.isDefault()) {
-                writer.appendLine("else:");
-            } else {
-                SwitchCaseGuard guard = currentCase.getGuard();
-                String prefix = (i == 0) ? "if " : "elif ";
-                writer.appendLine(prefix + getGuardExpression(guard, isLambda) + ":");
-            }
-            writer.indent();
-            writer.appendLine("return " + funcName + "()");
-            writer.unindent();
-        }
-        return writer.toString();
-    }
-
     private String generateSymbolReference(RosettaSymbolReference expr, int ifLevel, boolean isLambda) {
+
         RosettaSymbol symbol = expr.getSymbol();
         if (symbol instanceof Data || symbol instanceof RosettaEnumeration) {
             return symbol.getName();
@@ -280,7 +250,9 @@ public class PythonExpressionGenerator {
             return generateEnumString(evalue);
         } else if (symbol instanceof RosettaCallableWithArgs callable) {
             return generateCallableWithArgsCall(callable, expr, ifLevel, isLambda);
-        } else if (symbol instanceof ShortcutDeclaration || symbol instanceof ClosureParameter) {
+        } else if (symbol instanceof ClosureParameter) {
+            return symbol.getName();
+        } else if (symbol instanceof ShortcutDeclaration) {
             return "rune_resolve_attr(self, \"" + symbol.getName() + "\")";
         } else {
             throw new UnsupportedOperationException(
@@ -316,18 +288,22 @@ public class PythonExpressionGenerator {
 
     private String generateCallableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr, int ifLevel,
             boolean isLambda) {
-        if (s instanceof FunctionImpl) {
-            addImportsFromConditions(s.getName(), ((RosettaModel) s.eContainer()).getName() + ".functions");
-        } else {
-            addImportsFromConditions(s.getName(), ((RosettaModel) s.eContainer()).getName());
-        }
-        String args = expr.getArgs().stream()
-                .map(arg -> generateExpression(arg, ifLevel, isLambda))
+        // Dependency handled by PythonFunctionDependencyProvider
+        String args = expr.getArgs().stream().map(arg -> generateExpression(arg, ifLevel, isLambda))
                 .collect(Collectors.joining(", "));
-        return s.getName() + "(" + args + ")";
+        String funcName = s.getName();
+        if ("Max".equals(funcName)) {
+            funcName = "max";
+        } else if ("Min".equals(funcName)) {
+            funcName = "min";
+        } else {
+            funcName = RuneToPythonMapper.getBundleObjectName(s);
+        }
+        return funcName + "(" + args + ")";
     }
 
     private String generateBinaryExpression(RosettaBinaryOperation expr, int ifLevel, boolean isLambda) {
+
         if (expr instanceof ModifiableBinaryOperation mod) {
             if (mod.getCardMod() == null) {
                 throw new UnsupportedOperationException(
@@ -350,7 +326,10 @@ public class PythonExpressionGenerator {
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
                 case "disjoint" -> "rune_disjoint(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + ", "
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
-                case "join" -> generateExpression(expr.getLeft(), ifLevel, isLambda) + ".join("
+                case "join" -> generateExpression(expr.getRight(), ifLevel, isLambda) + ".join("
+                        + generateExpression(expr.getLeft(), ifLevel, isLambda) + ")";
+                case "default" -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " if "
+                        + generateExpression(expr.getLeft(), ifLevel, isLambda) + " is not None else "
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
                 default -> "(" + generateExpression(expr.getLeft(), ifLevel, isLambda) + " " + expr.getOperator() + " "
                         + generateExpression(expr.getRight(), ifLevel, isLambda) + ")";
@@ -374,28 +353,16 @@ public class PythonExpressionGenerator {
     }
 
     public String generateFunctionConditions(List<Condition> conditions, String condition_type) {
+
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : conditions) {
             result.append(generateFunctionConditionBoilerPlate(cond, nConditions, condition_type));
             result.append(generateIfThenElseOrSwitch(cond));
+
             nConditions++;
         }
         return result.toString();
-    }
-
-    public String generateThenElseForFunction(RosettaExpression expr, List<Integer> ifLevel) {
-        ifCondBlocks.clear();
-        generateExpression(expr, ifLevel.get(0), false);
-        PythonCodeWriter writer = new PythonCodeWriter();
-        if (!ifCondBlocks.isEmpty()) {
-            ifLevel.set(0, ifLevel.get(0) + 1);
-            for (String arg : ifCondBlocks) {
-                writer.appendBlock(arg);
-                writer.newLine();
-            }
-        }
-        return writer.toString();
     }
 
     private boolean isConstraintCondition(Condition cond) {
@@ -431,13 +398,14 @@ public class PythonExpressionGenerator {
         writer.newLine();
         writer.appendLine("@rune_local_condition(" + condition_type + ")");
         String name = cond.getName() != null ? cond.getName() : "";
-        writer.appendLine("def condition_" + nConditions + "_" + name + "(self):");
+        writer.appendLine("def condition_" + nConditions + "_" + name + "():");
         writer.indent();
         if (cond.getDefinition() != null) {
             writer.appendLine("\"\"\"");
             writer.appendLine(cond.getDefinition());
             writer.appendLine("\"\"\"");
         }
+        writer.appendLine("item = self");
         return writer.toString();
     }
 
@@ -458,16 +426,16 @@ public class PythonExpressionGenerator {
         return writer.toString();
     }
 
+    private int switchCounter = 0;
+
     private String generateIfThenElseOrSwitch(Condition c) {
         ifCondBlocks.clear();
-        isSwitchCond = false;
+        switchCounter = 0;
         String expr = generateExpression(c.getExpression(), 0, false);
+
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.indent();
-        if (isSwitchCond) {
-            writer.appendBlock(expr);
-            return writer.toString();
-        }
+
         if (!ifCondBlocks.isEmpty()) {
             for (String arg : ifCondBlocks) {
                 writer.appendBlock(arg);
@@ -478,10 +446,50 @@ public class PythonExpressionGenerator {
         return writer.toString();
     }
 
-    public void addImportsFromConditions(String variable, String namespace) {
-        String imp = "from " + namespace + "." + variable + " import " + variable;
-        if (importsFound != null && !importsFound.contains(imp)) {
-            importsFound.add(imp);
+    // ... (helper methods like isConstraintCondition, etc. remain unchanged) ...
+
+    private String generateSwitchOperation(SwitchOperation expr, int ifLevel, boolean isLambda) {
+        String attr = generateExpression(expr.getArgument(), 0, isLambda);
+        PythonCodeWriter writer = new PythonCodeWriter();
+
+        String switchFuncName = "_switch_fn_" + switchCounter++;
+
+        writer.appendLine("def " + switchFuncName + "():");
+        writer.indent();
+
+        var cases = expr.getCases();
+        for (int i = 0; i < cases.size(); i++) {
+            var currentCase = cases.get(i);
+            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
+            String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), 0, isLambda)
+                    : generateExpression(currentCase.getExpression(), ifLevel + 1, isLambda);
+
+            writer.appendLine("def " + funcName + "():");
+            writer.indent();
+            writer.appendLine("return " + thenExprDef);
+            writer.unindent();
         }
+
+        writer.appendLine("switchAttribute = " + attr);
+
+        for (int i = 0; i < cases.size(); i++) {
+            var currentCase = cases.get(i);
+            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
+            if (currentCase.isDefault()) {
+                writer.appendLine("else:");
+            } else {
+                SwitchCaseGuard guard = currentCase.getGuard();
+                String prefix = (i == 0) ? "if " : "elif ";
+                writer.appendLine(prefix + getGuardExpression(guard, isLambda) + ":");
+            }
+            writer.indent();
+            writer.appendLine("return " + funcName + "()");
+            writer.unindent();
+        }
+
+        writer.unindent();
+
+        ifCondBlocks.add(writer.toString());
+        return switchFuncName + "()";
     }
 }
