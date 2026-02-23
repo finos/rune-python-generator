@@ -1,0 +1,13 @@
+namespace rosetta_dsl.test.semantic.comparison_op : <"generate Python unit tests from Rosetta.">
+
+type ComparisonTest:
+    a int(1..1)
+    b int(1..1)
+    op string(1..1)
+    target boolean(1..1)
+    condition TestCond:
+        if op = "LT" then (a < b) = target
+        else if op = "LE" then (a <= b) = target
+        else if op = "GT" then (a > b) = target
+        else if op = "GE" then (a >= b) = target
+        else False

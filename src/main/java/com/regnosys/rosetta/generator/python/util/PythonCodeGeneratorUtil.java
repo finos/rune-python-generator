@@ -42,30 +42,6 @@ public class PythonCodeGeneratorUtil {
         return writer.toString();
     }
 
-    public static String createImports(String name) {
-        return """
-                # pylint: disable=line-too-long, invalid-name, missing-function-docstring
-                # pylint: disable=bad-indentation, trailing-whitespace, superfluous-parens
-                # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import
-                # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
-                # pylint: disable=missing-module-docstring, unused-variable, unnecessary-pass
-
-                from __future__ import annotations
-                from typing import Optional, Annotated
-                import datetime
-                import inspect
-                from decimal import Decimal
-                from pydantic import Field
-                from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.metadata import *
-                from rune.runtime.utils import *
-                from rune.runtime.conditions import *
-                from rune.runtime.func_proxy import *
-                __all__ = ['%s']
-
-                """.formatted(name).stripIndent();
-    }
-
     public static String createImports() {
         return """
                 # pylint: disable=line-too-long, invalid-name, missing-function-docstring
@@ -74,35 +50,20 @@ public class PythonCodeGeneratorUtil {
                 # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
                 # pylint: disable=missing-module-docstring
                 from __future__ import annotations
-                from typing import Optional, Annotated
                 import datetime
                 import inspect
-                from decimal import Decimal
-                from pydantic import Field
-                from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.metadata import *
-                from rune.runtime.utils import *
-                from rune.runtime.conditions import *
-                from rune.runtime.func_proxy import *
-                """.stripIndent();
-    }
-
-    public static String createImportsFunc(String name) {
-        return """
-                # pylint: disable=line-too-long, invalid-name, missing-function-docstring, missing-module-docstring, superfluous-parens
-                # pylint: disable=wrong-import-position, unused-import, unused-wildcard-import, wildcard-import, wrong-import-order, missing-class-docstring
-                from __future__ import annotations
                 import sys
-                import datetime
-                import inspect
                 from decimal import Decimal
+                from typing import Annotated, Optional
+
+                from pydantic import Field, validate_call
+
                 from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.metadata import *
-                from rune.runtime.utils import *
                 from rune.runtime.conditions import *
                 from rune.runtime.func_proxy import *
-                """
-                .stripIndent();
+                from rune.runtime.metadata import *
+                from rune.runtime.utils import *
+                """.stripIndent();
     }
 
     public static String toFileName(String namespace, String fileName) {
@@ -149,5 +110,19 @@ public class PythonCodeGeneratorUtil {
                 ]
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(namespace, version).stripIndent();
+    }
+
+    public static String cleanVersion(String version) {
+        if (version == null || version.equals("${project.version}")) {
+            return "0.0.0";
+        }
+
+        String[] versionParts = version.split("\\.");
+        if (versionParts.length > 2) {
+            String thirdPart = versionParts[2].replaceAll("[^\\d]", "");
+            return versionParts[0] + "." + versionParts[1] + "." + thirdPart;
+        }
+
+        return "0.0.0";
     }
 }

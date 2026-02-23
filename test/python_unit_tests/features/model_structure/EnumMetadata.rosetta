@@ -1,0 +1,16 @@
+namespace rosetta_dsl.test.model.enum_metadata : <"test">
+
+enum CurrencyEnum:
+    USD
+    EUR
+    GBP
+
+type CashTransfer:
+    amount number (1..1)
+    currency CurrencyEnum (1..1)
+        [metadata id]
+
+type TransferReport:
+    transfers CashTransfer (1..*)
+    primaryCurrency CurrencyEnum (1..1)
+        [metadata reference]

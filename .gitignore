@@ -58,3 +58,4 @@ __pycache__
 **/test/cdm_tests/common-domain-model/
 src/generated/
 *.todo
+/build/

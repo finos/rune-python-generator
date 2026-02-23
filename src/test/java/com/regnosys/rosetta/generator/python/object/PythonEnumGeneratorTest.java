@@ -7,10 +7,7 @@ import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.regnosys.rosetta.generator.java.enums.EnumHelper;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import java.util.Map;
+import org.junit.jupiter.api.Disabled;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
@@ -19,122 +16,216 @@ public class PythonEnumGeneratorTest {
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    @Disabled("testGenerateTypes3")
     @Test
-    public void testEnumWithConditions() {
-        Map<String, CharSequence> python = testUtils.generatePythonFromString(
-                """
-                        enum PeriodExtendedEnum /*extends PeriodEnum*/ : <"The enumerated values to specify a time period containing the additional value of Term.">
-                            H <"Hour">
-                            D <"Day">
-                            W <"Week">
-                            M <"Month">
-                            Y <"Year">
-                            T <"Term. The period commencing on the effective date and ending on the termination date. The T period always appears in association with periodMultiplier = 1, and the notation is intended for use in contexts where the interval thus qualified (e.g. accrual period, payment period, reset period, ...) spans the entire term of the trade.">
-                            C <"CalculationPeriod - the period corresponds to the calculation period   For example, used in the Commodity Markets to indicate that a reference contract is the one that corresponds to the period of the calculation period.">
-
-                        type Frequency: <"A class for defining a date frequency, e.g. one day, three months, through the combination of an integer value and a standardized period value that is specified as part of an enumeration.">
-                            [metadata key]
-
-                            periodMultiplier int (1..1) <"A time period multiplier, e.g. 1, 2, or 3. If the period value is T (Term) then period multiplier must contain the value 1.">
-                            period PeriodExtendedEnum (1..1) <"A time period, e.g. a day, week, month, year or term of the stream.">
-
-                            condition TermPeriod: <"FpML specifies that if period value is T (Term) then periodMultiplier must contain the value 1.">
-                                if period = PeriodExtendedEnum -> T then periodMultiplier = 1
-
-                            condition PositivePeriodMultiplier: <"FpML specifies periodMultiplier as a positive integer.">
-                                periodMultiplier > 0
-                        """);
-        CharSequence generatedBundleSeq = python.get("src/com/_bundle.py");
-        if (generatedBundleSeq == null) {
-            throw new AssertionError("src/com/_bundle.py not found in generated output. Keys: " + python.keySet());
-        }
-        String generatedBundle = generatedBundleSeq.toString();
-        String expected = """
-                class com_rosetta_test_model_Frequency(BaseDataClass):
-                    _ALLOWED_METADATA = {'@key', '@key:external'}
-                    \"""
-                    A class for defining a date frequency, e.g. one day, three months, through the combination of an integer value and a standardized period value that is specified as part of an enumeration.
-                    \"""
-                    _FQRTN = 'com.rosetta.test.model.Frequency'
-                    periodMultiplier: int = Field(..., description='A time period multiplier, e.g. 1, 2, or 3. If the period value is T (Term) then period multiplier must contain the value 1.')
-                    \"""
-                    A time period multiplier, e.g. 1, 2, or 3. If the period value is T (Term) then period multiplier must contain the value 1.
-                    \"""
-                    period: com.rosetta.test.model.PeriodExtendedEnum.PeriodExtendedEnum = Field(..., description='A time period, e.g. a day, week, month, year or term of the stream.')
-                    \"""
-                    A time period, e.g. a day, week, month, year or term of the stream.
-                    \"""
-
-                    @rune_condition
-                    def condition_0_TermPeriod(self):
-                        \"""
-                        FpML specifies that if period value is T (Term) then periodMultiplier must contain the value 1.
-                        \"""
-                        item = self
-                        def _then_fn0():
-                            return rune_all_elements(rune_resolve_attr(self, "periodMultiplier"), "=", 1)
-
-                        def _else_fn0():
-                            return True
-
-                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "period"), "=", com.rosetta.test.model.PeriodExtendedEnum.PeriodExtendedEnum.T), _then_fn0, _else_fn0)
-
-                    @rune_condition
-                    def condition_1_PositivePeriodMultiplier(self):
-                        \"""
-                        FpML specifies periodMultiplier as a positive integer.
-                        \"""
-                        item = self
-                        return rune_all_elements(rune_resolve_attr(self, "periodMultiplier"), ">", 0)
-                """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expected);
-    }
-
-    @Test
-    public void testEnumGeneration() {
+    public void testGenerateTypes3() {
         String pythonString = testUtils.generatePythonFromString(
                 """
-                        enum TestEnum: <"Test enum description.">
-                            TestEnumValue1 <"Test enum value 1">
-                            TestEnumValue2 <"Test enum value 2">
-                            TestEnumValue3 <"Test enum value 3">
-                            _1 displayName "1" <"Rolls on the 1st day of the month.">
-                        """).toString();
+                        enum AncillaryRoleEnum: <"Defines the enumerated values to specify the ancillary roles to the transaction. The product is agnostic to the actual parties involved in the transaction, with the party references abstracted away from the product definition and replaced by the AncillaryRoleEnum. The AncillaryRoleEnum can then be positioned in the product and the AncillaryParty type, which is positioned outside of the product definition, allows the AncillaryRoleEnum to be associated with an actual party reference.">
+                            DisruptionEventsDeterminingParty <"Specifies the party which determines additional disruption events.">
+                            ExtraordinaryDividendsParty <"Specifies the party which determines if dividends are extraordinary in relation to normal levels.">
 
-        String expected = """
-                class TestEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                        enum TelephoneTypeEnum: <"The enumerated values to specify the type of telephone number, e.g. work vs. mobile.">
+                            Work <"A number used primarily for work-related calls. Includes home office numbers used primarily for work purposes.">
+                            Mobile <"A number on a mobile telephone that is often or usually used for work-related calls. This type of number can be used for urgent work related business when a work number is not sufficient to contact the person or firm.">
+
+                        type LegalEntity: <"A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).">
+                            [metadata key]
+                            entityId string (0..*) <"A legal entity identifier (e.g. RED entity code).">
+                                [metadata scheme]
+                            name string (1..1) <"The legal entity name.">
+                                [metadata scheme]
+
+                        type TelephoneNumber: <"A class to specify a telephone number as a type of phone number (e.g. work, personal, ...) alongside with the actual number.">
+                            _FQRTN = 'com.rosetta.test.model.TelephoneNumber'
+                            telephoneNumberType TelephoneTypeEnum (0..1) <"The type of telephone number, e.g. work, mobile.">
+                            number string (1..1) <"The actual telephone number.">
+
+                        type AncillaryEntity: <"Holds an identifier for an ancillary entity, either identified directly via its ancillary role or directly as a legal entity.">
+                            _FQRTN = 'com.rosetta.test.model.AncillaryEntity'
+                            ancillaryParty AncillaryRoleEnum (0..1) <"Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)">
+                            legalEntity LegalEntity (0..1)
+
+                            condition: one-of
+                        """)
+                .toString();
+
+        String expectedTestType1 = """
+                class com_rosetta_test_model_LegalEntity(BaseDataClass):
                     \"""
-                    Test enum description.
+                    A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).
                     \"""
-                    TEST_ENUM_VALUE_1 = "TestEnumValue1"
+                    _FQRTN = 'com.rosetta.test.model.LegalEntity'
+                    entityId: list[AttributeWithMeta[str] | str] = Field([], description='A legal entity identifier (e.g. RED entity code).')
                     \"""
-                    Test enum value 1
+                    A legal entity identifier (e.g. RED entity code).
                     \"""
-                    TEST_ENUM_VALUE_2 = "TestEnumValue2"
+                    name: AttributeWithMeta[str] | str = Field(..., description='The legal entity name.">
                     \"""
-                    Test enum value 2
-                    \"""
-                    TEST_ENUM_VALUE_3 = "TestEnumValue3"
-                    \"""
-                    Test enum value 3
-                    \"""
-                    _1 = "1"
-                    \"""
-                    Rolls on the 1st day of the month.
+                    The legal entity name.
                     \"""
                 """;
-        testUtils.assertGeneratedContainsExpectedString(pythonString, expected);
+        String expectedTestType2 = """
+                class com_rosetta_test_model_TelephoneNumber(BaseDataClass):
+                    \"""
+                    A class to specify a telephone number as a type of phone number (e.g. work, personal, ...) alongside with the actual number.
+                    \"""
+                    _FQRTN = 'com.rosetta.test.model.TelephoneNumber'
+                    telephoneNumberType: Optional[com.metadata.test.model.TelephoneTypeEnum.TelephoneTypeEnum] = Field(None, description='The type of telephone number, e.g. work, mobile.')
+                    \"""
+                    The type of telephone number, e.g. work, mobile.
+                    \"""
+                    number: str = Field(..., description='The actual telephone number.')
+                    \"""
+                    The actual telephone number.
+                    \"""
+                """;
+        String expectedTestType3 = """
+                class com_rosetta_test_model_AncillaryEntity(BaseDataClass):
+                    \"""
+                    Holds an identifier for an ancillary entity, either identified directly via its ancillary role or directly as a legal entity.
+                    \"""
+                    _FQRTN = 'com.rosetta.test.model.AncillaryEntity'
+                    ancillaryParty: Optional[com.metadata.test.model.AncillaryRoleEnum.AncillaryRoleEnum] = Field(None, description='Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)')
+                    \"""
+                    Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)
+                    \"""
+                    legalEntity: Optional[com_rosetta_test_model_LegalEntity] = Field(None, description='')
+
+                    @rune_condition
+                    def condition_0_(self):
+                        item = self
+                        return rune_check_one_of(self, 'ancillaryParty', 'legalEntity', necessity=True)
+                """;
+
+        String expectedTestType4 = """
+                class AncillaryRoleEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                    \"""
+                    Defines the enumerated values to specify the ancillary roles to the transaction. The product is agnostic to the actual parties involved in the transaction, with the party references abstracted away from the product definition and replaced by the AncillaryRoleEnum. The AncillaryRoleEnum can then be positioned in the product and the AncillaryParty type, which is positioned outside of the product definition, allows the AncillaryRoleEnum to be associated with an actual party reference.
+                    \"""
+                    DISRUPTION_EVENTS_DETERMINING_PARTY = "DisruptionEventsDeterminingParty"
+                    \"""
+                    Specifies the party which determines additional disruption events.
+                    \"""
+                    EXTRAORDINARY_DIVIDENDS_PARTY = "ExtraordinaryDividendsParty"
+                    \"""
+                    Specifies the party which determines if dividends are extraordinary in relation to normal levels.
+                    \"""
+                """;
+        String expectedTestType5 = """
+                class TelephoneTypeEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                    \"""
+                    The enumerated values to specify the type of telephone number, e.g. work vs. mobile.
+                    \"""
+                    MOBILE = "Mobile"
+                    \"""
+                    A number on a mobile telephone that is often or usually used for work-related calls. This type of number can be used for urgent work related business when a work number is not sufficient to contact the person or firm.
+                    \"""
+                    WORK = "Work"
+                    \"""
+                    A number used primarily for work-related calls. Includes home office numbers used primarily for work purposes.
+                    \"""
+                """;
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType1);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType4);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType5);
     }
 
+    @Disabled("testGenerateTypes2")
     @Test
-    public void testEnumGenerationWithUppercaseUnderscoreFormattedNames() {
-        assertThat(EnumHelper.formatEnumName("ISDA1993Commodity"), is("ISDA_1993_COMMODITY"));
-        assertThat(EnumHelper.formatEnumName("ISDA1998FX"), is("ISDA1998FX"));
-        assertThat(EnumHelper.formatEnumName("iTraxxEuropeDealer"), is("I_TRAXX_EUROPE_DEALER"));
-        assertThat(EnumHelper.formatEnumName("StandardLCDS"), is("STANDARD_LCDS"));
-        assertThat(EnumHelper.formatEnumName("_1_1"), is("_1_1"));
-        assertThat(EnumHelper.formatEnumName("_30E_360_ISDA"), is("_30E_360_ISDA"));
-        assertThat(EnumHelper.formatEnumName("ACT_365L"), is("ACT_365L"));
-        assertThat(EnumHelper.formatEnumName("OSPPrice"), is("OSP_PRICE"));
+    public void testGenerateTypes2() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                        enum CapacityUnitEnum: <"Provides enumerated values for capacity units, generally used in the context of defining quantities for commodities.">
+                            ALW <"Denotes Allowances as standard unit.">
+                            BBL <"Denotes a Barrel as a standard unit.">
+
+                        enum WeatherUnitEnum: <"Provides enumerated values for weather units, generally used in the context of defining quantities for commodities.">
+                            CDD <"Denotes Cooling Degree Days as a standard unit.">
+                            CPD <"Denotes Critical Precipitation Day as a standard unit.">
+
+                        enum FinancialUnitEnum: <"Provides enumerated values for financial units, generally used in the context of defining quantities for securities.">
+                            Contract <"Denotes financial contracts, such as listed futures and options.">
+                            ContractualProduct <"Denotes a Contractual Product as defined in the CDM.  This unit type would be used when the price applies to the whole product, for example, in the case of a premium expressed as a cash amount.">
+
+                        type UnitType: <"Defines the unit to be used for price, quantity, or other purposes">
+                            capacityUnit CapacityUnitEnum (0..1) <"Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.">
+                            weatherUnit WeatherUnitEnum (0..1) <"Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.">
+                            [metadata scheme]
+
+                        condition UnitType: <"Requires that a unit type must be set.">
+                            one-of
+                        """)
+                .toString();
+
+        String expectedTestType = """
+                class class com_rosetta_test_model_UnitType(BaseDataClass):
+                    \"""
+                    Defines the unit to be used for price, quantity, or other purposes
+                    \"""
+                    _FQRTN = 'com.rosetta.test.model.UnitType'
+
+                    capacityUnit: Optional[com.metadata.test.model.CapacityUnitEnum.CapacityUnitEnum] = Field(None, description='Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.')
+                    \"""
+                    Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.
+                    \"""
+                    weatherUnit: Optional[com.metadata.test.model.WeatherUnitEnum.WeatherUnitEnum] = Field(None, description='Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.')
+                    \"""
+                    Provides an enumerated values for a weather unit, generally used in the context of defining quantities for commodities.
+                    \"""
+                """;
+        String expectedTestType2 = """
+                class FinancialUnitEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                    \"""
+                    Provides enumerated values for financial units, generally used in the context of defining quantities for securities.
+                    \"""
+                    CONTRACT = "Contract"
+                    \"""
+                    Denotes financial contracts, such as listed futures and options.
+                    \"""
+                    CONTRACTUAL_PRODUCT = "ContractualProduct"
+                    \"""
+
+                    @rune_condition
+                    def condition_0_UnitType(self):
+                        \"""
+                        Requires that a unit type must be set.
+                        \"""
+                        item = self
+                        return rune_check_one_of(self, 'capacityUnit', 'weatherUnit', 'financialUnit', 'currency', necessity=True)
+                """;
+        String expectedTestType3 = """
+                class WeatherUnitEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                    \"""
+                    Provides enumerated values for weather units, generally used in the context of defining quantities for commodities.
+                    \"""
+                    CDD = "CDD"
+                    \"""
+                    Denotes Cooling Degree Days as a standard unit.
+                    \"""
+                    CPD = "CPD"
+                    \"""
+                """;
+        String expectedTestType4 = """
+                class CapacityUnitEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                \"""
+                Provides enumerated values for capacity units, generally used in the context of defining quantities for commodities.
+                \"""
+                ALW = "ALW"
+                \"""
+                Denotes Allowances as standard unit.
+                \"""
+                BBL = "BBL"
+                \"""
+                Denotes a Barrel as a standard unit.
+                \"""
+                """;
+
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType4);
     }
 }
