@@ -73,18 +73,16 @@ import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
 public final class PythonExpressionGenerator {
 
     /**
-     * The list of if condition blocks.
+     * Result of an expression generation.
      */
-    private List<String> ifCondBlocks = new ArrayList<>();
+    public record ExpressionResult(String expression, List<String> companionBlocks) {
+    }
 
     /**
-     * Gets the list of if condition blocks.
-     * 
-     * @return The list of if condition blocks.
+     * The list of if condition blocks.
      */
-    public List<String> getIfCondBlocks() {
-        return ifCondBlocks;
-    }
+    private final List<String> ifCondBlocks = new ArrayList<>();
+
 
     /**
      * The counter for generated helper functions.
@@ -94,17 +92,33 @@ public final class PythonExpressionGenerator {
     /**
      * Clears the block list.
      */
-    public void clearBlocks() {
+    private void clearBlocks() {
         ifCondBlocks.clear();
     }
 
     /**
-     * Resets the counters.
+     * Resets the generator state for a new lifecycle (e.g., a new function or condition).
      */
-    public void resetCounters() {
+    public void initialize() {
         generatedFunctionCounter = 0;
     }
 
+
+    /**
+     * Generates Python code for an expression and returns it along with any required 
+     * companion blocks. This method automatically manages internal state (clearing blocks).
+     * 
+     * @param expr  The Rune expression to generate Python code for.
+     * @param scope The current expression scope.
+     * @return The generated Python code and its companion blocks.
+     */
+    public ExpressionResult generate(RosettaExpression expr, PythonExpressionScope scope) {
+        clearBlocks();
+        String code = generateExpression(expr, scope);
+        List<String> blocks = new ArrayList<>(ifCondBlocks);
+        clearBlocks();
+        return new ExpressionResult(code, blocks);
+    }
 
     /**
      * Generates Python code for a Rune expression.
@@ -113,7 +127,7 @@ public final class PythonExpressionGenerator {
      * @param scope The current expression scope.
      * @return The generated Python code.
      */
-    public String generateExpression(RosettaExpression expr, PythonExpressionScope scope) {
+    private String generateExpression(RosettaExpression expr, PythonExpressionScope scope) {
 
         switch (expr) {
             case null -> {
@@ -478,7 +492,7 @@ public final class PythonExpressionGenerator {
         }
     }
 
-    public String generateTypeOrFunctionConditions(Data cls) {
+    public String generateTypeConditions(Data cls) {
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : cls.getConditions()) {
@@ -575,20 +589,19 @@ public final class PythonExpressionGenerator {
      * @return The generated if-then-else or switch statement.
      */
     private String generateIfThenElseOrSwitch(Condition c) {
-        clearBlocks();
-        resetCounters();
-        String expr = generateExpression(c.getExpression(), PythonExpressionScope.of("self"));
+        initialize();
+        ExpressionResult result = generate(c.getExpression(), PythonExpressionScope.of("self"));
 
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.indent();
 
-        if (!ifCondBlocks.isEmpty()) {
-            for (String arg : ifCondBlocks) {
-                writer.appendBlock(arg);
+        if (!result.companionBlocks().isEmpty()) {
+            for (String block : result.companionBlocks()) {
+                writer.appendBlock(block);
                 writer.appendLine("");
             }
         }
-        writer.appendLine("return " + expr);
+        writer.appendLine("return " + result.expression());
         return writer.toString();
     }
 

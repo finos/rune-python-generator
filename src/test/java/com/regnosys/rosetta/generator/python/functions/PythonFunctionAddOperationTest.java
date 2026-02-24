@@ -69,11 +69,32 @@ public class PythonFunctionAddOperationTest {
 
                     set result: [1]
 
-                    add result: tempList                """);
+                    add result: tempList
+                """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generated, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generated, "result = [1]");
+        testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
+        testUtils.assertGeneratedContainsExpectedString(generated, "return result");
+    }   
+
+    @Test
+    public void testGenerateAddOperationWithIntListOnlyAndAlias() {
+       Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                func MakeIntListOnlyWithAlias:
+                    output:
+                        result int (3..3)
+
+                    alias tempList: [2, 3]
+
+                    add result: tempList
+                """);
+
+        String generated = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");
     }   

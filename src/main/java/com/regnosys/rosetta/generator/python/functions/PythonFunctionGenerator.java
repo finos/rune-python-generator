@@ -214,7 +214,7 @@ public final class PythonFunctionGenerator {
         }
 
         writer.appendBlock(generateConditions(function));
-        expressionGenerator.resetCounters();
+        expressionGenerator.initialize();
 
         boolean isCodeImplementation = isCodeImplementation(function);
         if (isCodeImplementation) {
@@ -395,14 +395,15 @@ public final class PythonFunctionGenerator {
     private String generateAlias(Function function) {
         PythonCodeWriter writer = new PythonCodeWriter();
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
-            expressionGenerator.clearBlocks();
-            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), PythonExpressionScope.of("self"));
- 
-            for (String block : expressionGenerator.getIfCondBlocks()) {
+            PythonExpressionGenerator.ExpressionResult result = expressionGenerator.generate(
+                    shortcut.getExpression(),
+                    PythonExpressionScope.of("self"));
+
+            for (String block : result.companionBlocks()) {
                 writer.appendBlock(block);
                 writer.newLine();
             }
-            writer.appendLine(shortcut.getName() + " = " + expression);
+            writer.appendLine(shortcut.getName() + " = " + result.expression());
         }
         return writer.toString();
     }
@@ -456,15 +457,17 @@ public final class PythonFunctionGenerator {
             // 2. Execution: Actual operations
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
-                // TODO: is clear blocks a fragile activity
-                expressionGenerator.clearBlocks();
-                String expression = expressionGenerator.generateExpression(operation.getExpression(),
+
+                PythonExpressionGenerator.ExpressionResult result = expressionGenerator.generate(
+                        operation.getExpression(),
                         PythonExpressionScope.of("self"));
 
-                for (String block : expressionGenerator.getIfCondBlocks()) {
+                for (String block : result.companionBlocks()) {
                     writer.appendBlock(block);
                     writer.newLine();
                 }
+
+                String expression = result.expression();
                 if (operation.isAdd()) {
                     writer.appendBlock(generateAddOperation(root, operation, expression, scope));
                 } else {

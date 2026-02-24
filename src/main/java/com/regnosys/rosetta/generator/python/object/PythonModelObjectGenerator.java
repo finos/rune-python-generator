@@ -253,7 +253,7 @@ public class PythonModelObjectGenerator {
             writer.appendBlock(constraints);
         }
 
-        writer.appendBlock(expressionGenerator.generateTypeOrFunctionConditions(rc));
+        writer.appendBlock(expressionGenerator.generateTypeConditions(rc));
 
         return writer.toString();
     }
