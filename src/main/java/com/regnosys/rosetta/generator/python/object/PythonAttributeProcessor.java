@@ -420,46 +420,53 @@ public final class PythonAttributeProcessor {
         }
 
         public static class Builder {
+            /** The regex pattern for validation. */
             private Optional<String> pattern = Optional.empty();
+            /** The minimum length for validation. */
             private Optional<Integer> minLength = Optional.empty();
+            /** The maximum length for validation. */
             private Optional<Integer> maxLength = Optional.empty();
+            /** The maximum number of digits for validation. */
             private Optional<Integer> maxDigits = Optional.empty();
+            /** The number of decimal places for validation. */
             private Optional<Integer> decimalPlaces = Optional.empty();
+            /** The greater-than-or-equal value for validation. */
             private Optional<String> ge = Optional.empty();
+            /** The less-than-or-equal value for validation. */
             private Optional<String> le = Optional.empty();
 
-            public Builder pattern(String pattern) {
-                this.pattern = Optional.of(pattern);
+            public Builder pattern(String patternIn) {
+                this.pattern = Optional.of(patternIn);
                 return this;
             }
 
-            public Builder minLength(int minLength) {
-                this.minLength = Optional.of(minLength);
+            public Builder minLength(int minLengthIn) {
+                this.minLength = Optional.of(minLengthIn);
                 return this;
             }
 
-            public Builder maxLength(int maxLength) {
-                this.maxLength = Optional.of(maxLength);
+            public Builder maxLength(int maxLengthIn) {
+                this.maxLength = Optional.of(maxLengthIn);
                 return this;
             }
 
-            public Builder maxDigits(int maxDigits) {
-                this.maxDigits = Optional.of(maxDigits);
+            public Builder maxDigits(int maxDigitsIn) {
+                this.maxDigits = Optional.of(maxDigitsIn);
                 return this;
             }
 
-            public Builder decimalPlaces(int decimalPlaces) {
-                this.decimalPlaces = Optional.of(decimalPlaces);
+            public Builder decimalPlaces(int decimalPlacesIn) {
+                this.decimalPlaces = Optional.of(decimalPlacesIn);
                 return this;
             }
 
-            public Builder ge(String ge) {
-                this.ge = Optional.of(ge);
+            public Builder ge(String geIn) {
+                this.ge = Optional.of(geIn);
                 return this;
             }
 
-            public Builder le(String le) {
-                this.le = Optional.of(le);
+            public Builder le(String leIn) {
+                this.le = Optional.of(leIn);
                 return this;
             }
 

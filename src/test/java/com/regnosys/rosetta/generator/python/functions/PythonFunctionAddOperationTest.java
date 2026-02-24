@@ -97,7 +97,7 @@ public class PythonFunctionAddOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generated, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");
-    }   
+    }
 
     /**
      * Test case for function with append to list.

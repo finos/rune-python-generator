@@ -12,10 +12,15 @@ import com.regnosys.rosetta.tests.util.ModelHelper;
 
 import jakarta.inject.Inject;
 
-public class PythonGeneratorTestUtils {
+/**
+ * Utility class for testing Python code generation.
+ */
+public final class PythonGeneratorTestUtils {
 
+    /** Helper for parsing Rosetta models in tests. */
     @Inject
     private ModelHelper modelHelper;
+    /** The Python code generator under test. */
     @Inject
     private PythonCodeGenerator generator;
 

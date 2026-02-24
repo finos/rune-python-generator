@@ -450,9 +450,6 @@ public final class PythonFunctionGenerator {
                     initializePathInPreamble(rootName, operation.getPath(), function, writer, scope);
                 }
             }
-            if (scope.hasInitializedNames()) {
-                // spacing after preamble - let individual operations handle their own leading newlines if needed
-            }
 
             // 2. Execution: Actual operations
             for (Operation operation : function.getOperations()) {
@@ -662,7 +659,9 @@ public final class PythonFunctionGenerator {
      * a function.
      */
     private static class PythonFunctionGenerationScope {
+        /** The set of variable names that have been initialized in this scope. */
         private final HashSet<String> initializedNames = new HashSet<>();
+        /** The set of variable names that are marked as ObjectBuilders. */
         private final HashSet<String> objectBuilderNames = new HashSet<>();
 
         /**
@@ -712,12 +711,6 @@ public final class PythonFunctionGenerator {
             return !objectBuilderNames.isEmpty();
         }
 
-        /**
-         * @return true if any names have been initialized in this scope (either simple or ObjectBuilder)
-         */
-        public boolean hasInitializedNames() {
-            return !initializedNames.isEmpty();
-        }
 
         /**
          * @return the set of names that are ObjectBuilders

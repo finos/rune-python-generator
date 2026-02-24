@@ -6,6 +6,9 @@ import com.regnosys.rosetta.rosetta.RosettaSymbol;
 
 /**
  * Tracks the scope of a Python expression, including the default receiver and shadowed symbols.
+ * 
+ * @param receiver        The default receiver (e.g., "self" or "item").
+ * @param shadowedSymbols A map of Rosetta symbols to their Python names in this scope.
  */
 public record PythonExpressionScope(
     String receiver, 

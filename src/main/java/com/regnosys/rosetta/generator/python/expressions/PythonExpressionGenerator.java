@@ -74,6 +74,9 @@ public final class PythonExpressionGenerator {
 
     /**
      * Result of an expression generation.
+     * 
+     * @param expression      The generated Python code.
+     * @param companionBlocks The list of required companion code blocks.
      */
     public record ExpressionResult(String expression, List<String> companionBlocks) {
     }
