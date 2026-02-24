@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
+import com.regnosys.rosetta.generator.python.expressions.PythonExpressionScope;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
@@ -395,7 +396,7 @@ public final class PythonFunctionGenerator {
         PythonCodeWriter writer = new PythonCodeWriter();
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
             expressionGenerator.clearBlocks();
-            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), false);
+            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), PythonExpressionScope.of("self"));
  
             for (String block : expressionGenerator.getIfCondBlocks()) {
                 writer.appendBlock(block);
@@ -414,7 +415,7 @@ public final class PythonFunctionGenerator {
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
                 expressionGenerator.clearBlocks();
-                String expression = expressionGenerator.generateExpression(operation.getExpression(), false);
+                String expression = expressionGenerator.generateExpression(operation.getExpression(), PythonExpressionScope.of("self"));
 
                 for (String block : expressionGenerator.getIfCondBlocks()) {
                     writer.appendBlock(block);
