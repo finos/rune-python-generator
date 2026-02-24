@@ -46,10 +46,15 @@ public class PythonFunctionAccumulationTest {
 
         String generated = gf.get("src/com/_bundle.py").toString();
         // Check core logic separately to maintain robustness
-        testUtils.assertGeneratedContainsExpectedString(generated, "result = rune_resolve_attr(self, \"list\")");
-        testUtils.assertGeneratedContainsExpectedString(generated,
-                "result.add_rune_attr(self, rune_resolve_attr(self, \"value\"))");
-        testUtils.assertGeneratedContainsExpectedString(generated, "return result");
+        String expected = """
+                    result = []
+
+                    rune_add_to_list(result, rune_resolve_attr(self, \"list\"))
+
+                    rune_add_to_list(result, rune_resolve_attr(self, \"value\"))
+                """;
+
+        testUtils.assertGeneratedContainsExpectedString(generated, expected);
     }
 
     /**
@@ -77,9 +82,9 @@ public class PythonFunctionAccumulationTest {
 
         String generated = gf.get("src/com/_bundle.py").toString();
         // Check core logic separately to maintain robustness
-        testUtils.assertGeneratedContainsExpectedString(generated, "filteredQuantities = rune_filter");
+        testUtils.assertGeneratedContainsExpectedString(generated, "filteredQuantities = []");
         testUtils.assertGeneratedContainsExpectedString(generated,
-                "rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"quantities\"), \"unit\"), \"=\", rune_resolve_attr(self, \"unit\"))");
+                "rune_add_to_list(filteredQuantities, rune_filter(rune_resolve_attr(self, \"quantities\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"unit\"), \"=\", rune_resolve_attr(self, \"unit\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "return filteredQuantities");
     }
 }

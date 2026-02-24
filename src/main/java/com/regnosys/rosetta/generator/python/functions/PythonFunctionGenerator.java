@@ -22,6 +22,7 @@ import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
+import com.regnosys.rosetta.rosetta.RosettaType;
 import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
 import com.regnosys.rosetta.rosetta.simple.Annotated;
@@ -124,26 +125,32 @@ public final class PythonFunctionGenerator {
         Iterator<?> allContents = function.eAllContents();
         while (allContents.hasNext()) {
             Object content = allContents.next();
-            if (content instanceof RosettaSymbolReference ref) {
-                if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
-                        || ref.getSymbol() instanceof RosettaEnumeration) {
-                    dependencies.add((RosettaNamed) ref.getSymbol());
+            switch (content) {
+                case RosettaSymbolReference ref -> {
+                    if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
+                            || ref.getSymbol() instanceof RosettaEnumeration) {
+                        dependencies.add((RosettaNamed) ref.getSymbol());
+                    }
                 }
-            } else if (content instanceof RosettaConstructorExpression cons) {
-                if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
-                    dependencies.add(cons.getTypeCall().getType());
+                case RosettaConstructorExpression cons -> {
+                    if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
+                        dependencies.add(cons.getTypeCall().getType());
+                    }
+                }
+                default -> {
                 }
             }
         }
 
         for (RosettaNamed dep : dependencies) {
             String depName = "";
-            if (dep instanceof Data data) {
-                depName = rObjectFactory.buildRDataType(data).getQualifiedName().toString();
-            } else if (dep instanceof Function function1) {
-                depName = RuneToPythonMapper.getFullyQualifiedObjectName(function1);
-            } else if (dep instanceof RosettaEnumeration rosettaEnumeration) {
-                depName = rObjectFactory.buildREnumType(rosettaEnumeration).getQualifiedName().toString();
+            switch (dep) {
+                case Data data -> depName = rObjectFactory.buildRDataType(data).getQualifiedName().toString();
+                case Function function1 -> depName = RuneToPythonMapper.getFullyQualifiedObjectName(function1);
+                case RosettaEnumeration rosettaEnumeration ->
+                    depName = rObjectFactory.buildREnumType(rosettaEnumeration).getQualifiedName().toString();
+                default -> {
+                }
             }
 
             if (!depName.isEmpty() && !functionName.equals(depName)) {
@@ -206,14 +213,14 @@ public final class PythonFunctionGenerator {
         }
 
         writer.appendBlock(generateConditions(function));
+        expressionGenerator.resetCounters();
 
         boolean isCodeImplementation = isCodeImplementation(function);
         if (isCodeImplementation) {
             writer.appendLine(generateExternalFunctionCall(function));
         } else {
-            int[] level = { 0 };
-            writer.appendBlock(generateAlias(function, level));
-            writer.appendBlock(generateOperations(function, level, context));
+            writer.appendBlock(generateAlias(function));
+            writer.appendBlock(generateOperations(function, context));
         }
 
         writer.appendBlock(generateOutput(function, isCodeImplementation));
@@ -384,49 +391,44 @@ public final class PythonFunctionGenerator {
         return "";
     }
 
-    private String generateAlias(Function function, int[] level) {
+    private String generateAlias(Function function) {
         PythonCodeWriter writer = new PythonCodeWriter();
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
-            expressionGenerator.setIfCondBlocks(new ArrayList<>());
-            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level[0], false);
-
+            expressionGenerator.clearBlocks();
+            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), false);
+ 
             for (String block : expressionGenerator.getIfCondBlocks()) {
                 writer.appendBlock(block);
                 writer.newLine();
-            }
-            if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
-                level[0] += expressionGenerator.getIfCondBlocks().size();
             }
             writer.appendLine(shortcut.getName() + " = " + expression);
         }
         return writer.toString();
     }
 
-    private String generateOperations(Function function, int[] level, PythonCodeGeneratorContext context) {
+    private String generateOperations(Function function, PythonCodeGeneratorContext context) {
         if (function.getOutput() != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
-            List<String> setNames = new ArrayList<>();
+            PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();
+
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
-                expressionGenerator.setIfCondBlocks(new ArrayList<>());
-                String expression = expressionGenerator.generateExpression(operation.getExpression(), level[0], false);
+                expressionGenerator.clearBlocks();
+                String expression = expressionGenerator.generateExpression(operation.getExpression(), false);
 
                 for (String block : expressionGenerator.getIfCondBlocks()) {
                     writer.appendBlock(block);
                     writer.newLine();
                 }
-                if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
-                    level[0] += expressionGenerator.getIfCondBlocks().size();
-                }
                 if (operation.isAdd()) {
-                    writer.appendBlock(generateAddOperation(root, operation, expression, setNames));
+                    writer.appendBlock(generateAddOperation(root, operation, expression, scope));
                 } else {
-                    writer.appendBlock(generateSetOperation(root, operation, expression, setNames));
+                    writer.appendBlock(generateSetOperation(root, operation, expression, scope));
                 }
             }
-            if (!setNames.isEmpty()) {
+            if (scope.hasObjectBuilders()) {
                 context.addAdditionalImport("from rune.runtime.object_builder import ObjectBuilder");
-                for (String setName : setNames) {
+                for (String setName : scope.getObjectBuilderNames()) {
                     writer.appendLine(setName + " = " + setName + ".to_model()");
                 }
             }
@@ -435,20 +437,61 @@ public final class PythonFunctionGenerator {
         return "";
     }
 
+    private String generateDottedPath(Segment path) {
+        List<String> segments = new ArrayList<>();
+        Segment current = path;
+        while (current != null) {
+            segments.add(current.getFeature().getName());
+            current = current.getNext();
+        }
+        return String.join(".", segments);
+    }
+
+    private String generateSetOperation(AssignPathRoot root, Operation operation,
+            String expression, PythonFunctionGenerationScope scope) {
+        PythonCodeWriter writer = new PythonCodeWriter();
+        Attribute attributeRoot = (Attribute) root;
+        String rootName = attributeRoot.getName();
+
+        if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
+            writer.appendLine(rootName + " = " + expression);
+            scope.markInitialized(rootName);
+        } else {
+            String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
+            if (!scope.isInitialized(rootName)) {
+                scope.markAsObjectBuilder(rootName);
+                writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+            }
+            writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
+        }
+        return writer.toString();
+    }
+
     private String generateAddOperation(AssignPathRoot root, Operation operation,
-            String expression, List<String> setNames) {
+            String expression, PythonFunctionGenerationScope scope) {
         PythonCodeWriter writer = new PythonCodeWriter();
         Attribute attribute = (Attribute) root;
         String rootName = root.getName();
-        if (attribute.getTypeCall().getType() instanceof RosettaEnumeration) {
-            if (!setNames.contains(rootName)) {
-                setNames.add(rootName);
+        RosettaType attributeType = attribute.getTypeCall().getType();
+        if (attributeType == null) {
+            throw new RuntimeException("Attribute type is null");
+        }
+        if (attributeType instanceof RosettaEnumeration) {
+            if (!scope.isInitialized(rootName)) {
+                scope.markInitialized(rootName);
                 writer.appendLine(rootName + " = []");
             }
             writer.appendLine(rootName + ".extend(" + expression + ")");
+        } else if (attribute.getCard().isIsMany()) {
+            if (!scope.isInitialized(rootName)) {
+                scope.markInitialized(rootName);
+                writer.appendLine(rootName + " = []");
+            }
+            writer.newLine();
+            writer.appendLine("rune_add_to_list(" + rootName + ", " + expression + ")");
         } else {
-            if (!setNames.contains(rootName)) {
-                setNames.add(rootName);
+            if (!scope.isInitialized(rootName)) {
+                scope.markInitialized(rootName);
                 writer.appendLine(rootName + " = " + expression);
             } else {
                 if (operation.getPath() == null) {
@@ -469,35 +512,6 @@ public final class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateDottedPath(Segment path) {
-        List<String> segments = new ArrayList<>();
-        Segment current = path;
-        while (current != null) {
-            segments.add(current.getFeature().getName());
-            current = current.getNext();
-        }
-        return String.join(".", segments);
-    }
-
-    private String generateSetOperation(AssignPathRoot root, Operation operation,
-            String expression, List<String> setNames) {
-        PythonCodeWriter writer = new PythonCodeWriter();
-        Attribute attributeRoot = (Attribute) root;
-        String rootName = attributeRoot.getName();
-
-        if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
-            writer.appendLine(rootName + " = " + expression);
-        } else {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
-            if (!setNames.contains(rootName)) {
-                setNames.add(rootName);
-                writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
-            }
-            writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
-        }
-        return writer.toString();
-    }
-
     private String generateAttributesPath(Segment path) {
         Segment currentPath = path;
         StringBuilder result = new StringBuilder("'");
@@ -510,6 +524,59 @@ public final class PythonFunctionGenerator {
         }
         result.append("'");
         return result.toString();
+    }
+
+    /**
+     * Tracks the initialization state and metadata of local Python variables within
+     * a function.
+     */
+    private static class PythonFunctionGenerationScope {
+        private final HashSet<String> initializedNames = new HashSet<>();
+        private final HashSet<String> objectBuilderNames = new HashSet<>();
+
+        /**
+         * Checks if a variable name has been initialized in this scope.
+         * 
+         * @param name the variable name
+         * @return true if initialized, false otherwise
+         */
+        public boolean isInitialized(String name) {
+            return initializedNames.contains(name);
+        }
+
+        /**
+         * Marks a variable name as initialized with a simple value or list.
+         * 
+         * @param name the variable name
+         */
+        public void markInitialized(String name) {
+            initializedNames.add(name);
+        }
+
+        /**
+         * Marks a variable name as an ObjectBuilder. This will trigger .to_model()
+         * finalization.
+         * 
+         * @param name the variable name
+         */
+        public void markAsObjectBuilder(String name) {
+            objectBuilderNames.add(name);
+            initializedNames.add(name);
+        }
+
+        /**
+         * @return true if any ObjectBuilders were created in this scope
+         */
+        public boolean hasObjectBuilders() {
+            return !objectBuilderNames.isEmpty();
+        }
+
+        /**
+         * @return the set of names that are ObjectBuilders
+         */
+        public Set<String> getObjectBuilderNames() {
+            return objectBuilderNames;
+        }
     }
 
 }

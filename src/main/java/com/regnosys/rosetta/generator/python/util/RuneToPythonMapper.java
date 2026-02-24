@@ -12,6 +12,7 @@ import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.builtin.RNumberType;
 
+//todo: compare getFlattenedTypeName and getFullyQualifiedObjectName
 /**
  * A utility class for mapping Rune (Rosetta) types and attributes to their
  * corresponding Python types.
