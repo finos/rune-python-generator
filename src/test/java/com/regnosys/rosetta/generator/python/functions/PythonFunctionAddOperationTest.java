@@ -72,8 +72,6 @@ public class PythonFunctionAddOperationTest {
                     add result: tempList                """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
-        //TODO: check this test case
-//        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
         testUtils.assertGeneratedContainsExpectedString(generated, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generated, "result = [1]");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
@@ -99,16 +97,9 @@ public class PythonFunctionAddOperationTest {
                 """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
-        // Check core logic separately to maintain robustness
-        String expected = """
-                    result = []
-
-                    rune_add_to_list(result, rune_resolve_attr(self, \"list\"))
-
-                    rune_add_to_list(result, rune_resolve_attr(self, \"value\"))
-                """;
-
-        testUtils.assertGeneratedContainsExpectedString(generated, expected);
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"list\"))");
+        testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"value\"))");
     }
 
     @Test
@@ -129,11 +120,10 @@ public class PythonFunctionAddOperationTest {
                 """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
-        //TODO: check this test case
-//        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
         testUtils.assertGeneratedContainsExpectedString(generated, "tempList = [2, 3]");
-        testUtils.assertGeneratedContainsExpectedString(generated, "result = [1]");
-        testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"list\"))");
+        testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"value\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");
     }
     @Test
@@ -151,15 +141,9 @@ public class PythonFunctionAddOperationTest {
                 """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
-        // Check core logic separately to maintain robustness
-
-        testUtils.assertGeneratedContainsExpectedString(generated, "result = ObjectBuilder(com_rosetta_test_model_functions_IntHolder)");
-        testUtils.assertGeneratedContainsExpectedString(generated, """
-            if not isinstance(result.items, list):
-                result.items = []
-            rune_add_to_list(result.items, [1, 2, 3])
-            """);
-        
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = ObjectBuilder(com_rosetta_test_model_IntHolder)");
+        testUtils.assertGeneratedContainsExpectedString(generated, "result.items = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result.items, [1, 2, 3])");
         testUtils.assertGeneratedContainsExpectedString(generated, "result = result.to_model()");
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");
     }

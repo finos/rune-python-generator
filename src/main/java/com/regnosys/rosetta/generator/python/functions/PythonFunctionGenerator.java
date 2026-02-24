@@ -412,10 +412,54 @@ public final class PythonFunctionGenerator {
             PythonCodeWriter writer = new PythonCodeWriter();
             PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();
 
+            // 1. Preamble: Proactive initialization
+            Set<String> preambleCandidates = new HashSet<>();
+            Set<String> seenRoots = new HashSet<>();
+            for (Operation operation : function.getOperations()) {
+                String rootName = operation.getAssignRoot().getName();
+                if (!seenRoots.contains(rootName)) {
+                    seenRoots.add(rootName);
+                    // A root is a candidate if it's first touched by an 'add' or a nested path
+                    if (operation.isAdd() || operation.getPath() != null) {
+                        preambleCandidates.add(rootName);
+                    }
+                }
+            }
+
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
+                String rootName = root.getName();
+
+                // 1a. Root initialization
+                if (preambleCandidates.contains(rootName) && !scope.isInitialized(rootName)) {
+                    Attribute attribute = (Attribute) root;
+                    RosettaType type = attribute.getTypeCall().getType();
+                    if (attribute.getCard().isIsMany() || type instanceof RosettaEnumeration) {
+                        writer.appendLine(rootName + " = []");
+                        scope.markInitialized(rootName);
+                    } else if (operation.getPath() != null) {
+                        String bundleName = RuneToPythonMapper.getBundleObjectName(type);
+                        scope.markAsObjectBuilder(rootName);
+                        writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                    }
+                }
+
+                // 1b. Nested path initialization
+                if (operation.getPath() != null && scope.isObjectBuilder(rootName)) {
+                    initializePathInPreamble(rootName, operation.getPath(), function, writer, scope);
+                }
+            }
+            if (scope.hasInitializedNames()) {
+                // spacing after preamble - let individual operations handle their own leading newlines if needed
+            }
+
+            // 2. Execution: Actual operations
+            for (Operation operation : function.getOperations()) {
+                AssignPathRoot root = operation.getAssignRoot();
+                // TODO: is clear blocks a fragile activity
                 expressionGenerator.clearBlocks();
-                String expression = expressionGenerator.generateExpression(operation.getExpression(), PythonExpressionScope.of("self"));
+                String expression = expressionGenerator.generateExpression(operation.getExpression(),
+                        PythonExpressionScope.of("self"));
 
                 for (String block : expressionGenerator.getIfCondBlocks()) {
                     writer.appendBlock(block);
@@ -458,12 +502,19 @@ public final class PythonFunctionGenerator {
             writer.appendLine(rootName + " = " + expression);
             scope.markInitialized(rootName);
         } else {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
             if (!scope.isInitialized(rootName)) {
+                String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
                 scope.markAsObjectBuilder(rootName);
                 writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
             }
-            writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
+
+            if (scope.isObjectBuilder(rootName)) {
+                writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
+            } else {
+                writer.appendLine(
+                        "set_rune_attr(" + rootName + ", " + generateAttributesPath(operation.getPath()) + ", " + expression
+                                + ")");
+            }
         }
         return writer.toString();
     }
@@ -477,40 +528,116 @@ public final class PythonFunctionGenerator {
         if (attributeType == null) {
             throw new RuntimeException("Attribute type is null");
         }
+
         if (attributeType instanceof RosettaEnumeration) {
-            if (!scope.isInitialized(rootName)) {
-                scope.markInitialized(rootName);
-                writer.appendLine(rootName + " = []");
-            }
             writer.appendLine(rootName + ".extend(" + expression + ")");
-        } else if (attribute.getCard().isIsMany()) {
-            if (!scope.isInitialized(rootName)) {
-                scope.markInitialized(rootName);
-                writer.appendLine(rootName + " = []");
+        } else if (isMany(operation)) {
+            if (scope.isObjectBuilder(rootName)) {
+                String path = generateDottedPath(operation.getPath());
+                writer.appendLine("rune_add_to_list(" + rootName + "." + path + ", " + expression + ")");
+            } else {
+                writer.newLine();
+                writer.appendLine("rune_add_to_list(" + rootName + ", " + expression + ")");
             }
-            writer.newLine();
-            writer.appendLine("rune_add_to_list(" + rootName + ", " + expression + ")");
         } else {
             if (!scope.isInitialized(rootName)) {
-                scope.markInitialized(rootName);
-                writer.appendLine(rootName + " = " + expression);
+                if (operation.getPath() != null) {
+                    String bundleName = RuneToPythonMapper.getBundleObjectName(attributeType);
+                    scope.markAsObjectBuilder(rootName);
+                    writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                    writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
+                } else {
+                    writer.appendLine(rootName + " = " + expression);
+                    scope.markInitialized(rootName);
+                }
             } else {
                 if (operation.getPath() == null) {
                     writer.appendLine(rootName + ".add_rune_attr(self, " + expression + ")");
                 } else {
-                    String path = generateAttributesPath(operation.getPath());
-                    writer.appendLine(rootName
-                            + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
-                            + rootName
-                            + "), "
-                            + path
-                            + "), "
-                            + expression
-                            + ")");
+                    if (scope.isObjectBuilder(rootName)) {
+                        writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
+                    } else {
+                        String path = generateAttributesPath(operation.getPath());
+                        writer.appendLine(rootName
+                                + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
+                                + rootName
+                                + "), "
+                                + path
+                                + "), "
+                                + expression
+                                + ")");
+                    }
                 }
             }
         }
         return writer.toString();
+    }
+
+    private boolean isMany(Operation operation) {
+        if (operation.getPath() == null) {
+            return ((Attribute) operation.getAssignRoot()).getCard().isIsMany();
+        }
+        Segment current = operation.getPath();
+        while (current.getNext() != null) {
+            current = current.getNext();
+        }
+        return ((Attribute) current.getFeature()).getCard().isIsMany();
+    }
+
+    private void initializePathInPreamble(String rootName, Segment path, Function function,
+            PythonCodeWriter writer, PythonFunctionGenerationScope scope) {
+        Segment current = path;
+        String currentPath = rootName;
+
+        while (current != null) {
+            Attribute attribute = (Attribute) current.getFeature();
+            String attrName = attribute.getName();
+            currentPath += "." + attrName;
+
+            if (!scope.isInitialized(currentPath)) {
+                // Determine if this path element is ever first-touched by an 'add'
+                boolean needsPreamble = false;
+                for (Operation op : function.getOperations()) {
+                    if (op.getAssignRoot().getName().equals(rootName) && op.getPath() != null) {
+                        // Compare the path segments up to this point
+                        if (isSamePath(path, op.getPath(), current)) {
+                            if (op.isAdd() || op.getPath().getNext() != null) {
+                                needsPreamble = true;
+                            }
+                            break; // Logic determined by first touch
+                        }
+                    }
+                }
+
+                if (needsPreamble) {
+                    if (attribute.getCard().isIsMany()) {
+                        writer.appendLine(currentPath + " = []");
+                        scope.markInitialized(currentPath);
+                    } else if (current.getNext() != null) {
+                        String bundleName = RuneToPythonMapper.getBundleObjectName(attribute.getTypeCall().getType());
+                        writer.appendLine(currentPath + " = ObjectBuilder(" + bundleName + ")");
+                        scope.markInitialized(currentPath);
+                    }
+                }
+            }
+            current = current.getNext();
+        }
+    }
+
+    private boolean isSamePath(Segment targetPath, Segment opPath, Segment upToSegment) {
+        Segment t = targetPath;
+        Segment o = opPath;
+        while (t != null && o != null) {
+            if (!t.getFeature().getName().equals(o.getFeature().getName())) {
+                return false;
+            }
+            if (t == upToSegment) {
+                return true;
+            }
+            t = t.getNext();
+            o = o.getNext();
+        }
+        return false;
     }
 
     private String generateAttributesPath(Segment path) {
@@ -566,10 +693,27 @@ public final class PythonFunctionGenerator {
         }
 
         /**
+         * Checks if a variable name is marked as an ObjectBuilder.
+         *
+         * @param name the variable name
+         * @return true if it's an ObjectBuilder, false otherwise
+         */
+        public boolean isObjectBuilder(String name) {
+            return objectBuilderNames.contains(name);
+        }
+
+        /**
          * @return true if any ObjectBuilders were created in this scope
          */
         public boolean hasObjectBuilders() {
             return !objectBuilderNames.isEmpty();
+        }
+
+        /**
+         * @return true if any names have been initialized in this scope (either simple or ObjectBuilder)
+         */
+        public boolean hasInitializedNames() {
+            return !initializedNames.isEmpty();
         }
 
         /**
