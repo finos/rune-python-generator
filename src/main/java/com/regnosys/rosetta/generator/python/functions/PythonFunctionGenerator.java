@@ -103,7 +103,9 @@ public final class PythonFunctionGenerator {
                 addFunctionDependencies(dependencyDAG, functionName, function);
             } catch (Exception ex) {
                 LOGGER.error("Exception occurred generating function {}", function.getName(), ex);
-                throw new RuntimeException("Error generating Python for function " + function.getName(), ex);
+                throw new RuntimeException(
+                    "Error generating Python for function " + function.getName(), ex
+                );
             }
         }
         return result;
@@ -146,10 +148,15 @@ public final class PythonFunctionGenerator {
         for (RosettaNamed dep : dependencies) {
             String depName = "";
             switch (dep) {
-                case Data data -> depName = rObjectFactory.buildRDataType(data).getQualifiedName().toString();
+                case Data data -> depName = rObjectFactory
+                    .buildRDataType(data)
+                    .getQualifiedName()
+                    .toString();
                 case Function function1 -> depName = RuneToPythonMapper.getFullyQualifiedObjectName(function1);
-                case RosettaEnumeration rosettaEnumeration ->
-                    depName = rObjectFactory.buildREnumType(rosettaEnumeration).getQualifiedName().toString();
+                case RosettaEnumeration rosettaEnumeration -> depName = rObjectFactory
+                    .buildREnumType(rosettaEnumeration)
+                    .getQualifiedName()
+                    .toString();
                 default -> {
                 }
             }
@@ -512,8 +519,13 @@ public final class PythonFunctionGenerator {
                 writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
             } else {
                 writer.appendLine(
-                        "set_rune_attr(" + rootName + ", " + generateAttributesPath(operation.getPath()) + ", " + expression
-                                + ")");
+                        "set_rune_attr(" 
+                        + rootName
+                        + ", "
+                        + generateAttributesPath(operation.getPath())
+                        + ", "
+                        + expression
+                        + ")");
             }
         }
         return writer.toString();

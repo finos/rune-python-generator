@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Disabled;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("LineLength")
 public class PythonFunctionOrderTest {
 
     /**

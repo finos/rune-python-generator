@@ -62,7 +62,8 @@ public class PythonModelObjectGenerator {
      * @param context  the Python code generator context
      * @return a Map of all the generated Python indexed by the class name
      */
-    public Map<String, String> generate(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
+    public Map<String, String> generate(Iterable<Data> rClasses,
+        PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
             throw new RuntimeException("Dependency DAG not initialized");
@@ -103,7 +104,10 @@ public class PythonModelObjectGenerator {
         return result;
     }
 
-    private void addAttributeDependencies(Graph<String, DefaultEdge> dependencyDAG, String className, Data rc) {
+    private void addAttributeDependencies(Graph<String,
+        DefaultEdge> dependencyDAG,
+        String className,
+        Data rc) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         for (RAttribute attr : buildRDataType.getOwnAttributes()) {
             RType rt = attr.getRMetaAnnotatedType().getRType();
@@ -121,7 +125,10 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
+    private void addDependency(
+        Graph<String, DefaultEdge> dependencyDAG,
+        String className,
+        String dependencyName) {
         dependencyDAG.addVertex(dependencyName);
         if (!className.equals(dependencyName)) {
             try {

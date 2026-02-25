@@ -52,7 +52,8 @@ public final class PythonAttributeProcessor {
      * @return An AttributeProcessingResult containing the generated Python code and
      *         a list of annotation updates.
      */
-    public AttributeProcessingResult generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints) {
+    public AttributeProcessingResult generateAllAttributes(Data rc,
+        Map<String, List<String>> keyRefConstraints) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
@@ -234,18 +235,31 @@ public final class PythonAttributeProcessor {
         ValidationProperties.Builder builder = ValidationProperties.builder();
         switch (rt) {
             case RStringType stringType -> {
-                stringType.getPattern().ifPresent(value -> builder.pattern(String.format("r'^%s*$'", value)));
-                stringType.getInterval().getMin().filter(v -> v > 0).ifPresent(v -> builder.minLength(v));
-                stringType.getInterval().getMax().ifPresent(v -> builder.maxLength(v));
+                stringType
+                    .getPattern()
+                    .ifPresent(value -> builder.pattern(String.format("r'^%s*$'", value)));
+                stringType
+                    .getInterval()
+                    .getMin()
+                    .filter(v -> v > 0)
+                    .ifPresent(v -> builder.minLength(v));
+                stringType
+                    .getInterval()
+                    .getMax()
+                    .ifPresent(v -> builder.maxLength(v));
             }
             case RNumberType numberType -> {
                 if (!numberType.isInteger()) {
                     numberType.getDigits().ifPresent(v -> builder.maxDigits(v));
                     numberType.getFractionalDigits().ifPresent(v -> builder.decimalPlaces(v));
-                    numberType.getInterval().getMin()
-                            .ifPresent(v -> builder.ge(String.format("Decimal('%s')", v.toPlainString())));
-                    numberType.getInterval().getMax()
-                            .ifPresent(v -> builder.le(String.format("Decimal('%s')", v.toPlainString())));
+                    numberType
+                        .getInterval()
+                        .getMin()
+                        .ifPresent(v -> builder.ge(String.format("Decimal('%s')", v.toPlainString())));
+                    numberType
+                        .getInterval()
+                        .getMax()
+                        .ifPresent(v -> builder.le(String.format("Decimal('%s')", v.toPlainString())));
                 }
             }
             default -> {
@@ -319,7 +333,10 @@ public final class PythonAttributeProcessor {
                 }
                 if (rt == null) {
                     throw new RuntimeException(
-                            "Attribute type is null for " + attr.getName() + " for class " + rc.getName());
+                            "Attribute type is null for "
+                            + attr.getName()
+                            + " for class "
+                            + rc.getName());
                 }
 
                 if (rt instanceof REnumType rEnumType) {
@@ -471,7 +488,13 @@ public final class PythonAttributeProcessor {
             }
 
             public ValidationProperties build() {
-                return new ValidationProperties(pattern, minLength, maxLength, maxDigits, decimalPlaces, ge, le);
+                return new ValidationProperties(pattern,
+                    minLength,
+                    maxLength,
+                    maxDigits,
+                    decimalPlaces,
+                    ge,
+                    le);
             }
         }
     }

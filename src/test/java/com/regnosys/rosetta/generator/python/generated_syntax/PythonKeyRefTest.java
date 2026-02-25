@@ -11,6 +11,7 @@ import java.util.Map;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("LineLength")
 public class PythonKeyRefTest {
     /**
      * Test utils for generating Python.

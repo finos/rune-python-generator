@@ -16,6 +16,7 @@ import java.util.Map;
  */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("LineLength")
 public class PythonCircularReferenceImplementationTest {
 
     /**

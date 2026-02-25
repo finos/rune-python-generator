@@ -24,7 +24,9 @@ public final class PythonGeneratorTestUtils {
     @Inject
     private PythonCodeGenerator generator;
 
-    public Map<String, CharSequence> generatePythonFromRosettaModel(RosettaModel m, ResourceSet resourceSet) {
+    public Map<String, CharSequence> generatePythonFromRosettaModel(
+        RosettaModel m,
+        ResourceSet resourceSet) {
         String version = m.getVersion();
         Map<String, CharSequence> result = new HashMap<>();
         result.putAll(generator.beforeGenerate(m.eResource(), m, version));
@@ -41,11 +43,13 @@ public final class PythonGeneratorTestUtils {
         String version = m.getVersion();
 
         Map<String, CharSequence> result = new HashMap<>();
-        result.putAll(generator.beforeAllGenerate(resourceSet, Collections.singletonList(m), version));
+        result.putAll(generator.beforeAllGenerate(resourceSet, 
+            Collections.singletonList(m), version));
         result.putAll(generator.beforeGenerate(m.eResource(), m, version));
         result.putAll(generator.generate(m.eResource(), m, version));
         result.putAll(generator.afterGenerate(m.eResource(), m, version));
-        result.putAll(generator.afterAllGenerate(resourceSet, Collections.singletonList(m), version));
+        result.putAll(generator.afterAllGenerate(resourceSet,
+            Collections.singletonList(m), version));
         return result;
     }
 

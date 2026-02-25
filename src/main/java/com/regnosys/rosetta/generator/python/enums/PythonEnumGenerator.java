@@ -36,7 +36,9 @@ public class PythonEnumGenerator {
             writer.newLine();
 
             generateEnumClass(writer, enumeration);
-            result.put(PythonCodeGeneratorUtil.toPyFileName(namespace, enumeration.getName()), writer.toString());
+            result.put(PythonCodeGeneratorUtil.toPyFileName(namespace,
+                enumeration.getName()),
+                writer.toString());
         }
         return result;
     }
@@ -55,7 +57,9 @@ public class PythonEnumGenerator {
 
     private void generateEnumClass(PythonCodeWriter writer, RosettaEnumeration enume) {
         List<RosettaEnumValue> allValues = getAllEnumValues(enume);
-        writer.appendLine("class " + enume.getName() + "(rune.runtime.metadata.EnumWithMetaMixin, Enum):");
+        writer.appendLine("class "
+            + enume.getName()
+            + "(rune.runtime.metadata.EnumWithMetaMixin, Enum):");
         writer.indent();
 
         if (enume.getDefinition() != null) {

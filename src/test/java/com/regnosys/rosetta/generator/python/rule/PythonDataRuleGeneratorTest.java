@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("LineLength")
 public class PythonDataRuleGeneratorTest {
 
     /**

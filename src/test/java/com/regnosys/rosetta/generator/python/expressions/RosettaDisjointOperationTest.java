@@ -12,6 +12,7 @@ import jakarta.inject.Inject;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("LineLength")
 public class RosettaDisjointOperationTest {
 
     /**

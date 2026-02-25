@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
  */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("checkstyle:LineLength")
 public class RosettaMathOperationTest {
 
     /**

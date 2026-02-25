@@ -15,6 +15,7 @@ import java.util.Map;
  */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("checkstyle:LineLength")
 public class PythonFunctionBasicTest {
 
     /**

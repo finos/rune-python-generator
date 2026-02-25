@@ -286,7 +286,10 @@ public final class RuneToPythonMapper {
      *                        "Optional[...]").
      * @return the formatted Python type string
      */
-    public static String formatCardinality(String baseType, int min, int max, boolean isInputArgument) {
+    public static String formatCardinality(String baseType,
+        int min,
+        int max,
+        boolean isInputArgument) {
         String type = baseType;
 
         if (max > 1 || max == -1 || max == 0) {

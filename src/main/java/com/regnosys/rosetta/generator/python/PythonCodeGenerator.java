@@ -136,7 +136,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     }
 
     @Override
-    public Map<String, ? extends CharSequence> generate(Resource resource, RosettaModel model, String version) {
+    public Map<String, ? extends CharSequence> generate(Resource resource, 
+        RosettaModel model,
+        String version) {
         if (model == null) {
             throw new IllegalArgumentException("Model is null");
         }
@@ -151,15 +153,23 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         Map<String, CharSequence> result = new HashMap<>();
 
-        List<Data> rosettaClasses = model.getElements().stream().filter(Data.class::isInstance).map(Data.class::cast)
-                .collect(Collectors.toList());
+        List<Data> rosettaClasses = model.getElements()
+            .stream()
+            .filter(Data.class::isInstance)
+            .map(Data.class::cast)
+            .collect(Collectors.toList());
 
-        List<RosettaEnumeration> rosettaEnums = model.getElements().stream()
-                .filter(RosettaEnumeration.class::isInstance).map(RosettaEnumeration.class::cast)
-                .collect(Collectors.toList());
+        List<RosettaEnumeration> rosettaEnums = model.getElements()
+            .stream()
+            .filter(RosettaEnumeration.class::isInstance)
+            .map(RosettaEnumeration.class::cast)
+            .collect(Collectors.toList());
 
-        List<Function> rosettaFunctions = model.getElements().stream().filter(Function.class::isInstance)
-                .map(Function.class::cast).collect(Collectors.toList());
+        List<Function> rosettaFunctions = model.getElements()
+            .stream()
+            .filter(Function.class::isInstance)
+            .map(Function.class::cast)
+            .collect(Collectors.toList());
 
         if (!rosettaClasses.isEmpty() || !rosettaEnums.isEmpty() || !rosettaFunctions.isEmpty()) {
             context.addSubfolder(model.getName());
@@ -194,8 +204,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         return result;
     }
 
-    private Map<String, CharSequence> processDAG(String nameSpace, PythonCodeGeneratorContext context,
-            String cleanVersion) {
+    private Map<String, CharSequence> processDAG(String nameSpace,
+        PythonCodeGeneratorContext context,
+        String cleanVersion) {
         if (nameSpace == null || context == null || cleanVersion == null) {
             throw new IllegalArgumentException("Invalid arguments");
         }
@@ -204,13 +215,17 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         Set<String> enumImports = context.getEnumImports();
 
-        if (nameSpaceObjects != null && !nameSpaceObjects.isEmpty() && dependencyDAG != null && enumImports != null) {
-            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
+        if (nameSpaceObjects != null
+            && !nameSpaceObjects.isEmpty()
+            && dependencyDAG != null
+            && enumImports != null) {
+            result.put(PYPROJECT_TOML,
+                PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
             PythonCodeWriter bundleWriter = new PythonCodeWriter();
             PythonCodeWriter annotationUpdateWriter = new PythonCodeWriter();
             PythonCodeWriter rebuildWriter = new PythonCodeWriter();
-            TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
-                    dependencyDAG);
+            TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator =
+                new TopologicalOrderIterator<>(dependencyDAG);
 
             // for each element in the ordered collection add the generated class to the
             // bundle and add a stub class to the results
@@ -268,7 +283,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                         stubWriter.newLine();
                         stubWriter.newLine();
                         stubWriter.appendLine(
-                                "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
+                            "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
                     }
                     stubWriter.newLine();
                     stubWriter.newLine();
@@ -294,7 +309,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             if (context.hasFunctions()) {
                 bundleWriter.newLine();
                 bundleWriter.appendLine(
-                        "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
+                    "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
             }
 
             bundleWriter.newLine();
@@ -306,7 +321,11 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     }
 
     private List<String> getWorkspaces(List<String> subfolders) {
-        return subfolders.stream().map(subfolder -> subfolder.split("\\.")[0]).distinct().collect(Collectors.toList());
+        return subfolders
+            .stream()
+            .map(subfolder -> subfolder.split("\\.")[0])
+            .distinct()
+            .collect(Collectors.toList());
     }
 
     private Map<String, String> generateWorkspaces(List<String> workspaces, String version) {
