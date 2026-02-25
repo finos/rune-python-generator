@@ -52,11 +52,7 @@ public final class PythonFunctionGenerator {
     @Inject
     private PythonFunctionDependencyProvider functionDependencyProvider;
 
-    /**
-     * The expression generator.
-     */
-    @Inject
-    private PythonExpressionGenerator expressionGenerator;
+
 
     /**
      * The object factory.
@@ -95,10 +91,14 @@ public final class PythonFunctionGenerator {
             try {
                 String pythonFunction = generateFunction(function, context);
 
-                String functionName = RuneToPythonMapper.getFullyQualifiedObjectName(function);
+                String functionName = RuneToPythonMapper.getFullyQualifiedName(function);
                 result.put(functionName, pythonFunction);
                 dependencyDAG.addVertex(functionName);
                 context.addFunctionName(functionName);
+
+                if (isCodeImplementation(function)) {
+                    context.addNativeFunctionName(functionName);
+                }
 
                 addFunctionDependencies(dependencyDAG, functionName, function);
             } catch (Exception ex) {
@@ -152,7 +152,7 @@ public final class PythonFunctionGenerator {
                     .buildRDataType(data)
                     .getQualifiedName()
                     .toString();
-                case Function function1 -> depName = RuneToPythonMapper.getFullyQualifiedObjectName(function1);
+                case Function function1 -> depName = RuneToPythonMapper.getFullyQualifiedName(function1);
                 case RosettaEnumeration rosettaEnumeration -> depName = rObjectFactory
                     .buildREnumType(rosettaEnumeration)
                     .getQualifiedName()
@@ -196,6 +196,7 @@ public final class PythonFunctionGenerator {
         }
         context.getEnumImports().addAll(collectFunctionDependencies(function));
 
+        PythonExpressionGenerator expressionGenerator = new PythonExpressionGenerator();
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -220,18 +221,17 @@ public final class PythonFunctionGenerator {
             writer.appendLine("");
         }
 
-        writer.appendBlock(generateConditions(function));
-        expressionGenerator.initialize();
+        writer.appendBlock(generateConditions(function, expressionGenerator));
 
         boolean isCodeImplementation = isCodeImplementation(function);
         if (isCodeImplementation) {
             writer.appendLine(generateExternalFunctionCall(function));
         } else {
-            writer.appendBlock(generateAlias(function));
-            writer.appendBlock(generateOperations(function, context));
+            writer.appendBlock(generateAlias(function, expressionGenerator));
+            writer.appendBlock(generateOperations(function, context, expressionGenerator));
         }
 
-        writer.appendBlock(generateOutput(function, isCodeImplementation));
+        writer.appendBlock(generateOutput(function, isCodeImplementation, expressionGenerator));
 
         writer.unindent();
         writer.newLine();
@@ -241,7 +241,7 @@ public final class PythonFunctionGenerator {
 
     private String generateExternalFunctionCall(Function function) {
         String outputName = function.getOutput().getName();
-        String qualifiedName = RuneToPythonMapper.getFullyQualifiedObjectName(function);
+        String qualifiedName = RuneToPythonMapper.getFullyQualifiedName(function);
         String arguments = function.getInputs().stream()
                 .map(RosettaNamed::getName)
                 .collect(Collectors.joining(", "));
@@ -281,14 +281,15 @@ public final class PythonFunctionGenerator {
         return result.toString();
     }
 
-    private String generateOutput(Function function, boolean isCodeImplementation) {
+    private String generateOutput(Function function, boolean isCodeImplementation,
+            PythonExpressionGenerator expressionGenerator) {
         Attribute output = function.getOutput();
         if (output != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
             if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty() && !isCodeImplementation) {
                 writer.appendLine(output.getName() + " = rune_resolve_attr(self, \"" + output.getName() + "\")");
             }
-            String postConds = generatePostConditions(function);
+            String postConds = generatePostConditions(function, expressionGenerator);
             if (!postConds.isEmpty()) {
                 writer.appendLine("");
                 writer.appendBlock(postConds);
@@ -319,7 +320,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("----------");
         for (Attribute input : inputs) {
             String paramName = RuneToPythonMapper.formatCardinality(
-                    RuneToPythonMapper.getFullyQualifiedObjectName(input.getTypeCall().getType()),
+                    RuneToPythonMapper.getFullyQualifiedName(input.getTypeCall().getType()),
                     1, // Force min=1 to match legacy docstring format (no Optional)
                     input.getCard().getSup(),
                     true);
@@ -333,7 +334,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("-------");
         if (output != null) {
             String paramName = RuneToPythonMapper.formatCardinality(
-                    RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType()),
+                    RuneToPythonMapper.getFullyQualifiedName(output.getTypeCall().getType()),
                     1, // Force min=1 to match legacy docstring format (no Optional)
                     output.getCard().getSup(),
                     true);
@@ -372,7 +373,7 @@ public final class PythonFunctionGenerator {
         return enumImports;
     }
 
-    private String generateConditions(Function function) {
+    private String generateConditions(Function function, PythonExpressionGenerator expressionGenerator) {
         if (!function.getConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# conditions");
@@ -386,7 +387,7 @@ public final class PythonFunctionGenerator {
         return "";
     }
 
-    private String generatePostConditions(Function function) {
+    private String generatePostConditions(Function function, PythonExpressionGenerator expressionGenerator) {
         if (!function.getPostConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# post-conditions");
@@ -399,7 +400,7 @@ public final class PythonFunctionGenerator {
         return "";
     }
 
-    private String generateAlias(Function function) {
+    private String generateAlias(Function function, PythonExpressionGenerator expressionGenerator) {
         PythonCodeWriter writer = new PythonCodeWriter();
         for (ShortcutDeclaration shortcut : function.getShortcuts()) {
             PythonExpressionGenerator.ExpressionResult result = expressionGenerator.generate(
@@ -415,7 +416,8 @@ public final class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateOperations(Function function, PythonCodeGeneratorContext context) {
+    private String generateOperations(Function function, PythonCodeGeneratorContext context,
+            PythonExpressionGenerator expressionGenerator) {
         if (function.getOutput() != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
             PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();

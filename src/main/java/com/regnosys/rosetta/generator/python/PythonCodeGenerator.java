@@ -312,6 +312,22 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                     "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
             }
 
+            Set<String> nativeFunctionNames = context.getNativeFunctionNames();
+            if (!nativeFunctionNames.isEmpty()) {
+                bundleWriter.newLine();
+                bundleWriter.appendLine("rune_attempt_register_native_functions(");
+                bundleWriter.indent();
+                bundleWriter.appendLine("native_functions=[");
+                bundleWriter.indent();
+                for (String nativeFunctionName : nativeFunctionNames) {
+                    bundleWriter.appendLine("'" + nativeFunctionName + "',");
+                }
+                bundleWriter.unindent();
+                bundleWriter.appendLine("]");
+                bundleWriter.unindent();
+                bundleWriter.appendLine(")");
+            }
+
             bundleWriter.newLine();
             bundleWriter.newLine();
             bundleWriter.appendLine("# EOF");

@@ -3,6 +3,7 @@ package com.regnosys.rosetta.generator.python;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +41,10 @@ public final class PythonCodeGeneratorContext {
      * Additional imports
      */
     private List<String> additionalImports = null;
+    /**
+     * The set of native function names.
+     */
+    private LinkedHashSet<String> nativeFunctionNames = null;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new ArrayList<>();
@@ -49,6 +54,7 @@ public final class PythonCodeGeneratorContext {
         this.functionNames = new HashSet<>();
         this.postDefinitionUpdates = new HashMap<>();
         this.additionalImports = new ArrayList<>();
+        this.nativeFunctionNames = new LinkedHashSet<>();
     }
 
     public List<String> getSubfolders() {
@@ -103,5 +109,13 @@ public final class PythonCodeGeneratorContext {
         if (!additionalImports.contains(importStatement)) {
             additionalImports.add(importStatement);
         }
+    }
+
+    public void addNativeFunctionName(String nativeFunctionName) {
+        this.nativeFunctionNames.add(nativeFunctionName);
+    }
+
+    public Set<String> getNativeFunctionNames() {
+        return nativeFunctionNames;
     }
 }

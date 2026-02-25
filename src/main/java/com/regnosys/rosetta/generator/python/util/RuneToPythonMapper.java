@@ -12,7 +12,7 @@ import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.builtin.RNumberType;
 
-//todo: compare getFlattenedTypeName and getFullyQualifiedObjectName
+// todo: compare getFlattenedTypeName and getFullyQualifiedName
 /**
  * A utility class for mapping Rune (Rosetta) types and attributes to their
  * corresponding Python types.
@@ -150,7 +150,7 @@ public final class RuneToPythonMapper {
         }
     }
 
-    public static String getFullyQualifiedObjectName(RosettaNamed rn) {
+    public static String getFullyQualifiedName(RosettaNamed rn) {
         RosettaModel model = (RosettaModel) rn.eContainer();
         if (model == null) {
             throw new RuntimeException("Rosetta model not found for data " + rn.getName());
@@ -171,7 +171,7 @@ public final class RuneToPythonMapper {
     }
 
     public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes) {
-        String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn);
+        String fullyQualifiedObjectName = getFullyQualifiedName(rn);
         if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
             return fullyQualifiedObjectName;
         }

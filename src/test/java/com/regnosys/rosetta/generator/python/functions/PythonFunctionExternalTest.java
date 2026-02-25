@@ -1,5 +1,7 @@
 package com.regnosys.rosetta.generator.python.functions;
 
+import java.util.Map;
+
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
@@ -25,30 +27,27 @@ public class PythonFunctionExternalTest {
      */
     @Test
     public void testExternalFunctionSupport() {
-        String python = testUtils.generatePythonFromString(
+
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                            namespace rosetta_dsl.test.functions
+                namespace rosetta_dsl.test.functions
 
-                            enum RoundingModeEnum:
-                                Down
-                                Up
+                enum RoundingModeEnum:
+                    Down
+                    Up
 
-                            func RoundToNearest: <"Round a number to the supplied nearest, using the supplied rounding mode.">
-                                [codeImplementation]
-                                inputs:
-                                    value number (1..1) <"The original (unrounded) number.">
-                                    nearest number (1..1) <"The nearest number to round to.">
-                                    roundingMode RoundingModeEnum (1..1) <"The method of rounding (up to nearest/down to nearest.">
-                                output:
-                                    roundedValue number (1..1)
-                                condition PositiveNearest:
-                                    nearest > 0
-                        """)
-                .values().stream()
-                .map(Object::toString)
-                .filter(s -> s.contains("RoundToNearest"))
-                .findFirst()
-                .orElseThrow();
+                func RoundToNearest: <"Round a number to the supplied nearest, using the supplied rounding mode.">
+                    [codeImplementation]
+                    inputs:
+                        value number (1..1) <"The original (unrounded) number.">
+                        nearest number (1..1) <"The nearest number to round to.">
+                        roundingMode RoundingModeEnum (1..1) <"The method of rounding (up to nearest/down to nearest.">
+                    output:
+                        roundedValue number (1..1)
+                    condition PositiveNearest:
+                        nearest > 0
+                """);
+        String bundle = gf.get("src/rosetta_dsl/_bundle.py").toString();
 
         // Note: rosetta_dsl.test.functions.functions.RoundToNearest is expected because
         // functions live in a 'functions' directory relative to their namespace.
@@ -70,6 +69,15 @@ public class PythonFunctionExternalTest {
 
                     return roundedValue
                 """;
-        testUtils.assertGeneratedContainsExpectedString(python, expected);
+        testUtils.assertGeneratedContainsExpectedString(bundle, expected);
+        
+        String registrationExpected = """
+                rune_attempt_register_native_functions(
+                    native_functions=[
+                        'rosetta_dsl.test.functions.functions.RoundToNearest',
+                    ]
+                )
+                """;
+        testUtils.assertGeneratedContainsExpectedString(bundle, registrationExpected);
     }
 }

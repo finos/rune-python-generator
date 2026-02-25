@@ -99,12 +99,7 @@ public final class PythonExpressionGenerator {
         ifCondBlocks.clear();
     }
 
-    /**
-     * Resets the generator state for a new lifecycle (e.g., a new function or condition).
-     */
-    public void initialize() {
-        generatedFunctionCounter = 0;
-    }
+
 
 
     /**
@@ -592,7 +587,6 @@ public final class PythonExpressionGenerator {
      * @return The generated if-then-else or switch statement.
      */
     private String generateIfThenElseOrSwitch(Condition c) {
-        initialize();
         ExpressionResult result = generate(c.getExpression(), PythonExpressionScope.of("self"));
 
         PythonCodeWriter writer = new PythonCodeWriter();

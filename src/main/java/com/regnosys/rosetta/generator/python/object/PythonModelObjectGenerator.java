@@ -37,11 +37,7 @@ public class PythonModelObjectGenerator {
     @Inject
     private RObjectFactory rObjectFactory;
 
-    /**
-     * The Python expression generator.
-     */
-    @Inject
-    private PythonExpressionGenerator expressionGenerator;
+
 
     /**
      * The Python attribute processor.
@@ -243,7 +239,7 @@ public class PythonModelObjectGenerator {
             writer.appendLine("\"\"\"");
         }
 
-        writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedObjectName(rc) + "'");
+        writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedName(rc) + "'");
 
         AttributeProcessingResult attrResult = pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints);
         writer.appendBlock(attrResult.getAttributeCode());
@@ -260,7 +256,7 @@ public class PythonModelObjectGenerator {
             writer.appendBlock(constraints);
         }
 
-        writer.appendBlock(expressionGenerator.generateTypeConditions(rc));
+        writer.appendBlock(new PythonExpressionGenerator().generateTypeConditions(rc));
 
         return writer.toString();
     }
