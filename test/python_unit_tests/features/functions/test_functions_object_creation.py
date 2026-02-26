@@ -1,11 +1,6 @@
 """test functions incomplete object return"""
 
-import pytest
-
 from rosetta_dsl.test.functions.BaseObject import BaseObject
-from rosetta_dsl.test.functions.BaseObjectWithBaseClassFields import (
-    BaseObjectWithBaseClassFields,
-)
 
 from rosetta_dsl.test.functions.TestSimpleObjectAssignment import (
     TestSimpleObjectAssignment,
@@ -61,15 +56,6 @@ def test_container_object_creation_from_base_object():
     TestContainerObjectCreationFromBaseObject(baseObject=base_object, value3=20)
 
 
-@pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
-def test_create_incomplete_object_succeeds_in_python():
-    """Test incomplete object return by setting strict=False in the function definition.
-    This test is expected to pass.
-    """
-    BaseObjectWithBaseClassFields(value1=5, strict=False)
-
-
-@pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")
 def test_complex_type_inputs():
     """Test complex type inputs."""
     complex_type_a = ComplexTypeA(valueA=5)

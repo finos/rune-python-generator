@@ -182,11 +182,6 @@ type BaseObject:
     value1 int (1..1)
     value2 int (1..1)
 
-type BaseObjectWithBaseClassFields:
-    value1 int (1..1)
-    value2 int (1..1)
-    strict boolean (1..1)
-
 func TestSimpleObjectAssignment:
     inputs:
         baseObject BaseObject (1..1)

@@ -149,6 +149,7 @@ public class PythonCircularDependencyTest {
      * Test case for inheritance circular dependency.
      * This test demonstrates a circular dependency via inheritance.
      */
+    // TODO: enable this test?
     @Test
     @Disabled("This currently generates an invalid order (Child before Parent) because the DAG ignores the cycle.")
     public void testInheritanceCircularDependency() {

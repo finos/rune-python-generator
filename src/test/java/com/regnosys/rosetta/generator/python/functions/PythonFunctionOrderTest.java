@@ -65,7 +65,6 @@ public class PythonFunctionOrderTest {
      * Test case for circular dependency order.
      */
     @Test
-    @Disabled("Circular dependencies are currently not supported and will cause a topological sort error or runtime NameError")
     public void testCircularDependencyOrder() {
         // Define ClassA that depends on ClassB, and ClassB that depends on ClassA.
         // This is a classic circular dependency which the topological sort cannot
