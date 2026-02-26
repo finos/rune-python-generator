@@ -3,23 +3,37 @@
 function error {
     echo
     echo "***************************************************************************"
-    echo "* *"
-    echo "* DEV ENV Initialization FAILED!                      *"
-    echo "* *"
+    echo "*                                                                         *"
+    echo "* DEV ENV Initialization FAILED!                                          *"
+    echo "*                                                                         *"
     echo "***************************************************************************"
     echo
     exit 1
 }
 
 # Determine the Python executable
-if command -v python &>/dev/null; then
-    PYEXE=python
-elif command -v python3 &>/dev/null; then
-    PYEXE=python3
+# IMPORTANT: Find a python that is NOT currently inside a virtual environment we might be destroying
+if command -v python3 &>/dev/null && ! command -v python3 | grep -q ".pyenv"; then
+    PYEXE=$(command -v python3)
+elif command -v python &>/dev/null && ! command -v python | grep -q ".pyenv"; then
+    PYEXE=$(command -v python)
 else
+    # Fallback to whatever is available but try to avoid the one in .pyenv if possible
+    PYEXE=$(which -a python3 python | grep -v ".pyenv" | head -n 1)
+    if [ -z "$PYEXE" ]; then
+        PYEXE=python3
+        if ! command -v $PYEXE &>/dev/null; then
+            PYEXE=python
+        fi
+    fi
+fi
+
+if ! command -v $PYEXE &>/dev/null; then
     echo "Python is not installed."
     error
 fi
+
+echo "Using base Python: $PYEXE"
 
 # Check Python version
 if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1; then
@@ -74,29 +88,31 @@ ${PYEXE} -m pip install -r requirements.txt || error
 echo "***** Get and Install Runtime"
 
 
-export RUNE_RUNTIME_DIR=$(dirname "$RUNE_RUNTIME_FILE")
+# Set RUNE_RUNTIME_DIR to the local repository root for an editable install.
+# Example: RUNE_RUNTIME_DIR="[PATH_TO_RUNE]/rune-python-runtime/FINOS/rune-python-runtime"
+# If RUNE_RUNTIME_DIR is not specified or the directory does not exist, it will pull from the GitHub repo.
 
-if [ -n "$RUNE_RUNTIME_FILE" ]; then
-    # --- Local Installation Logic ---
-    echo "Using local runtime source: $RUNE_RUNTIME_FILE"
-    if [ -f "$RUNE_RUNTIME_FILE" ]; then
-        ${PYEXE} -m pip install "$RUNE_RUNTIME_FILE" --force-reinstall || error
-    else
-        echo "Error: Local file $RUNE_RUNTIME_FILE not found."
-        error
-    fi
+if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then
+    echo "Installing runtime as editable from: $RUNE_RUNTIME_DIR"
+    ${PYEXE} -m pip install -e "$RUNE_RUNTIME_DIR" || error
 else
     # --- Remote Repository Logic ---
-    echo "No local source provided. Pulling from repo..."
+    echo "RUNE_RUNTIME_DIR not specified or not found. Pulling from GitHub repo..."
     RUNTIMEURL="https://api.github.com/repos/finos/rune-python-runtime/releases/latest"
     
     release_data=$(curl -s $RUNTIMEURL)
     download_url=$(echo "$release_data" | grep '"browser_download_url":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
 
+    if [ -z "$download_url" ] || [ "$download_url" == "null" ]; then
+        echo "Error: Could not determine download URL for the latest runtime release."
+        error
+    fi
+
+    echo "Downloading latest runtime from: $download_url"
     if command -v wget &>/dev/null; then
-        wget "$download_url"
+        wget -q "$download_url"
     elif command -v curl &>/dev/null; then
-        curl -LO "$download_url"
+        curl -sLO "$download_url"
     else
         echo "Neither wget nor curl is installed."
         error

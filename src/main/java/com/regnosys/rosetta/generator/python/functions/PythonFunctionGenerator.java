@@ -482,6 +482,9 @@ public final class PythonFunctionGenerator {
             }
             if (scope.hasObjectBuilders()) {
                 context.addAdditionalImport("from rune.runtime.object_builder import ObjectBuilder");
+                if (context.hasNativeFunctions()) {
+                    context.addAdditionalImport("from rune.runtime.native_registry import rune_attempt_register_native_functions");
+                }
                 for (String setName : scope.getObjectBuilderNames()) {
                     writer.appendLine(setName + " = " + setName + ".to_model()");
                 }

@@ -7,6 +7,7 @@ Usage: $(basename "$0") [options] [path]
 Options:
   -r, --reuse-env                              Reuse the .pyenv environment if it exists
   -k, --no-clean, --skip-clean, --keep-venv  Skip the cleanup step (leave venv active; do not run cleanup script)
+  -a, --all                                   Run all tests (features and native_function)
   -h, --help                                  Show this help
 
 Env:
@@ -43,6 +44,7 @@ else
 fi
 
 TEST_SUBDIR=""
+RUN_ALL=0
 
 # CLI options
 while [[ $# -gt 0 ]]; do
@@ -50,6 +52,10 @@ while [[ $# -gt 0 ]]; do
     -r|--reuse-env)
       REUSE_ENV=1
       CLEANUP=0
+      shift
+      ;;
+    -a|--all)
+      RUN_ALL=1
       shift
       ;;
     -k|--no-clean|--skip-clean|--keep-venv)
@@ -108,14 +114,19 @@ source "$MY_PATH/../common.sh" || { echo "Failed to source common.sh"; exit 1; }
 
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 
-if [[ -n "$TEST_SUBDIR" ]]; then
-  INPUT_ROSETTA_PATH="$MY_PATH/$TEST_SUBDIR"
-  if [[ ! -d "$INPUT_ROSETTA_PATH" ]]; then
-    echo "Directory not found: $INPUT_ROSETTA_PATH"
+# Always generate from the root of the test suite to ensure the "overall model" is complete
+INPUT_ROSETTA_PATH="$MY_PATH"
+
+if [[ $RUN_ALL -eq 1 ]]; then
+  TEST_TARGET="$MY_PATH"
+elif [[ -n "$TEST_SUBDIR" ]]; then
+  TEST_TARGET="$MY_PATH/$TEST_SUBDIR"
+  if [[ ! -d "$TEST_TARGET" ]]; then
+    echo "Directory not found: $TEST_TARGET"
     exit 1
   fi
 else
-  INPUT_ROSETTA_PATH="$MY_PATH/features"
+  TEST_TARGET="$MY_PATH/features"
 fi
 
 PYTHON_TESTS_TARGET_PATH="$PROJECT_ROOT_PATH/target/python-tests/unit_tests"
@@ -164,17 +175,19 @@ cd "$PYTHON_TESTS_TARGET_PATH" || error
 python -m pip wheel --no-deps --only-binary :all: . || error
 python -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
 
+# Find and run all build_and_install.sh scripts to ensure the environment matches the "overall model"
+echo "***** installing all native implementations"
+find "$MY_PATH" -name "build_and_install.sh" | while read -r script; do
+    echo "Running native setup: $script"
+    (cd "$(dirname "$script")" && bash "$(basename "$script")") || error
+done
+
 # run tests
 echo "***** run unit tests"
 cd "$MY_PATH" || error
 
-if [[ -n "$TEST_SUBDIR" ]]; then
-    TEST_TARGET="$MY_PATH/$TEST_SUBDIR"
-    echo "Running tests in: $TEST_TARGET"
-    python -m pytest -p no:cacheprovider "$TEST_TARGET"
-else
-    python -m pytest -p no:cacheprovider "$MY_PATH"
-fi
+echo "Running tests in: $TEST_TARGET"
+python -m pytest -p no:cacheprovider "$TEST_TARGET"
 
 if (( CLEANUP )); then
   echo "***** cleanup"

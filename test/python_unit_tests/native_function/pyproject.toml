@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=62.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rosetta-dsl-native-functions"
+version = "0.1.0"
+description = "Native Python implementations for Rosetta functions"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

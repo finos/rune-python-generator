@@ -73,7 +73,7 @@ public class PythonFunctionExternalTest {
         
         String registrationExpected = """
                 rune_attempt_register_native_functions(
-                    native_functions=[
+                    function_names=[
                         'rosetta_dsl.test.functions.functions.RoundToNearest',
                     ]
                 )

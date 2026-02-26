@@ -111,6 +111,9 @@ public final class PythonCodeGeneratorContext {
         }
     }
 
+    public boolean hasNativeFunctions() {
+        return !nativeFunctionNames.isEmpty();
+    }
     public void addNativeFunctionName(String nativeFunctionName) {
         this.nativeFunctionNames.add(nativeFunctionName);
     }
