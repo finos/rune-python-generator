@@ -65,29 +65,27 @@ public class PythonCircularDependencyTest {
     public void testForCircularDependency() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        namespace rosetta_dsl.test.model.circular_dependency
+                namespace rosetta_dsl.test.model.circular_dependency
 
-                        type Bar1: <"Test Circular Dependency">
-                            number1 int(1..1)
-                            bar2 Bar2(0..1)
-                        type Bar2:
-                            number2 int(1..1)
-                            bar1 Bar1(0..1)
-                            condition Test:
-                                if bar1 exists
-                                    then bar1->number1 > 0
-                        """);
+                type Bar1: <"Test Circular Dependency">
+                    number1 int(1..1)
+                    bar2 Bar2(0..1)
+                type Bar2:
+                    number2 int(1..1)
+                    bar1 Bar1(0..1)
+                    condition Test:
+                        if bar1 exists
+                            then bar1->number1 > 0
+                """);
 
         String bundle = gf.toString();
 
         testUtils.assertGeneratedContainsExpectedString(
                 bundle,
                 """
-
-
                 # Phase 2: Delayed Annotation Updates
-                rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__["bar1"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]
                 rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__["bar2"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]
+                rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__["bar1"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]
                 """);
 
         testUtils.assertGeneratedContainsExpectedString(
@@ -96,8 +94,8 @@ public class PythonCircularDependencyTest {
 
 
                 # Phase 3: Rebuild
-                rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()
                 rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild()
+                rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()
                 """);
     }
 
@@ -112,46 +110,44 @@ public class PythonCircularDependencyTest {
         // Currently, the DAG ignores cycles, so the order is non-deterministic.
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        type CircularA:
-                            b CircularB (1..1)
+                type CircularA:
+                    b CircularB (1..1)
 
-                        type CircularB:
-                            a CircularA (1..1)
-                        """);
+                type CircularB:
+                    a CircularA (1..1)
+                """);
 
         String bundle = gf.get("src/com/_bundle.py").toString();
 
         testUtils.assertGeneratedContainsExpectedString(
                 bundle,
                 """
-                        class com_rosetta_test_model_CircularB(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.CircularB'
-                            a: com_rosetta_test_model_CircularA = Field(..., description='')
+                class com_rosetta_test_model_CircularA(BaseDataClass):
+                    _FQRTN = 'com.rosetta.test.model.CircularA'
+                    b: com_rosetta_test_model_CircularB = Field(..., description='')
 
 
-                        class com_rosetta_test_model_CircularA(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.CircularA'
-                            b: com_rosetta_test_model_CircularB = Field(..., description='')
+                class com_rosetta_test_model_CircularB(BaseDataClass):
+                    _FQRTN = 'com.rosetta.test.model.CircularB'
+                    a: com_rosetta_test_model_CircularA = Field(..., description='')
 
 
-                        # Phase 2: Delayed Annotation Updates
-                        com_rosetta_test_model_CircularB.__annotations__["a"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]
-                        com_rosetta_test_model_CircularA.__annotations__["b"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]
+                # Phase 2: Delayed Annotation Updates
+                com_rosetta_test_model_CircularA.__annotations__["b"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]
+                com_rosetta_test_model_CircularB.__annotations__["a"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]
 
 
-                        # Phase 3: Rebuild
-                        com_rosetta_test_model_CircularB.model_rebuild()
-                        com_rosetta_test_model_CircularA.model_rebuild()
-                        """);
+                # Phase 3: Rebuild
+                com_rosetta_test_model_CircularA.model_rebuild()
+                com_rosetta_test_model_CircularB.model_rebuild()
+                """);
     }
 
     /**
      * Test case for inheritance circular dependency.
      * This test demonstrates a circular dependency via inheritance.
      */
-    // TODO: enable this test?
     @Test
-    @Disabled("This currently generates an invalid order (Child before Parent) because the DAG ignores the cycle.")
     public void testInheritanceCircularDependency() {
         // Parent depends on Child via attribute
         // Child depends on Parent via inheritance

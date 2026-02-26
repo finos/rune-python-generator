@@ -191,75 +191,84 @@ public class PythonBasicTypeGeneratorTest {
     public void testGenerateTypes() {
         String pythonString = testUtils.generatePythonFromString(
                 """
-                        type TestType: <"Test type description.">
-                            testTypeValue1 string (1..1) <"Test string">
-                            testTypeValue2 string (0..1) <"Test optional string">
-                            testTypeValue3 string (1..*) <"Test string list">
-                            testTypeValue4 TestType2 (1..1) <"Test TestType2">
-                            testEnum TestEnum (0..1) <"Optional test enum">
+                type TestType: <"Test type description.">
+                    testTypeValue1 string (1..1) <"Test string">
+                    testTypeValue2 string (0..1) <"Test optional string">
+                    testTypeValue3 string (1..*) <"Test string list">
+                    testTypeValue4 TestType2 (1..1) <"Test TestType2">
+                    testEnum TestEnum (0..1) <"Optional test enum">
 
-                        type TestType2:
-                            testType2Value1 number(1..*) <"Test number list">
-                            testType2Value2 date(0..1) <"Test date">
-                            testEnum TestEnum (0..1) <"Optional test enum">
+                type TestType2:
+                    testType2Value1 number(1..*) <"Test number list">
+                    testType2Value2 date(0..1) <"Test date">
+                    testEnum TestEnum (0..1) <"Optional test enum">
 
-                        enum TestEnum: <"Test enum description.">
-                            TestEnumValue1 <"Test enum value 1">
-                            TestEnumValue2 <"Test enum value 2">
-                        """).toString();
+                enum TestEnum: <"Test enum description.">
+                    TestEnumValue1 <"Test enum value 1">
+                    TestEnumValue2 <"Test enum value 2">
+                """).toString();
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
                 """
-                        class com_rosetta_test_model_TestType2(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestType2'
-                            testType2Value1: list[Decimal] = Field(..., description='Test number list', min_length=1)
-                            \"""
-                            Test number list
-                            \"""
-                            testType2Value2: Optional[datetime.date] = Field(None, description='Test date')
-                            \"""
-                            Test date
-                            \"""
-                            testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Optional test enum')
-                            \"""
-                            Optional test enum
-                            \"""
-
-
-                        class com_rosetta_test_model_TestType(BaseDataClass):
-                            \"""
-                            Test type description.
-                            \"""
-                            _FQRTN = 'com.rosetta.test.model.TestType'
-                            testTypeValue1: str = Field(..., description='Test string')
-                            \"""
-                            Test string
-                            \"""
-                            testTypeValue2: Optional[str] = Field(None, description='Test optional string')
-                            \"""
-                            Test optional string
-                            \"""
-                            testTypeValue3: list[str] = Field(..., description='Test string list', min_length=1)
-                            \"""
-                            Test string list
-                            \"""
-                            testTypeValue4: com_rosetta_test_model_TestType2 = Field(..., description='Test TestType2')
-                            \"""
-                            Test TestType2
-                            \"""
-                            testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Optional test enum')
-                            \"""
-                            Optional test enum
-                            \"""
-
-
-                        # Phase 2: Delayed Annotation Updates
-                        com_rosetta_test_model_TestType.__annotations__["testTypeValue4"] = Annotated[com_rosetta_test_model_TestType2, com_rosetta_test_model_TestType2.serializer(), com_rosetta_test_model_TestType2.validator()]
-
-
-                        # Phase 3: Rebuild
-                        com_rosetta_test_model_TestType.model_rebuild()
-                        """);
+                class com_rosetta_test_model_TestType2(BaseDataClass):
+                    _FQRTN = 'com.rosetta.test.model.TestType2'
+                    testType2Value1: list[Decimal] = Field(..., description='Test number list', min_length=1)
+                    \"""
+                    Test number list
+                    \"""
+                    testType2Value2: Optional[datetime.date] = Field(None, description='Test date')
+                    \"""
+                    Test date
+                    \"""
+                    testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Optional test enum')
+                    \"""
+                    Optional test enum
+                    \"""
+                """
+        );
+        testUtils.assertGeneratedContainsExpectedString(
+                pythonString,
+                """
+                class com_rosetta_test_model_TestType(BaseDataClass):
+                    \"""
+                    Test type description.
+                    \"""
+                    _FQRTN = 'com.rosetta.test.model.TestType'
+                    testTypeValue1: str = Field(..., description='Test string')
+                    \"""
+                    Test string
+                    \"""
+                    testTypeValue2: Optional[str] = Field(None, description='Test optional string')
+                    \"""
+                    Test optional string
+                    \"""
+                    testTypeValue3: list[str] = Field(..., description='Test string list', min_length=1)
+                    \"""
+                    Test string list
+                    \"""
+                    testTypeValue4: com_rosetta_test_model_TestType2 = Field(..., description='Test TestType2')
+                    \"""
+                    Test TestType2
+                    \"""
+                    testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Optional test enum')
+                    \"""
+                    Optional test enum
+                    \"""
+                """
+        );
+        testUtils.assertGeneratedContainsExpectedString(
+                pythonString,
+                """
+                # Phase 2: Delayed Annotation Updates
+                com_rosetta_test_model_TestType.__annotations__["testTypeValue4"] = Annotated[com_rosetta_test_model_TestType2, com_rosetta_test_model_TestType2.serializer(), com_rosetta_test_model_TestType2.validator()]
+                """
+        );
+        testUtils.assertGeneratedContainsExpectedString(
+                pythonString,
+                """
+                # Phase 3: Rebuild
+                com_rosetta_test_model_TestType.model_rebuild()
+                """);
     }
 
     /**

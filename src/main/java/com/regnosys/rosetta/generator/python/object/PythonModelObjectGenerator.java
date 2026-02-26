@@ -92,7 +92,6 @@ public class PythonModelObjectGenerator {
                     addDependency(dependencyDAG, className, superClassName);
                 }
 
-                addAttributeDependencies(dependencyDAG, className, rc);
             } catch (Exception e) {
                 throw new RuntimeException("Error generating Python for class " + rc.getName(), e);
             }

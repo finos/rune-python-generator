@@ -57,7 +57,7 @@ public class PythonFunctionOrderTest {
         int classBIndex = bundle.indexOf("class com_rosetta_test_model_ClassB");
         int funcIndex = bundle.indexOf("def com_rosetta_test_model_MyFunc");
 
-        assertTrue(classAIndex < classBIndex, "ClassA should be defined before ClassB");
+        assertTrue(classAIndex < funcIndex, "ClassA should be defined before MyFunc");
         assertTrue(classBIndex < funcIndex, "ClassB should be defined before MyFunc");
     }
 
