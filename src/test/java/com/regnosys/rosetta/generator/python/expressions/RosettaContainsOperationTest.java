@@ -92,9 +92,12 @@ public class RosettaContainsOperationTest {
                 """;
 
         String expectedPhases = """
+
+
                 # Phase 2: Delayed Annotation Updates
                 com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[list[com_rosetta_test_model_A], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
                 com_rosetta_test_model_Test.__annotations__["bValue"] = Annotated[list[com_rosetta_test_model_B], com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]
+
 
                 # Phase 3: Rebuild
                 com_rosetta_test_model_B.model_rebuild()

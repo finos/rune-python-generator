@@ -222,51 +222,56 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             result.put(PYPROJECT_TOML,
                 PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
             PythonCodeWriter bundleWriter = new PythonCodeWriter();
+            PythonCodeWriter dataObjectsWriter = new PythonCodeWriter();
+            PythonCodeWriter functionsWriter = new PythonCodeWriter();
             PythonCodeWriter annotationUpdateWriter = new PythonCodeWriter();
             PythonCodeWriter rebuildWriter = new PythonCodeWriter();
+
             TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator =
                 new TopologicalOrderIterator<>(dependencyDAG);
 
-            // for each element in the ordered collection add the generated class to the
-            // bundle and add a stub class to the results
-            boolean isFirst = true;
-            while (topologicalOrderIterator.hasNext()) {
-                if (isFirst) {
-                    bundleWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
-                    for (String imp : context.getAdditionalImports()) {
-                        bundleWriter.appendLine(imp);
-                    }
+            // 1. Prepare Header (Imports)
+            bundleWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
+            for (String imp : context.getAdditionalImports()) {
+                bundleWriter.appendLine(imp);
+            }
+            List<String> sortedEnumImports = new ArrayList<>(enumImports);
+            Collections.sort(sortedEnumImports);
+            for (String imp : sortedEnumImports) {
+                bundleWriter.appendLine(imp);
+            }
 
-                    List<String> sortedEnumImports = new ArrayList<>(enumImports);
-                    Collections.sort(sortedEnumImports);
-                    for (String imp : sortedEnumImports) {
-                        bundleWriter.appendLine(imp);
-                    }
-                    isFirst = false;
-                }
+            // 2. Traversal and Partitioning
+            while (topologicalOrderIterator.hasNext()) {
                 String name = topologicalOrderIterator.next();
                 String bundleClassName = name.replace('.', '_');
                 CharSequence object = nameSpaceObjects.get(name);
                 if (object != null) {
-                    // append the class to the bundle
-                    bundleWriter.newLine();
-                    bundleWriter.newLine();
-                    bundleWriter.appendBlock(object.toString());
+                    boolean isFunction = context.hasFunctionName(name);
 
-                    // Collect Phase 2 & 3 updates
-                    List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
-                    if (updates != null && !updates.isEmpty()) {
-                        for (String update : updates) {
-                            annotationUpdateWriter.appendLine(update);
+                    if (isFunction) {
+                        functionsWriter.newLine();
+                        functionsWriter.newLine();
+                        functionsWriter.appendBlock(object.toString());
+                    } else {
+                        dataObjectsWriter.newLine();
+                        dataObjectsWriter.newLine();
+                        dataObjectsWriter.appendBlock(object.toString());
+
+                        // Collect Phase 2 & 3 updates for this class
+                        List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
+                        if (updates != null && !updates.isEmpty()) {
+                            for (String update : updates) {
+                                annotationUpdateWriter.appendLine(update);
+                            }
+                            rebuildWriter.appendLine(String.format("%s.model_rebuild()", bundleClassName));
                         }
-                        rebuildWriter.appendLine(String.format("%s.model_rebuild()", bundleClassName));
                     }
 
-                    // create the stub
+                    // 3. Create the stub (as before)
                     String[] parsedName = name.split("\\.");
                     String stubFileName = SRC + String.join("/", parsedName) + ".py";
 
-                    boolean isFunction = context.hasFunctionName(name);
                     PythonCodeWriter stubWriter = new PythonCodeWriter();
                     stubWriter.appendLine("# pylint: disable=unused-import");
                     if (isFunction) {
@@ -279,12 +284,6 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                     stubWriter.append(bundleClassName);
                     stubWriter.append(" as ");
                     stubWriter.append(parsedName[parsedName.length - 1]);
-                    if (isFunction) {
-                        stubWriter.newLine();
-                        stubWriter.newLine();
-                        stubWriter.appendLine(
-                            "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
-                    }
                     stubWriter.newLine();
                     stubWriter.newLine();
                     stubWriter.appendLine("# EOF");
@@ -293,34 +292,39 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 }
             }
 
-            // Append Phase 2 & 3 updates to the bundle
+            // 4. Final Assembly into bundleWriter in requested order
+            
+            // 4.1 Objects
+            bundleWriter.appendBlock(dataObjectsWriter.toString());
+
+            // 4.2 Phase 2: Delayed Annotation Updates
             if (!annotationUpdateWriter.toString().isEmpty()) {
+                bundleWriter.newLine();
                 bundleWriter.newLine();
                 bundleWriter.appendLine("# Phase 2: Delayed Annotation Updates");
                 bundleWriter.appendBlock(annotationUpdateWriter.toString());
             }
 
+            // 4.3 Phase 3: Rebuild
             if (!rebuildWriter.toString().isEmpty()) {
+                bundleWriter.newLine();
                 bundleWriter.newLine();
                 bundleWriter.appendLine("# Phase 3: Rebuild");
                 bundleWriter.appendBlock(rebuildWriter.toString());
             }
 
-            if (context.hasFunctions()) {
+            // 4.4 Functions
+            bundleWriter.appendBlock(functionsWriter.toString());
+
+            // 4.5 Native Function Registry
+            if (context.hasNativeFunctions()) {
                 bundleWriter.newLine();
-                bundleWriter.appendLine(
-                    "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
-            }
-
-            Set<String> nativeFunctionNames = context.getNativeFunctionNames();
-
-            if (!nativeFunctionNames.isEmpty()) {
                 bundleWriter.newLine();
                 bundleWriter.appendLine("rune_attempt_register_native_functions(");
                 bundleWriter.indent();
                 bundleWriter.appendLine("function_names=[");
                 bundleWriter.indent();
-                for (String nativeFunctionName : nativeFunctionNames) {
+                for (String nativeFunctionName : context.getNativeFunctionNames()) {
                     bundleWriter.appendLine("'" + nativeFunctionName + "',");
                 }
                 bundleWriter.unindent();
@@ -328,6 +332,15 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 bundleWriter.unindent();
                 bundleWriter.appendLine(")");
             }
+
+            // 4.6 Guardian (if functions are present)
+            if (context.hasFunctions()) {
+                bundleWriter.newLine();
+                bundleWriter.newLine();
+                bundleWriter.appendLine(
+                    "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
+            }
+
             bundleWriter.newLine();
             bundleWriter.newLine();
             bundleWriter.appendLine("# EOF");

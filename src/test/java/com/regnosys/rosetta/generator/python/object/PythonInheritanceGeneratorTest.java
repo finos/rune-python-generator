@@ -241,9 +241,12 @@ public class PythonInheritanceGeneratorTest {
                 """;
 
         String expectedPhase2 = """
+                
+                
                 # Phase 2: Delayed Annotation Updates
                 com_rosetta_test_model_MeasureBase.__annotations__["unit"] = Annotated[Optional[com_rosetta_test_model_UnitType], com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]
-
+                
+                
                 # Phase 3: Rebuild
                 com_rosetta_test_model_MeasureBase.model_rebuild()
                 """;

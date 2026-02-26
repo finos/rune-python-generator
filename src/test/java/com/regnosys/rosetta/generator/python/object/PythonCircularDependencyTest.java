@@ -83,18 +83,22 @@ public class PythonCircularDependencyTest {
         testUtils.assertGeneratedContainsExpectedString(
                 bundle,
                 """
-                        # Phase 2: Delayed Annotation Updates
-                        rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__["bar1"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]
-                        rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__["bar2"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]
-                        """);
+
+
+                # Phase 2: Delayed Annotation Updates
+                rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__["bar1"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]
+                rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__["bar2"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]
+                """);
 
         testUtils.assertGeneratedContainsExpectedString(
                 bundle,
                 """
-                        # Phase 3: Rebuild
-                        rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()
-                        rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild()
-                        """);
+
+
+                # Phase 3: Rebuild
+                rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()
+                rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild()
+                """);
     }
 
     /**
@@ -129,9 +133,11 @@ public class PythonCircularDependencyTest {
                             _FQRTN = 'com.rosetta.test.model.CircularA'
                             b: com_rosetta_test_model_CircularB = Field(..., description='')
 
+
                         # Phase 2: Delayed Annotation Updates
                         com_rosetta_test_model_CircularB.__annotations__["a"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]
                         com_rosetta_test_model_CircularA.__annotations__["b"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]
+
 
                         # Phase 3: Rebuild
                         com_rosetta_test_model_CircularB.model_rebuild()

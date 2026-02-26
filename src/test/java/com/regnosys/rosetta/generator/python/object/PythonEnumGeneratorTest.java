@@ -107,9 +107,12 @@ public class PythonEnumGeneratorTest {
                 """;
 
         String expectedPhase2 = """
+                
+                
                 # Phase 2: Delayed Annotation Updates
                 com_rosetta_test_model_AncillaryEntity.__annotations__["legalEntity"] = Annotated[Optional[com_rosetta_test_model_LegalEntity], com_rosetta_test_model_LegalEntity.serializer(), com_rosetta_test_model_LegalEntity.validator()]
-
+                
+                
                 # Phase 3: Rebuild
                 com_rosetta_test_model_AncillaryEntity.model_rebuild()
                 """;

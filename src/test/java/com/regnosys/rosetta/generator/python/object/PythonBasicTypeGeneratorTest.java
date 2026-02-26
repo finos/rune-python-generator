@@ -252,8 +252,10 @@ public class PythonBasicTypeGeneratorTest {
                             Optional test enum
                             \"""
 
+
                         # Phase 2: Delayed Annotation Updates
                         com_rosetta_test_model_TestType.__annotations__["testTypeValue4"] = Annotated[com_rosetta_test_model_TestType2, com_rosetta_test_model_TestType2.serializer(), com_rosetta_test_model_TestType2.validator()]
+
 
                         # Phase 3: Rebuild
                         com_rosetta_test_model_TestType.model_rebuild()
@@ -322,9 +324,11 @@ public class PythonBasicTypeGeneratorTest {
                             Qualifies the multiplier with the applicable unit.  For example in the case of the Coal (API2) CIF ARA (ARGUS-McCloskey) Futures Contract on the CME, where the unitOfAmount would be contracts, the multiplier would 1,000 and the mulitiplier Unit would be 1,000 MT (Metric Tons).
                             \"""
 
+
                         # Phase 2: Delayed Annotation Updates
                         com_rosetta_test_model_MeasureBase.__annotations__["unitOfAmount"] = Annotated[com_rosetta_test_model_UnitType, com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]
                         com_rosetta_test_model_Quantity.__annotations__["multiplierUnit"] = Annotated[Optional[com_rosetta_test_model_UnitType], com_rosetta_test_model_UnitType.serializer(), com_rosetta_test_model_UnitType.validator()]
+
 
                         # Phase 3: Rebuild
                         com_rosetta_test_model_MeasureBase.model_rebuild()

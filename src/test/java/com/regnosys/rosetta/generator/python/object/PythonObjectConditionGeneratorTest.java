@@ -193,8 +193,10 @@ public class PythonObjectConditionGeneratorTest {
                                 item = self
                                 return ((rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "a0")) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and rune_attr_exists(rune_resolve_attr(self, "intValue1")))) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and (not rune_attr_exists(rune_resolve_attr(self, "intValue1")))))
 
+
                         # Phase 2: Delayed Annotation Updates
                         com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
+
 
                         # Phase 3: Rebuild
                         com_rosetta_test_model_B.model_rebuild()

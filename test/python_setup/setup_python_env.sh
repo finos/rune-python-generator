@@ -91,7 +91,7 @@ echo "***** Get and Install Runtime"
 # Set RUNE_RUNTIME_DIR to the local repository root for an editable install.
 # Example: RUNE_RUNTIME_DIR="[PATH_TO_RUNE]/rune-python-runtime/FINOS/rune-python-runtime"
 # If RUNE_RUNTIME_DIR is not specified or the directory does not exist, it will pull from the GitHub repo.
-
+# TODO: remove this line when finished
 RUNE_RUNTIME_DIR="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime"
 
 if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then
