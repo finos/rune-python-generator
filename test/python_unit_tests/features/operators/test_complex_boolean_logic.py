@@ -1,9 +1,9 @@
 """Complex boolean logic unit tests"""
 
-from rosetta_dsl.test.semantic.operators.complex_boolean_logic.functions.NotOp import (
+from rosetta_dsl.test.semantic.operators.complex_boolean_logic.NotOp import (
     NotOp,
 )
-from rosetta_dsl.test.semantic.operators.complex_boolean_logic.functions.ComplexLogic import (
+from rosetta_dsl.test.semantic.operators.complex_boolean_logic.ComplexLogic import (
     ComplexLogic,
 )
 

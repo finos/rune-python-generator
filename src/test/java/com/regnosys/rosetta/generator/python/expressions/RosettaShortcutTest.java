@@ -39,7 +39,7 @@ public class RosettaShortcutTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_functions_UseShortcut(val: int) -> int:
+                        def com_rosetta_test_model_UseShortcut(val: int) -> int:
                             \"\"\"
 
                             Parameters

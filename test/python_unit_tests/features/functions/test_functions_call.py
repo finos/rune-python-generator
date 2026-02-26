@@ -1,4 +1,4 @@
-from rosetta_dsl.test.functions.functions.MainFunction import MainFunction
+from rosetta_dsl.test.functions.MainFunction import MainFunction
 
 
 def test_function_with_function_call():

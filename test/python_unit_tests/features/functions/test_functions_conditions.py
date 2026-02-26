@@ -1,9 +1,9 @@
 import pytest
 from rune.runtime.conditions import ConditionViolationError
-from rosetta_dsl.test.functions.functions.MinMaxWithSimpleCondition import (
+from rosetta_dsl.test.functions.MinMaxWithSimpleCondition import (
     MinMaxWithSimpleCondition,
 )
-from rosetta_dsl.test.functions.functions.MinMaxWithPostCondition import (
+from rosetta_dsl.test.functions.MinMaxWithPostCondition import (
     MinMaxWithPostCondition,
 )
 

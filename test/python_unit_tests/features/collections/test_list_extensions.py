@@ -1,17 +1,17 @@
 """List extensions unit tests"""
 
-from rosetta_dsl.test.semantic.collections.extensions.functions.ListFirst import (
+from rosetta_dsl.test.semantic.collections.extensions.ListFirst import (
     ListFirst,
 )
-from rosetta_dsl.test.semantic.collections.extensions.functions.ListLast import ListLast
-from rosetta_dsl.test.semantic.collections.extensions.functions.ListDistinct import (
+from rosetta_dsl.test.semantic.collections.extensions.ListLast import ListLast
+from rosetta_dsl.test.semantic.collections.extensions.ListDistinct import (
     ListDistinct,
 )
-from rosetta_dsl.test.semantic.collections.extensions.functions.ListSum import ListSum
-from rosetta_dsl.test.semantic.collections.extensions.functions.ListOnlyElement import (
+from rosetta_dsl.test.semantic.collections.extensions.ListSum import ListSum
+from rosetta_dsl.test.semantic.collections.extensions.ListOnlyElement import (
     ListOnlyElement,
 )
-from rosetta_dsl.test.semantic.collections.extensions.functions.ListReverse import (
+from rosetta_dsl.test.semantic.collections.extensions.ListReverse import (
     ListReverse,
 )
 

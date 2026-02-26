@@ -77,10 +77,6 @@ public final class PythonCodeGeneratorUtil {
         return toFileName(namespace, fileName) + ".py";
     }
 
-    public static String toPyFunctionFileName(String namespace, String fileName) {
-        return "src/" + namespace.replace(".", "/") + "/functions/" + fileName + ".py";
-    }
-
     public static String createTopLevelInitFile(String version) {
         return "from .version import __version__";
     }

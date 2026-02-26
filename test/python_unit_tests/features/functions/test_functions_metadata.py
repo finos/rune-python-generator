@@ -1,7 +1,7 @@
 from rune.runtime.metadata import Reference
 from rosetta_dsl.test.functions.KeyEntity import KeyEntity
 from rosetta_dsl.test.functions.RefEntity import RefEntity
-from rosetta_dsl.test.functions.functions.MetadataFunction import MetadataFunction
+from rosetta_dsl.test.functions.MetadataFunction import MetadataFunction
 
 
 def test_metadata_function():

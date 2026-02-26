@@ -4,19 +4,25 @@ import pytest
 
 from rosetta_dsl.test.functions.BaseObject import BaseObject
 from rosetta_dsl.test.functions.BaseObjectWithBaseClassFields import (
-    BaseObjectWithBaseClassFields, )
+    BaseObjectWithBaseClassFields,
+)
 
-from rosetta_dsl.test.functions.functions.TestSimpleObjectAssignment import (
-    TestSimpleObjectAssignment, )
-from rosetta_dsl.test.functions.functions.TestObjectCreationFromFields import (
-    TestObjectCreationFromFields, )
-from rosetta_dsl.test.functions.functions.TestContainerObjectCreation import (
-    TestContainerObjectCreation, )
-from rosetta_dsl.test.functions.functions.TestContainerObjectCreationFromBaseObject import (
-    TestContainerObjectCreationFromBaseObject, )
+from rosetta_dsl.test.functions.TestSimpleObjectAssignment import (
+    TestSimpleObjectAssignment,
+)
+from rosetta_dsl.test.functions.TestObjectCreationFromFields import (
+    TestObjectCreationFromFields,
+)
+from rosetta_dsl.test.functions.TestContainerObjectCreation import (
+    TestContainerObjectCreation,
+)
+from rosetta_dsl.test.functions.TestContainerObjectCreationFromBaseObject import (
+    TestContainerObjectCreationFromBaseObject,
+)
 
-from rosetta_dsl.test.functions.functions.TestComplexTypeInputs import (
-    TestComplexTypeInputs, )
+from rosetta_dsl.test.functions.TestComplexTypeInputs import (
+    TestComplexTypeInputs,
+)
 from rosetta_dsl.test.functions.ComplexTypeA import ComplexTypeA
 from rosetta_dsl.test.functions.ComplexTypeB import ComplexTypeB
 
@@ -52,8 +58,7 @@ def test_container_object_creation():
 def test_container_object_creation_from_base_object():
     """Test creation of a container object from a base object."""
     base_object = BaseObject(value1=5, value2=10)
-    TestContainerObjectCreationFromBaseObject(baseObject=base_object,
-                                              value3=20)
+    TestContainerObjectCreationFromBaseObject(baseObject=base_object, value3=20)
 
 
 @pytest.mark.skip(reason="Fails due to Pydantic validation of partial objects")

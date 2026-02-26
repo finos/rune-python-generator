@@ -1,4 +1,4 @@
-from rosetta_dsl.test.functions.functions.ArithmeticOperation import ArithmeticOperation
+from rosetta_dsl.test.functions.ArithmeticOperation import ArithmeticOperation
 from rosetta_dsl.test.functions.ArithmeticOperationEnum import ArithmeticOperationEnum
 
 

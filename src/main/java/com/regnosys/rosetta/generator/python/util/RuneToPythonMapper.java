@@ -161,8 +161,7 @@ public final class RuneToPythonMapper {
         }
         String typeName = toPythonBasicTypeInnerFunction(rn.getName());
         if (typeName == null) {
-            String function = (rn instanceof Function) ? ".functions" : "";
-            typeName = model.getName() + function + "." + rn.getName();
+            typeName = model.getName() + "." + rn.getName();
             if (rn instanceof RosettaEnumeration) {
                 typeName += "." + rn.getName();
             }

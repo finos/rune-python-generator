@@ -3,8 +3,8 @@ Unit tests for the RoundToNearest function.
 """
 
 from decimal import Decimal
-from rosetta_dsl.test.functions.functions.RoundUp import RoundUp
-from rosetta_dsl.test.functions.functions.RoundDown import RoundDown
+from rosetta_dsl.test.functions.RoundUp import RoundUp
+from rosetta_dsl.test.functions.RoundDown import RoundDown
 
 
 def test_round_to_nearest_down():

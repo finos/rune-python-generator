@@ -92,6 +92,8 @@ echo "***** Get and Install Runtime"
 # Example: RUNE_RUNTIME_DIR="[PATH_TO_RUNE]/rune-python-runtime/FINOS/rune-python-runtime"
 # If RUNE_RUNTIME_DIR is not specified or the directory does not exist, it will pull from the GitHub repo.
 
+RUNE_RUNTIME_DIR="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime"
+
 if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then
     echo "Installing runtime as editable from: $RUNE_RUNTIME_DIR"
     ${PYEXE} -m pip install -e "$RUNE_RUNTIME_DIR" || error

@@ -1,7 +1,7 @@
-from rosetta_dsl.test.functions.functions.TestAbsNumber import TestAbsNumber
+from rosetta_dsl.test.functions.TestAbsNumber import TestAbsNumber
 from rosetta_dsl.test.functions.AInput import AInput
-from rosetta_dsl.test.functions.functions.TestAbsInputType import TestAbsInputType
-from rosetta_dsl.test.functions.functions.TestAbsOutputType import TestAbsOutputType
+from rosetta_dsl.test.functions.TestAbsInputType import TestAbsInputType
+from rosetta_dsl.test.functions.TestAbsOutputType import TestAbsOutputType
 
 
 def test_abs_positive():

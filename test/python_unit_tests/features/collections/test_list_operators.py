@@ -10,12 +10,12 @@ from rosetta_dsl.test.semantic.collections.MinTest import MinTest
 from rosetta_dsl.test.semantic.collections.MaxTest import MaxTest
 from rosetta_dsl.test.semantic.collections.LastTest import LastTest
 from rosetta_dsl.test.semantic.collections.SortTest import SortTest
-from rosetta_dsl.test.semantic.collections.functions.JoinTestFunction import (
+from rosetta_dsl.test.semantic.collections.JoinTestFunction import (
     JoinTestFunction,
 )
 from rosetta_dsl.test.semantic.collections.FlattenItem import FlattenItem
 from rosetta_dsl.test.semantic.collections.FlattenContainer import FlattenContainer
-from rosetta_dsl.test.semantic.collections.functions.FlattenTestFunction import (
+from rosetta_dsl.test.semantic.collections.FlattenTestFunction import (
     FlattenTestFunction,
 )
 from rosetta_dsl.test.semantic.collections.FlattenBar import FlattenBar

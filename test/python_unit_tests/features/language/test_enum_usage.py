@@ -1,7 +1,7 @@
 """Enum usage unit tests"""
 
 from rosetta_dsl.test.semantic.test_enum_usage.TrafficLight import TrafficLight
-from rosetta_dsl.test.semantic.test_enum_usage.functions.CheckLight import CheckLight
+from rosetta_dsl.test.semantic.test_enum_usage.CheckLight import CheckLight
 
 
 def test_enum_values():

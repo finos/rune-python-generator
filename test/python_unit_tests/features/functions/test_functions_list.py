@@ -2,7 +2,7 @@
 Test that the generator processes lists correctly.
 """
 
-from rosetta_dsl.test.functions.order.functions.TestListFunction import TestListFunction
+from rosetta_dsl.test.functions.order.TestListFunction import TestListFunction
 
 
 def test_function_list():

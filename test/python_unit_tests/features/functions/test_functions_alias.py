@@ -2,8 +2,8 @@
 Unit tests for functions.
 """
 
-from rosetta_dsl.test.functions.functions.TestAlias import TestAlias
-from rosetta_dsl.test.functions.functions.TestAliasWithBaseModelInputs import (
+from rosetta_dsl.test.functions.TestAlias import TestAlias
+from rosetta_dsl.test.functions.TestAliasWithBaseModelInputs import (
     TestAliasWithBaseModelInputs,
 )
 from rosetta_dsl.test.functions.A import A

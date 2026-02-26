@@ -63,7 +63,7 @@ public class RosettaFilterOperationTest {
                 """);
 
         testUtils.assertGeneratedContainsExpectedString(bundle,
-                "def com_rosetta_test_model_functions_TestNestedNested(items: list[com_rosetta_test_model_Item] | None) -> int:");
+                "def com_rosetta_test_model_TestNestedNested(items: list[com_rosetta_test_model_Item] | None) -> int:");
         testUtils.assertGeneratedContainsExpectedString(bundle,
                 "result = (lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
     }

@@ -46,7 +46,7 @@ public class PythonFunctionConditionTest {
         String expectedBundle = """
                 @replaceable
                 @validate_call
-                def com_rosetta_test_model_functions_MinMaxWithSimpleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+                def com_rosetta_test_model_MinMaxWithSimpleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
                     \"\"\"
 
                     Parameters
@@ -118,7 +118,7 @@ public class PythonFunctionConditionTest {
         String expectedBundle = """
                 @replaceable
                 @validate_call
-                def com_rosetta_test_model_functions_MinMaxWithPostCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+                def com_rosetta_test_model_MinMaxWithPostCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
                     \"\"\"
 
                     Parameters
@@ -194,7 +194,7 @@ public class PythonFunctionConditionTest {
         String expectedBundle = """
                 @replaceable
                 @validate_call
-                def com_rosetta_test_model_functions_MinMaxWithMPositiveNumbersAndMultipleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+                def com_rosetta_test_model_MinMaxWithMPositiveNumbersAndMultipleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
                     \"\"\"
 
                     Parameters

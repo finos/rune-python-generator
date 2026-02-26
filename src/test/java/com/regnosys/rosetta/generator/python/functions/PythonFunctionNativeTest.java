@@ -15,7 +15,7 @@ import jakarta.inject.Inject;
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("LineLength")
-public class PythonFunctionExternalTest {
+public class PythonFunctionNativeTest {
     /**
      * Test utils for generating Python code.
      */
@@ -23,10 +23,10 @@ public class PythonFunctionExternalTest {
     private PythonGeneratorTestUtils testUtils;
 
     /**
-     * Test case for external function support.
+     * Test case for native function support.
      */
     @Test
-    public void testExternalFunctionSupport() {
+    public void testNativeFunctionSupport() {
 
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
@@ -49,7 +49,10 @@ public class PythonFunctionExternalTest {
                 """);
         String bundle = gf.get("src/rosetta_dsl/_bundle.py").toString();
 
-        // Note: rosetta_dsl.test.functions.functions.RoundToNearest is expected because
+        testUtils.assertGeneratedContainsExpectedString(bundle, "from rune.runtime.native_registry import rune_attempt_register_native_functions");
+        testUtils.assertGeneratedContainsExpectedString(bundle, "from rune.runtime.native_registry import rune_execute_native");
+
+        // Note: rosetta_dsl.test.functions.RoundToNearest is expected because
         // functions live in a 'functions' directory relative to their namespace.
         String expected = """
                     _pre_registry = {}
@@ -64,7 +67,7 @@ public class PythonFunctionExternalTest {
                     # Execute all registered conditions
                     rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
-                    roundedValue = rune_execute_native('rosetta_dsl.test.functions.functions.RoundToNearest', value, nearest, roundingMode)
+                    roundedValue = rune_execute_native('rosetta_dsl.test.functions.RoundToNearest', value, nearest, roundingMode)
 
 
                     return roundedValue
@@ -74,7 +77,7 @@ public class PythonFunctionExternalTest {
         String registrationExpected = """
                 rune_attempt_register_native_functions(
                     function_names=[
-                        'rosetta_dsl.test.functions.functions.RoundToNearest',
+                        'rosetta_dsl.test.functions.RoundToNearest',
                     ]
                 )
                 """;

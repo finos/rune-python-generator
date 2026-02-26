@@ -2,7 +2,7 @@
 
 import pytest
 from rosetta_dsl.test.semantic.model_structure.inheritance.Sub import Sub
-from rosetta_dsl.test.semantic.model_structure.inheritance.functions.ProcessSuper import (
+from rosetta_dsl.test.semantic.model_structure.inheritance.ProcessSuper import (
     ProcessSuper,
 )
 

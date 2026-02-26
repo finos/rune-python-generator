@@ -1,7 +1,7 @@
 """Incomplete objects unit tests"""
 
 from rosetta_dsl.test.language.IncompleteObjects.A import A
-from rosetta_dsl.test.language.IncompleteObjects.functions.CreateA import CreateA
+from rosetta_dsl.test.language.IncompleteObjects.CreateA import CreateA
 
 
 def test_create_incomplete_object():

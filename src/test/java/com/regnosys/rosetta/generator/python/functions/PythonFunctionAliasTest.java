@@ -44,7 +44,7 @@ public class PythonFunctionAliasTest {
         String expectedBundle = """
                 @replaceable
                 @validate_call
-                def com_rosetta_test_model_functions_TestAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
+                def com_rosetta_test_model_TestAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
                     \"\"\"
 
                     Parameters

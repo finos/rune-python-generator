@@ -196,7 +196,7 @@ public class PythonDataRuleGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
                 "class com_rosetta_test_model_Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-                "return rune_all_elements(com_rosetta_test_model_functions_Foo(rune_resolve_attr(self, \"price\")), \"=\", Decimal('5.0'))");
+                "return rune_all_elements(com_rosetta_test_model_Foo(rune_resolve_attr(self, \"price\")), \"=\", Decimal('5.0'))");
     }
 
     /**

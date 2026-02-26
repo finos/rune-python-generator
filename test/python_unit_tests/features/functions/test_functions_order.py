@@ -4,7 +4,7 @@ Test that the generator generates the correct order of classes and functions.
 
 from rosetta_dsl.test.functions.order.ClassA import ClassA
 from rosetta_dsl.test.functions.order.ClassB import ClassB
-from rosetta_dsl.test.functions.order.functions.MyFunc import MyFunc
+from rosetta_dsl.test.functions.order.MyFunc import MyFunc
 
 
 def test_function_order():

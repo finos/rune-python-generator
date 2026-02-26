@@ -1,9 +1,9 @@
 """Conditional expression unit tests"""
 
-from rosetta_dsl.test.semantic.expressions.conditional.functions.ConditionalValue import (
+from rosetta_dsl.test.semantic.expressions.conditional.ConditionalValue import (
     ConditionalValue,
 )
-from rosetta_dsl.test.semantic.expressions.conditional.functions.ConditionalNested import (
+from rosetta_dsl.test.semantic.expressions.conditional.ConditionalNested import (
     ConditionalNested,
 )
 

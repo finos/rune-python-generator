@@ -39,7 +39,7 @@ public class PythonFunctionControlFlowTest {
         String expectedBundle = """
                 @replaceable
                 @validate_call
-                def com_rosetta_test_model_functions_Abs(arg: Decimal) -> Decimal:
+                def com_rosetta_test_model_Abs(arg: Decimal) -> Decimal:
                     \"\"\"
                     Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 

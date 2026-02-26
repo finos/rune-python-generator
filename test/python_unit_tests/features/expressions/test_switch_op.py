@@ -1,6 +1,6 @@
 """Switch expression unit tests"""
 
-from rosetta_dsl.test.semantic.expressions.switch_op.functions.SwitchTest import (
+from rosetta_dsl.test.semantic.expressions.switch_op.SwitchTest import (
     SwitchTest,
 )
 

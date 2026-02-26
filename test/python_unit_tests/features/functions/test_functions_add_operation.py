@@ -1,6 +1,6 @@
 from rosetta_dsl.test.functions.add_operation.UnitType import UnitType
 from rosetta_dsl.test.functions.add_operation.Quantity import Quantity
-from rosetta_dsl.test.functions.add_operation.functions.FilterQuantity import (
+from rosetta_dsl.test.functions.add_operation.FilterQuantity import (
     FilterQuantity,
 )
 

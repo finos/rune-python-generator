@@ -1,11 +1,11 @@
 """Comparison operator unit tests"""
 
-from rosetta_dsl.test.semantic.comparison_op.functions.LessThan import LessThan
-from rosetta_dsl.test.semantic.comparison_op.functions.LessThanOrEqual import (
+from rosetta_dsl.test.semantic.comparison_op.LessThan import LessThan
+from rosetta_dsl.test.semantic.comparison_op.LessThanOrEqual import (
     LessThanOrEqual,
 )
-from rosetta_dsl.test.semantic.comparison_op.functions.GreaterThan import GreaterThan
-from rosetta_dsl.test.semantic.comparison_op.functions.GreaterThanOrEqual import (
+from rosetta_dsl.test.semantic.comparison_op.GreaterThan import GreaterThan
+from rosetta_dsl.test.semantic.comparison_op.GreaterThanOrEqual import (
     GreaterThanOrEqual,
 )
 
