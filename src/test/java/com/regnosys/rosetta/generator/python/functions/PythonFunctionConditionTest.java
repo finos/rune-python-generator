@@ -62,9 +62,9 @@ public class PythonFunctionConditionTest {
                     result : Decimal
 
                     \"\"\"
-                    _pre_registry = {}
                     self = inspect.currentframe()
 
+                    _pre_registry = {}
                     # conditions
 
                     @rune_local_condition(_pre_registry)
@@ -134,9 +134,9 @@ public class PythonFunctionConditionTest {
                     result : Decimal
 
                     \"\"\"
-                    _post_registry = {}
                     self = inspect.currentframe()
 
+                    _post_registry = {}
 
                     def _then_fn1():
                         return max([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")])
@@ -210,9 +210,9 @@ public class PythonFunctionConditionTest {
                     result : Decimal
 
                     \"\"\"
-                    _pre_registry = {}
                     self = inspect.currentframe()
 
+                    _pre_registry = {}
                     # conditions
 
                     @rune_local_condition(_pre_registry)

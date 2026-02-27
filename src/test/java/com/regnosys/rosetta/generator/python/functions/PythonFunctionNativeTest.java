@@ -55,9 +55,9 @@ public class PythonFunctionNativeTest {
         // Note: rosetta_dsl.test.functions.RoundToNearest is expected because
         // functions live in a 'functions' directory relative to their namespace.
         String expected = """
-                    _pre_registry = {}
                     self = inspect.currentframe()
 
+                    _pre_registry = {}
                     # conditions
 
                     @rune_local_condition(_pre_registry)

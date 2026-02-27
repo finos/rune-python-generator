@@ -213,17 +213,8 @@ public final class PythonFunctionGenerator {
 
         writer.appendBlock(generateDescription(function));
 
-        if (!function.getConditions().isEmpty()) {
-            writer.appendLine("_pre_registry = {}");
-        }
-        if (!function.getPostConditions().isEmpty()) {
-            writer.appendLine("_post_registry = {}");
-        }
         writer.appendLine("self = inspect.currentframe()");
         writer.appendLine("");
-        if (function.getConditions().isEmpty()) {
-            writer.appendLine("");
-        }
 
         writer.appendBlock(generateConditions(function, expressionGenerator));
 
@@ -378,17 +369,25 @@ public final class PythonFunctionGenerator {
     }
 
     private String generateConditions(Function function, PythonExpressionGenerator expressionGenerator) {
-        if (!function.getConditions().isEmpty()) {
-            PythonCodeWriter writer = new PythonCodeWriter();
-            writer.appendLine("# conditions");
-            writer.appendBlock(
+        PythonCodeWriter writer = new PythonCodeWriter();
+        PythonCodeWriter conditionsWriter = new PythonCodeWriter();
+        boolean hasConditions = !function.getConditions().isEmpty();
+        if (hasConditions) {
+            writer.appendLine("_pre_registry = {}");
+            conditionsWriter.appendLine("# conditions");
+            conditionsWriter.appendBlock(
                     expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry"));
-            writer.appendLine("# Execute all registered conditions");
-            writer.appendLine("rune_execute_local_conditions(_pre_registry, 'Pre-condition')");
-            writer.appendLine("");
-            return writer.toString();
+            conditionsWriter.appendLine("# Execute all registered conditions");
+            conditionsWriter.appendLine("rune_execute_local_conditions(_pre_registry, 'Pre-condition')");
+            conditionsWriter.appendLine("");
+        } else {
+            conditionsWriter.appendLine("");
         }
-        return "";
+        if (!function.getPostConditions().isEmpty()) {
+            writer.appendLine("_post_registry = {}");
+        }
+        writer.appendBlock(conditionsWriter.toString());
+        return writer.toString();
     }
 
     private String generatePostConditions(Function function, PythonExpressionGenerator expressionGenerator) {
