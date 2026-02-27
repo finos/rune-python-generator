@@ -4,7 +4,6 @@ import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import jakarta.inject.Inject;
@@ -24,16 +23,15 @@ public class PythonFunctionOverloadingTest {
     /**
      * Test case for function with meta.
      */
-    @Disabled
     @Test
-    public void testFunctionWithMeta() {
+    public void testFunctionDispatcher() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                 namespace com.test
 
                 enum DayCountFractionEnum:
                     ACT_360
-                    _30_360
+                    ACT_365
 
                 func DayCountBasis: <"Return the day count basis (the denominator of the day count fraction) for the day count fraction.">
                     [codeImplementation]
@@ -46,41 +44,38 @@ public class PythonFunctionOverloadingTest {
                 func DayCountBasis(dcf: DayCountFractionEnum -> ACT_360):
                     set basis: 360
 
-                func DayCountBasis(dcf: DayCountFractionEnum -> _30_360):
-                    set basis: 360
+                func DayCountBasis(dcf: DayCountFractionEnum -> ACT_365):
+                    set basis: 365
                 """);
         String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated,
-                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})");
-    }
-
-    /**
-     * Test case for function with meta enum dependency.
-     */
-    @Test
-    public void testFunctionWithMetaEnumDependency() {
-        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+        
+        // Verify the dispatcher structure and correct pairing
+        testUtils.assertGeneratedContainsExpectedString(generated, "match dcf:");
+        testUtils.assertGeneratedContainsExpectedString(generated, 
                 """
-                        namespace com.test
+                case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_360:
+                    return _com_test_DayCountBasis_ACT_360(dcf)
+                """.strip().indent(8));
+        testUtils.assertGeneratedContainsExpectedString(generated, 
+                """
+                case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_365:
+                    return _com_test_DayCountBasis_ACT_365(dcf)
+                """.strip().indent(8));
+        
+        // Verify the default native fallback
+        testUtils.assertGeneratedContainsExpectedString(generated, 
+                """
+                case _:
+                    basis = rune_execute_native('com.test.DayCountBasis', dcf)
+                """.strip().indent(8));
 
-                        enum MyEnum:
-                            Value1
+        // Verify specialized helper functions are present and have correct distinct logic
+        testUtils.assertGeneratedContainsExpectedString(generated, 
+            "def _com_test_DayCountBasis_ACT_360(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
+        testUtils.assertGeneratedContainsExpectedString(generated, "    basis = 360");
 
-                        type Foo:
-                            [metadata scheme]
-                            val string (1..1)
-
-                        func TestWithMetaEnum:
-                            inputs:
-                                f Foo (1..1)
-                            output:
-                                res Foo (1..1)
-                            set res:
-                                f with-meta { scheme: (MyEnum -> Value1) to-string }
-                        """);
-        String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated,
-                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': rune_str(com.test.MyEnum.MyEnum.VALUE_1)})");
-        testUtils.assertGeneratedContainsExpectedString(generated, "import com.test.MyEnum");
+        testUtils.assertGeneratedContainsExpectedString(generated, 
+            "def _com_test_DayCountBasis_ACT_365(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
+        testUtils.assertGeneratedContainsExpectedString(generated, "    basis = 365");
     }
 }

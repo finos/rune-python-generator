@@ -20,6 +20,7 @@ import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerat
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionScope;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.generator.util.RosettaFunctionExtensions;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
@@ -59,6 +60,12 @@ public final class PythonFunctionGenerator {
      */
     @Inject
     private RObjectFactory rObjectFactory;
+
+    /**
+     * The Rosetta function extensions.
+     */
+    @Inject
+    private RosettaFunctionExtensions rosettaFunctionExtensions;
 
     /**
      * Generates Python code for a collection of Rosetta functions.
@@ -195,6 +202,11 @@ public final class PythonFunctionGenerator {
         if (function == null) {
             throw new RuntimeException("Function is null");
         }
+        String functionName = RuneToPythonMapper.getBundleObjectName(function);
+        return generateFunctionBody(function, functionName, context);
+    }
+
+    private String generateFunctionBody(Function function, String pythonName, PythonCodeGeneratorContext context) {
         if (context.getEnumImports() == null) {
             throw new RuntimeException("Enum imports is null");
         }
@@ -208,7 +220,7 @@ public final class PythonFunctionGenerator {
 
         writer.appendLine("@replaceable");
         writer.appendLine("@validate_call");
-        writer.appendLine("def " + RuneToPythonMapper.getBundleObjectName(function) + generateInputs(function) + ":");
+        writer.appendLine("def " + pythonName + generateInputs(function) + ":");
         writer.indent();
 
         writer.appendBlock(generateDescription(function));
@@ -217,12 +229,16 @@ public final class PythonFunctionGenerator {
         writer.appendLine("");
 
         writer.appendBlock(generateConditions(function, expressionGenerator));
+        writer.appendBlock(generateAlias(function, expressionGenerator));
 
         boolean isCodeImplementation = isCodeImplementation(function);
-        if (isCodeImplementation) {
-            writer.appendLine(generateExternalFunctionCall(function));
+        boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
+
+        if (isDispatcher) {
+            writer.appendBlock(generateDispatchLogic(function, isCodeImplementation, context, expressionGenerator));
+        } else if (isCodeImplementation) {
+            writer.appendLine(generateNativeFunctionCall(function));
         } else {
-            writer.appendBlock(generateAlias(function, expressionGenerator));
             writer.appendBlock(generateOperations(function, context, expressionGenerator));
         }
 
@@ -231,10 +247,75 @@ public final class PythonFunctionGenerator {
         writer.unindent();
         writer.newLine();
 
+        if (isDispatcher) {
+            writer.appendBlock(generateSpecializations(function, context));
+        }
+
         return writer.toString();
     }
 
-    private String generateExternalFunctionCall(Function function) {
+    private String generateDispatchLogic(Function function, 
+        boolean isCodeImplementation, 
+        PythonCodeGeneratorContext context,
+        PythonExpressionGenerator expressionGenerator) {
+        
+        PythonCodeWriter writer = new PythonCodeWriter();
+        
+        Attribute enumInput = rosettaFunctionExtensions.getInputs(function).stream()
+                .filter(input -> input.getTypeCall().getType() instanceof RosettaEnumeration)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Dispatcher " + function.getName() + " must have at least one enumeration input"));
+        
+        String enumParam = enumInput.getName();
+        String arguments = function.getInputs().stream()
+                .map(RosettaNamed::getName)
+                .collect(Collectors.joining(", "));
+
+        List<com.regnosys.rosetta.rosetta.simple.FunctionDispatch> specializations = java.util.stream.StreamSupport
+                .stream(rosettaFunctionExtensions.getDispatchingFunctions(function).spliterator(), false)
+                .sorted(java.util.Comparator.comparing(f -> f.getValue().getValue().getName()))
+                .collect(Collectors.toList());
+
+        writer.appendLine("match " + enumParam + ":");
+        writer.indent();
+        
+        for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
+            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + spec.getValue().getValue().getName();
+            writer.appendLine("case " + RuneToPythonMapper.getFullyQualifiedName(spec.getValue().getEnumeration()) + "." + spec.getValue().getValue().getName() + ":");
+            writer.indent();
+            writer.appendLine("return " + specName + "(" + arguments + ")");
+            writer.unindent();
+        }
+        
+        writer.appendLine("case _:");
+        writer.indent();
+        if (isCodeImplementation) {
+             writer.appendLine(generateNativeFunctionCall(function));
+             writer.appendLine("return " + function.getOutput().getName());
+        } else {
+             writer.appendLine("raise ValueError(f\"Enum value {" + enumParam + "} not implemented for " + function.getName() + "\")");
+        }
+        writer.unindent();
+        writer.unindent();
+        
+        return writer.toString();
+    }
+
+    private String generateSpecializations(Function function, PythonCodeGeneratorContext context) {
+        PythonCodeWriter writer = new PythonCodeWriter();
+        List<com.regnosys.rosetta.rosetta.simple.FunctionDispatch> specializations = java.util.stream.StreamSupport
+                .stream(rosettaFunctionExtensions.getDispatchingFunctions(function).spliterator(), false)
+                .sorted(java.util.Comparator.comparing(f -> f.getValue().getValue().getName()))
+                .collect(Collectors.toList());
+
+        for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
+            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + spec.getValue().getValue().getName();
+            writer.appendBlock(generateFunctionBody(spec, specName, context));
+        }
+        return writer.toString();
+    }
+
+    private String generateNativeFunctionCall(Function function) {
         String outputName = function.getOutput().getName();
         String qualifiedName = RuneToPythonMapper.getFullyQualifiedName(function);
         String arguments = function.getInputs().stream()
@@ -248,7 +329,7 @@ public final class PythonFunctionGenerator {
     }
 
     private String generateInputs(Function function) {
-        String inputs = function.getInputs().stream()
+        String inputs = rosettaFunctionExtensions.getInputs(function).stream()
                 .map(input -> {
                     String inputBundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType());
                     String inputType = RuneToPythonMapper.formatCardinality(
@@ -261,7 +342,7 @@ public final class PythonFunctionGenerator {
                 .collect(Collectors.joining(", "));
 
         StringBuilder result = new StringBuilder("(").append(inputs).append(") -> ");
-        Attribute output = function.getOutput();
+        Attribute output = rosettaFunctionExtensions.getOutput(function);
         if (output != null) {
             String outputBundleName = RuneToPythonMapper.getBundleObjectName(output.getTypeCall().getType());
             String outputType = RuneToPythonMapper.formatCardinality(
@@ -278,7 +359,7 @@ public final class PythonFunctionGenerator {
 
     private String generateOutput(Function function, boolean isCodeImplementation,
             PythonExpressionGenerator expressionGenerator) {
-        Attribute output = function.getOutput();
+        Attribute output = rosettaFunctionExtensions.getOutput(function);
         if (output != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
             if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty() && !isCodeImplementation) {
@@ -345,6 +426,23 @@ public final class PythonFunctionGenerator {
 
     private Set<String> collectFunctionDependencies(Function function) {
         Set<String> enumImports = new HashSet<>();
+
+        // If it's a specialization, we need the enum used in its value
+        if (function instanceof com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec) {
+            if (spec.getValue() != null && spec.getValue().getEnumeration() != null) {
+                functionDependencyProvider.addDependencies(spec.getValue().getEnumeration(), enumImports);
+            }
+        }
+
+        // If it's a dispatcher header, we need imports for all enums used in its branches
+        if (rosettaFunctionExtensions.handleAsEnumFunction(function)) {
+            rosettaFunctionExtensions.getDispatchingFunctions(function).forEach(spec -> {
+                if (spec.getValue() != null && spec.getValue().getEnumeration() != null) {
+                    functionDependencyProvider.addDependencies(spec.getValue().getEnumeration(), enumImports);
+                }
+            });
+        }
+
         function.getShortcuts().forEach(
                 shortcut -> functionDependencyProvider.addDependencies(shortcut.getExpression(), enumImports));
         function.getOperations().forEach(
@@ -355,15 +453,15 @@ public final class PythonFunctionGenerator {
         allConditions.forEach(
                 condition -> functionDependencyProvider.addDependencies(condition.getExpression(), enumImports));
 
-        function.getInputs().forEach(input -> {
-            if (input.getTypeCall() != null && input.getTypeCall().getType() != null) {
+        rosettaFunctionExtensions.getInputs(function).forEach(input -> {
+            if (input.getTypeCall() != null && input.getTypeCall().getType() instanceof RosettaEnumeration) {
                 functionDependencyProvider.addDependencies(input.getTypeCall().getType(), enumImports);
             }
         });
-
-        if (function.getOutput() != null && function.getOutput().getTypeCall() != null
-                && function.getOutput().getTypeCall().getType() != null) {
-            functionDependencyProvider.addDependencies(function.getOutput().getTypeCall().getType(), enumImports);
+        
+        Attribute output = rosettaFunctionExtensions.getOutput(function);
+        if (output != null && output.getTypeCall() != null && output.getTypeCall().getType() instanceof RosettaEnumeration) {
+            functionDependencyProvider.addDependencies(output.getTypeCall().getType(), enumImports);
         }
         return enumImports;
     }
@@ -403,9 +501,15 @@ public final class PythonFunctionGenerator {
         return "";
     }
 
-    private String generateAlias(Function function, PythonExpressionGenerator expressionGenerator) {
+    private String generateAlias(Function function, 
+        PythonExpressionGenerator expressionGenerator) {
+        return generateAliasFromShortcuts(getEffectiveShortcuts(function), expressionGenerator);
+    }
+
+    private String generateAliasFromShortcuts(List<ShortcutDeclaration> shortcuts, 
+        PythonExpressionGenerator expressionGenerator) {
         PythonCodeWriter writer = new PythonCodeWriter();
-        for (ShortcutDeclaration shortcut : function.getShortcuts()) {
+        for (ShortcutDeclaration shortcut : shortcuts) {
             PythonExpressionGenerator.ExpressionResult result = expressionGenerator.generate(
                     shortcut.getExpression(),
                     PythonExpressionScope.of("self"));
@@ -419,9 +523,22 @@ public final class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateOperations(Function function, PythonCodeGeneratorContext context,
-            PythonExpressionGenerator expressionGenerator) {
-        if (function.getOutput() != null) {
+    private List<ShortcutDeclaration> getEffectiveShortcuts(Function function) {
+        List<ShortcutDeclaration> shortcuts = new ArrayList<>(function.getShortcuts());
+        if (function instanceof com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec) {
+            Function main = rosettaFunctionExtensions.getMainFunction(spec);
+            if (main != null) {
+                // Prepend base shortcuts so they are defined first
+                shortcuts.addAll(0, main.getShortcuts());
+            }
+        }
+        return shortcuts;
+    }
+
+    private String generateOperations(Function function, 
+        PythonCodeGeneratorContext context,
+        PythonExpressionGenerator expressionGenerator) {
+        if (rosettaFunctionExtensions.getOutput(function) != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
             PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();
 

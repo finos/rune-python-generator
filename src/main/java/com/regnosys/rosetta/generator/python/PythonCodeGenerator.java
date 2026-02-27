@@ -33,6 +33,7 @@ import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.rosetta.simple.FunctionDispatch;
 
 // todo: function support
 // todo: review and consolidate unit tests
@@ -167,7 +168,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         List<Function> rosettaFunctions = model.getElements()
             .stream()
-            .filter(Function.class::isInstance)
+            .filter(it -> it instanceof Function && !(it instanceof FunctionDispatch))
             .map(Function.class::cast)
             .collect(Collectors.toList());
 
