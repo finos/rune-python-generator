@@ -6,21 +6,21 @@ This document tracks implementation gaps and status for various Rune language fe
 
 The following table tracks support for Rosetta/Rune annotations.
 
-| Annotation Type | Needs Generator Support? | Status | Implementation Details |
-| :--- | :---: | :---: | :--- |
-| **`metadata`** | **Y** | ✅ | Generates `_ALLOWED_METADATA`, `_KEY_REF_CONSTRAINTS`, and `Annotated[...]` types for Pydantic. |
-| **`codeImplementation`** | **Y** | ✅ | Redirects function generation to `rune_execute_native` and registers in `native_registry`. |
-| `calculation` | **N** | ❌ | Marker for informational purposes. Logic is generated via standard function patterns. |
-| `deprecated` | **Y** | ❌| Should ideally map to `@deprecated` decorator or Pydantic `Field(deprecated=True)`. |
-| `rootType` | **?** | ❌ | May require global registration or different serialization entry points. |
-| `qualification` | **?** | ❌ | Purpose marker (CDM). May require registration in a qualification engine. |
-| `ingest` | **?** | ❌ | Purpose marker (CDM). May require registration in an ingestion registry. |
-| `projection` | **?** | ❌ | Purpose marker (CDM). May require registration in a projection registry. |
-| `enrich` | **?** | ❌ | Purpose marker (CDM). |
-| `synonym` | **?** | ❌ | Mapping to external formats. Often ignored in the core logic path. |
-| `ruleReference` | **N** | ❌ | Primarily for traceability/reporting. Could be added to docstrings. |
-| `docReference` | **N** | ❌ | Primarily for documentation. Could be added to docstrings. |
-| `creation` | **N** | ❌ | CDM-specific workflow marker. |
+| Annotation Type | Description | Needs Generator Support? | Status | Implementation Details |
+| :--- | :--- | :---: | :---: | :--- |
+| **`metadata`** | Assigns special metadata behaviors (e.g., references, schemes) to fields or types. | **Y** | ✅ | Generates `_ALLOWED_METADATA`, `_KEY_REF_CONSTRAINTS`, and `Annotated[...]` types for Pydantic. |
+| **`codeImplementation`** | Indicates the function logic is implemented externally in the host language. | **Y** | ✅ | Redirects function generation to `rune_execute_native` and registers in `native_registry`. |
+| `calculation` | Marks a function as performing mathematical or financial calculations. | **N** | ❌ | Marker for informational purposes. Logic is generated via standard function patterns. |
+| `deprecated` | Indicates that a type, attribute, or function is slated for removal. | **Y** | ❌| Should ideally map to `@deprecated` decorator or Pydantic `Field(deprecated=True)`. |
+| `rootType` | Identifies a type as a primary entry point or top-level document in the model. | **?** | ❌ | May require global registration or different serialization entry points. |
+| `qualification` | Marks a function used to classify or identify a specific product or event. | **?** | ❌ | Purpose marker (CDM). May require registration in a qualification engine. |
+| `ingest` | Marks a function used for parsing or ingesting external data formats. | **?** | ❌ | Purpose marker (CDM). May require registration in an ingestion registry. |
+| `projection` | Marks a function intended to project data into reporting or external formats. | **?** | ❌ | Purpose marker (CDM). May require registration in a projection registry. |
+| `enrich` | Marks a function used to add or derive additional data for an existing object. | **?** | ❌ | Purpose marker (CDM). |
+| `synonym` | Maps a type or attribute to an equivalent concept in an external standard (e.g., FpML). | **?** | ❌ | Mapping to external formats. Often ignored in the core logic path. |
+| `ruleReference` | Links an element to a specific regulatory or institutional business rule. | **N** | ❌ | Primarily for traceability/reporting. Could be added to docstrings. |
+| `docReference` | Links an element to standard documentation (e.g., ISDA definitions). | **N** | ❌ | Primarily for documentation. Could be added to docstrings. |
+| `creation` | Marks a function involved in state transitions or the creation of new business events. | **N** | ❌ | CDM-specific workflow marker. |
 
 **Legend:**
 - ✅ : Fully supported and integrated into generated code.
