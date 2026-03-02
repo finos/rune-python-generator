@@ -290,6 +290,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("case _:");
         writer.indent();
         if (isCodeImplementation) {
+            //todo: can a function have a body and be a native function?
              writer.appendLine(generateNativeFunctionCall(function));
              writer.appendLine("return " + function.getOutput().getName());
         } else {

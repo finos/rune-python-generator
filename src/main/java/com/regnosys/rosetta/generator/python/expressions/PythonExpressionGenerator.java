@@ -31,6 +31,7 @@ import com.regnosys.rosetta.rosetta.expression.ModifiableBinaryOperation;
 import com.regnosys.rosetta.rosetta.expression.Necessity;
 import com.regnosys.rosetta.rosetta.expression.OneOfOperation;
 import com.regnosys.rosetta.rosetta.expression.ReverseOperation;
+import com.regnosys.rosetta.rosetta.expression.ReduceOperation;
 import com.regnosys.rosetta.rosetta.expression.RosettaAbsentExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaBinaryOperation;
 import com.regnosys.rosetta.rosetta.expression.RosettaBooleanLiteral;
@@ -208,6 +209,9 @@ public final class PythonExpressionGenerator {
             case ToIntOperation toInt -> {
                 return "int(" + generateExpression(toInt.getArgument(), scope) + ")";
             }
+            case ReduceOperation reduceOp -> {
+                return generateReduceOperation(reduceOp, scope);
+            }
             case ToTimeOperation toTime -> {
                 return "datetime.datetime.strptime(" + generateExpression(toTime.getArgument(), scope)
                         + ", \"%H:%M:%S\").time()";
@@ -319,6 +323,18 @@ public final class PythonExpressionGenerator {
         String lambdaFunction = (funcParams.isEmpty()) ? "(lambda item: " + body + ")"
                 : "(lambda " + funcParams + ": " + body + ")";
         return lambdaFunction + "(" + argExpr + ")";
+    }
+
+    private String generateReduceOperation(ReduceOperation expr, PythonExpressionScope scope) {
+        String argument = generateExpression(expr.getArgument(), scope);
+        InlineFunction func = expr.getFunction();
+        String accParam = func.getParameters().get(0).getName();
+        String itemParam = func.getParameters().get(1).getName();
+
+        PythonExpressionScope subScope = scope.withReceiver(itemParam).withShadow(func.getParameters().get(0), accParam);
+        String body = generateExpression(func.getBody(), subScope);
+
+        return "functools.reduce(lambda " + accParam + ", " + itemParam + ": " + body + ", " + argument + ")";
     }
 
     private String generateFilterOperation(FilterOperation expr, PythonExpressionScope scope) {

@@ -1,0 +1,10 @@
+namespace rosetta_dsl.test.semantic.expressions.reduce_op
+
+func SumList:
+    inputs:
+        items int (0..*)
+    output:
+        result int (1..1)
+    set result:
+        items
+        reduce a, b [ a + b ]
