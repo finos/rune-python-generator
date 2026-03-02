@@ -37,8 +37,6 @@ The following table tracks implementation status for core Rosetta language featu
 | :--- | :---: | :---: | :--- |
 | **`extends`** (Functions) | **Y** | ❌ | Inherits shortcuts, logic, and structure from a base function. Java implementation uses compositional approaches and shortcut inheritance. |
 | **`super`** (Calls) | **Y** | ❌ | Invoking logic from a parent function within the current scope. |
-| **`Function Overloading`** | **Y** | ✅ | Specialized versions of functions with dispatch via `match` (supported for enums). |
-| **`Circular References`** | **Y** | ✅ | Handled with Pydantic forward references (string-based) in models. |
 
 ## Rosetta Expression Support
 
@@ -47,25 +45,25 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | Feature | Handled | Description |
 | :--- | :---: | :--- |
 | **ArithmeticOperation** | ✅ | Binary arithmetic (+, -, *, /) over two expressions. |
-| **AsKeyOperation** | ✅ | Treat an argument as a key (generates a key dict). |
+| **AsKeyOperation** | ⚠️ | Partial. Treat an argument as a key. Currently maps to `{expr: True}`. CDM integration for full key/reference lifecycle is pending. |
 | **ChoiceOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
 | **ComparisonOperation** | ✅ | Binary comparisons (e.g., <, <=, >, >=). |
 | **DefaultOperation** | ✅ | Binary fallback (use right when left is missing/empty). |
 | **DistinctOperation** | ✅ | Unary list operation removing duplicates (via `set()`). |
 | **EqualityOperation** | ✅ | Binary equality/inequality (==, !=). |
-| **FilterOperation** | ✅ | Unary list operation keeping elements that satisfy a predicate. |
+| **FilterOperation** | ⚠️ | Partial. Supported for explicit parameters, but fails for implicit parameters (no named args in closure). |
 | **FirstOperation** | ✅ | Unary list operation returning the first element (`[0]`). |
 | **FlattenOperation** | ✅ | Unary list operation flattening a list of lists. |
 | **JoinOperation** | ✅ | Binary operation joining strings (via `str.join`). |
 | **LastOperation** | ✅ | Unary list operation returning the last element (`[-1]`). |
 | **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). |
 | **LogicalOperation** | ✅ | Binary logical operations (`and`, `or`). |
-| **MapOperation** | ✅ | Unary list operation transforming each element via a function. |
-| **MaxOperation** | ✅ | Selecting the maximum element (via `max()`). |
-| **MinOperation** | ✅ | Selecting the minimum element (via `min()`). |
-| **OneOfOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
+| **MapOperation** | ⚠️ | Partial. Mapped to `extract` keyword. Supported for explicit parameters, but fails for implicit parameters. |
+| **MaxOperation** | ⚠️ | Partial. Standard `max(arg)` is supported, but closure-based keys (`max [ item -> ... ]`) used in CDM are currently ignored. |
+| **MinOperation** | ⚠️ | Partial. Standard `min(arg)` is supported, but closure-based keys used in CDM are currently ignored. |
+| **OneOfOperation** | ⚠️ | Partial. Supported in type conditions, but unsupported as a general expression in functions (used in CDM). |
 | **ReverseOperation** | ✅ | Unary list operation reversing element order (via `reversed()`). |
-| **SortOperation** | ✅ | Sorting list elements (via `sorted()`). |
+| **SortOperation** | ⚠️ | Partial. Standard `sorted(arg)` is supported, but closure-based sorting (`sort [ item -> ... ]`) used in CDM is ignored. |
 | **SumOperation** | ✅ | Unary list operation summing numeric elements (via `sum()`). |
 | **SwitchOperation** | ✅ | Conditional selection among cases (via helper functions). |
 | **ThenOperation** | ✅ | Unary functional pipeline step (via lambda). |
@@ -92,9 +90,51 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | **OnlyExistsExpression** | ✅ | Checks that only the listed expressions exist. |
 | **SymbolReference** | ✅ | References to Data types, Enums, Attributes, and shortcuts. |
 | **WithMetaOperation** | ✅ | Wraps a value with metadata (via `rune_with_meta`). |
-| **ReduceOperation** | ✅ | Functional list operation reducing elements via a function (via `functools.reduce`). |
+| **ReduceOperation** | ⚠️ | Partial. Supported for explicit parameters (e.g., `reduce a, b [ a + b ]`), but fails for implicit closures (unnamed args). |
 
 ### Outstanding Expression Gaps
 
-1. **Standard Library Refinements**: While `min`/`max`/`sum` are implemented using Python built-ins, full Rosetta compatibility (e.g. handling of empty lists vs nothing) might require custom `rune_*` wrappers.
-2. **Complex Nested lambdas**: While supported, performance and readability impact of heavy lambda nesting in pipelines should be monitored.
+1. **Closures in Aggregations (CDM Gap)**: Operations like `sort`, `max`, and `min` frequently use closure blocks (e.g., `sort [ item -> unit -> currency ]`) in CDM. The generator currently ignores these blocks and produces standard Python `sorted()`/`max()` calls.
+   ```rosetta
+   // Exposes gap in SortOperation/MaxOperation
+   func SortItems:
+       inputs: items Item (0..*)
+       output: sortedItems Item (0..*)
+       set sortedItems:
+           items sort [ item -> price -> amount ] // Generator ignores the [ ... ] block
+   ```
+
+2. **Implicit Closure Parameters**: Rosetta allows `extract [ item -> attr ]` or `reduce [ a + b ]` without naming parameters. The current generator expects parameters to be explicitly declared in the `InlineFunction` and fails with an error if they are missing.
+   ```rosetta
+   // Exposes gap in MapOperation/ReduceOperation
+   func ImplicitClosure:
+       inputs: items int (0..*)
+       output: result int (0..1)
+       set result:
+           items 
+               extract [ item * 2 ] // Fails: expects explicit 'item' parameter declaration
+               reduce [ a + b ]     // Fails: expects explicit 'a, b' parameters
+   ```
+
+3. **General `one-of` Expressions**: In CDM, `one-of` is used as a stand-alone expression in functions and shortcuts. The generator only implements this behavior within type conditions.
+   ```rosetta
+   // Exposes gap in OneOfOperation (Expression)
+   func CheckOneOf:
+       inputs: msg Message (1..1)
+       output: isValid boolean (1..1)
+       set isValid:
+           msg -> fieldA or msg -> fieldB one-of // Fails: Unsupported general expression
+   ```
+
+4. **`as-key` Full Semantics**: Current implementation is a dictionary literal placeholder. Full integration with the CDM workflow (where `as-key` signals persistence or cross-referencing) requires runtime support.
+   ```rosetta
+   // Exposes semantic gap in AsKeyOperation
+   func MarkAsKey:
+       inputs: trade Trade (1..1)
+       output: tradeKey Trade (1..1)
+       set tradeKey:
+           trade as-key // Currently generates {trade: True}, missing reference semantics
+   ```
+
+5. **Standard Library Refinements**: While `sum` etc. are implemented using Python built-ins, handling of empty lists vs "nothing" in Rosetta may require custom `rune_*` protective wrappers.
+

@@ -37,6 +37,7 @@ import com.regnosys.rosetta.rosetta.simple.Operation;
 import com.regnosys.rosetta.rosetta.simple.Segment;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.types.RObjectFactory;
+import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 
 import jakarta.inject.Inject;
 
@@ -280,8 +281,9 @@ public final class PythonFunctionGenerator {
         writer.indent();
         
         for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
-            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + spec.getValue().getValue().getName();
-            writer.appendLine("case " + RuneToPythonMapper.getFullyQualifiedName(spec.getValue().getEnumeration()) + "." + spec.getValue().getValue().getName() + ":");
+            String enumValue = EnumHelper.convertValue(spec.getValue().getValue());
+            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + enumValue;
+            writer.appendLine("case " + RuneToPythonMapper.getFullyQualifiedName(spec.getValue().getEnumeration()) + "." + enumValue + ":");
             writer.indent();
             writer.appendLine("return " + specName + "(" + arguments + ")");
             writer.unindent();
@@ -310,7 +312,8 @@ public final class PythonFunctionGenerator {
                 .collect(Collectors.toList());
 
         for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
-            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + spec.getValue().getValue().getName();
+            String enumValue = EnumHelper.convertValue(spec.getValue().getValue());
+            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + enumValue;
             writer.appendBlock(generateFunctionBody(spec, specName, context));
         }
         return writer.toString();
