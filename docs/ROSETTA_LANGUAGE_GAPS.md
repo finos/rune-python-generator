@@ -9,14 +9,14 @@ The following table tracks support for Rosetta/Rune annotations.
 | Annotation Type | Description | Needs Generator Support? | Status | Implementation Details |
 | :--- | :--- | :---: | :---: | :--- |
 | **`metadata`** | Assigns special metadata behaviors (e.g., references, schemes) to fields or types. | **Y** | ✅ | Generates `_ALLOWED_METADATA`, `_KEY_REF_CONSTRAINTS`, and `Annotated[...]` types for Pydantic. |
-| **`codeImplementation`** | Indicates the function logic is implemented externally in the host language. | **Y** | ✅ | Redirects function generation to `rune_execute_native` and registers in `native_registry`. |
-| `calculation` | Marks a function as performing mathematical or financial calculations. | **N** | ❌ | Marker for informational purposes. Logic is generated via standard function patterns. |
+| **`codeImplementation`** | Indicates the function logic is implemented externally in the host language. | **Y** | ✅ | Redirects function generation to `rune_execute_native` and registers in `native_registry`. Extensively used in DRR. |
+| `calculation` | Marks a function as performing mathematical or financial calculations. | **N** | ❌ | Marker for informational purposes. Logic is generated via standard function patterns. Extensively used in DRR. |
 | `deprecated` | Indicates that a type, attribute, or function is slated for removal. | **Y** | ❌| Should ideally map to `@deprecated` decorator or Pydantic `Field(deprecated=True)`. |
 | `rootType` | Identifies a type as a primary entry point or top-level document in the model. | **?** | ❌ | May require global registration or different serialization entry points. |
-| `qualification` | Marks a function used to classify or identify a specific product or event. | **?** | ❌ | Purpose marker (CDM). May require registration in a qualification engine. |
-| `ingest` | Marks a function used for parsing or ingesting external data formats. | **?** | ❌ | Purpose marker (CDM). May require registration in an ingestion registry. |
-| `projection` | Marks a function intended to project data into reporting or external formats. | **?** | ❌ | Purpose marker (CDM). May require registration in a projection registry. |
-| `enrich` | Marks a function used to add or derive additional data for an existing object. | **?** | ❌ | Purpose marker (CDM). |
+| `qualification` | Marks a function used to classify or identify a specific product or event. | **?** | ❌ | Purpose marker (CDM). May require registration in a qualification engine. Extensively used in DRR. |
+| `ingest` | Marks a function used for parsing or ingesting external data formats. | **?** | ❌ | Purpose marker (CDM). May require registration in an ingestion registry. Extensively used in DRR. |
+| `projection` | Marks a function intended to project data into reporting or external formats. | **?** | ❌ | Purpose marker (CDM). May require registration in a projection registry. Extensively used in DRR. |
+| `enrich` | Marks a function used to add or derive additional data for an existing object. | **?** | ❌ | Purpose marker (CDM). Extensively used in DRR. |
 | `synonym` | Maps a type or attribute to an equivalent concept in an external standard (e.g., FpML). | **?** | ❌ | Mapping to external formats. Often ignored in the core logic path. |
 | `ruleReference` | Links an element to a specific regulatory or institutional business rule. | **N** | ❌ | Primarily for traceability/reporting. Could be added to docstrings. |
 | `docReference` | Links an element to standard documentation (e.g., ISDA definitions). | **N** | ❌ | Primarily for documentation. Could be added to docstrings. |
@@ -36,7 +36,34 @@ The following table tracks implementation status for core Rosetta language featu
 | Syntax Feature | Needs Generator Support? | Status | Implementation Details |
 | :--- | :---: | :---: | :--- |
 | **`extends`** (Functions) | **Y** | ❌ | Inherits shortcuts, logic, and structure from a base function. Java implementation uses compositional approaches and shortcut inheritance. |
-| **`super`** (Calls) | **Y** | ❌ | Invoking logic from a parent function within the current scope. |
+| **`super`** (Calls) | **Y** | ❌ | Invoking logic from a parent function within the current scope. Used in DRR. |
+
+## Reporting Components
+
+The following section tracks implementation status and requirements for regulatory reporting structures utilized heavily in DRR.
+
+### `report`
+**Meaning**: The `report` block acts as the orchestrator for regulatory reporting. It specifies the timing (e.g., `in T+1`), the eligibility condition (the `when` clause), the input data source, and the target output schema.
+**Requirements**: 
+- **Needs Generator Support**: **Y** (Status: ❌)
+- The generator must emit an orchestrating construct (e.g., a wrapper class or module function) that wires together the target schema and its associated rules.
+- The generated code must first evaluate the eligibility condition (`when` block) against the input. If the condition is met, it must instantiate the target output schema and execute every `reporting rule` associated with that schema, assigning the resulting values to the corresponding fields.
+- The generator must also emit metadata annotations or registration logic to allow the system to dynamically identify the report within an execution engine.
+
+### `reporting rule`
+**Meaning**: A `reporting rule` defines the precise navigational and computational logic required to extract, filter, or compute a specific field for a regulatory report from the input transaction object.
+**Requirements**:
+- **Needs Generator Support**: **Y** (Status: ❌)
+- The generator must emit a standalone, callable function or class for each rule.
+- The generated function must take the root input object as an argument and return the computed field value.
+- The generated code must be strictly null-safe. Because reporting rules frequently navigate deep into optional nested attributes, the code must gracefully evaluate to `None`/`null` rather than raising exceptions (like `AttributeError` in Python) when an intermediate attribute is missing.
+
+### `eligibility rule`
+**Meaning**: An `eligibility rule` acts as a gating filter that evaluates logical conditions to establish whether a specific transaction is eligible for a given report. 
+**Requirements**:
+- **Needs Generator Support**: **Y** (Status: ❌)
+- The generator must emit a function that takes the input object and returns a `Boolean` value.
+- It must translate the declarative conditional logic into standard boolean execution flows. The output is ultimately called by the `report` orchestrator to determine if the reporting pipeline should proceed.
 
 ## Rosetta Expression Support
 
@@ -45,7 +72,7 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | Feature | Handled | Description |
 | :--- | :---: | :--- |
 | **ArithmeticOperation** | ✅ | Binary arithmetic (+, -, *, /) over two expressions. |
-| **AsKeyOperation** | ⚠️ | Partial. Treat an argument as a key. Currently maps to `{expr: True}`. CDM integration for full key/reference lifecycle is pending. |
+| **AsKeyOperation** | ⚠️ | Partial. Treat an argument as a key. Currently maps to `{expr: True}`. CDM integration for full key/reference lifecycle is pending. Present in DRR. |
 | **ChoiceOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
 | **ComparisonOperation** | ✅ | Binary comparisons (e.g., <, <=, >, >=). |
 | **DefaultOperation** | ✅ | Binary fallback (use right when left is missing/empty). |
@@ -58,12 +85,12 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | **LastOperation** | ✅ | Unary list operation returning the last element (`[-1]`). |
 | **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). |
 | **LogicalOperation** | ✅ | Binary logical operations (`and`, `or`). |
-| **MapOperation** | ⚠️ | Partial. Mapped to `extract` keyword. Supported for explicit parameters, but fails for implicit parameters. |
-| **MaxOperation** | ⚠️ | Partial. Standard `max(arg)` is supported, but closure-based keys (`max [ item -> ... ]`) used in CDM are currently ignored. |
-| **MinOperation** | ⚠️ | Partial. Standard `min(arg)` is supported, but closure-based keys used in CDM are currently ignored. |
-| **OneOfOperation** | ⚠️ | Partial. Supported in type conditions, but unsupported as a general expression in functions (used in CDM). |
+| **MapOperation** | ⚠️ | Partial. Mapped to `extract` keyword. Supported for explicit parameters, but fails for implicit parameters. Extensively used in DRR (implicit parameters). |
+| **MaxOperation** | ⚠️ | Partial. Standard `max(arg)` is supported, but closure-based keys (`max [ item -> ... ]`) used in CDM/DRR are currently ignored. |
+| **MinOperation** | ⚠️ | Partial. Standard `min(arg)` is supported, but closure-based keys used in CDM/DRR are currently ignored. |
+| **OneOfOperation** | ⚠️ | Partial. Supported in type conditions, but unsupported as a general expression in functions (used in CDM/DRR). |
 | **ReverseOperation** | ✅ | Unary list operation reversing element order (via `reversed()`). |
-| **SortOperation** | ⚠️ | Partial. Standard `sorted(arg)` is supported, but closure-based sorting (`sort [ item -> ... ]`) used in CDM is ignored. |
+| **SortOperation** | ⚠️ | Partial. Standard `sorted(arg)` is supported, but closure-based sorting (`sort [ item -> ... ]`) used in CDM/DRR is ignored. |
 | **SumOperation** | ✅ | Unary list operation summing numeric elements (via `sum()`). |
 | **SwitchOperation** | ✅ | Conditional selection among cases (via helper functions). |
 | **ThenOperation** | ✅ | Unary functional pipeline step (via lambda). |
@@ -94,7 +121,7 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 
 ### Outstanding Expression Gaps
 
-1. **Closures in Aggregations (CDM Gap)**: Operations like `sort`, `max`, and `min` frequently use closure blocks (e.g., `sort [ item -> unit -> currency ]`) in CDM. The generator currently ignores these blocks and produces standard Python `sorted()`/`max()` calls.
+1. **Closures in Aggregations (CDM/DRR Gap)**: Operations like `sort`, `max`, and `min` frequently use closure blocks (e.g., `sort [ item -> unit -> currency ]`) in CDM and DRR (`digital-regulatory-reporting`). The generator currently ignores these blocks and produces standard Python `sorted()`/`max()` calls.
    ```rosetta
    // Exposes gap in SortOperation/MaxOperation
    func SortItems:
