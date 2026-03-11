@@ -60,6 +60,9 @@ public class PythonFunctionAliasTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    inp1 = rune_cow(inp1)
+                    inp2 = rune_cow(inp2)
+
 
                     def _then_fn0():
                         return rune_resolve_attr(self, "inp1")
@@ -71,7 +74,7 @@ public class PythonFunctionAliasTest {
                     result = rune_resolve_attr(self, "Alias")
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
 

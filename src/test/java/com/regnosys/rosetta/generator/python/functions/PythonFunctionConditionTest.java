@@ -64,6 +64,10 @@ public class PythonFunctionConditionTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    in1 = rune_cow(in1)
+                    in2 = rune_cow(in2)
+                    direction = rune_cow(direction)
+
                     _pre_registry = {}
                     # conditions
 
@@ -75,13 +79,13 @@ public class PythonFunctionConditionTest {
                     rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
                     def _then_fn1():
-                        return max([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")])
+                        return max([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")] or [], default=None)
 
                     def _else_fn1():
                         return True
 
                     def _then_fn0():
-                        return min([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")])
+                        return min([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")] or [], default=None)
 
                     def _else_fn0():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "max"), _then_fn1, _else_fn1)
@@ -89,7 +93,7 @@ public class PythonFunctionConditionTest {
                     result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "min"), _then_fn0, _else_fn0)
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -136,16 +140,20 @@ public class PythonFunctionConditionTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    in1 = rune_cow(in1)
+                    in2 = rune_cow(in2)
+                    direction = rune_cow(direction)
+
                     _post_registry = {}
 
                     def _then_fn1():
-                        return max([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")])
+                        return max([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")] or [], default=None)
 
                     def _else_fn1():
                         return True
 
                     def _then_fn0():
-                        return min([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")])
+                        return min([rune_resolve_attr(self, \"in1\"), rune_resolve_attr(self, \"in2\")] or [], default=None)
 
                     def _else_fn0():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"direction\"), "=", \"max\"), _then_fn1, _else_fn1)
@@ -161,7 +169,7 @@ public class PythonFunctionConditionTest {
                     # Execute all registered post-conditions
                     rune_execute_local_conditions(_post_registry, 'Post-condition')
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -212,6 +220,10 @@ public class PythonFunctionConditionTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    in1 = rune_cow(in1)
+                    in2 = rune_cow(in2)
+                    direction = rune_cow(direction)
+
                     _pre_registry = {}
                     # conditions
 
@@ -228,13 +240,13 @@ public class PythonFunctionConditionTest {
                     rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
                     def _then_fn1():
-                        return max([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")])
+                        return max([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")] or [], default=None)
 
                     def _else_fn1():
                         return True
 
                     def _then_fn0():
-                        return min([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")])
+                        return min([rune_resolve_attr(self, "in1"), rune_resolve_attr(self, "in2")] or [], default=None)
 
                     def _else_fn0():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "max"), _then_fn1, _else_fn1)
@@ -242,7 +254,7 @@ public class PythonFunctionConditionTest {
                     result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "min"), _then_fn0, _else_fn0)
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }

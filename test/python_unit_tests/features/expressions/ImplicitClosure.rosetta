@@ -1,0 +1,29 @@
+namespace rosetta_dsl.test.semantic.expressions.implicit_closure
+
+type Item:
+    val int (1..1)
+
+func MapFeatureImplicitExpression:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items extract [ val * 2 ]
+
+func MapImplicit:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items extract [ item * 2 ]
+
+func ReduceImplicit:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items
+        reduce a, b [ a + b ]

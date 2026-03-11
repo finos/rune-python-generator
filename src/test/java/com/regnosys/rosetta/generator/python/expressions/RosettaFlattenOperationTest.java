@@ -48,6 +48,6 @@ public class RosettaFlattenOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "com_rosetta_test_model_Foo.model_rebuild()");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "return rune_all_elements([1, 2, 3], \"=\", (lambda item: rune_flatten_list(item))(list(map(lambda item: rune_resolve_attr(item, \"numbers\"), rune_resolve_attr(self, \"bars\")))))");
+                "return rune_all_elements([1, 2, 3], \"=\", (lambda item: rune_flatten_list(item))(list(map(lambda item: rune_resolve_attr(item, \"numbers\"), rune_resolve_attr(self, \"bars\") or []))))");
     }
 }

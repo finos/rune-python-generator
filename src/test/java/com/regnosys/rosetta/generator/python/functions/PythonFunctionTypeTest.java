@@ -57,6 +57,8 @@ public class PythonFunctionTypeTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    arg = rune_cow(arg)
+
 
                     def _then_fn0():
                         return (-1 * rune_resolve_attr(rune_resolve_attr(self, \"arg\"), \"a\"))
@@ -67,7 +69,7 @@ public class PythonFunctionTypeTest {
                     result = if_cond_fn(rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"arg\"), \"a\"), \"<\", 0), _then_fn0, _else_fn0)
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -110,6 +112,8 @@ public class PythonFunctionTypeTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    arg = rune_cow(arg)
+
 
                     def _then_fn0():
                         return (rune_resolve_attr(self, "arg") * -1)
@@ -120,7 +124,7 @@ public class PythonFunctionTypeTest {
                     result = com_rosetta_test_model_AOutput(a=if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0))
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -142,7 +146,7 @@ public class PythonFunctionTypeTest {
         testUtils.assertGeneratedContainsExpectedString(generated,
                 "def com_rosetta_test_model_TestPrecision() -> Decimal:");
         testUtils.assertGeneratedContainsExpectedString(generated, "result = (Decimal('0.1') + Decimal('0.2'))");
-        testUtils.assertGeneratedContainsExpectedString(generated, "return result");
+        testUtils.assertGeneratedContainsExpectedString(generated, "return rune_unwrap(result)");
     }
 
     /**
@@ -203,15 +207,19 @@ public class PythonFunctionTypeTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    n1 = rune_cow(n1)
+                    op = rune_cow(op)
+                    n2 = rune_cow(n2)
+
 
                     def _then_fn5():
-                        return min([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")])
+                        return min([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")] or [], default=None)
 
                     def _else_fn5():
                         return True
 
                     def _then_fn4():
-                        return max([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")])
+                        return max([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")] or [], default=None)
 
                     def _else_fn4():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MIN), _then_fn5, _else_fn5)
@@ -243,7 +251,7 @@ public class PythonFunctionTypeTest {
                     result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.ADD), _then_fn0, _else_fn0)
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -287,11 +295,13 @@ public class PythonFunctionTypeTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    baseObject = rune_cow(baseObject)
+
 
                     result = com_rosetta_test_model_BaseObject(value1=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value1\"), value2=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value2\"))
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -358,12 +368,15 @@ public class PythonFunctionTypeTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    payout = rune_cow(payout)
+                    date = rune_cow(date)
+
 
                     identifiers = _get_rune_object('com_rosetta_test_model_ObservationIdentifier', 'observable', _get_rune_object('com_rosetta_test_model_Observable', 'rateOption', rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "payout"), "rateSpecification"), "floatingRate"), "rateOption")))
                     identifiers = set_rune_attr(rune_resolve_attr(self, 'identifiers'), 'observationDate', rune_resolve_attr(self, "date"))
 
 
-                    return identifiers
+                    return rune_unwrap(identifiers)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }

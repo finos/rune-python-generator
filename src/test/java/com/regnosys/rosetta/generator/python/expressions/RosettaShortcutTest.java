@@ -53,11 +53,13 @@ public class RosettaShortcutTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            val = rune_cow(val)
+
 
                             MyShortcut = (rune_resolve_attr(self, "val") + 5)
                             res = (rune_resolve_attr(self, "MyShortcut") * 2)
 
 
-                            return res""");
+                            return rune_unwrap(res)""");
     }
 }

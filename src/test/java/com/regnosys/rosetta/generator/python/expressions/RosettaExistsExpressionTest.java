@@ -53,11 +53,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            bar = rune_cow(bar)
+
 
                             result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 
     /**
@@ -93,11 +95,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            bar = rune_cow(bar)
+
 
                             result = (not rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field")))
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 
     /**
@@ -133,11 +137,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            bar = rune_cow(bar)
+
 
                             result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"), "single")
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 
     /**
@@ -173,11 +179,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            bar = rune_cow(bar)
+
 
                             result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "fieldList"), "multiple")
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 
     /**
@@ -214,11 +222,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            bar = rune_cow(bar)
+
 
                             result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 
     /**
@@ -255,11 +265,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            bar = rune_cow(bar)
+
 
                             result = (rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field1")) and rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field2")))
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 
     /**
@@ -297,11 +309,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            bar = rune_cow(bar)
+
 
                             result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bar"), "sub"), "field"), "single")
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 
     /**
@@ -339,10 +353,13 @@ public class RosettaExistsExpressionTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            arg1 = rune_cow(arg1)
+                            arg2 = rune_cow(arg2)
+
 
                             result = (rune_attr_exists(rune_resolve_attr(self, "arg1")) or rune_attr_exists(rune_resolve_attr(self, "arg2")))
 
 
-                            return result""");
+                            return rune_unwrap(result)""");
     }
 }

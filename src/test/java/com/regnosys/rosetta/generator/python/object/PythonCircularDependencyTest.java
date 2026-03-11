@@ -57,7 +57,7 @@ public class PythonCircularDependencyTest {
                             result = result.to_model()
 
 
-                            return result
+                            return rune_unwrap(result)
                         """);
     }
 

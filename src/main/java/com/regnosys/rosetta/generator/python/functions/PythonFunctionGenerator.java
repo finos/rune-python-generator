@@ -40,6 +40,7 @@ import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 public final class PythonFunctionGenerator {
 
@@ -67,6 +68,12 @@ public final class PythonFunctionGenerator {
      */
     @Inject
     private RosettaFunctionExtensions rosettaFunctionExtensions;
+
+    /**
+     * The Python expression generator provider.
+     */
+    @Inject
+    private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
 
     /**
      * Generates Python code for a collection of Rosetta functions.
@@ -213,7 +220,7 @@ public final class PythonFunctionGenerator {
         }
         context.getEnumImports().addAll(collectFunctionDependencies(function));
 
-        PythonExpressionGenerator expressionGenerator = new PythonExpressionGenerator();
+        PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -228,6 +235,13 @@ public final class PythonFunctionGenerator {
 
         writer.appendLine("self = inspect.currentframe()");
         writer.appendLine("");
+        Iterable<Attribute> inputs = rosettaFunctionExtensions.getInputs(function);
+        if (inputs.iterator().hasNext()) {
+            for (Attribute input : inputs) {
+                writer.appendLine(input.getName() + " = rune_cow(" + input.getName() + ")");
+            }
+            writer.appendLine("");
+        }
 
         writer.appendBlock(generateConditions(function, expressionGenerator));
         writer.appendBlock(generateAlias(function, expressionGenerator));
@@ -294,7 +308,7 @@ public final class PythonFunctionGenerator {
         if (isCodeImplementation) {
             //todo: can a function have a body and be a native function?
              writer.appendLine(generateNativeFunctionCall(function));
-             writer.appendLine("return " + function.getOutput().getName());
+             writer.appendLine("return rune_unwrap(" + function.getOutput().getName() + ")");
         } else {
              writer.appendLine("raise ValueError(f\"Enum value {" + enumParam + "} not implemented for " + function.getName() + "\")");
         }
@@ -379,7 +393,7 @@ public final class PythonFunctionGenerator {
                 writer.appendLine("");
             }
 
-            writer.appendLine("return " + output.getName());
+            writer.appendLine("return rune_unwrap(" + output.getName() + ")");
             return writer.toString();
         }
         return "";

@@ -67,6 +67,13 @@ import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
+import com.regnosys.rosetta.types.RChoiceType;
+import com.regnosys.rosetta.types.RDataType;
+import com.regnosys.rosetta.types.RMetaAnnotatedType;
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.RosettaTypeProvider;
+
+import jakarta.inject.Inject;
 
 /**
  * Generate Python for Rune Expressions
@@ -87,6 +94,12 @@ public final class PythonExpressionGenerator {
      */
     private final List<String> ifCondBlocks = new ArrayList<>();
 
+
+    /**
+     * The Rosetta type provider.
+     */
+    @Inject
+    private RosettaTypeProvider typeProvider;
 
     /**
      * The counter for generated helper functions.
@@ -171,19 +184,19 @@ public final class PythonExpressionGenerator {
                 return generateMapOperation(mapOp, scope);
             }
             case MaxOperation maxOp -> {
-                return "max(" + generateExpression(maxOp.getArgument(), scope) + ")";
+                return generateMaxOperation(maxOp, scope);
             }
             case MinOperation minOp -> {
-                return "min(" + generateExpression(minOp.getArgument(), scope) + ")";
+                return generateMinOperation(minOp, scope);
             }
             case SortOperation sort -> {
-                return "sorted(" + generateExpression(sort.getArgument(), scope) + ")";
+                return generateSortOperation(sort, scope);
             }
             case ThenOperation then -> {
                 return generateThenOperation(then, scope);
             }
             case SumOperation sum -> {
-                return "sum(" + generateExpression(sum.getArgument(), scope) + ")";
+                return "sum(" + generateExpression(sum.getArgument(), scope) + " or [])";
             }
             case ReverseOperation reverse -> {
                 return "list(reversed(" + generateExpression(reverse.getArgument(), scope) + "))";
@@ -211,6 +224,9 @@ public final class PythonExpressionGenerator {
             }
             case ReduceOperation reduceOp -> {
                 return generateReduceOperation(reduceOp, scope);
+            }
+            case OneOfOperation oneOf -> {
+                return generateOneOfOperation(oneOf, scope);
             }
             case ToTimeOperation toTime -> {
                 return "datetime.datetime.strptime(" + generateExpression(toTime.getArgument(), scope)
@@ -328,13 +344,37 @@ public final class PythonExpressionGenerator {
     private String generateReduceOperation(ReduceOperation expr, PythonExpressionScope scope) {
         String argument = generateExpression(expr.getArgument(), scope);
         InlineFunction func = expr.getFunction();
-        String accParam = func.getParameters().get(0).getName();
-        String itemParam = func.getParameters().get(1).getName();
+        String accParam = func.getParameters().isEmpty() ? "a" : func.getParameters().get(0).getName();
+        String itemParam = func.getParameters().size() < 2 ? "b" : func.getParameters().get(1).getName();
 
-        PythonExpressionScope subScope = scope.withReceiver(itemParam).withShadow(func.getParameters().get(0), accParam);
+        PythonExpressionScope subScope = scope.withReceiver(itemParam);
+        if (!func.getParameters().isEmpty()) {
+            subScope = subScope.withShadow(func.getParameters().get(0), accParam);
+        }
         String body = generateExpression(func.getBody(), subScope);
 
         return "functools.reduce(lambda " + accParam + ", " + itemParam + ": " + body + ", " + argument + ")";
+    }
+
+    private String generateOneOfOperation(OneOfOperation expr, PythonExpressionScope scope) {
+        String argument = generateExpression(expr.getArgument(), scope);
+        RMetaAnnotatedType metaType = typeProvider.getRMetaAnnotatedType(expr.getArgument());
+        if (metaType != null) {
+            RType type = metaType.getRType();
+            RDataType dt = null;
+            if (type instanceof RDataType) {
+                dt = (RDataType) type;
+            } else if (type instanceof RChoiceType ct) {
+                dt = ct.asRDataType();
+            }
+            if (dt != null) {
+                String attrs = dt.getAllAttributes().stream()
+                        .map(a -> "'" + a.getName() + "'")
+                        .collect(Collectors.joining(", "));
+                return "rune_check_one_of(" + argument + ", " + attrs + ")";
+            }
+        }
+        return "rune_check_one_of(" + argument + ")";
     }
 
     private String generateFilterOperation(FilterOperation expr, PythonExpressionScope scope) {
@@ -363,7 +403,7 @@ public final class PythonExpressionGenerator {
 
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
         String lambdaFunction = "lambda " + param + ": " + funcBody;
-        return "list(map(" + lambdaFunction + ", " + argument + "))";
+        return "list(map(" + lambdaFunction + ", " + argument + " or []))";
     }
 
     private String generateConstructorExpression(RosettaConstructorExpression expr, PythonExpressionScope scope) {
@@ -682,5 +722,50 @@ public final class PythonExpressionGenerator {
                 })
                 .collect(Collectors.joining(", "));
         return "rune_with_meta(" + arg + ", {" + entries + "})";
+    }
+
+    private String generateMaxOperation(MaxOperation expr, PythonExpressionScope scope) {
+        String argument = generateExpression(expr.getArgument(), scope);
+        InlineFunction inlineFunc = expr.getFunction();
+        if (inlineFunc == null) {
+            return "max(" + argument + " or [], default=None)";
+        }
+        String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
+        PythonExpressionScope subScope = scope.withReceiver(param);
+        if (expr.getArgument() instanceof RosettaSymbolReference ref) {
+            subScope = subScope.withShadow(ref.getSymbol(), param);
+        }
+        String funcBody = generateExpression(inlineFunc.getBody(), subScope);
+        return "max(" + argument + " or [], key=lambda " + param + ": " + funcBody + ", default=None)";
+    }
+
+    private String generateMinOperation(MinOperation expr, PythonExpressionScope scope) {
+        String argument = generateExpression(expr.getArgument(), scope);
+        InlineFunction inlineFunc = expr.getFunction();
+        if (inlineFunc == null) {
+            return "min(" + argument + " or [], default=None)";
+        }
+        String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
+        PythonExpressionScope subScope = scope.withReceiver(param);
+        if (expr.getArgument() instanceof RosettaSymbolReference ref) {
+            subScope = subScope.withShadow(ref.getSymbol(), param);
+        }
+        String funcBody = generateExpression(inlineFunc.getBody(), subScope);
+        return "min(" + argument + " or [], key=lambda " + param + ": " + funcBody + ", default=None)";
+    }
+
+    private String generateSortOperation(SortOperation expr, PythonExpressionScope scope) {
+        String argument = generateExpression(expr.getArgument(), scope);
+        InlineFunction inlineFunc = expr.getFunction();
+        if (inlineFunc == null) {
+            return "sorted(" + argument + " or [])";
+        }
+        String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
+        PythonExpressionScope subScope = scope.withReceiver(param);
+        if (expr.getArgument() instanceof RosettaSymbolReference ref) {
+            subScope = subScope.withShadow(ref.getSymbol(), param);
+        }
+        String funcBody = generateExpression(inlineFunc.getBody(), subScope);
+        return "sorted(" + argument + " or [], key=lambda " + param + ": " + funcBody + ")";
     }
 }

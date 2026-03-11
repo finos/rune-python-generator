@@ -78,20 +78,20 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | **DefaultOperation** | ✅ | Binary fallback (use right when left is missing/empty). |
 | **DistinctOperation** | ✅ | Unary list operation removing duplicates (via `set()`). |
 | **EqualityOperation** | ✅ | Binary equality/inequality (==, !=). |
-| **FilterOperation** | ⚠️ | Partial. Supported for explicit parameters, but fails for implicit parameters (no named args in closure). |
-| **FirstOperation** | ✅ | Unary list operation returning the first element (`[0]`). |
+| **FilterOperation** | ✅ | Filter elements from a list. Supported for both explicit and implicit closure parameters. |
+| **FirstOperation** | ⚠️ | Partial. Returns the first element (`[0]`). Currently crashes on empty or null inputs. |
 | **FlattenOperation** | ✅ | Unary list operation flattening a list of lists. |
 | **JoinOperation** | ✅ | Binary operation joining strings (via `str.join`). |
-| **LastOperation** | ✅ | Unary list operation returning the last element (`[-1]`). |
+| **LastOperation** | ⚠️ | Partial. Returns the last element (`[-1]`). Currently crashes on empty or null inputs. |
 | **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). |
 | **LogicalOperation** | ✅ | Binary logical operations (`and`, `or`). |
-| **MapOperation** | ⚠️ | Partial. Mapped to `extract` keyword. Supported for explicit parameters, but fails for implicit parameters. Extensively used in DRR (implicit parameters). |
-| **MaxOperation** | ⚠️ | Partial. Standard `max(arg)` is supported, but closure-based keys (`max [ item -> ... ]`) used in CDM/DRR are currently ignored. |
-| **MinOperation** | ⚠️ | Partial. Standard `min(arg)` is supported, but closure-based keys used in CDM/DRR are currently ignored. |
-| **OneOfOperation** | ⚠️ | Partial. Supported in type conditions, but unsupported as a general expression in functions (used in CDM/DRR). |
+| **MapOperation** | ✅ | Projection or mapping of values (via `extract` keyword). Supported for both explicit and implicit parameters. |
+| **MaxOperation** | ⚠️ | Partial. Supported for closure-based keys, but crashes if the input list contains `None` (nothing). |
+| **MinOperation** | ⚠️ | Partial. Supported for closure-based keys, but crashes if the input list contains `None` (nothing). |
+| **OneOfOperation** | ✅ | Supported both in type conditions and as a general expression in functions (Dynamic attribute detection). |
 | **ReverseOperation** | ✅ | Unary list operation reversing element order (via `reversed()`). |
-| **SortOperation** | ⚠️ | Partial. Standard `sorted(arg)` is supported, but closure-based sorting (`sort [ item -> ... ]`) used in CDM/DRR is ignored. |
-| **SumOperation** | ✅ | Unary list operation summing numeric elements (via `sum()`). |
+| **SortOperation** | ⚠️ | Partial. Supported for closure-based keys, but crashes if the input list contains `None` (nothing). |
+| **SumOperation** | ⚠️ | Partial. Returns `0` for empty/null lists (may mismatch Rosetta `nothing`) and crashes on lists containing `None`. |
 | **SwitchOperation** | ✅ | Conditional selection among cases (via helper functions). |
 | **ThenOperation** | ✅ | Unary functional pipeline step (via lambda). |
 | **ToDateOperation** | ✅ | Conversion/Parse to date. |
@@ -117,43 +117,11 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | **OnlyExistsExpression** | ✅ | Checks that only the listed expressions exist. |
 | **SymbolReference** | ✅ | References to Data types, Enums, Attributes, and shortcuts. |
 | **WithMetaOperation** | ✅ | Wraps a value with metadata (via `rune_with_meta`). |
-| **ReduceOperation** | ⚠️ | Partial. Supported for explicit parameters (e.g., `reduce a, b [ a + b ]`), but fails for implicit closures (unnamed args). |
+| **ReduceOperation** | ✅ | List reduction. Supported for both explicit and implicit closure parameters (with fallback naming). |
 
 ### Outstanding Expression Gaps
 
-1. **Closures in Aggregations (CDM/DRR Gap)**: Operations like `sort`, `max`, and `min` frequently use closure blocks (e.g., `sort [ item -> unit -> currency ]`) in CDM and DRR (`digital-regulatory-reporting`). The generator currently ignores these blocks and produces standard Python `sorted()`/`max()` calls.
-   ```rosetta
-   // Exposes gap in SortOperation/MaxOperation
-   func SortItems:
-       inputs: items Item (0..*)
-       output: sortedItems Item (0..*)
-       set sortedItems:
-           items sort [ item -> price -> amount ] // Generator ignores the [ ... ] block
-   ```
-
-2. **Implicit Closure Parameters**: Rosetta allows `extract [ item -> attr ]` or `reduce [ a + b ]` without naming parameters. The current generator expects parameters to be explicitly declared in the `InlineFunction` and fails with an error if they are missing.
-   ```rosetta
-   // Exposes gap in MapOperation/ReduceOperation
-   func ImplicitClosure:
-       inputs: items int (0..*)
-       output: result int (0..1)
-       set result:
-           items 
-               extract [ item * 2 ] // Fails: expects explicit 'item' parameter declaration
-               reduce [ a + b ]     // Fails: expects explicit 'a, b' parameters
-   ```
-
-3. **General `one-of` Expressions**: In CDM, `one-of` is used as a stand-alone expression in functions and shortcuts. The generator only implements this behavior within type conditions.
-   ```rosetta
-   // Exposes gap in OneOfOperation (Expression)
-   func CheckOneOf:
-       inputs: msg Message (1..1)
-       output: isValid boolean (1..1)
-       set isValid:
-           msg -> fieldA or msg -> fieldB one-of // Fails: Unsupported general expression
-   ```
-
-4. **`as-key` Full Semantics**: Current implementation is a dictionary literal placeholder. Full integration with the CDM workflow (where `as-key` signals persistence or cross-referencing) requires runtime support.
+1. **`as-key` Full Semantics**: Current implementation is a dictionary literal placeholder. Full integration with the CDM workflow (where `as-key` signals persistence or cross-referencing) requires runtime support.
    ```rosetta
    // Exposes semantic gap in AsKeyOperation
    func MarkAsKey:
@@ -163,5 +131,20 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
            trade as-key // Currently generates {trade: True}, missing reference semantics
    ```
 
-5. **Standard Library Refinements**: While `sum` etc. are implemented using Python built-ins, handling of empty lists vs "nothing" in Rosetta may require custom `rune_*` protective wrappers.
+2. **Null-Safety & "Nothing" Propagation**: While `sum`, `max`, and `min` are implemented using Python built-ins, the generator currently lacks robust handling for Rosetta's "nothing" (null) semantics as defined in the [Rune Modelling Components](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md) specification. 
+
+    *Note: Structural definitions in `Rosetta.xtext` and `RosettaExpression.xcore` align with the documentation, but the behavioral expectations are enforced at the type and generation layers.*
+
+    *   **Collection Nulls**: Python built-ins like `sum()`, `max()`, and `sorted()` crash if a list contains `None`. 
+        *   **Rune Expectation (Heading: [`Other List Operator`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1409))**: Aggregations and sorts must filter out nulls and operate over the remaining elements.
+    *   **Empty Accessors**: `first` and `last` operations currently use index access (`[0]` and `[-1]`) which crash on empty collections. 
+        *   **Rune Expectation (Heading: [`Other List Operator`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1409))**: Return "nothing" (None) when the collection is empty.
+    *   **Scalar Propagation**: The `sum` of "nothing" (null input) currently returns `0` via `sum(arg or [])`. 
+        *   **Rune Expectation (Headings: [`Null`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L922), [`List`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1194))**: Propagate "nothing" (None) for all scalar results where the input collection is null/nothing. An empty sum is only `0` if the collection exists but has no elements after filtering.
+
+3. **List Comparison Semantics**: Several implementation details in `rune-python-runtime` violate the formal comparison rules:
+    *   **The `_ntoz` (None to Zero) Violation**: The runtime converts `None` to `0` for comparisons.
+        *   **Rune Expectation (Heading: [`Comparison Operator and Null`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L990))**: `null = any value` must be `false` (including `null = null`). Python currently returns `true` for `None == None` and `None == 0`.
+    *   **Pairwise Inequality (`<>`)**: The generator currently calls `rune_any_elements` for list inequality, which performs a **segment-wise Cartesian product** check (`any(x != y for ...)`).
+        *   **Rune Expectation (Heading: [`List Comparison`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1382))**: `<>` must return `true` if lists have different lengths OR if any pairwise items differ. `rune_any_elements` ignores list length and relative order entirely.
 

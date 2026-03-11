@@ -52,11 +52,13 @@ public class RosettaListOperationTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            items = rune_cow(items)
 
-                            result = ((rune_all_elements(sum(rune_resolve_attr(self, \"items\")), \"=\", 10) and rune_all_elements(max(rune_resolve_attr(self, \"items\")), \"=\", 5)) and rune_all_elements(min(rune_resolve_attr(self, \"items\")), \"=\", 1))
+
+                            result = ((rune_all_elements(sum(rune_resolve_attr(self, \"items\") or []), \"=\", 10) and rune_all_elements(max(rune_resolve_attr(self, \"items\") or [], default=None), \"=\", 5)) and rune_all_elements(min(rune_resolve_attr(self, \"items\") or [], default=None), \"=\", 1))
 
 
-                            return result
+                            return rune_unwrap(result)
                         """);
     }
 
@@ -90,11 +92,13 @@ public class RosettaListOperationTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            items = rune_cow(items)
+
 
                             result = (rune_all_elements(rune_resolve_attr(self, \"items\")[0], \"=\", 1) and rune_all_elements(rune_resolve_attr(self, \"items\")[-1], \"=\", 5))
 
 
-                            return result
+                            return rune_unwrap(result)
                         """);
     }
 
@@ -127,11 +131,13 @@ public class RosettaListOperationTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            items = rune_cow(items)
 
-                            result = sorted(rune_resolve_attr(self, \"items\"))
+
+                            result = sorted(rune_resolve_attr(self, \"items\") or [])
 
 
-                            return result
+                            return rune_unwrap(result)
                         """);
     }
 
@@ -168,11 +174,14 @@ public class RosettaListOperationTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            list1 = rune_cow(list1)
+                            list2 = rune_cow(list2)
+
 
                             result = rune_all_elements(rune_resolve_attr(self, \"list1\"), \"=\", rune_resolve_attr(self, \"list2\"))
 
 
-                            return result
+                            return rune_unwrap(result)
                         """);
     }
 
@@ -206,7 +215,7 @@ public class RosettaListOperationTest {
                             result = [1, 2, 3]
 
 
-                            return result
+                            return rune_unwrap(result)
                         """);
     }
 
@@ -239,11 +248,13 @@ public class RosettaListOperationTest {
                             \"\"\"
                             self = inspect.currentframe()
 
+                            items = rune_cow(items)
+
 
                             result = list(reversed(rune_resolve_attr(self, \"items\")))
 
 
-                            return result
+                            return rune_unwrap(result)
                         """);
     }
 }

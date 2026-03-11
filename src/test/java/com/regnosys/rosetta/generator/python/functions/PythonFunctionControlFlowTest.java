@@ -54,6 +54,8 @@ public class PythonFunctionControlFlowTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    arg = rune_cow(arg)
+
 
                     def _then_fn0():
                         return (-1 * rune_resolve_attr(self, "arg"))
@@ -64,7 +66,7 @@ public class PythonFunctionControlFlowTest {
                     result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0)
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
 
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);

@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.semantic.expressions.one_of_expression
+
+type Message:
+    fieldA int (0..1)
+    fieldB int (0..1)
+
+func CheckOneOf:
+    inputs: msg Message (1..1)
+    output: isValid boolean (1..1)
+    set isValid:
+        msg one-of

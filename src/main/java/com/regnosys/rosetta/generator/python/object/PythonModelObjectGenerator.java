@@ -25,6 +25,7 @@ import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 /**
  * Generate Python from Rune Types
@@ -50,6 +51,12 @@ public class PythonModelObjectGenerator {
      */
     @Inject
     private PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
+
+    /**
+     * The Python expression generator provider.
+     */
+    @Inject
+    private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
 
     /**
      * Generate Python from the collection of Rosetta classes (of type Data).
@@ -213,6 +220,7 @@ public class PythonModelObjectGenerator {
     }
 
     private String generateBody(Data rc, PythonCodeGeneratorContext context) {
+        PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
@@ -255,7 +263,7 @@ public class PythonModelObjectGenerator {
             writer.appendBlock(constraints);
         }
 
-        writer.appendBlock(new PythonExpressionGenerator().generateTypeConditions(rc));
+        writer.appendBlock(expressionGenerator.generateTypeConditions(rc));
 
         return writer.toString();
     }

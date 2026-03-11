@@ -62,11 +62,14 @@ public class PythonFunctionBasicTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    number1 = rune_cow(number1)
+                    number2 = rune_cow(number2)
+
 
                     result = (rune_resolve_attr(self, \"number1\") + rune_resolve_attr(self, \"number2\"))
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -111,11 +114,13 @@ public class PythonFunctionBasicTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    value = rune_cow(value)
+
 
                     result = (rune_resolve_attr(self, "value") * 2)
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
         String expectedBundleMainFunction = """
                 @replaceable
@@ -134,11 +139,13 @@ public class PythonFunctionBasicTest {
                     \"\"\"
                     self = inspect.currentframe()
 
+                    value = rune_cow(value)
+
 
                     result = com_rosetta_test_model_BaseFunction(rune_resolve_attr(self, "value"))
 
 
-                    return result
+                    return rune_unwrap(result)
                 """;
 
         String expectedBundleString = gf.get("src/com/_bundle.py").toString();

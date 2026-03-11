@@ -63,10 +63,12 @@ public final class PythonCodeGeneratorUtil {
                 from pydantic import Field, validate_call
 
                 from rune.runtime.base_data_class import BaseDataClass
+                from rune.runtime.cow import rune_cow, rune_unwrap
                 from rune.runtime.conditions import *
                 from rune.runtime.func_proxy import *
                 from rune.runtime.metadata import *
                 from rune.runtime.utils import *
+
                 """.stripIndent();
     }
 

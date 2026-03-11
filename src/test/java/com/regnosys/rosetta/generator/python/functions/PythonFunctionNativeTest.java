@@ -57,6 +57,10 @@ public class PythonFunctionNativeTest {
         String expected = """
                     self = inspect.currentframe()
 
+                    value = rune_cow(value)
+                    nearest = rune_cow(nearest)
+                    roundingMode = rune_cow(roundingMode)
+
                     _pre_registry = {}
                     # conditions
 
@@ -70,7 +74,7 @@ public class PythonFunctionNativeTest {
                     roundedValue = rune_execute_native('rosetta_dsl.test.functions.RoundToNearest', value, nearest, roundingMode)
 
 
-                    return roundedValue
+                    return rune_unwrap(roundedValue)
                 """;
         testUtils.assertGeneratedContainsExpectedString(bundle, expected);
         
