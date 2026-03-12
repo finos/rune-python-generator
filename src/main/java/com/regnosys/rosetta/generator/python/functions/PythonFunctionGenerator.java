@@ -202,13 +202,29 @@ public final class PythonFunctionGenerator {
     }
 
     private boolean isCodeImplementation(Function function) {
+        if (function == null) {
+            throw new RuntimeException("Function is null");
+        }
+        
+        // 1. Check for explicit annotation first (highest priority)
         Annotated annotated = (Annotated) function;
         boolean hasCodeImplementationAnnotation = annotated.getAnnotations()
                 .stream()
                 .map(aRef -> aRef.getAnnotation())
                 .anyMatch(a -> "codeImplementation".equals(a.getName()));
-        return hasCodeImplementationAnnotation;
+        
+        if (hasCodeImplementationAnnotation) {
+            return true;
+        }
+
+        // 2. Implicit indicator: no operations.
+        // We exclude Enum Dispatchers (headers) because those have a generated 
+        // 'match' body and should not default to native execution unless 
+        // explicitly forced via the annotation.
+        return function.getOperations().isEmpty() && 
+               !rosettaFunctionExtensions.handleAsEnumFunction(function);
     }
+
 
     private String generateFunction(Function function, PythonCodeGeneratorContext context) {
         if (function == null) {
