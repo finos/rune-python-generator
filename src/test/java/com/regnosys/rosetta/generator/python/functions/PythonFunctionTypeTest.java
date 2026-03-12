@@ -213,13 +213,13 @@ public class PythonFunctionTypeTest {
 
 
                     def _then_fn5():
-                        return min([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")] or [], default=None)
+                        return (lambda items: min((x for x in (items or []) if x is not None), default=None) if items is not None else None)([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")])
 
                     def _else_fn5():
                         return True
 
                     def _then_fn4():
-                        return max([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")] or [], default=None)
+                        return (lambda items: max((x for x in (items or []) if x is not None), default=None) if items is not None else None)([rune_resolve_attr(self, "n1"), rune_resolve_attr(self, "n2")])
 
                     def _else_fn4():
                         return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "op"), "=", com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum.MIN), _then_fn5, _else_fn5)

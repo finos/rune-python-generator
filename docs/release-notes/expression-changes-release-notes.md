@@ -25,18 +25,20 @@ Rosetta uses closure blocks with aggregation operations (e.g., `sort [ item -> p
 - **`key=lambda` Generation**: The generator now correctly produces the Python `key=lambda` syntax for these operations.
 - **Implicit Parameters**: Supports implicit `item` naming and receiver scoping for the closure block.
 
-## 3. [FIXED] Defensive Null-Safety in Operations
+## 3. [FIXED] Robust Null-Safety & Scalar Propagation
 
-In Rosetta/Rune DSL, "nothing" (null) values are common when navigation paths evaluate to empty lists. Previously, standard Python functions like `max()` or `sum()` would crash when encountering an empty or missing list.
+In Rosetta/Rune DSL, "nothing" (null) values are common when navigation paths evaluate to empty lists. We have implemented full alignment with the Rune specification for collection aggregations and accessors.
 
 ### Changes:
-- **Resilient Built-ins**: The generator now emits defensive patterns for all list-based operations:
-    - `max(...) or [], default=None`: Returns `None` if the input is empty or null, instead of raising a `ValueError`.
-    - `min(...) or [], default=None`: Returns `None` if the input is empty or null.
-    - `sorted(...) or []`: Gracefully handles null inputs by return an empty list.
-    - `sum(...) or []`: Gracefully handles null inputs.
-    - `list(map(..., arg or []))`: Ensures `map` operations don't throw on null arguments.
-- **Runtime Alignment**: These changes ensure the generated code is resilient when used with the standard Python environment, reducing dependency on custom null-handling runtime functions.
+- **Null-Filtering**: All collection operations (`sum`, `max`, `min`, `sort`, `reverse`, `distinct`, `count`) now automatically filter out `None` values prior to execution using generator expressions. 
+- **Scalar Propagation**: Operations that return a scalar (`sum`, `max`, `min`, `count`) now wrap their logic in a lambda that checks if the input collection itself is `None`. If the input is `None`, the operation returns `None` (propagating "nothing") rather than `0` or an empty default.
+- **Resilient Accessors**: 
+    - `first` and `last` now use `next(...)` with a default of `None` to ensure they return "nothing" instead of raising `IndexError` on empty collections.
+    - `flatten` now uses a universal lambda flattener that handles nested iterables and `COWList` while filtering nulls at every level.
+- **Empty Collection Defaults**: If a collection exists but is empty after null-filtering, aggregations return their appropriate defaults (e.g., `None` for `max`/`min`, `0` for `sum`).
+
+### Context:
+These changes ensure the generated code strictly follows the [Rune Modeling Components](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md) specification regarding null behavior and "nothing" propagation.
 
 ## 4. Support for [FIXED] General `one-of` Expressions
 

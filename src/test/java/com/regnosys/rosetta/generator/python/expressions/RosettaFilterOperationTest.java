@@ -44,7 +44,7 @@ public class RosettaFilterOperationTest {
         testUtils.assertGeneratedContainsExpectedString(bundle,
                 "com_rosetta_test_model_TestFilter.model_rebuild()");
         testUtils.assertGeneratedContainsExpectedString(bundle,
-                "return rune_all_elements((lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
+                "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
     }
 
     /**
@@ -65,6 +65,6 @@ public class RosettaFilterOperationTest {
         testUtils.assertGeneratedContainsExpectedString(bundle,
                 "def com_rosetta_test_model_TestNestedNested(items: list[com_rosetta_test_model_Item] | None) -> int:");
         testUtils.assertGeneratedContainsExpectedString(bundle,
-                "result = (lambda item: rune_count(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
+                "result = (lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
     }
 }

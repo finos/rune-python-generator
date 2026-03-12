@@ -76,22 +76,22 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | **ChoiceOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
 | **ComparisonOperation** | ✅ | Binary comparisons (e.g., <, <=, >, >=). |
 | **DefaultOperation** | ✅ | Binary fallback (use right when left is missing/empty). |
-| **DistinctOperation** | ✅ | Unary list operation removing duplicates (via `set()`). |
+| **DistinctOperation** | ✅ | Unary list operation removing duplicates. Filters nulls and propagates `None`. |
 | **EqualityOperation** | ✅ | Binary equality/inequality (==, !=). |
 | **FilterOperation** | ✅ | Filter elements from a list. Supported for both explicit and implicit closure parameters. |
-| **FirstOperation** | ⚠️ | Partial. Returns the first element (`[0]`). Currently crashes on empty or null inputs. |
-| **FlattenOperation** | ✅ | Unary list operation flattening a list of lists. |
+| **FirstOperation** | ✅ | Returns the first non-null element. Returns `None` for empty or null inputs. |
+| **FlattenOperation** | ✅ | Unary list operation flattening nested collections. Filters nulls and handles `COWList`. |
 | **JoinOperation** | ✅ | Binary operation joining strings (via `str.join`). |
-| **LastOperation** | ⚠️ | Partial. Returns the last element (`[-1]`). Currently crashes on empty or null inputs. |
+| **LastOperation** | ✅ | Returns the last non-null element. Returns `None` for empty or null inputs. |
 | **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). |
 | **LogicalOperation** | ✅ | Binary logical operations (`and`, `or`). |
 | **MapOperation** | ✅ | Projection or mapping of values (via `extract` keyword). Supported for both explicit and implicit parameters. |
-| **MaxOperation** | ⚠️ | Partial. Supported for closure-based keys, but crashes if the input list contains `None` (nothing). |
-| **MinOperation** | ⚠️ | Partial. Supported for closure-based keys, but crashes if the input list contains `None` (nothing). |
+| **MaxOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
+| **MinOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
 | **OneOfOperation** | ✅ | Supported both in type conditions and as a general expression in functions (Dynamic attribute detection). |
-| **ReverseOperation** | ✅ | Unary list operation reversing element order (via `reversed()`). |
-| **SortOperation** | ⚠️ | Partial. Supported for closure-based keys, but crashes if the input list contains `None` (nothing). |
-| **SumOperation** | ⚠️ | Partial. Returns `0` for empty/null lists (may mismatch Rosetta `nothing`) and crashes on lists containing `None`. |
+| **ReverseOperation** | ✅ | Unary list operation reversing element order. Filters nulls and propagates `None`. |
+| **SortOperation** | ✅ | Unary list operation sorting elements. Filters nulls and propagates `None`. |
+| **SumOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
 | **SwitchOperation** | ✅ | Conditional selection among cases (via helper functions). |
 | **ThenOperation** | ✅ | Unary functional pipeline step (via lambda). |
 | **ToDateOperation** | ✅ | Conversion/Parse to date. |
@@ -131,20 +131,9 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
            trade as-key // Currently generates {trade: True}, missing reference semantics
    ```
 
-2. **Null-Safety & "Nothing" Propagation**: While `sum`, `max`, and `min` are implemented using Python built-ins, the generator currently lacks robust handling for Rosetta's "nothing" (null) semantics as defined in the [Rune Modelling Components](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md) specification. 
-
-    *Note: Structural definitions in `Rosetta.xtext` and `RosettaExpression.xcore` align with the documentation, but the behavioral expectations are enforced at the type and generation layers.*
-
-    *   **Collection Nulls**: Python built-ins like `sum()`, `max()`, and `sorted()` crash if a list contains `None`. 
-        *   **Rune Expectation (Heading: [`Other List Operator`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1409))**: Aggregations and sorts must filter out nulls and operate over the remaining elements.
-    *   **Empty Accessors**: `first` and `last` operations currently use index access (`[0]` and `[-1]`) which crash on empty collections. 
-        *   **Rune Expectation (Heading: [`Other List Operator`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1409))**: Return "nothing" (None) when the collection is empty.
-    *   **Scalar Propagation**: The `sum` of "nothing" (null input) currently returns `0` via `sum(arg or [])`. 
-        *   **Rune Expectation (Headings: [`Null`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L922), [`List`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1194))**: Propagate "nothing" (None) for all scalar results where the input collection is null/nothing. An empty sum is only `0` if the collection exists but has no elements after filtering.
-
-3. **List Comparison Semantics**: Several implementation details in `rune-python-runtime` violate the formal comparison rules:
+2. **List Comparison Semantics**:
+   Several implementation details in `rune-python-runtime` violate the formal comparison rules:
     *   **The `_ntoz` (None to Zero) Violation**: The runtime converts `None` to `0` for comparisons.
         *   **Rune Expectation (Heading: [`Comparison Operator and Null`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L990))**: `null = any value` must be `false` (including `null = null`). Python currently returns `true` for `None == None` and `None == 0`.
     *   **Pairwise Inequality (`<>`)**: The generator currently calls `rune_any_elements` for list inequality, which performs a **segment-wise Cartesian product** check (`any(x != y for ...)`).
         *   **Rune Expectation (Heading: [`List Comparison`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1382))**: `<>` must return `true` if lists have different lengths OR if any pairwise items differ. `rune_any_elements` ignores list length and relative order entirely.
-

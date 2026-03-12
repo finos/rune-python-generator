@@ -1,0 +1,36 @@
+namespace rosetta_dsl.test.semantic.expressions.accessors
+
+func TestFirst:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items first
+
+func TestLast:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items last
+
+type Item:
+    val int (0..1)
+
+func TestFirstFiltered:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items extract [ val ] then first
+
+func TestLastFiltered:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items extract [ val ] then last

@@ -161,16 +161,18 @@ public final class PythonExpressionGenerator {
                 return "{" + generateExpression(asKey.getArgument(), scope) + ": True}";
             }
             case DistinctOperation distinct -> {
-                return "set(" + generateExpression(distinct.getArgument(), scope) + ")";
+                String arg = generateExpression(distinct.getArgument(), scope);
+                return "(lambda items: set(x for x in (items or []) if x is not None) if items is not None else None)(" + arg + ")";
             }
             case FilterOperation filter -> {
                 return generateFilterOperation(filter, scope);
             }
             case FirstOperation first -> {
-                return generateExpression(first.getArgument(), scope) + "[0]";
+                return "next((x for x in (" + generateExpression(first.getArgument(), scope) + " or []) if x is not None), None)";
             }
             case FlattenOperation flatten -> {
-                return "rune_flatten_list(" + generateExpression(flatten.getArgument(), scope) + ")";
+                String arg = generateExpression(flatten.getArgument(), scope);
+                return "(lambda nested: [x for sub in (nested or []) if sub is not None for x in (sub if (hasattr(sub, '__iter__') and not isinstance(sub, (str, dict, bytes, bytearray))) else [sub]) if x is not None] if nested is not None else None)(" + arg + ")";
             }
             case ListLiteral listLiteral -> {
                 return "[" + listLiteral.getElements().stream()
@@ -178,7 +180,7 @@ public final class PythonExpressionGenerator {
                         .collect(Collectors.joining(", ")) + "]";
             }
             case LastOperation last -> {
-                return generateExpression(last.getArgument(), scope) + "[-1]";
+                return "next((x for x in reversed(" + generateExpression(last.getArgument(), scope) + " or []) if x is not None), None)";
             }
             case MapOperation mapOp -> {
                 return generateMapOperation(mapOp, scope);
@@ -196,10 +198,12 @@ public final class PythonExpressionGenerator {
                 return generateThenOperation(then, scope);
             }
             case SumOperation sum -> {
-                return "sum(" + generateExpression(sum.getArgument(), scope) + " or [])";
+                String arg = generateExpression(sum.getArgument(), scope);
+                return "(lambda items: sum(x for x in (items or []) if x is not None) if items is not None else None)(" + arg + ")";
             }
             case ReverseOperation reverse -> {
-                return "list(reversed(" + generateExpression(reverse.getArgument(), scope) + "))";
+                String arg = generateExpression(reverse.getArgument(), scope);
+                return "(lambda items: list(reversed([x for x in (items or []) if x is not None])) if items is not None else None)(" + arg + ")";
             }
             case SwitchOperation switchOp -> {
                 return generateSwitchOperation(switchOp, scope);
@@ -248,7 +252,8 @@ public final class PythonExpressionGenerator {
                 return generateConstructorExpression(constructor, scope);
             }
             case RosettaCountOperation count -> {
-                return "rune_count(" + generateExpression(count.getArgument(), scope) + ")";
+                String arg = generateExpression(count.getArgument(), scope);
+                return "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(" + arg + ")";
             }
             case RosettaDeepFeatureCall deepFeature -> {
                 return "rune_resolve_deep_attr(self, \"" + deepFeature.getFeature().getName() + "\")";
@@ -269,8 +274,7 @@ public final class PythonExpressionGenerator {
                 return generateFeatureCall(featureCall, scope);
             }
             case RosettaOnlyElement onlyElement -> {
-                return "rune_get_only_element(" + generateExpression(onlyElement.getArgument(), scope)
-                        + ")";
+                return "rune_get_only_element([x for x in (" + generateExpression(onlyElement.getArgument(), scope) + " or []) if x is not None])";
             }
             case RosettaOnlyExistsExpression onlyExists -> {
                 String args = onlyExists.getArgs().stream()
@@ -403,7 +407,7 @@ public final class PythonExpressionGenerator {
 
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
         String lambdaFunction = "lambda " + param + ": " + funcBody;
-        return "list(map(" + lambdaFunction + ", " + argument + " or []))";
+        return "[x for x in map(" + lambdaFunction + ", " + argument + " or []) if x is not None]";
     }
 
     private String generateConstructorExpression(RosettaConstructorExpression expr, PythonExpressionScope scope) {
@@ -728,7 +732,7 @@ public final class PythonExpressionGenerator {
         String argument = generateExpression(expr.getArgument(), scope);
         InlineFunction inlineFunc = expr.getFunction();
         if (inlineFunc == null) {
-            return "max(" + argument + " or [], default=None)";
+            return "(lambda items: max((x for x in (items or []) if x is not None), default=None) if items is not None else None)(" + argument + ")";
         }
         String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
         PythonExpressionScope subScope = scope.withReceiver(param);
@@ -736,14 +740,14 @@ public final class PythonExpressionGenerator {
             subScope = subScope.withShadow(ref.getSymbol(), param);
         }
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
-        return "max(" + argument + " or [], key=lambda " + param + ": " + funcBody + ", default=None)";
+        return "(lambda items: max((x for x in (items or []) if x is not None), key=lambda " + param + ": " + funcBody + ", default=None) if items is not None else None)(" + argument + ")";
     }
 
     private String generateMinOperation(MinOperation expr, PythonExpressionScope scope) {
         String argument = generateExpression(expr.getArgument(), scope);
         InlineFunction inlineFunc = expr.getFunction();
         if (inlineFunc == null) {
-            return "min(" + argument + " or [], default=None)";
+            return "(lambda items: min((x for x in (items or []) if x is not None), default=None) if items is not None else None)(" + argument + ")";
         }
         String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
         PythonExpressionScope subScope = scope.withReceiver(param);
@@ -751,14 +755,14 @@ public final class PythonExpressionGenerator {
             subScope = subScope.withShadow(ref.getSymbol(), param);
         }
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
-        return "min(" + argument + " or [], key=lambda " + param + ": " + funcBody + ", default=None)";
+        return "(lambda items: min((x for x in (items or []) if x is not None), key=lambda " + param + ": " + funcBody + ", default=None) if items is not None else None)(" + argument + ")";
     }
 
     private String generateSortOperation(SortOperation expr, PythonExpressionScope scope) {
         String argument = generateExpression(expr.getArgument(), scope);
         InlineFunction inlineFunc = expr.getFunction();
         if (inlineFunc == null) {
-            return "sorted(" + argument + " or [])";
+            return "(lambda items: sorted(x for x in (items or []) if x is not None) if items is not None else None)(" + argument + ")";
         }
         String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
         PythonExpressionScope subScope = scope.withReceiver(param);
@@ -766,6 +770,6 @@ public final class PythonExpressionGenerator {
             subScope = subScope.withShadow(ref.getSymbol(), param);
         }
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
-        return "sorted(" + argument + " or [], key=lambda " + param + ": " + funcBody + ")";
+        return "(lambda items: sorted((x for x in (items or []) if x is not None), key=lambda " + param + ": " + funcBody + ") if items is not None else None)(" + argument + ")";
     }
 }

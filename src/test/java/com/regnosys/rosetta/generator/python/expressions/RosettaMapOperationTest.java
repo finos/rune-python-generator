@@ -45,6 +45,6 @@ public class RosettaMapOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "com_rosetta_test_model_TestMap.model_rebuild()");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "return rune_all_elements((lambda item: rune_count(item))(list(map(lambda item: rune_resolve_attr(item, \"val\"), rune_resolve_attr(self, \"items\") or []))), \"=\", 0)");
+                "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))([x for x in map(lambda item: rune_resolve_attr(item, \"val\"), rune_resolve_attr(self, \"items\") or []) if x is not None]), \"=\", 0)");
     }
 }

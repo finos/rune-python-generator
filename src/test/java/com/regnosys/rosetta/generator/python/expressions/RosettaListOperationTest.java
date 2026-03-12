@@ -55,7 +55,7 @@ public class RosettaListOperationTest {
                             items = rune_cow(items)
 
 
-                            result = ((rune_all_elements(sum(rune_resolve_attr(self, \"items\") or []), \"=\", 10) and rune_all_elements(max(rune_resolve_attr(self, \"items\") or [], default=None), \"=\", 5)) and rune_all_elements(min(rune_resolve_attr(self, \"items\") or [], default=None), \"=\", 1))
+                            result = ((rune_all_elements((lambda items: sum(x for x in (items or []) if x is not None) if items is not None else None)(rune_resolve_attr(self, \"items\")), \"=\", 10) and rune_all_elements((lambda items: max((x for x in (items or []) if x is not None), default=None) if items is not None else None)(rune_resolve_attr(self, \"items\")), \"=\", 5)) and rune_all_elements((lambda items: min((x for x in (items or []) if x is not None), default=None) if items is not None else None)(rune_resolve_attr(self, \"items\")), \"=\", 1))
 
 
                             return rune_unwrap(result)
@@ -95,7 +95,7 @@ public class RosettaListOperationTest {
                             items = rune_cow(items)
 
 
-                            result = (rune_all_elements(rune_resolve_attr(self, \"items\")[0], \"=\", 1) and rune_all_elements(rune_resolve_attr(self, \"items\")[-1], \"=\", 5))
+                            result = (rune_all_elements(next((x for x in (rune_resolve_attr(self, \"items\") or []) if x is not None), None), \"=\", 1) and rune_all_elements(next((x for x in reversed(rune_resolve_attr(self, \"items\") or []) if x is not None), None), \"=\", 5))
 
 
                             return rune_unwrap(result)
@@ -134,7 +134,7 @@ public class RosettaListOperationTest {
                             items = rune_cow(items)
 
 
-                            result = sorted(rune_resolve_attr(self, \"items\") or [])
+                            result = (lambda items: sorted(x for x in (items or []) if x is not None) if items is not None else None)(rune_resolve_attr(self, \"items\"))
 
 
                             return rune_unwrap(result)
@@ -251,7 +251,7 @@ public class RosettaListOperationTest {
                             items = rune_cow(items)
 
 
-                            result = list(reversed(rune_resolve_attr(self, \"items\")))
+                            result = (lambda items: list(reversed([x for x in (items or []) if x is not None])) if items is not None else None)(rune_resolve_attr(self, \"items\"))
 
 
                             return rune_unwrap(result)

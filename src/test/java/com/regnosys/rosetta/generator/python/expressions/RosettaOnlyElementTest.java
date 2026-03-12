@@ -79,7 +79,7 @@ public class RosettaOnlyElementTest {
                         def _else_fn0():
                             return True
 
-                        return if_cond_fn(rune_all_elements(rune_get_only_element(rune_resolve_attr(self, "field1")), "=", com.rosetta.test.model.TestEnum.TestEnum.TEST_ENUM_VALUE_1), _then_fn0, _else_fn0)""";
+                        return if_cond_fn(rune_all_elements(rune_get_only_element([x for x in (rune_resolve_attr(self, \"field1\") or []) if x is not None]), \"=\", com.rosetta.test.model.TestEnum.TestEnum.TEST_ENUM_VALUE_1), _then_fn0, _else_fn0)""";
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTestEnum);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTest1);

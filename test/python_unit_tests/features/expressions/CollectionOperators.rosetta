@@ -1,0 +1,79 @@
+namespace rosetta_dsl.test.semantic.expressions.collections
+
+type Item:
+    val int (0..1)
+
+func TestSum:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items extract [ val ] then sum
+
+func TestDistinct:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items extract [ val ] then distinct
+
+func TestReverse:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items extract [ val ] then reverse
+
+type Nested:
+    items Item (0..*)
+
+func TestFlatten:
+    inputs:
+        nested Nested (0..*)
+    output:
+        result int (0..*)
+    set result:
+        nested extract [ items ] then flatten extract [ val ]
+
+func TestMax:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items extract [ val ] then max
+
+func TestMin:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items extract [ val ] then min
+
+func TestSort:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items extract [ val ] then sort
+
+func TestCount:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (1..1)
+    set result:
+        items extract [ val ] then count
+
+func TestOnlyElement:
+    inputs:
+        items Item (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items extract [ val ] then only-element

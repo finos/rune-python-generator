@@ -311,7 +311,7 @@ public class PythonDataRuleGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
                 "class com_rosetta_test_model_CondTest(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-                "return rune_all_elements(rune_count(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
+                "return rune_all_elements((lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
     }
 
     @Test
