@@ -1,8 +1,6 @@
 """Reduce expression unit tests"""
 
-from rosetta_dsl._bundle import (
-    rosetta_dsl_test_semantic_expressions_reduce_op_SumList as SumList,
-)
+from rosetta_dsl.test.semantic.expressions.reduce_op.SumList import SumList
 
 
 def test_reduce_op():

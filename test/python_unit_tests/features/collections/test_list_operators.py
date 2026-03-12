@@ -102,6 +102,7 @@ def test_flatten_foo_passes():
 
 # filter tests
 def test_filter_passes():
+    """test filter passes"""
     item1 = FilterItem(fi=1)
     item2 = FilterItem(fi=2)
     filter_test = FilterTest(fis=[item1, item2], target=1)

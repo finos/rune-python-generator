@@ -19,11 +19,3 @@ func MapImplicit:
     set result:
         items extract [ item * 2 ]
 
-func ReduceImplicit:
-    inputs:
-        items int (0..*)
-    output:
-        result int (0..1)
-    set result:
-        items
-        reduce a, b [ a + b ]

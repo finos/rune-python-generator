@@ -65,11 +65,11 @@ public class RosettaContainsOperationTest {
                     Test type
                     \"""
                     _FQRTN = 'com.rosetta.test.model.A'
-                    field1: list[int] = Field(..., description='Test int field 1', min_length=1)
+                    field1: list[int | None] = Field(..., description='Test int field 1', min_length=1)
                     \"""
                     Test int field 1
                     \"""
-                    cValue: list[com.rosetta.test.model.C.C] = Field(..., description='Test C type cValue', min_length=1)
+                    cValue: list[com.rosetta.test.model.C.C | None] = Field(..., description='Test C type cValue', min_length=1)
                     \"""
                     Test C type cValue
                     \"""
@@ -81,11 +81,11 @@ public class RosettaContainsOperationTest {
                     Test type B
                     \"""
                     _FQRTN = 'com.rosetta.test.model.B'
-                    field2: list[int] = Field(..., description='Test int field 2', min_length=1)
+                    field2: list[int | None] = Field(..., description='Test int field 2', min_length=1)
                     \"""
                     Test int field 2
                     \"""
-                    aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)
+                    aValue: list[com_rosetta_test_model_A | None] = Field(..., description='Test A type aValue', min_length=1)
                     \"""
                     Test A type aValue
                     \"""
@@ -95,8 +95,8 @@ public class RosettaContainsOperationTest {
 
 
                 # Phase 2: Delayed Annotation Updates
-                com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[list[com_rosetta_test_model_A], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
-                com_rosetta_test_model_Test.__annotations__["bValue"] = Annotated[list[com_rosetta_test_model_B], com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]
+                com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[list[com_rosetta_test_model_A | None], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
+                com_rosetta_test_model_Test.__annotations__["bValue"] = Annotated[list[com_rosetta_test_model_B | None], com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]
 
 
                 # Phase 3: Rebuild
@@ -110,7 +110,7 @@ public class RosettaContainsOperationTest {
                     Test filter operation condition
                     \"""
                     _FQRTN = 'com.rosetta.test.model.Test'
-                    bValue: list[com_rosetta_test_model_B] = Field(..., description='Test B type bValue', min_length=1)
+                    bValue: list[com_rosetta_test_model_B | None] = Field(..., description='Test B type bValue', min_length=1)
                     \"""
                     Test B type bValue
                     \"""

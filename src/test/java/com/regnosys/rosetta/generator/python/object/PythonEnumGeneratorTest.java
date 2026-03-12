@@ -64,7 +64,7 @@ public class PythonEnumGeneratorTest {
                     A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).
                     \"""
                     _FQRTN = 'com.rosetta.test.model.LegalEntity'
-                    entityId: Annotated[Optional[list[StrWithMeta]], StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))] = Field(None, description='A legal entity identifier (e.g. RED entity code).')
+                    entityId: Annotated[Optional[list[StrWithMeta | None]], StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))] = Field(None, description='A legal entity identifier (e.g. RED entity code).')
                     \"""
                     A legal entity identifier (e.g. RED entity code).
                     \"""

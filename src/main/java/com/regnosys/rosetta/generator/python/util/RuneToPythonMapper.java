@@ -292,7 +292,7 @@ public final class RuneToPythonMapper {
         String type = baseType;
 
         if (max > 1 || max == -1 || max == 0) {
-            type = "list[" + type + "]";
+            type = "list[" + type + " | None]";
         }
 
         if (min == 0) {

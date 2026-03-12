@@ -35,12 +35,12 @@ public class RosettaJoinOperationTest {
                 """
                         class com_rosetta_test_model_TestJoin(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.TestJoin'
-                            field1: list[str] = Field(..., description='', min_length=1)
+                            field1: list[str | None] = Field(..., description='', min_length=1)
                             delimiter: str = Field(..., description='')
 
                             @rune_condition
                             def condition_0_JoinCheck(self):
                                 item = self
-                                return rune_all_elements(rune_resolve_attr(self, "delimiter").join(rune_resolve_attr(self, "field1")), "=", "A,B")""");
+                                return rune_all_elements((lambda items, sep: (sep or "").join(x for x in (items or []) if x is not None) if items is not None else None)(rune_resolve_attr(self, "field1"), rune_resolve_attr(self, "delimiter")), "=", "A,B")""");
     }
 }

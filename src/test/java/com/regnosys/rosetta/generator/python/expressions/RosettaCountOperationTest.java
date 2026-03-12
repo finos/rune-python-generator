@@ -46,10 +46,10 @@ public class RosettaCountOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class com_rosetta_test_model_Test(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "aValue: list[com_rosetta_test_model_A] = Field(..., description='Test A type aValue', min_length=1)");
+                "aValue: list[com_rosetta_test_model_A | None] = Field(..., description='Test A type aValue', min_length=1)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "def condition_0_TestCond(self):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_Test.__annotations__[\"aValue\"] = Annotated[list[com_rosetta_test_model_A], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]");
+                "com_rosetta_test_model_Test.__annotations__[\"aValue\"] = Annotated[list[com_rosetta_test_model_A | None], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "com_rosetta_test_model_Test.model_rebuild()");
 
@@ -57,8 +57,8 @@ public class RosettaCountOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class com_rosetta_test_model_A(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "field1: Optional[list[int]] = Field(None, description='Test int field 1')");
+                "field1: Optional[list[int | None]] = Field(None, description='Test int field 1')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "field2: list[int] = Field(..., description='Test int field 2', min_length=1)");
+                "field2: list[int | None] = Field(..., description='Test int field 2', min_length=1)");
     }
 }

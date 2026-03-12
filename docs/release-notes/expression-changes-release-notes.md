@@ -30,12 +30,15 @@ Rosetta uses closure blocks with aggregation operations (e.g., `sort [ item -> p
 In Rosetta/Rune DSL, "nothing" (null) values are common when navigation paths evaluate to empty lists. We have implemented full alignment with the Rune specification for collection aggregations and accessors.
 
 ### Changes:
-- **Null-Filtering**: All collection operations (`sum`, `max`, `min`, `sort`, `reverse`, `distinct`, `count`) now automatically filter out `None` values prior to execution using generator expressions. 
-- **Scalar Propagation**: Operations that return a scalar (`sum`, `max`, `min`, `count`) now wrap their logic in a lambda that checks if the input collection itself is `None`. If the input is `None`, the operation returns `None` (propagating "nothing") rather than `0` or an empty default.
-- **Resilient Accessors**: 
-    - `first` and `last` now use `next(...)` with a default of `None` to ensure they return "nothing" instead of raising `IndexError` on empty collections.
-    - `flatten` now uses a universal lambda flattener that handles nested iterables and `COWList` while filtering nulls at every level.
-- **Empty Collection Defaults**: If a collection exists but is empty after null-filtering, aggregations return their appropriate defaults (e.g., `None` for `max`/`min`, `0` for `sum`).
+- **Comprehensive Null-Filtering**: All collection operators (`sum`, `max`, `min`, `sort`, `reverse`, `distinct`, `count`, `join`, `only-element`) now automatically filter out `None` values prior to execution.
+    - **`join` Fix**: Resolved a critical defect where `join` produced naive Python code using `.join()`, which would crash on `None` elements. It now correctly filters input using the same robust lambda pattern as other aggregators.
+    - **Deep Extract Verification**: Verified that dot-access navigation (e.g., `a -> b -> c`) correctly projects through lists while filtering `None` values at every step of the nested path.
+- **Uniform Scalar Propagation**:
+    - **Mathematical Aggregators** (`sum`, `count`): Return `0` for All-Null or Empty collections, but propagate `None` if the input collection itself is `None`.
+    - **Selection Aggregators** (`min`, `max`, `first`, `last`, `only-element`): Return `None` (propagating "nothing") for All-Null or Empty collections.
+- **Structural Resilience**:
+    - **Collection Result Operators** (`flatten`, `distinct`, `sort`, `filter`): Return an empty list `[]` for All-Null or Empty input collections.
+    - **`flatten` Utility**: Optimized to handle nested iterables (including `COWList`) while filtering nulls at every level of the hierarchy.
 
 ### Context:
 These changes ensure the generated code strictly follows the [Rune Modeling Components](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md) specification regarding null behavior and "nothing" propagation.

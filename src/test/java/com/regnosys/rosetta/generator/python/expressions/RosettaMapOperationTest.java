@@ -39,9 +39,9 @@ public class RosettaMapOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class com_rosetta_test_model_TestMap(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "items: Optional[list[com_rosetta_test_model_Item]] = Field(None, description='')");
+                "items: Optional[list[com_rosetta_test_model_Item | None]] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_TestMap.__annotations__[\"items\"] = Annotated[Optional[list[com_rosetta_test_model_Item]], com_rosetta_test_model_Item.serializer(), com_rosetta_test_model_Item.validator()]");
+                "com_rosetta_test_model_TestMap.__annotations__[\"items\"] = Annotated[Optional[list[com_rosetta_test_model_Item | None]], com_rosetta_test_model_Item.serializer(), com_rosetta_test_model_Item.validator()]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "com_rosetta_test_model_TestMap.model_rebuild()");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,

@@ -539,8 +539,8 @@ public final class PythonExpressionGenerator {
                         + generateExpression(expr.getRight(), scope) + ")";
                 case "disjoint" -> "rune_disjoint(" + generateExpression(expr.getLeft(), scope) + ", "
                         + generateExpression(expr.getRight(), scope) + ")";
-                case "join" -> generateExpression(expr.getRight(), scope) + ".join("
-                        + generateExpression(expr.getLeft(), scope) + ")";
+                case "join" -> "(lambda items, sep: (sep or \"\").join(x for x in (items or []) if x is not None) if items is not None else None)("
+                        + generateExpression(expr.getLeft(), scope) + ", " + generateExpression(expr.getRight(), scope) + ")";
                 case "default" -> "(" + generateExpression(expr.getLeft(), scope) + " if "
                         + generateExpression(expr.getLeft(), scope) + " is not None else "
                         + generateExpression(expr.getRight(), scope) + ")";

@@ -1,9 +1,7 @@
 """Max Closure expression unit tests"""
 
-from rosetta_dsl._bundle import (
-    rosetta_dsl_test_semantic_expressions_max_closure_MaxItem as MaxItem,
-    rosetta_dsl_test_semantic_expressions_max_closure_GetMaxItem as GetMaxItem,
-)
+from rosetta_dsl.test.semantic.expressions.max_closure.MaxItem import MaxItem
+from rosetta_dsl.test.semantic.expressions.max_closure.GetMaxItem import GetMaxItem
 
 
 def test_max_closure():

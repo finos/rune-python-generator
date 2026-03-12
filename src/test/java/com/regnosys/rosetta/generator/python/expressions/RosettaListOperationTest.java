@@ -38,12 +38,12 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_TestAggregations(items: list[int] | None) -> bool:
+                        def com_rosetta_test_model_TestAggregations(items: list[int | None] | None) -> bool:
                             \"\"\"
 
                             Parameters
                             ----------
-                            items : list[int]
+                            items : list[int | None]
 
                             Returns
                             -------
@@ -78,12 +78,12 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_TestAccessors(items: list[int] | None) -> bool:
+                        def com_rosetta_test_model_TestAccessors(items: list[int | None] | None) -> bool:
                             \"\"\"
 
                             Parameters
                             ----------
-                            items : list[int]
+                            items : list[int | None]
 
                             Returns
                             -------
@@ -117,16 +117,16 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_TestSort(items: list[int] | None) -> list[int]:
+                        def com_rosetta_test_model_TestSort(items: list[int | None] | None) -> list[int | None]:
                             \"\"\"
 
                             Parameters
                             ----------
-                            items : list[int]
+                            items : list[int | None]
 
                             Returns
                             -------
-                            result : list[int]
+                            result : list[int | None]
 
                             \"\"\"
                             self = inspect.currentframe()
@@ -158,14 +158,14 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_TestListComparison(list1: list[int] | None, list2: list[int] | None) -> bool:
+                        def com_rosetta_test_model_TestListComparison(list1: list[int | None] | None, list2: list[int | None] | None) -> bool:
                             \"\"\"
 
                             Parameters
                             ----------
-                            list1 : list[int]
+                            list1 : list[int | None]
 
-                            list2 : list[int]
+                            list2 : list[int | None]
 
                             Returns
                             -------
@@ -199,14 +199,14 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_TestLiteral() -> list[int]:
+                        def com_rosetta_test_model_TestLiteral() -> list[int | None]:
                             \"\"\"
 
                             Parameters
                             ----------
                             Returns
                             -------
-                            result : list[int]
+                            result : list[int | None]
 
                             \"\"\"
                             self = inspect.currentframe()
@@ -234,16 +234,16 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_TestReverse(items: list[int] | None) -> list[int]:
+                        def com_rosetta_test_model_TestReverse(items: list[int | None] | None) -> list[int | None]:
                             \"\"\"
 
                             Parameters
                             ----------
-                            items : list[int]
+                            items : list[int | None]
 
                             Returns
                             -------
-                            result : list[int]
+                            result : list[int | None]
 
                             \"\"\"
                             self = inspect.currentframe()

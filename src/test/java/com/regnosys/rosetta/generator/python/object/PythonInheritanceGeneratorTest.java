@@ -104,7 +104,7 @@ public class PythonInheritanceGeneratorTest {
                             \"""
                             Test string
                             \"""
-                            TestType4Value2: list[int] = Field(..., description='Test int', min_length=1)
+                            TestType4Value2: list[int | None] = Field(..., description='Test int', min_length=1)
                             \"""
                             Test int
                             \"""
@@ -116,7 +116,7 @@ public class PythonInheritanceGeneratorTest {
                             \"""
                             Test number
                             \"""
-                            TestType2Value2: list[datetime.date] = Field(..., description='Test date', min_length=1)
+                            TestType2Value2: list[datetime.date | None] = Field(..., description='Test date', min_length=1)
                             \"""
                             Test date
                             \"""

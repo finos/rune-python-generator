@@ -42,9 +42,9 @@ public class RosettaFlattenOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class com_rosetta_test_model_Foo(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "bars: Optional[list[com_rosetta_test_model_Bar]] = Field(None, description='test bar')");
+                "bars: Optional[list[com_rosetta_test_model_Bar | None]] = Field(None, description='test bar')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_Foo.__annotations__[\"bars\"] = Annotated[Optional[list[com_rosetta_test_model_Bar]], com_rosetta_test_model_Bar.serializer(), com_rosetta_test_model_Bar.validator()]");
+                "com_rosetta_test_model_Foo.__annotations__[\"bars\"] = Annotated[Optional[list[com_rosetta_test_model_Bar | None]], com_rosetta_test_model_Bar.serializer(), com_rosetta_test_model_Bar.validator()]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "com_rosetta_test_model_Foo.model_rebuild()");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,

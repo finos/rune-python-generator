@@ -113,6 +113,10 @@ public final class PythonFunctionGenerator {
 
                 if (isCodeImplementation(function)) {
                     context.addNativeFunctionName(functionName);
+                    if (function.getOperations().stream().anyMatch(op -> op.isAdd()) ||
+                        function.getOperations().stream().anyMatch(op -> !op.isAdd())) {
+                            LOGGER.warn("Function {} is marked as a native function but has operations.  The operations will be ignored.", function.getName());
+                        }
                 }
 
                 addFunctionDependencies(dependencyDAG, functionName, function);

@@ -39,7 +39,7 @@ public class PythonBasicTypeGeneratorTest {
                         class com_rosetta_test_model_Tester(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.Tester'
                             one: Optional[str] = Field(None, description='')
-                            list: list[str] = Field(..., description='', min_length=1)""");
+                            list: list[str | None] = Field(..., description='', min_length=1)""");
     }
 
     /**
@@ -57,7 +57,7 @@ public class PythonBasicTypeGeneratorTest {
                         class com_rosetta_test_model_Tester(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.Tester'
                             one: Optional[int] = Field(None, description='')
-                            list: list[int] = Field(..., description='', min_length=1)""");
+                            list: list[int | None] = Field(..., description='', min_length=1)""");
     }
 
     /**
@@ -75,7 +75,7 @@ public class PythonBasicTypeGeneratorTest {
                         class com_rosetta_test_model_Tester(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.Tester'
                             one: Optional[Decimal] = Field(None, description='')
-                            list: list[Decimal] = Field(..., description='', min_length=1)""");
+                            list: list[Decimal | None] = Field(..., description='', min_length=1)""");
     }
 
     /**
@@ -93,7 +93,7 @@ public class PythonBasicTypeGeneratorTest {
                         class com_rosetta_test_model_Tester(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.Tester'
                             one: Optional[bool] = Field(None, description='')
-                            list: list[bool] = Field(..., description='', min_length=1)""");
+                            list: list[bool | None] = Field(..., description='', min_length=1)""");
     }
 
     /**
@@ -111,7 +111,7 @@ public class PythonBasicTypeGeneratorTest {
                         class com_rosetta_test_model_Tester(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.Tester'
                             one: Optional[datetime.date] = Field(None, description='')
-                            list: list[datetime.date] = Field(..., description='', min_length=1)""");
+                            list: list[datetime.date | None] = Field(..., description='', min_length=1)""");
     }
 
     /**
@@ -130,7 +130,7 @@ public class PythonBasicTypeGeneratorTest {
                         class com_rosetta_test_model_Tester(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.Tester'
                             one: Optional[datetime.date] = Field(None, description='')
-                            list: list[datetime.date] = Field(..., description='', min_length=1)
+                            list: list[datetime.date | None] = Field(..., description='', min_length=1)
                             zoned: Optional[datetime.datetime] = Field(None, description='')""");
     }
 
@@ -149,7 +149,7 @@ public class PythonBasicTypeGeneratorTest {
                         class com_rosetta_test_model_Tester(BaseDataClass):
                             _FQRTN = 'com.rosetta.test.model.Tester'
                             one: Optional[datetime.time] = Field(None, description='')
-                            list: list[datetime.time] = Field(..., description='', min_length=1)""");
+                            list: list[datetime.time | None] = Field(..., description='', min_length=1)""");
     }
 
     /**
@@ -212,7 +212,7 @@ public class PythonBasicTypeGeneratorTest {
                 """
                 class com_rosetta_test_model_TestType2(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.TestType2'
-                    testType2Value1: list[Decimal] = Field(..., description='Test number list', min_length=1)
+                    testType2Value1: list[Decimal | None] = Field(..., description='Test number list', min_length=1)
                     \"""
                     Test number list
                     \"""
@@ -242,7 +242,7 @@ public class PythonBasicTypeGeneratorTest {
                     \"""
                     Test optional string
                     \"""
-                    testTypeValue3: list[str] = Field(..., description='Test string list', min_length=1)
+                    testTypeValue3: list[str | None] = Field(..., description='Test string list', min_length=1)
                     \"""
                     Test string list
                     \"""

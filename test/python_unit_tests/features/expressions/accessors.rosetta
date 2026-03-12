@@ -34,3 +34,98 @@ func TestLastFiltered:
         result int (0..1)
     set result:
         items extract [ val ] then last
+
+func TestMin:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items min
+
+func TestMax:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items max
+
+func TestSum:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items sum
+
+func TestCount:
+    inputs:
+        items int (0..*)
+    output:
+        result int (1..1)
+    set result:
+        items count
+
+func TestJoin:
+    inputs:
+        items string (0..*)
+        delimiter string (1..1)
+    output:
+        result string (1..1)
+    set result:
+        items join delimiter
+
+type NestedItem:
+    innerItem Item (0..1)
+
+type ItemList:
+    items int (0..*)
+
+func TestExtractDeep:
+    inputs:
+        nested NestedItem (0..*)
+    output:
+        result int (0..*)
+    set result:
+        nested -> innerItem -> val
+
+func TestFlatten:
+    inputs:
+        groups ItemList (0..*)
+    output:
+        result int (0..*)
+    set result:
+        groups extract [ items ] then flatten
+
+func TestDistinct:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items distinct
+
+func TestSort:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items sort
+
+func TestFilter:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..*)
+    set result:
+        items filter [ item > 0 ]
+
+func TestOnlyElement:
+    inputs:
+        items int (0..*)
+    output:
+        result int (0..1)
+    set result:
+        items only-element

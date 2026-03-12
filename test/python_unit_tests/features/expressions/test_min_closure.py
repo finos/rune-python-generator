@@ -1,11 +1,7 @@
 """Min Closure expression unit tests"""
 
-import pytest
-
-from rosetta_dsl._bundle import (
-    rosetta_dsl_test_semantic_expressions_min_closure_MinItem as MinItem,
-    rosetta_dsl_test_semantic_expressions_min_closure_GetMinItem as GetMinItem,
-)
+from rosetta_dsl.test.semantic.expressions.min_closure.MinItem import MinItem
+from rosetta_dsl.test.semantic.expressions.min_closure.GetMinItem import GetMinItem
 
 
 def test_min_closure():

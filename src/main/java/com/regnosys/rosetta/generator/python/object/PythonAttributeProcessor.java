@@ -399,7 +399,7 @@ public final class PythonAttributeProcessor {
                 type = String.format("Annotated[%s, Field(%s)]", type, fieldProperties.get());
             }
             if (isList) {
-                type = String.format("list[%s]", type);
+                type = String.format("list[%s | None]", type);
             }
             if (isOptional) {
                 type = String.format("Optional[%s]", type);
