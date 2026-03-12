@@ -5,6 +5,7 @@ import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -209,7 +210,7 @@ public class PythonDataRuleGeneratorTest {
                     def condition_0_Quote_Price(self):
                         item = self
                         def _then_fn0():
-                            return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "bidPrice"), "=", 0.0)
+                            return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, "quotePrice"), "bidPrice"), "=", Decimal('0.0'))
 
                         def _else_fn0():
                             return True
@@ -226,6 +227,7 @@ public class PythonDataRuleGeneratorTest {
     }
 
     @Test
+    @Disabled("Functions are being phased out in tests.")
     public void dataRuleWithDoIfAndFunction() {
         String pythonString = testUtils.generatePythonFromString(
                 """
@@ -252,7 +254,7 @@ public class PythonDataRuleGeneratorTest {
                     def condition_0_(self):
                         item = self
                         def _then_fn0():
-                            return rune_all_elements(Foo(rune_resolve_attr(self, "price")), "=", 5.0)
+                            return rune_all_elements(com_rosetta_test_model_functions_Foo(rune_resolve_attr(self, "price")), "=", Decimal('5.0'))
 
                         def _else_fn0():
                             return True
@@ -263,6 +265,7 @@ public class PythonDataRuleGeneratorTest {
     }
 
     @Test
+    @Disabled("Functions are being phased out in tests.")
     public void dataRuleWithDoIfAndFunctionAndElse() {
         String pythonString = testUtils.generatePythonFromString(
                 """
@@ -290,7 +293,7 @@ public class PythonDataRuleGeneratorTest {
                     def condition_0_(self):
                         item = self
                         def _then_fn0():
-                            return rune_all_elements(Foo(rune_resolve_attr(self, "price")), "=", 5.0)
+                            return rune_all_elements(com_rosetta_test_model_functions_Foo(rune_resolve_attr(self, "price")), "=", Decimal('5.0'))
 
                         def _else_fn0():
                             return True

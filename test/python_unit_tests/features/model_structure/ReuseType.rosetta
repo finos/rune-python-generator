@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.model.reuse_type : <"generate Python unit tests from Rosetta.">
+
+type BaseEntity:
+    [metadata key]
+    number int(1..1)
+type BarNoRef:
+    bar BaseEntity(1..1)
+type BarRef:
+    bar BaseEntity(1..1)
+        [metadata reference]
+

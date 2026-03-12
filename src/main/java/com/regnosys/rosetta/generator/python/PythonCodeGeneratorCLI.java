@@ -12,6 +12,8 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 import org.apache.commons.cli.*;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.EObject;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
 import org.eclipse.emf.common.util.URI;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -22,37 +24,50 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.xtext.validation.CheckMode;
+import org.eclipse.xtext.validation.IResourceValidator;
+import org.eclipse.xtext.validation.Issue;
+import org.eclipse.xtext.util.CancelIndicator;
 
 /**
  * Command-line interface for generating Python code from Rosetta models.
  * <p>
- * This CLI tool loads Rosetta model files (either from a directory or a single file),
- * invokes the {@link PythonCodeGenerator}, and writes the generated Python code to the specified target directory.
- * It is intended for use by developers and build systems to automate the translation of Rosetta DSL models to Python.
+ * This CLI tool loads Rosetta model files (either from a directory or a single
+ * file),
+ * invokes the {@link PythonCodeGenerator}, and writes the generated Python code
+ * to the specified target directory.
+ * It is intended for use by developers and build systems to automate the
+ * translation of Rosetta DSL models to Python.
  * </p>
  *
  * <h2>Usage</h2>
+ * 
  * <pre>
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s &lt;source-dir&gt; -t &lt;target-dir&gt;
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -f &lt;source-file&gt; -t &lt;target-dir&gt;
  * </pre>
  * <ul>
- *   <li><b>-s, --dir &lt;source-dir&gt;</b>: Source directory containing Rosetta files (all <code>.rosetta</code> files will be processed)</li>
- *   <li><b>-f, --file &lt;source-file&gt;</b>: Single Rosetta file to process</li>
- *   <li><b>-t, --tgt &lt;target-dir&gt;</b>: Target directory for generated Python code (defaults to <code>./python</code> if not specified)</li>
- *   <li><b>-h</b>: Print usage/help</li>
+ * <li><b>-s, --dir &lt;source-dir&gt;</b>: Source directory containing Rosetta
+ * files (all <code>.rosetta</code> files will be processed)</li>
+ * <li><b>-f, --file &lt;source-file&gt;</b>: Single Rosetta file to
+ * process</li>
+ * <li><b>-t, --tgt &lt;target-dir&gt;</b>: Target directory for generated
+ * Python code (defaults to <code>./python</code> if not specified)</li>
+ * <li><b>-h</b>: Print usage/help</li>
  * </ul>
  *
  * <h2>Example</h2>
+ * 
  * <pre>
  *   java -jar target/python-0.0.0.main-SNAPSHOT-shaded.jar -s src/main/rosetta -t build/python
  * </pre>
  *
  * <h2>Notes</h2>
  * <ul>
- *   <li>Either <b>-s</b> or <b>-f</b> must be specified.</li>
- *   <li>The tool will clean the target directory before writing new files.</li>
- *   <li>Requires a Java 11+ runtime and all dependencies on the classpath (or use the shaded/uber jar).</li>
+ * <li>Either <b>-s</b> or <b>-f</b> must be specified.</li>
+ * <li>The tool will clean the target directory before writing new files.</li>
+ * <li>Requires a Java 11+ runtime and all dependencies on the classpath (or use
+ * the shaded/uber jar).</li>
  * </ul>
  *
  * @author Plamen Neykov
@@ -64,38 +79,57 @@ public class PythonCodeGeneratorCLI {
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
 
     public static void main(String[] args) {
+        System.exit(new PythonCodeGeneratorCLI().execute(args));
+    }
+
+    public int execute(String[] args) {
+        System.out.println("***** Running PythonCodeGeneratorCLI v2 *****");
         Options options = new Options();
         Option help = new Option("h", "Print usage");
-        Option srcDirOpt = Option.builder("s").longOpt("dir").argName("srcDir").desc("Source Rosetta directory").hasArg().build();
-        Option srcFileOpt = Option.builder("f").longOpt("file").argName("srcFile").desc("Source Rosetta file").hasArg().build();
-        Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir").desc("Target Python directory (default: ./python)").hasArg().build();
+        Option srcDirOpt = Option.builder("s").longOpt("dir").argName("srcDir").desc("Source Rosetta directory")
+                .hasArg().build();
+        Option srcFileOpt = Option.builder("f").longOpt("file").argName("srcFile").desc("Source Rosetta file").hasArg()
+                .build();
+        Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir")
+                .desc("Target Python directory (default: ./python)").hasArg().build();
+        Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors")
+                .desc("Continue generation even if validation errors occur").build();
+        Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings")
+                .desc("Treat validation warnings as errors").build();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
         options.addOption(srcFileOpt);
         options.addOption(tgtDirOpt);
+        options.addOption(allowErrorsOpt);
+        options.addOption(failOnWarningsOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
             CommandLine cmd = parser.parse(options, args);
             if (cmd.hasOption("h")) {
                 printUsage(options);
-                return;
+                return 0;
             }
             String tgtDir = cmd.getOptionValue("t", "./python");
+            boolean allowErrors = cmd.hasOption("e");
+            boolean failOnWarnings = cmd.hasOption("w");
+
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
-                translateFromSourceDir(srcDir, tgtDir);
+                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings);
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
-                translateFromSourceFile(srcFile, tgtDir);
+                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings);
             } else {
                 System.err.println("Either a source directory (-s) or source file (-f) must be specified.");
                 printUsage(options);
+                return 1;
             }
         } catch (ParseException e) {
             System.err.println("Failed to parse command line arguments: " + e.getMessage());
             printUsage(options);
+            return 1;
         }
     }
 
@@ -104,59 +138,67 @@ public class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    private static void translateFromSourceDir (String srcDir, String tgtDir) {
+    protected int translateFromSourceDir(String srcDir, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
         // Find all .rosetta files in a directory
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
             LOGGER.error("Source directory does not exist: {}", srcDir);
-            System.exit(1);
+            return 1;
         }
         if (!Files.isDirectory(srcDirPath)) {
             LOGGER.error("Source directory is not a directory: {}", srcDir);
-            System.exit(1);
+            return 1;
         }
         try {
             List<Path> rosettaFiles = Files.walk(srcDirPath)
                     .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
                     .collect(Collectors.toList());
-            processRosettaFiles(rosettaFiles, tgtDir);
+            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
         } catch (IOException e) {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
+            return 1;
         }
     }
-    private static void translateFromSourceFile (String srcFile, String tgtDir) {
+
+    protected int translateFromSourceFile(String srcFile, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
             LOGGER.error("Source file does not exist: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         if (Files.isDirectory(srcFilePath)) {
             LOGGER.error("Source file is a directory: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         if (!srcFilePath.toString().endsWith(".rosetta")) {
             LOGGER.error("Source file does not end with .rosetta: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         List<Path> rosettaFiles = List.of(srcFilePath);
-        processRosettaFiles(rosettaFiles, tgtDir);
+        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
     }
+
+    protected IResourceValidator getValidator(Injector injector) {
+        return injector.getInstance(IResourceValidator.class);
+    }
+
     // Common processing function
-    private static void processRosettaFiles(List<Path> rosettaFiles, String tgtDir) {
+    protected int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, boolean allowErrors,
+            boolean failOnWarnings) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
         if (rosettaFiles.isEmpty()) {
             System.err.println("No .rosetta files found to process.");
-            System.exit(1);
+            return 1;
         }
 
         Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
         ResourceSet resourceSet = injector.getInstance(ResourceSet.class);
         List<Resource> resources = new LinkedList<>();
         RosettaBuiltinsService builtins = injector.getInstance(RosettaBuiltinsService.class);
-        resources.add (resourceSet.getResource(builtins.basicTypesURI, true));
-        resources.add (resourceSet.getResource(builtins.annotationsURI, true));
+        resources.add(resourceSet.getResource(builtins.basicTypesURI, true));
+        resources.add(resourceSet.getResource(builtins.annotationsURI, true));
         rosettaFiles.stream()
                 .map(path -> resourceSet.getResource(URI.createFileURI(path.toString()), true))
                 .forEach(resources::add);
@@ -167,15 +209,88 @@ public class PythonCodeGeneratorCLI {
         List<RosettaModel> models = modelLoader.getRosettaModels(resources);
         if (models.isEmpty()) {
             LOGGER.error("No valid Rosetta models found.");
-            System.exit(1);
+            return 1;
         }
         String version = models.getFirst().getVersion();
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
+        IResourceValidator validator = getValidator(injector);
         Map<String, CharSequence> generatedPython = new HashMap<>();
-        pythonCodeGenerator.beforeAllGenerate(resourceSet, models, version);
+
+        List<RosettaModel> validModels = new ArrayList<>();
+
         for (RosettaModel model : models) {
+            Resource resource = model.eResource();
+            boolean hasErrors = false;
+            try {
+                List<Issue> issues = validator.validate(resource, CheckMode.ALL, CancelIndicator.NullImpl);
+                for (Issue issue : issues) {
+                    switch (issue.getSeverity()) {
+                        case ERROR:
+                            EObject offender = resource.getEObject(issue.getUriToProblem().fragment());
+                            String identification = (offender instanceof RosettaNamed)
+                                    ? ((RosettaNamed) offender).getName()
+                                    : (offender != null ? offender.eClass().getName() : "Unknown");
+
+                            // Traverse up to find context (e.g. function or type name) if the offender
+                            // itself isn't the root context
+                            if (offender != null && !(offender instanceof com.regnosys.rosetta.rosetta.RosettaModel)) {
+                                EObject current = offender.eContainer();
+                                while (current != null) {
+                                    if (current instanceof RosettaNamed) {
+                                        String contextName = ((RosettaNamed) current).getName();
+                                        if (contextName != null && !contextName.equals(identification)) {
+                                            identification += " (in " + contextName + ")";
+                                        }
+                                        break;
+                                    }
+                                    current = current.eContainer();
+                                }
+                            }
+
+                            LOGGER.error("Validation ERROR in {} (Line {}): {} on element '{}'",
+                                    model.getName(), issue.getLineNumber(), issue.getMessage(), identification);
+                            hasErrors = true;
+                            break;
+                        case WARNING:
+                            LOGGER.warn("Validation WARNING in {} (Line {}): {}", model.getName(),
+                                    issue.getLineNumber(), issue.getMessage());
+                            if (failOnWarnings) {
+                                hasErrors = true;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Validation skipped for {} due to exception: {}", model.getName(), e.getMessage());
+                validModels.add(model);
+                continue;
+            }
+
+            if (hasErrors && !allowErrors) {
+                LOGGER.error("Skipping model {} due to validation errors (allowErrors=false).", model.getName());
+            } else {
+                if (hasErrors) {
+                    LOGGER.warn("Proceeding with model {} despite validation errors (allowErrors=true).",
+                            model.getName());
+                }
+                validModels.add(model);
+            }
+        }
+
+        if (validModels.isEmpty()) {
+            LOGGER.error("No valid models found after validation. Exiting.");
+            return 1;
+        }
+
+        // Use validModels for generation
+        LOGGER.info("Proceeding with generation for {} valid models.", validModels.size());
+
+        pythonCodeGenerator.beforeAllGenerate(resourceSet, validModels, version);
+        for (RosettaModel model : validModels) {
             LOGGER.info("Processing: " + model.getName());
             generatedPython.putAll(pythonCodeGenerator.beforeGenerate(model.eResource(), model, version));
             generatedPython.putAll(pythonCodeGenerator.generate(model.eResource(), model, version));
@@ -184,6 +299,7 @@ public class PythonCodeGeneratorCLI {
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
         writePythonFiles(generatedPython, tgtDir);
+        return 0;
     }
 
     private static void writePythonFiles(Map<String, CharSequence> generatedPython, String tgtDir) {
@@ -264,4 +380,5 @@ public class PythonCodeGeneratorCLI {
             return Guice.createInjector(new PythonRosettaRuntimeModule());
         }
     }
+
 }
