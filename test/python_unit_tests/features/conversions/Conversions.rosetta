@@ -1,0 +1,31 @@
+namespace rosetta_dsl.test.semantic.conversions : <"generate Python unit tests from Rosetta.">
+
+type IntOperatorTest:
+    a string (1..1)
+    b int (0..1)
+    condition Test:
+        b = a to-int
+
+type DateOperatorTest:
+    a string (1..1)
+    b date (0..1)
+    condition Test:
+        b = a to-date
+
+type DateTimeOperatorTest:
+    a string (1..1)
+    b dateTime (0..1)
+    condition Test:
+        b = a to-date-time
+
+type TimeOperatorTest:
+    a string (1..1)
+    b time (0..1)
+    condition Test:
+        b = a to-time
+
+type ZonedDateTimeOperatorTest:
+    a string (1..1)
+    b zonedDateTime (0..1)
+    condition Test:
+        b = a to-zoned-date-time

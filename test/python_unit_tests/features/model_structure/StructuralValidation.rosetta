@@ -1,0 +1,16 @@
+namespace rosetta_dsl.test.semantic.model_structure.structural_validation : <"generate Python unit tests from Rosetta.">
+
+type OneOfTest:
+    attr1 string (0..1)
+    attr2 int (0..1)
+    condition: one-of
+
+type RequiredChoiceTest:
+    attr1 string (0..1)
+    attr2 int (0..1)
+    condition: required choice attr1, attr2
+
+type OptionalChoiceTest:
+    attr1 string (0..1)
+    attr2 int (0..1)
+    condition: optional choice attr1, attr2
