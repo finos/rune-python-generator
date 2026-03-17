@@ -1,0 +1,18 @@
+namespace rosetta_dsl.test.semantic.operators.complex_boolean_logic : <"generate Python unit tests from Rosetta.">
+
+type NotOpTest:
+    a boolean(1..1)
+    target boolean(1..1)
+    condition TestCond:
+        if (a = False) = target
+        then True
+        else False
+
+type ComplexLogicTest:
+    a boolean(1..1)
+    b boolean(1..1)
+    target boolean(1..1)
+    condition TestCond:
+        if ((a or b) and (a = False)) = target
+        then True
+        else False

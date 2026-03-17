@@ -5,7 +5,7 @@
 
 # Rune Python Generator
 
-The Rune Python Generator creates Python code from [Rune](https://github.com/finos/rune-dsl).  It fully supports the Rune type syntax and has comprehensive [expression coverage](./EXPRESSION_SUPPORT.md), though function generation is not yet fully implemented.
+The Rune Python Generator creates Python code from [Rune](https://github.com/finos/rune-dsl).  It fully supports the Rune type syntax and has comprehensive [expression coverage](./docs/EXPRESSION_SUPPORT.md), though function generation is not yet fully implemented.
 
 The generated code requires the [RunePythonRuntime](https://github.com/finos/rune-python-runtime) library and Python 3.11+.
 
@@ -28,13 +28,11 @@ The Renovate bot automatically handles DSL updates by creating a pull request. M
 ## Repository Organization
 
 - `README.md` - this file, for documentation purposes
-- `BUILDANDTEST.md` - instructions on building and testing the repo
 - `RELEASE.md` - information about the current release
 - `src/main`  - Java/Xtend code to generate Python from Rune
 - `src/test`  - Java/Xtend code to run JUnit tests on the code generation process
-- `build` - configuration scripts to setup and tear down the Python unit testing environment
-- `build/build_cdm.sh` - used to create a Python package using CDM Rune definitions
-- `test` - Python unit tests and scripts to run the tests
+- `docs/BUILD_AND_TEST.md` - instructions on building and testing the repo
+- `test` - Python unit tests of the generated code
 
 ## Development setup
 
@@ -42,7 +40,7 @@ The Renovate bot automatically handles DSL updates by creating a pull request. M
 
 This guide is meant for everyone who wants to contribute to the Rune Python Generator and needs to get things up and running.
 
-Detailed build and testing instructions can be found in [BUILDANDTEST.md](./BUILDANDTEST.md)
+Detailed build and testing instructions can be found in [docs/BUILD_AND_TEST.md](./docs/BUILD_AND_TEST.md)
 
 Troubleshooting: If you run into issues, please open an [issue](https://github.com/finos/rune-python-generator/issues). This helps us improve the guide for everyone.
 
@@ -61,7 +59,7 @@ To build the project, run `mvn clean package`.
 
 #### UNIT Testing
 
-Building the project using Maven will run JUNIT-based unit tests.  All tests should pass.  To run the Python unit tests follow the instructions in [BUILDANDTEST.md](./BUILDANDTEST.md)
+Building the project using Maven will run JUNIT-based unit tests.  All tests should pass.  To run the Python unit tests follow the instructions in [docs/BUILD_AND_TEST.md](./docs/BUILD_AND_TEST.md)
 
 ### 2. Setting things up in Eclipse
 
