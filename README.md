@@ -132,7 +132,7 @@ This project is governed by the FINOS Open Source Software Project Governance <h
 
 ### License
 
-Copyright 2023-2025 CLOUDRISK Limited and FT Advisory LLC
+Copyright 2023-2026 CLOUDRISK Limited and FT Advisory LLC
 
 Distributed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 

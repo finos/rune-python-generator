@@ -3,11 +3,13 @@
 This document describes how to integrate custom Python logic into generated Rune code using **Native Functions**.
 
 ## Overview
+
 Native functions allow developers to provide custom Python implementations for Rune functions that either cannot be expressed in the Rosetta DSL or require optimized low-level logic.
 
 **Audience**: Rune developers and Python engineers.
 
 **Contents**:
+
 - Definitions of native functions.
 - Mechanism of registration and execution.
 - Implementation guidelines and troubleshooting.
@@ -16,11 +18,14 @@ Native functions allow developers to provide custom Python implementations for R
 ---
 
 ## 1. What are Native Functions
+
 A function is treated as "Native" by the Python generator if:
+
 - It is explicitly annotated with `[codeImplementation]`. (**Recommended**)
 - It has no operations (assignment or `add` statements) in its body.
 
 ### Exclusions
+
 **Enum Dispatchers** (functions that act as switchboards) are excluded from the implicit "no operations" rule. Dispatcher headers are always generated as `match` statements in Python and will not be treated as native unless explicitly annotated with `[codeImplementation]`.
 
 ---
@@ -28,12 +33,15 @@ A function is treated as "Native" by the Python generator if:
 ## 2. Integration Mechanism
 
 ### Registration and Discovery
+
 The generated code includes a call to `rune_attempt_register_native_functions` during module initialization. This mechanism:
-1.  Identifies all functions flagged as native during generation.
-2.  Attempts to dynamically import these functions from a specific package prefix (default: `rune.native`).
-3.  Registers successfully imported callables in a global registry.
+
+1. Identifies all functions flagged as native during generation.
+2. Attempts to dynamically import these functions from a specific package prefix (default: `rune.native`).
+3. Registers successfully imported callables in a global registry.
 
 ### The Runtime Hook
+
 At runtime, the generated code uses `rune_execute_native`. If a function is called but no implementation was successfully registered, it will raise a `NotImplementedError` listing the available functions.
 
 ---
@@ -41,27 +49,33 @@ At runtime, the generated code uses `rune_execute_native`. If a function is call
 ## 3. Implementation Guidelines
 
 ### Naming Contract
+
 The Python module must follow the **Fully Qualified Name (FQN)** of the Rune definition, prefixed with `rune.native`.
 
-*   **Rune Namespace**: `rosetta_dsl.test.functions`
-*   **Rune Function**: `RoundToNearest`
-*   **Expected Python Import Path**: `rune.native.rosetta_dsl.test.functions.RoundToNearest`
+- **Rune Namespace**: `rosetta_dsl.test.functions`
+  - **Rune Function**: `RoundToNearest`
+- **Expected Python Import Path**: `rune.native.rosetta_dsl.test.functions.RoundToNearest`
 
 ### Signature Matching
+
 The Python function must accept exactly the same parameters as defined in Rune, in the same order. Use Python type hints where possible to maintain type safety.
 
 ### Troubleshooting
+
 If your native function is not being called:
-1.  **Check Logs**: The initialization logic logs a `WARNING` if a module import fails or if the attribute found is not callable.
-2.  **Verify Package**: Ensure your native code is installed in the current environment (e.g., via `pip install -e`).
-3.  **Implicit Init**: Ensure all directories in your path contain an `__init__.py` file to be treated as a valid Python package.
+
+1. **Check Logs**: The initialization logic logs a `WARNING` if a module import fails or if the attribute found is not callable.
+2. **Verify Package**: Ensure your native code is installed in the current environment (e.g., via `pip install -e`).
+3. **Implicit Init**: Ensure all directories in your path contain an `__init__.py` file to be treated as a valid Python package.
 
 ---
 
 ## 4. End-to-End Example
 
 ### A. Rune Definition
+
 **File**: `NativeFunctionTest.rosetta`
+
 ```rosetta
 namespace rosetta_dsl.test.functions
 
@@ -87,9 +101,11 @@ func RoundUp:
 ```
 
 ### B. Native Python Implementation
+
 Place your logic in the directory structure matching the namespace.
 
 **File**: `src/rune/native/rosetta_dsl/test/functions/RoundToNearest.py`
+
 ```python
 from decimal import Decimal
 from rosetta_dsl.test.functions.RoundingModeEnum import RoundingModeEnum
@@ -104,9 +120,11 @@ def RoundToNearest(value: Decimal, digits: int, roundingMode: RoundingModeEnum) 
 ```
 
 ### C. Packaging and Installation
+
 Use a standard Python packaging tool (like `setuptools`) to make the `rune.native` namespace discoverable.
 
 **File**: `pyproject.toml`
+
 ```toml
 [project]
 name = "rosetta-dsl-native-functions"
@@ -117,6 +135,7 @@ where = ["src"]
 ```
 
 **Installation Command**:
+
 ```bash
 python -m pip install -e .
 ```
@@ -128,6 +147,7 @@ When Rune generates code for a native function, it creates a wrapper that handle
 **Note**: The exmaples are mocked up and do not include the complete code.
 
 **Generated Wrapper for `RoundToNearest`**:
+
 ```python
 @replaceable
 @validate_call
@@ -141,6 +161,7 @@ def RoundToNearest(value: Decimal, digits: int, roundingMode: RoundingModeEnum) 
 Other generated functions call this wrapper just like any other function:
 
 **Generated Code for `RoundUp`**:
+
 ```python
 @replaceable
 @validate_call
@@ -153,4 +174,5 @@ def RoundUp(value: Decimal, digits: int) -> Decimal:
 ```
 
 #### Test Execution
+
 Once installed, any Rune code calling `RoundUp` will automatically route through the native bridge to your Python logic.

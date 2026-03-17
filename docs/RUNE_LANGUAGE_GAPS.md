@@ -23,6 +23,7 @@ The following table tracks support for Rosetta/Rune annotations.
 | `creation` | Marks a function involved in state transitions or the creation of new business events. | **N** | ❌ | CDM-specific workflow marker. |
 
 **Legend:**
+
 - ✅ : Fully supported and integrated into generated code.
 - ❌ : Currently ignored by the generator.
 - **Y** : Critical for functionality or code correctness.
@@ -43,24 +44,30 @@ The following table tracks implementation status for core Rosetta language featu
 The following section tracks implementation status and requirements for regulatory reporting structures utilized heavily in DRR.
 
 ### `report`
+
 **Meaning**: The `report` block acts as the orchestrator for regulatory reporting. It specifies the timing (e.g., `in T+1`), the eligibility condition (the `when` clause), the input data source, and the target output schema.
 **Requirements**: 
+
 - **Needs Generator Support**: **Y** (Status: ❌)
 - The generator must emit an orchestrating construct (e.g., a wrapper class or module function) that wires together the target schema and its associated rules.
 - The generated code must first evaluate the eligibility condition (`when` block) against the input. If the condition is met, it must instantiate the target output schema and execute every `reporting rule` associated with that schema, assigning the resulting values to the corresponding fields.
 - The generator must also emit metadata annotations or registration logic to allow the system to dynamically identify the report within an execution engine.
 
 ### `reporting rule`
+
 **Meaning**: A `reporting rule` defines the precise navigational and computational logic required to extract, filter, or compute a specific field for a regulatory report from the input transaction object.
 **Requirements**:
+
 - **Needs Generator Support**: **Y** (Status: ❌)
 - The generator must emit a standalone, callable function or class for each rule.
 - The generated function must take the root input object as an argument and return the computed field value.
 - The generated code must be strictly null-safe. Because reporting rules frequently navigate deep into optional nested attributes, the code must gracefully evaluate to `None`/`null` rather than raising exceptions (like `AttributeError` in Python) when an intermediate attribute is missing.
 
 ### `eligibility rule`
+
 **Meaning**: An `eligibility rule` acts as a gating filter that evaluates logical conditions to establish whether a specific transaction is eligible for a given report. 
 **Requirements**:
+
 - **Needs Generator Support**: **Y** (Status: ❌)
 - The generator must emit a function that takes the input object and returns a `Boolean` value.
 - It must translate the declarative conditional logic into standard boolean execution flows. The output is ultimately called by the `report` orchestrator to determine if the reporting pipeline should proceed.
@@ -122,6 +129,7 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 ### Outstanding Expression Gaps
 
 1. **`as-key` Full Semantics**: Current implementation is a dictionary literal placeholder. Full integration with the CDM workflow (where `as-key` signals persistence or cross-referencing) requires runtime support.
+
    ```rosetta
    // Exposes semantic gap in AsKeyOperation
    func MarkAsKey:
@@ -133,7 +141,7 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 
 2. **List Comparison Semantics**:
    Several implementation details in `rune-python-runtime` violate the formal comparison rules:
-    *   **The `_ntoz` (None to Zero) Violation**: The runtime converts `None` to `0` for comparisons.
-        *   **Rune Expectation (Heading: [`Comparison Operator and Null`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L990))**: `null = any value` must be `false` (including `null = null`). Python currently returns `true` for `None == None` and `None == 0`.
-    *   **Pairwise Inequality (`<>`)**: The generator currently calls `rune_any_elements` for list inequality, which performs a **segment-wise Cartesian product** check (`any(x != y for ...)`).
-        *   **Rune Expectation (Heading: [`List Comparison`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1382))**: `<>` must return `true` if lists have different lengths OR if any pairwise items differ. `rune_any_elements` ignores list length and relative order entirely.
+   - **The `_ntoz` (None to Zero) Violation**: The runtime converts `None` to `0` for comparisons.
+      - **Rune Expectation (Heading: [`Comparison Operator and Null`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L990))**: `null = any value` must be `false` (including `null = null`). Python currently returns `true` for `None == None` and `None == 0`.
+   - **Pairwise Inequality (`<>`)**: The generator currently calls `rune_any_elements` for list inequality, which performs a **segment-wise Cartesian product** check (`any(x != y for ...)`).
+      - **Rune Expectation (Heading: [`List Comparison`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1382))**: `<>` must return `true` if lists have different lengths OR if any pairwise items differ. `rune_any_elements` ignores list length and relative order entirely.
