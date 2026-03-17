@@ -5,10 +5,26 @@ import java.util.Set;
 
 import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.REnumType;
-import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.RosettaModel;
 
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
+import com.regnosys.rosetta.rosetta.simple.Function;
+
+/**
+ * A utility class for mapping Rune (Rosetta) types and attributes to their
+ * corresponding Python types.
+ * This class also handles name mangling for Python keywords and reserved words.
+ */
 public class RuneToPythonMapper {
     private static final Set<String> PYTHON_KEYWORDS = new HashSet<>();
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private RuneToPythonMapper() {
+    }
 
     static {
         // Initialize the set with Python keywords and soft keywords
@@ -53,23 +69,31 @@ public class RuneToPythonMapper {
         PYTHON_KEYWORDS.add("_");
     }
 
-    // Define the set of Python types as a static final field
+    /**
+     * Define the set of Python types as a static final field.
+     */
     private static final Set<String> PYTHON_TYPES = Set.of(
-        "int", "str", "Decimal", "date", "datetime", "datetime.datetime",
-        "datetime.date", "datetime.time", "time", "bool"
-    );
+            "int", "str", "Decimal", "date", "datetime", "datetime.datetime",
+            "datetime.date", "datetime.time", "time", "bool");
 
+    /**
+     * Check if the attribute is a Python keyword or starts with an underscore.
+     *
+     * @param attrib the attribute name
+     * @return the mangled name
+     */
     public static String mangleName(String attrib) {
-        // Check if the attribute is a Python keyword or starts with an underscore
         if (PYTHON_KEYWORDS.contains(attrib) || attrib.charAt(0) == '_') {
             return "rune_attr_" + attrib;
         }
         return attrib;
     }
-    
+
+    /**
+     * Inner private function to convert from Rosetta type to Python type.
+     * Returns null if no matching type.
+     */
     private static String toPythonBasicTypeInnerFunction(String rosettaType) {
-        // inner private function to convert from Rosetta type to Python type
-        // returns null if no matching type
         switch (rosettaType) {
             case "string":
             case "eventType":
@@ -94,9 +118,14 @@ public class RuneToPythonMapper {
         }
     }
 
-    public static String getAttributeTypeWithMeta (String attributeType) {
-        // inner private function to convert from Rosetta type to Python type
-        // returns null if no matching type
+    /**
+     * Inner private function to convert from Rosetta type to Python type.
+     * Returns null if no matching type.
+     *
+     * @param attributeType the attribute type
+     * @return the Python type with meta, or the original attribute type if no match
+     */
+    public static String getAttributeTypeWithMeta(String attributeType) {
         switch (attributeType) {
             case "str":
                 return "StrWithMeta";
@@ -116,37 +145,169 @@ public class RuneToPythonMapper {
                 return attributeType;
         }
     }
+
+    public static String getFullyQualifiedObjectName(RosettaNamed rn) {
+        RosettaModel model = (RosettaModel) rn.eContainer();
+        if (model == null) {
+            throw new RuntimeException("Rosetta model not found for data " + rn.getName());
+        }
+
+        if (rn instanceof REnumType) {
+            return ((REnumType) rn).getQualifiedName().toString() + "." + rn.getName();
+        }
+        String typeName = toPythonBasicTypeInnerFunction(rn.getName());
+        if (typeName == null) {
+            String function = (rn instanceof Function) ? ".functions" : "";
+            typeName = model.getName() + function + "." + rn.getName();
+            if (rn instanceof RosettaEnumeration) {
+                typeName += "." + rn.getName();
+            }
+        }
+        return typeName;
+    }
+
+    public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes) {
+        String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn);
+        if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
+            return fullyQualifiedObjectName;
+        }
+        String bundleName = fullyQualifiedObjectName.replace(".", "_");
+        if (useQuotes) {
+            return "\"" + bundleName + "\"";
+        }
+        return bundleName;
+    }
+
+    public static String getBundleObjectName(RosettaNamed rn) {
+        return getBundleObjectName(rn, false);
+    }
+
+    /**
+     * Convert from Rune type as string to Python type.
+     *
+     * @param rosettaType the Rune type name
+     * @return the Python type name
+     */
     public static String toPythonBasicType(String rosettaType) {
         String pythonType = toPythonBasicTypeInnerFunction(rosettaType);
         return (pythonType == null) ? rosettaType : pythonType;
     }
 
-    public static String toPythonType(RType rt) {
+    /**
+     * Convert from Rune RType to Python type with optional quoting for forward
+     * references.
+     *
+     * @param rt        the Rune RType object
+     * @param useQuotes whether to wrap the type name in quotes for forward
+     *                  references
+     * @return the Python type name string, or null if rt is null
+     */
+    public static String toPythonType(RType rt, boolean useQuotes) {
         if (rt == null)
             return null;
         var pythonType = toPythonBasicTypeInnerFunction(rt.getName());
         if (pythonType == null) {
-        	String rtName = rt.getName();
+            String rtName = rt.getName();
             pythonType = rt.getNamespace().toString() + "." + rtName;
             pythonType = (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType;
+
+            if (!isRosettaBasicType(rt) && !(rt instanceof REnumType)) {
+                pythonType = getFlattenedTypeName(rt, pythonType);
+                if (useQuotes) {
+                    pythonType = "\"" + pythonType + "\"";
+                }
+            }
         }
         return pythonType;
     }
+
+    /**
+     * Convert from Rune RType to Python type.
+     *
+     * @param rt the Rune RType object
+     * @return the Python type name string, or null if rt is null
+     */
+    public static String toPythonType(RType rt) {
+        return toPythonType(rt, false);
+    }
+
+    /**
+     * Check if the given type is a basic type.
+     *
+     * @param rtName the type name
+     * @return true if it is a basic type, false otherwise
+     */
     public static boolean isRosettaBasicType(String rtName) {
         return (toPythonBasicTypeInnerFunction(rtName) != null);
     }
+
+    /**
+     * Check if the given type is a basic type.
+     *
+     * @param rt the RType object
+     * @return true if it is a basic type, false otherwise
+     */
     public static boolean isRosettaBasicType(RType rt) {
         return (toPythonBasicTypeInnerFunction(rt.getName()) != null);
     }
+
+    /**
+     * Check if the given attribute is a basic type.
+     *
+     * @param ra the RAttribute object
+     * @return true if the attribute's type is a basic type, false otherwise
+     */
     public static boolean isRosettaBasicType(RAttribute ra) {
-    	if (ra == null) {
+        if (ra == null) {
             return false;
         }
         RType rt = ra.getRMetaAnnotatedType().getRType();
         return (rt != null) ? isRosettaBasicType(rt.getName()) : false;
     }
+
+    /**
+     * Formats a Python type string based on cardinality and context.
+     *
+     * @param baseType        the base Python type (e.g., "str", "Decimal")
+     * @param min             the minimum cardinality
+     * @param max             the maximum cardinality
+     * @param isInputArgument true if this is for a function input argument (uses "
+     *                        | None"), false for a class field (uses
+     *                        "Optional[...]").
+     * @return the formatted Python type string
+     */
+    public static String formatPythonType(String baseType, int min, int max, boolean isInputArgument) {
+        String type = baseType;
+        boolean isList = (max > 1 || max == -1 || max == 0);
+
+        if (isList) {
+            type = "list[" + type + "]";
+        }
+
+        if (min == 0) {
+            if (isInputArgument) {
+                type = type + " | None";
+            } else {
+                type = "Optional[" + type + "]";
+            }
+        }
+        return type;
+    }
+
+    public static String getFlattenedTypeName(RType type, String typeName) {
+        if (isRosettaBasicType(type) || type instanceof REnumType) {
+            return typeName;
+        }
+        return typeName.replace('.', '_');
+    }
+
+    /**
+     * Check if the given type is in the set of Python types.
+     *
+     * @param pythonType the Python type name
+     * @return true if it is a known Python type, false otherwise
+     */
     public static boolean isPythonBasicType(final String pythonType) {
-        // Check if the given type is in the set of Python types
         return PYTHON_TYPES.contains(pythonType);
     }
 }
