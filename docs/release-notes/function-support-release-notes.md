@@ -6,7 +6,8 @@ This document summarizes the significant improvements and architectural changes 
 
 Previously, the generator relied on a fragile `_get_rune_object` helper that attempted to resolve classes from the global namespace at runtime. This has been replaced with a robust, statically-analysable approach.
 
-### Changes:
+### Changes
+
 - **Direct Instantiation**: The generator now emits direct constructor calls (e.g., `MyClass(...)`) for object creation.
 - **IDE Transparency**: Modern IDEs can now provide full autocomplete and type-checking for objects constructed inside functions.
 - **Namespace Safety**: Removes reliance on the global namespace, preventing collisions in multi-bundle environments.
@@ -15,7 +16,8 @@ Previously, the generator relied on a fragile `_get_rune_object` helper that att
 
 Rosetta functions often populate an output object through multiple `set` operations. Standard Pydantic constructors enforce validation immediately, which fails if required fields are missing during intermediate steps.
 
-### Changes:
+### Changes
+
 - **`model_construct()` Integration**: The generator now utilizes Pydantic’s `model_construct()` for partial object initialization.
 - **Deferred Validation**: Objects can be populated field-by-field without triggering `ValidationError` for missing required fields.
 - **Unwrapped Final Values**: Ensures that the final object is unwrapped and ready for use upon function return.
@@ -24,7 +26,8 @@ Rosetta functions often populate an output object through multiple `set` operati
 
 Circular references (e.g., Type A has Type B, and Type B has Type A) are common in complex domain models like the CDM. Previous generator versions were blocked by these cycles.
 
-### Changes:
+### Changes
+
 - **String Forward References**: Implemented Pydantic-native string type hints (e.g., `attr: "TypeB"`) to allow Python to parse classes before their dependencies are defined.
 - **Refined Topological Sort**: The generator’s DAG now correctly orders definitions based on inheritance and attribute types, falling back to forward references when cycles are detected.
 - **`model_rebuild()`**: Automatically generates `model_rebuild()` calls at the end of the bundle to resolve all forward references lazily.
@@ -33,7 +36,8 @@ Circular references (e.g., Type A has Type B, and Type B has Type A) are common 
 
 Rosetta allows functions to be marked as externally implemented. The generator now provides a standard bridge to these Python implementations.
 
-### Changes:
+### Changes
+
 - **`native_registry`**: A centralized registry allows users to map Rosetta function names to Python callables.
 - **Dispatcher Logic**: The generator emits calls to `rune_execute_native`, which looks up the implementation and handles execution at runtime.
 - **Standardized Signatures**: Native implementations receive standardized arguments, ensuring parity with generated logic.
@@ -42,7 +46,8 @@ Rosetta allows functions to be marked as externally implemented. The generator n
 
 To match the Rosetta/Rune standard, function signatures and type hints have been improved for readability and consistency.
 
-### Changes:
+### Changes
+
 - **Namespace Alignment**: Type hints now use fully qualified, period-delimited names as strings (e.g., `val: "cdm.base.datetime.AdjustableDate"`).
 - **Cleaner API**: Removes "bundle-mangled" underscore names from public-facing function signatures.
 
@@ -50,6 +55,7 @@ To match the Rosetta/Rune standard, function signatures and type hints have been
 
 The execution of pre-conditions and post-conditions has been standardized to ensure consistent behavior across model types and standalone functions.
 
-### Changes:
+### Changes
+
 - **Registry-Based Execution**: Conditions are registered in a local `_pre_registry` or `_post_registry` and executed via `rune_execute_local_conditions`.
 - **Improved Scoping**: Uses `inspect.currentframe()` to provide a reliable `self` context for condition evaluation within function bodies.
