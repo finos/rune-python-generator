@@ -6,7 +6,6 @@ import java.util.Set;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
-import com.regnosys.rosetta.rosetta.simple.Function;
 import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RType;
@@ -98,28 +97,16 @@ public final class RuneToPythonMapper {
      * Returns null if no matching type.
      */
     private static String toPythonBasicTypeInnerFunction(String typeName) {
-        switch (typeName) {
-            case "string":
-            case "eventType":
-            case "calculation":
-            case "productType":
-                return "str";
-            case "time":
-                return "datetime.time";
-            case "date":
-                return "datetime.date";
-            case "dateTime":
-            case "zonedDateTime":
-                return "datetime.datetime";
-            case "number":
-                return "Decimal";
-            case "boolean":
-                return "bool";
-            case "int":
-                return "int";
-            default:
-                return null;
-        }
+        return switch (typeName) {
+            case "string", "eventType", "calculation", "productType" -> "str";
+            case "time" -> "datetime.time";
+            case "date" -> "datetime.date";
+            case "dateTime", "zonedDateTime" -> "datetime.datetime";
+            case "number" -> "Decimal";
+            case "boolean" -> "bool";
+            case "int" -> "int";
+            default -> null;
+        };
     }
 
     /**
@@ -130,24 +117,16 @@ public final class RuneToPythonMapper {
      * @return the Python type with meta, or the original attribute type if no match
      */
     public static String getAttributeTypeWithMeta(String attributeType) {
-        switch (attributeType) {
-            case "str":
-                return "StrWithMeta";
-            case "datetime.time":
-                return "TimeWithMeta";
-            case "datetime.date":
-                return "DateWithMeta";
-            case "datetime.datetime":
-                return "DateTimeWithMeta";
-            case "Decimal":
-                return "NumberWithMeta";
-            case "bool":
-                return "BoolWithMeta";
-            case "int":
-                return "IntWithMeta";
-            default:
-                return attributeType;
-        }
+        return switch (attributeType) {
+            case "str" -> "StrWithMeta";
+            case "datetime.time" -> "TimeWithMeta";
+            case "datetime.date" -> "DateWithMeta";
+            case "datetime.datetime" -> "DateTimeWithMeta";
+            case "Decimal" -> "NumberWithMeta";
+            case "bool" -> "BoolWithMeta";
+            case "int" -> "IntWithMeta";
+            default -> attributeType;
+        };
     }
 
     public static String getFullyQualifiedName(RosettaNamed rn) {

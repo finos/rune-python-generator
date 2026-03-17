@@ -13,6 +13,9 @@ import java.util.Map;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonReduceOperationTest {
 
+    /**
+     * Testing utility for generating Python code and asserting results.
+     */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
@@ -33,7 +36,7 @@ public class PythonReduceOperationTest {
                 """);
 
         String bundle = gf.get("src/com/_bundle.py").toString();
-        
+
         testUtils.assertGeneratedContainsExpectedString(bundle, "functools.reduce(lambda a, b: (a + b), rune_resolve_attr(self, \"items\"))");
     }
 }

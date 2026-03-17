@@ -93,7 +93,7 @@ public class PythonFunctionConditionTest {
                     result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "min"), _then_fn0, _else_fn0)
 
 
-                    return rune_unwrap(result)
+                    return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -169,7 +169,7 @@ public class PythonFunctionConditionTest {
                     # Execute all registered post-conditions
                     rune_execute_local_conditions(_post_registry, 'Post-condition')
 
-                    return rune_unwrap(result)
+                    return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -254,7 +254,7 @@ public class PythonFunctionConditionTest {
                     result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "direction"), "=", "min"), _then_fn0, _else_fn0)
 
 
-                    return rune_unwrap(result)
+                    return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }

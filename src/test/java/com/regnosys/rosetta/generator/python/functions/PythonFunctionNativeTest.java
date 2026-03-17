@@ -74,7 +74,7 @@ public class PythonFunctionNativeTest {
                     roundedValue = rune_execute_native('rosetta_dsl.test.functions.RoundToNearest', value, nearest, roundingMode)
 
 
-                    return rune_unwrap(roundedValue)
+                    return roundedValue
                 """;
         testUtils.assertGeneratedContainsExpectedString(bundle, expected);
         

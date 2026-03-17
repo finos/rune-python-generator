@@ -32,9 +32,9 @@ public class RosettaShortcutTest {
         testUtils.assertBundleContainsExpectedString("""
                 func UseShortcut:
                     inputs: val int (1..1)
-                    output: res int (1..1)
+                    output: result int (1..1)
                     alias MyShortcut: val + 5
-                    set res: MyShortcut * 2
+                    set result: MyShortcut * 2
                 """,
                 """
                         @replaceable
@@ -48,7 +48,7 @@ public class RosettaShortcutTest {
 
                             Returns
                             -------
-                            res : int
+                            result : int
 
                             \"\"\"
                             self = inspect.currentframe()
@@ -57,9 +57,9 @@ public class RosettaShortcutTest {
 
 
                             MyShortcut = (rune_resolve_attr(self, "val") + 5)
-                            res = (rune_resolve_attr(self, "MyShortcut") * 2)
+                            result = (rune_resolve_attr(self, "MyShortcut") * 2)
 
 
-                            return rune_unwrap(res)""");
+                            return result""");
     }
 }

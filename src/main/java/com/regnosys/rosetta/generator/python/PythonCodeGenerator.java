@@ -294,7 +294,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
 
             // 4. Final Assembly into bundleWriter in requested order
-            
+
             // 4.1 Objects
             bundleWriter.appendBlock(dataObjectsWriter.toString());
 

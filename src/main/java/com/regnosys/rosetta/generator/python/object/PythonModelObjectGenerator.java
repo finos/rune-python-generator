@@ -13,16 +13,12 @@ import org.jgrapht.graph.GraphCycleProhibitedException;
 
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
-import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
-import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.RDataType;
-import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RObjectFactory;
-import com.regnosys.rosetta.types.RType;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -80,11 +76,9 @@ public class PythonModelObjectGenerator {
 
         for (Data rc : rClasses) {
             RosettaModel model = (RosettaModel) rc.eContainer();
-            String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
-
             // Generate Python for the class
             try {
-                String pythonClass = generateClass(rc, nameSpace, enumImports, context);
+                String pythonClass = generateClass(rc, enumImports, context);
 
                 // construct the class name using "." as a delimiter
                 String className = model.getName() + "." + rc.getName();
@@ -106,26 +100,6 @@ public class PythonModelObjectGenerator {
         return result;
     }
 
-    private void addAttributeDependencies(Graph<String,
-        DefaultEdge> dependencyDAG,
-        String className,
-        Data rc) {
-        RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
-        for (RAttribute attr : buildRDataType.getOwnAttributes()) {
-            RType rt = attr.getRMetaAnnotatedType().getRType();
-            if (rt instanceof RDataType || rt instanceof REnumType) {
-                String dependencyName = "";
-                if (rt instanceof RDataType) {
-                    dependencyName = ((RDataType) rt).getQualifiedName().toString();
-                } else {
-                    dependencyName = ((REnumType) rt).getQualifiedName().toString();
-                }
-                if (!dependencyName.isEmpty() && !className.equals(dependencyName)) {
-                    addDependency(dependencyDAG, className, dependencyName);
-                }
-            }
-        }
-    }
 
     private void addDependency(
         Graph<String, DefaultEdge> dependencyDAG,
@@ -141,7 +115,7 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private String generateClass(Data rc, String nameSpace, Set<String> enumImports,
+    private String generateClass(Data rc, Set<String> enumImports,
             PythonCodeGeneratorContext context) {
         if (rc == null) {
             throw new RuntimeException("Rosetta class not initialized");

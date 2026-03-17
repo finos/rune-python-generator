@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.eclipse.xtext.util.CancelIndicator;
 import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.eclipse.xtext.validation.Issue;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,21 +90,31 @@ import com.regnosys.rosetta.rosetta.RosettaNamed;
  * @see PythonCodeGenerator
  */
 
-public final class PythonCodeGeneratorCLI {
+public class PythonCodeGeneratorCLI {
     /**
      * Logger for the PythonCodeGeneratorCLI class.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
 
     /**
-     * Private constructor to prevent instantiation of this utility class.
+     * Public constructor for the CLI tool.
      */
-    private PythonCodeGeneratorCLI() {
-        throw new IllegalStateException("Utility class");
+    public PythonCodeGeneratorCLI() {
     }
 
     public static void main(String[] args) {
-        System.out.println("***** Running PythonCodeGeneratorCLI v2 *****");
+        int exitCode = new PythonCodeGeneratorCLI().run(args);
+        System.exit(exitCode);
+    }
+
+    /**
+     * Executes the CLI tool.
+     *
+     * @param args command line arguments
+     * @return exit code
+     */
+    public final int run(String[] args) {
+        LOGGER.info("***** Running PythonCodeGeneratorCLI v2 *****");
         Options options = new Options();
         Option help = new Option("h", "Print usage");
         Option srcDirOpt = Option.builder("s").longOpt("dir").argName("srcDir").desc("Source Rosetta directory")
@@ -115,33 +123,42 @@ public final class PythonCodeGeneratorCLI {
                 .build();
         Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir")
                 .desc("Target Python directory (default: ./python)").hasArg().build();
+        Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors").desc("Continue even if there are validation errors").build();
+        Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings").desc("Fail if there are validation warnings").build();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
         options.addOption(srcFileOpt);
         options.addOption(tgtDirOpt);
+        options.addOption(allowErrorsOpt);
+        options.addOption(failOnWarningsOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
             CommandLine cmd = parser.parse(options, args);
             if (cmd.hasOption("h")) {
                 printUsage(options);
-                return;
+                return 0;
             }
             String tgtDir = cmd.getOptionValue("t", "./python");
+            boolean allowErrors = cmd.hasOption("e");
+            boolean failOnWarnings = cmd.hasOption("w");
+
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
-                translateFromSourceDir(srcDir, tgtDir);
+                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings);
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
-                translateFromSourceFile(srcFile, tgtDir);
+                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings);
             } else {
-                System.err.println("Either a source directory (-s) or source file (-f) must be specified.");
+                LOGGER.error("Either a source directory (-s) or source file (-f) must be specified.");
                 printUsage(options);
+                return 1;
             }
         } catch (ParseException e) {
-            System.err.println("Failed to parse command line arguments: " + e.getMessage());
+            LOGGER.error("Failed to parse command line arguments: {}", e.getMessage());
             printUsage(options);
+            return 1;
         }
     }
 
@@ -150,53 +167,54 @@ public final class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    private static void translateFromSourceDir(String srcDir, String tgtDir) {
+    private int translateFromSourceDir(String srcDir, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
         // Find all .rosetta files in a directory
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
             LOGGER.error("Source directory does not exist: {}", srcDir);
-            System.exit(1);
+            return 1;
         }
         if (!Files.isDirectory(srcDirPath)) {
             LOGGER.error("Source directory is not a directory: {}", srcDir);
-            System.exit(1);
+            return 1;
         }
         try {
             List<Path> rosettaFiles = Files.walk(srcDirPath)
                     .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
                     .collect(Collectors.toList());
-            processRosettaFiles(rosettaFiles, tgtDir);
+            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
         } catch (IOException e) {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
+            return 1;
         }
     }
 
-    private static void translateFromSourceFile(String srcFile, String tgtDir) {
+    private int translateFromSourceFile(String srcFile, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
             LOGGER.error("Source file does not exist: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         if (Files.isDirectory(srcFilePath)) {
             LOGGER.error("Source file is a directory: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         if (!srcFilePath.toString().endsWith(".rosetta")) {
             LOGGER.error("Source file does not end with .rosetta: {}", srcFile);
-            System.exit(1);
+            return 1;
         }
         List<Path> rosettaFiles = List.of(srcFilePath);
-        processRosettaFiles(rosettaFiles, tgtDir);
+        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
     }
 
     // Common processing function
-    private static void processRosettaFiles(List<Path> rosettaFiles, String tgtDir) {
+    private int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
         if (rosettaFiles.isEmpty()) {
-            System.err.println("No .rosetta files found to process.");
-            System.exit(1);
+            LOGGER.error("No .rosetta files found to process.");
+            return 1;
         }
 
         Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
@@ -215,13 +233,13 @@ public final class PythonCodeGeneratorCLI {
         List<RosettaModel> models = modelLoader.getRosettaModels(resources);
         if (models.isEmpty()) {
             LOGGER.error("No valid Rosetta models found.");
-            System.exit(1);
+            return 1;
         }
         String version = models.getFirst().getVersion();
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
-        IResourceValidator validator = injector.getInstance(IResourceValidator.class);
+        IResourceValidator validator = getValidator(injector);
         Map<String, CharSequence> generatedPython = new HashMap<>();
 
         List<RosettaModel> validModels = new ArrayList<>();
@@ -262,6 +280,9 @@ public final class PythonCodeGeneratorCLI {
                         case WARNING:
                             LOGGER.warn("Validation WARNING in {} (Line {}): {}", model.getName(),
                                     issue.getLineNumber(), issue.getMessage());
+                            if (failOnWarnings) {
+                                hasErrors = true;
+                            }
                             break;
                         default:
                             break;
@@ -281,8 +302,12 @@ public final class PythonCodeGeneratorCLI {
         }
 
         if (validModels.isEmpty()) {
-            LOGGER.error("No valid models found after validation. Exiting.");
-            System.exit(1);
+            if (allowErrors) {
+                LOGGER.warn("No valid models found after validation, but --allow-errors is set. Continuing with potentially partial generation.");
+            } else {
+                LOGGER.error("No valid models found after validation. Exiting.");
+                return 1;
+            }
         }
 
         // Use validModels for generation
@@ -303,6 +328,18 @@ public final class PythonCodeGeneratorCLI {
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
         writePythonFiles(generatedPython, tgtDir);
+        return 0;
+    }
+
+    /**
+     * Gets the resource validator from the injector.
+     * This method is designed for extension to allow mocking in unit tests.
+     *
+     * @param injector the Guice injector
+     * @return the resource validator
+     */
+    protected IResourceValidator getValidator(Injector injector) {
+        return injector.getInstance(IResourceValidator.class);
     }
 
     private static void writePythonFiles(Map<String, CharSequence> generatedPython, String tgtDir) {
@@ -370,13 +407,7 @@ public final class PythonCodeGeneratorCLI {
     public static final class PythonCodeGeneratorInstance implements Provider<ExternalGenerators> {
         @Override
         public ExternalGenerators get() {
-            return new ExternalGenerators() {
-                @NotNull
-                @Override
-                public Iterator<ExternalGenerator> iterator() {
-                    return List.of((ExternalGenerator) new PythonCodeGenerator()).iterator();
-                }
-            };
+            return () -> List.of((ExternalGenerator) new PythonCodeGenerator()).iterator();
         }
     }
 

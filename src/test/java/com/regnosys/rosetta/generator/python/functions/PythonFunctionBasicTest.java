@@ -1,13 +1,16 @@
 package com.regnosys.rosetta.generator.python.functions;
 
-import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
-import com.regnosys.rosetta.tests.RosettaInjectorProvider;
+import java.util.Map;
+
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
+import com.regnosys.rosetta.tests.RosettaInjectorProvider;
+
 import jakarta.inject.Inject;
-import java.util.Map;
 
 /**
  * Every element of this test needs to check the entire generated Python.
@@ -69,7 +72,7 @@ public class PythonFunctionBasicTest {
                     result = (rune_resolve_attr(self, \"number1\") + rune_resolve_attr(self, \"number2\"))
 
 
-                    return rune_unwrap(result)
+                    return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
@@ -81,21 +84,21 @@ public class PythonFunctionBasicTest {
     public void testFunctionWithFunctionCallingFunction() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        func BaseFunction:
-                            inputs:
-                                value number (1..1)
-                            output:
-                                result number (1..1)
-                            set result:
-                                value * 2
-                        func MainFunction:
-                            inputs:
-                                value number (1..1)
-                            output:
-                                result number (1..1)
-                            set result:
-                                BaseFunction(value)
-                            """);
+                func BaseFunction:
+                    inputs:
+                        value number (1..1)
+                    output:
+                        result number (1..1)
+                    set result:
+                        value * 2
+                func MainFunction:
+                    inputs:
+                        value number (1..1)
+                    output:
+                        result number (1..1)
+                    set result:
+                        BaseFunction(value)
+                    """);
 
         String expectedBundleBaseFunction = """
                 @replaceable
@@ -120,7 +123,7 @@ public class PythonFunctionBasicTest {
                     result = (rune_resolve_attr(self, "value") * 2)
 
 
-                    return rune_unwrap(result)
+                    return result
                 """;
         String expectedBundleMainFunction = """
                 @replaceable
@@ -142,10 +145,10 @@ public class PythonFunctionBasicTest {
                     value = rune_cow(value)
 
 
-                    result = com_rosetta_test_model_BaseFunction(rune_resolve_attr(self, "value"))
+                    result = rune_call_unchecked(com_rosetta_test_model_BaseFunction, rune_resolve_attr(self, "value"))
 
 
-                    return rune_unwrap(result)
+                    return result
                 """;
 
         String expectedBundleString = gf.get("src/com/_bundle.py").toString();

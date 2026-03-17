@@ -139,7 +139,8 @@ public final class PythonExpressionGenerator {
      * @param scope The current expression scope.
      * @return The generated Python code.
      */
-    private String generateExpression(RosettaExpression expr, PythonExpressionScope scope) {
+    private String generateExpression(RosettaExpression expr,
+        PythonExpressionScope scope) {
 
         switch (expr) {
             case null -> {
@@ -161,8 +162,7 @@ public final class PythonExpressionGenerator {
                 return "{" + generateExpression(asKey.getArgument(), scope) + ": True}";
             }
             case DistinctOperation distinct -> {
-                String arg = generateExpression(distinct.getArgument(), scope);
-                return "(lambda items: set(x for x in (items or []) if x is not None) if items is not None else None)(" + arg + ")";
+                return generateDistinctOperation(distinct, scope);
             }
             case FilterOperation filter -> {
                 return generateFilterOperation(filter, scope);
@@ -171,8 +171,7 @@ public final class PythonExpressionGenerator {
                 return "next((x for x in (" + generateExpression(first.getArgument(), scope) + " or []) if x is not None), None)";
             }
             case FlattenOperation flatten -> {
-                String arg = generateExpression(flatten.getArgument(), scope);
-                return "(lambda nested: [x for sub in (nested or []) if sub is not None for x in (sub if (hasattr(sub, '__iter__') and not isinstance(sub, (str, dict, bytes, bytearray))) else [sub]) if x is not None] if nested is not None else None)(" + arg + ")";
+                return generateFlattenOperation(flatten, scope);
             }
             case ListLiteral listLiteral -> {
                 return "[" + listLiteral.getElements().stream()
@@ -180,7 +179,7 @@ public final class PythonExpressionGenerator {
                         .collect(Collectors.joining(", ")) + "]";
             }
             case LastOperation last -> {
-                return "next((x for x in reversed(" + generateExpression(last.getArgument(), scope) + " or []) if x is not None), None)";
+                return generateLastOperation(last, scope);
             }
             case MapOperation mapOp -> {
                 return generateMapOperation(mapOp, scope);
@@ -198,12 +197,10 @@ public final class PythonExpressionGenerator {
                 return generateThenOperation(then, scope);
             }
             case SumOperation sum -> {
-                String arg = generateExpression(sum.getArgument(), scope);
-                return "(lambda items: sum(x for x in (items or []) if x is not None) if items is not None else None)(" + arg + ")";
+                return generateSumOperation(sum, scope);
             }
             case ReverseOperation reverse -> {
-                String arg = generateExpression(reverse.getArgument(), scope);
-                return "(lambda items: list(reversed([x for x in (items or []) if x is not None])) if items is not None else None)(" + arg + ")";
+                return generateReverseOperation(reverse, scope);
             }
             case SwitchOperation switchOp -> {
                 return generateSwitchOperation(switchOp, scope);
@@ -252,8 +249,7 @@ public final class PythonExpressionGenerator {
                 return generateConstructorExpression(constructor, scope);
             }
             case RosettaCountOperation count -> {
-                String arg = generateExpression(count.getArgument(), scope);
-                return "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(" + arg + ")";
+                return generateCountOperation(count, scope);
             }
             case RosettaDeepFeatureCall deepFeature -> {
                 return "rune_resolve_deep_attr(self, \"" + deepFeature.getFeature().getName() + "\")";
@@ -262,13 +258,7 @@ public final class PythonExpressionGenerator {
                 return enumRef.getEnumeration().getName() + "." + EnumHelper.convertValue(enumRef.getValue());
             }
             case RosettaExistsExpression exists -> {
-                String arg = generateExpression(exists.getArgument(), scope);
-                if (exists.getModifier() == ExistsModifier.SINGLE) {
-                    return "rune_attr_exists(" + arg + ", \"single\")";
-                } else if (exists.getModifier() == ExistsModifier.MULTIPLE) {
-                    return "rune_attr_exists(" + arg + ", \"multiple\")";
-                }
-                return "rune_attr_exists(" + arg + ")";
+                return generateExistsOperation(exists, scope);
             }
             case RosettaFeatureCall featureCall -> {
                 return generateFeatureCall(featureCall, scope);
@@ -411,11 +401,10 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateConstructorExpression(RosettaConstructorExpression expr, PythonExpressionScope scope) {
-        String type = (expr.getTypeCall() != null && expr.getTypeCall().getType() != null)
-                ? expr.getTypeCall().getType().getName()
-                : null;
-        String fullyQualifiedType = RuneToPythonMapper.getBundleObjectName(expr.getTypeCall().getType());
-        type = fullyQualifiedType;
+        String type = null;
+        if (expr.getTypeCall() != null && expr.getTypeCall().getType() != null) {
+            type = RuneToPythonMapper.getBundleObjectName(expr.getTypeCall().getType());
+        }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
                     .map(pair -> pair.getKey().getName() + "="
@@ -505,14 +494,12 @@ public final class PythonExpressionGenerator {
         String args = expr.getArgs().stream().map(arg -> generateExpression(arg, scope))
                 .collect(Collectors.joining(", "));
         String funcName = s.getName();
-        if ("Max".equals(funcName)) {
-            funcName = "max";
-        } else if ("Min".equals(funcName)) {
-            funcName = "min";
-        } else {
-            funcName = RuneToPythonMapper.getBundleObjectName(s);
-        }
-        return funcName + "(" + args + ")";
+        funcName = switch (funcName) {
+            case "Max" -> "max";
+            case "Min" -> "min";
+            case null, default -> RuneToPythonMapper.getBundleObjectName(s);
+        };
+        return "rune_call_unchecked(" + funcName + ", " + args + ")";
     }
 
     private String generateBinaryExpression(RosettaBinaryOperation expr, PythonExpressionScope scope) {
@@ -771,5 +758,43 @@ public final class PythonExpressionGenerator {
         }
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
         return "(lambda items: sorted((x for x in (items or []) if x is not None), key=lambda " + param + ": " + funcBody + ") if items is not None else None)(" + argument + ")";
+    }
+    private String generateDistinctOperation(DistinctOperation distinct, PythonExpressionScope scope) {
+        String arg = generateExpression(distinct.getArgument(), scope);
+        return "(lambda items: set(x for x in (items or []) if x is not None) if items is not None else None)(" + arg + ")";
+    }
+
+    private String generateFlattenOperation(FlattenOperation flatten, PythonExpressionScope scope) {
+        String arg = generateExpression(flatten.getArgument(), scope);
+        return "(lambda nested: [x for sub in (nested or []) if sub is not None for x in (sub if (hasattr(sub, '__iter__') and not isinstance(sub, (str, dict, bytes, bytearray))) else [sub]) if x is not None] if nested is not None else None)(" + arg + ")";
+    }
+
+    private String generateLastOperation(LastOperation last, PythonExpressionScope scope) {
+        return "next((x for x in reversed(" + generateExpression(last.getArgument(), scope) + " or []) if x is not None), None)";
+    }
+
+    private String generateSumOperation(SumOperation sum, PythonExpressionScope scope) {
+        String arg = generateExpression(sum.getArgument(), scope);
+        return "(lambda items: sum(x for x in (items or []) if x is not None) if items is not None else None)(" + arg + ")";
+    }
+
+    private String generateReverseOperation(ReverseOperation reverse, PythonExpressionScope scope) {
+        String arg = generateExpression(reverse.getArgument(), scope);
+        return "(lambda items: list(reversed([x for x in (items or []) if x is not None])) if items is not None else None)(" + arg + ")";
+    }
+
+    private String generateCountOperation(RosettaCountOperation count, PythonExpressionScope scope) {
+        String arg = generateExpression(count.getArgument(), scope);
+        return "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(" + arg + ")";
+    }
+
+    private String generateExistsOperation(RosettaExistsExpression exists, PythonExpressionScope scope) {
+        String arg = generateExpression(exists.getArgument(), scope);
+        if (exists.getModifier() == ExistsModifier.SINGLE) {
+            return "rune_attr_exists(" + arg + ", \"single\")";
+        } else if (exists.getModifier() == ExistsModifier.MULTIPLE) {
+            return "rune_attr_exists(" + arg + ", \"multiple\")";
+        }
+        return "rune_attr_exists(" + arg + ")";
     }
 }

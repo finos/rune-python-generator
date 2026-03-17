@@ -74,7 +74,7 @@ public class PythonFunctionAliasTest {
                     result = rune_resolve_attr(self, "Alias")
 
 
-                    return rune_unwrap(result)
+                    return result
                 """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
 

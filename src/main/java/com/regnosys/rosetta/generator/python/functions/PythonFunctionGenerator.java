@@ -15,6 +15,7 @@ import org.jgrapht.graph.GraphCycleProhibitedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionScope;
@@ -37,7 +38,6 @@ import com.regnosys.rosetta.rosetta.simple.Operation;
 import com.regnosys.rosetta.rosetta.simple.Segment;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.types.RObjectFactory;
-import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -113,8 +113,8 @@ public final class PythonFunctionGenerator {
 
                 if (isCodeImplementation(function)) {
                     context.addNativeFunctionName(functionName);
-                    if (function.getOperations().stream().anyMatch(op -> op.isAdd()) ||
-                        function.getOperations().stream().anyMatch(op -> !op.isAdd())) {
+                    if (function.getOperations().stream().anyMatch(op -> op.isAdd()) 
+                        || function.getOperations().stream().anyMatch(op -> !op.isAdd())) {
                             LOGGER.warn("Function {} is marked as a native function but has operations.  The operations will be ignored.", function.getName());
                         }
                 }
@@ -205,24 +205,23 @@ public final class PythonFunctionGenerator {
         if (function == null) {
             throw new RuntimeException("Function is null");
         }
-        
+
         // 1. Check for explicit annotation first (highest priority)
         Annotated annotated = (Annotated) function;
         boolean hasCodeImplementationAnnotation = annotated.getAnnotations()
                 .stream()
                 .map(aRef -> aRef.getAnnotation())
                 .anyMatch(a -> "codeImplementation".equals(a.getName()));
-        
         if (hasCodeImplementationAnnotation) {
             return true;
         }
 
         // 2. Implicit indicator: no operations.
-        // We exclude Enum Dispatchers (headers) because those have a generated 
-        // 'match' body and should not default to native execution unless 
+        // We exclude Enum Dispatchers (headers) because those have a generated
+        // 'match' body and should not default to native execution unless
         // explicitly forced via the annotation.
-        return function.getOperations().isEmpty() && 
-               !rosettaFunctionExtensions.handleAsEnumFunction(function);
+        return function.getOperations().isEmpty()
+            && !rosettaFunctionExtensions.handleAsEnumFunction(function);
     }
 
 
@@ -270,7 +269,7 @@ public final class PythonFunctionGenerator {
         boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
 
         if (isDispatcher) {
-            writer.appendBlock(generateDispatchLogic(function, isCodeImplementation, context, expressionGenerator));
+            writer.appendBlock(generateDispatchLogic(function, pythonName, isCodeImplementation));
         } else if (isCodeImplementation) {
             writer.appendLine(generateNativeFunctionCall(function));
         } else {
@@ -283,24 +282,19 @@ public final class PythonFunctionGenerator {
         writer.newLine();
 
         if (isDispatcher) {
-            writer.appendBlock(generateSpecializations(function, context));
+            writer.appendBlock(generateSpecializations(function, pythonName, context));
         }
 
         return writer.toString();
     }
 
-    private String generateDispatchLogic(Function function, 
-        boolean isCodeImplementation, 
-        PythonCodeGeneratorContext context,
-        PythonExpressionGenerator expressionGenerator) {
-        
+    private String generateDispatchLogic(Function function, String pythonName, boolean isCodeImplementation) {
         PythonCodeWriter writer = new PythonCodeWriter();
-        
         Attribute enumInput = rosettaFunctionExtensions.getInputs(function).stream()
                 .filter(input -> input.getTypeCall().getType() instanceof RosettaEnumeration)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Dispatcher " + function.getName() + " must have at least one enumeration input"));
-        
+
         String enumParam = enumInput.getName();
         String arguments = function.getInputs().stream()
                 .map(RosettaNamed::getName)
@@ -313,32 +307,34 @@ public final class PythonFunctionGenerator {
 
         writer.appendLine("match " + enumParam + ":");
         writer.indent();
-        
+
         for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
             String enumValue = EnumHelper.convertValue(spec.getValue().getValue());
-            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + enumValue;
-            writer.appendLine("case " + RuneToPythonMapper.getFullyQualifiedName(spec.getValue().getEnumeration()) + "." + enumValue + ":");
+            String specName = "_" + pythonName + "_" + enumValue;
+            writer.appendLine("case "
+                + RuneToPythonMapper.getFullyQualifiedName(spec.getValue().getEnumeration())
+                + "."
+                + enumValue
+                + ":");
             writer.indent();
             writer.appendLine("return " + specName + "(" + arguments + ")");
             writer.unindent();
         }
-        
+
         writer.appendLine("case _:");
         writer.indent();
         if (isCodeImplementation) {
-            //todo: can a function have a body and be a native function?
              writer.appendLine(generateNativeFunctionCall(function));
-             writer.appendLine("return rune_unwrap(" + function.getOutput().getName() + ")");
+             writer.appendLine("return " + function.getOutput().getName());
         } else {
              writer.appendLine("raise ValueError(f\"Enum value {" + enumParam + "} not implemented for " + function.getName() + "\")");
         }
         writer.unindent();
         writer.unindent();
-        
         return writer.toString();
     }
 
-    private String generateSpecializations(Function function, PythonCodeGeneratorContext context) {
+    private String generateSpecializations(Function function, String pythonName, PythonCodeGeneratorContext context) {
         PythonCodeWriter writer = new PythonCodeWriter();
         List<com.regnosys.rosetta.rosetta.simple.FunctionDispatch> specializations = java.util.stream.StreamSupport
                 .stream(rosettaFunctionExtensions.getDispatchingFunctions(function).spliterator(), false)
@@ -347,7 +343,7 @@ public final class PythonFunctionGenerator {
 
         for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
             String enumValue = EnumHelper.convertValue(spec.getValue().getValue());
-            String specName = "_" + RuneToPythonMapper.getBundleObjectName(function) + "_" + enumValue;
+            String specName = "_" + pythonName + "_" + enumValue;
             writer.appendBlock(generateFunctionBody(spec, specName, context));
         }
         return writer.toString();
@@ -413,7 +409,7 @@ public final class PythonFunctionGenerator {
                 writer.appendLine("");
             }
 
-            writer.appendLine("return rune_unwrap(" + output.getName() + ")");
+            writer.appendLine("return " + output.getName());
             return writer.toString();
         }
         return "";
@@ -496,7 +492,7 @@ public final class PythonFunctionGenerator {
                 functionDependencyProvider.addDependencies(input.getTypeCall().getType(), enumImports);
             }
         });
-        
+
         Attribute output = rosettaFunctionExtensions.getOutput(function);
         if (output != null && output.getTypeCall() != null && output.getTypeCall().getType() instanceof RosettaEnumeration) {
             functionDependencyProvider.addDependencies(output.getTypeCall().getType(), enumImports);
@@ -539,12 +535,12 @@ public final class PythonFunctionGenerator {
         return "";
     }
 
-    private String generateAlias(Function function, 
+    private String generateAlias(Function function,
         PythonExpressionGenerator expressionGenerator) {
         return generateAliasFromShortcuts(getEffectiveShortcuts(function), expressionGenerator);
     }
 
-    private String generateAliasFromShortcuts(List<ShortcutDeclaration> shortcuts, 
+    private String generateAliasFromShortcuts(List<ShortcutDeclaration> shortcuts,
         PythonExpressionGenerator expressionGenerator) {
         PythonCodeWriter writer = new PythonCodeWriter();
         for (ShortcutDeclaration shortcut : shortcuts) {
@@ -573,7 +569,7 @@ public final class PythonFunctionGenerator {
         return shortcuts;
     }
 
-    private String generateOperations(Function function, 
+    private String generateOperations(Function function,
         PythonCodeGeneratorContext context,
         PythonExpressionGenerator expressionGenerator) {
         if (rosettaFunctionExtensions.getOutput(function) != null) {
@@ -581,34 +577,28 @@ public final class PythonFunctionGenerator {
             PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();
 
             // 1. Preamble: Proactive initialization
-            Set<String> preambleCandidates = new HashSet<>();
             Set<String> seenRoots = new HashSet<>();
-            for (Operation operation : function.getOperations()) {
-                String rootName = operation.getAssignRoot().getName();
-                if (!seenRoots.contains(rootName)) {
-                    seenRoots.add(rootName);
-                    // A root is a candidate if it's first touched by an 'add' or a nested path
-                    if (operation.isAdd() || operation.getPath() != null) {
-                        preambleCandidates.add(rootName);
-                    }
-                }
-            }
 
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
                 String rootName = root.getName();
 
-                // 1a. Root initialization
-                if (preambleCandidates.contains(rootName) && !scope.isInitialized(rootName)) {
-                    Attribute attribute = (Attribute) root;
-                    RosettaType type = attribute.getTypeCall().getType();
-                    if (attribute.getCard().isIsMany() || type instanceof RosettaEnumeration) {
-                        writer.appendLine(rootName + " = []");
-                        scope.markInitialized(rootName);
-                    } else if (operation.getPath() != null) {
-                        String bundleName = RuneToPythonMapper.getBundleObjectName(type);
-                        scope.markAsObjectBuilder(rootName);
-                        writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                // 1a. Root initialization on first sight
+                if (!seenRoots.contains(rootName)) {
+                    seenRoots.add(rootName);
+                    // A root is a candidate for initialization if it's first touched by an 'add' or a nested path
+                    if (operation.isAdd() || operation.getPath() != null) {
+                        Attribute attribute = (Attribute) root;
+                        RosettaType type = attribute.getTypeCall().getType();
+                        boolean isEnum = type instanceof RosettaEnumeration;
+                        if (attribute.getCard().isIsMany() || isEnum) {
+                            writer.appendLine(rootName + " = []");
+                            scope.markInitialized(rootName);
+                        } else if (operation.getPath() != null) {
+                            String bundleName = RuneToPythonMapper.getBundleObjectName(type);
+                            scope.markAsObjectBuilder(rootName);
+                            writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                        }
                     }
                 }
 
@@ -679,7 +669,7 @@ public final class PythonFunctionGenerator {
                 writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
             } else {
                 writer.appendLine(
-                        "set_rune_attr(" 
+                        "set_rune_attr("
                         + rootName
                         + ", "
                         + generateAttributesPath(operation.getPath())
