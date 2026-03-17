@@ -6,22 +6,25 @@ This document tracks fixes and improvements made to the Rune Python generator's 
 
 Rosetta allows `extract / filter [ item -> attr ]` and `reduce [ a + b ]` without naming parameters. Previously, the generator expected explicit parameter declarations and would fail or ignore the closure body.
 
-### Changes:
+### Changes
+
 - **`MapOperation` (extract)**: Automatically fallbacks to an implicit `item` parameter if none is provided.
 - **`FilterOperation` (filter)**: Automatically fallbacks to an implicit `item` parameter if none is provided.
-- **`ReduceOperation` (reduce)**: 
-    - **Fallback Naming**: Defaults lambda arguments to `a` (accumulator) and `b` (item) when model parameters are missing.
-    - **Scope Awareness**: Correctly identifies `b` (the item) as the default receiver and shadows the accumulator `a`, preventing `IndexOutOfBoundsException` and ensuring correct name resolution.
+- **`ReduceOperation` (reduce)**:
+  - **Fallback Naming**: Defaults lambda arguments to `a` (accumulator) and `b` (item) when model parameters are missing.
+  - **Scope Awareness**: Correctly identifies `b` (the item) as the default receiver and shadows the accumulator `a`, preventing `IndexOutOfBoundsException` and ensuring correct name resolution.
 - **Receiver Management**: The expression scope now correctly identifies the implicit variable (`item` or user-defined) for all closure-based operations.
 
-### Context:
+### Context
+
 These patterns are extensively used in **Digital Regulatory Reporting (DRR)** projects, where declarative navigation is preferred over explicit parameter naming.
 
 ## 2. Support for [FIXED] Closures in `Max`, `Min`, and `Sort` Operations
 
 Rosetta uses closure blocks with aggregation operations (e.g., `sort [ item -> price -> amount ]`) to define the sorting or selection key.
 
-### Changes:
+### Changes
+
 - **`key=lambda` Generation**: The generator now correctly produces the Python `key=lambda` syntax for these operations.
 - **Implicit Parameters**: Supports implicit `item` naming and receiver scoping for the closure block.
 
@@ -29,31 +32,35 @@ Rosetta uses closure blocks with aggregation operations (e.g., `sort [ item -> p
 
 In Rosetta/Rune DSL, "nothing" (null) values are common when navigation paths evaluate to empty lists. We have implemented full alignment with the Rune specification for collection aggregations and accessors.
 
-### Changes:
-- **Comprehensive Null-Filtering**: All collection operators (`sum`, `max`, `min`, `sort`, `reverse`, `distinct`, `count`, `join`, `only-element`) now automatically filter out `None` values prior to execution.
-    - **`join` Fix**: Resolved a critical defect where `join` produced naive Python code using `.join()`, which would crash on `None` elements. It now correctly filters input using the same robust lambda pattern as other aggregators.
-    - **Deep Extract Verification**: Verified that dot-access navigation (e.g., `a -> b -> c`) correctly projects through lists while filtering `None` values at every step of the nested path.
-- **Uniform Scalar Propagation**:
-    - **Mathematical Aggregators** (`sum`, `count`): Return `0` for All-Null or Empty collections, but propagate `None` if the input collection itself is `None`.
-    - **Selection Aggregators** (`min`, `max`, `first`, `last`, `only-element`): Return `None` (propagating "nothing") for All-Null or Empty collections.
-- **Structural Resilience**:
-    - **Collection Result Operators** (`flatten`, `distinct`, `sort`, `filter`): Return an empty list `[]` for All-Null or Empty input collections.
-    - **`flatten` Utility**: Optimized to handle nested iterables (including `COWList`) while filtering nulls at every level of the hierarchy.
+### Changes
 
-### Context:
+- **Comprehensive Null-Filtering**: All collection operators (`sum`, `max`, `min`, `sort`, `reverse`, `distinct`, `count`, `join`, `only-element`) now automatically filter out `None` values prior to execution.
+  - **`join` Fix**: Resolved a critical defect where `join` produced naive Python code using `.join()`, which would crash on `None` elements. It now correctly filters input using the same robust lambda pattern as other aggregators.
+  - **Deep Extract Verification**: Verified that dot-access navigation (e.g., `a -> b -> c`) correctly projects through lists while filtering `None` values at every step of the nested path.
+- **Uniform Scalar Propagation**:
+  - **Mathematical Aggregators** (`sum`, `count`): Return `0` for All-Null or Empty collections, but propagate `None` if the input collection itself is `None`.
+  - **Selection Aggregators** (`min`, `max`, `first`, `last`, `only-element`): Return `None` (propagating "nothing") for All-Null or Empty collections.
+- **Structural Resilience**:
+  - **Collection Result Operators** (`flatten`, `distinct`, `sort`, `filter`): Return an empty list `[]` for All-Null or Empty input collections.
+  - **`flatten` Utility**: Optimized to handle nested iterables (including `COWList`) while filtering nulls at every level of the hierarchy.
+
+### Context
+
 These changes ensure the generated code strictly follows the [Rune Modeling Components](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md) specification regarding null behavior and "nothing" propagation.
 
 ## 4. Support for [FIXED] General `one-of` Expressions
 
 The `one-of` operator can be used in Rosetta as a standalone boolean expression (outside of type/data conditions) to verify that exactly one attribute of a complex object is set.
 
-### Changes:
+### Changes
+
 - **Standalone Support**: The generator now treats `one-of` as a first-class expression in functions and shortcuts.
 - **Dynamic Attribute Detection**: Utilizing `RosettaTypeProvider`, the generator resolves the argument's type at generation time and extracts all its attributes.
 - **Runtime Validation**: Generates calls to `rune_check_one_of(arg, [...attributes])`, ensuring precise validation against the model's schema.
 - **Choice Type Support**: Correctly handles `Choice` types by leveraging the `asRDataType()` view to identify all available options.
 
-### Context:
+### Context
+
 This closes a gap between the CDM (Common Domain Model) usage and generator support, where `one-of` was previously only supported within data-level constraints.
 
 ## 5. Improved Generator Architecture (Safety)
