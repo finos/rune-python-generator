@@ -53,7 +53,6 @@ public class PythonCircularDependencyTest {
                             result = ObjectBuilder(rosetta_dsl_test_semantic_object_construction_C)
                             result.p1 = 1
                             result.p2 = 2
-                            result = result.to_model()
 
 
                             return result

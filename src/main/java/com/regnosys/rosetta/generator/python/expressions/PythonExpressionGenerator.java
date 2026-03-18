@@ -67,6 +67,7 @@ import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
+import com.regnosys.rosetta.types.CardinalityProvider;
 import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.RMetaAnnotatedType;
@@ -100,6 +101,12 @@ public final class PythonExpressionGenerator {
      */
     @Inject
     private RosettaTypeProvider typeProvider;
+
+    /**
+     * The cardinality provider.
+     */
+    @Inject
+    private CardinalityProvider cardinalityProvider;
 
     /**
      * The counter for generated helper functions.
@@ -159,7 +166,11 @@ public final class PythonExpressionGenerator {
                 return "\"" + s.getValue() + "\"";
             }
             case AsKeyOperation asKey -> {
-                return "{" + generateExpression(asKey.getArgument(), scope) + ": True}";
+                String arg = generateExpression(asKey.getArgument(), scope);
+                if (cardinalityProvider.isMulti(asKey.getArgument())) {
+                    return "[Reference(x) for x in (" + arg + " or []) if x is not None]";
+                }
+                return "Reference(" + arg + ")";
             }
             case DistinctOperation distinct -> {
                 return generateDistinctOperation(distinct, scope);

@@ -623,6 +623,7 @@ public final class PythonFunctionGenerator {
                 if (!seenRoots.contains(rootName)) {
                     seenRoots.add(rootName);
                     // A root is a candidate for initialization if it's first touched by an 'add' or a nested path
+                    // A root is a candidate for initialization if it's first touched by an 'add' or a nested path
                     if (operation.isAdd() || operation.getPath() != null) {
                         Attribute attribute = (Attribute) root;
                         RosettaType type = attribute.getTypeCall().getType();
@@ -664,9 +665,6 @@ public final class PythonFunctionGenerator {
             if (scope.hasObjectBuilders()) {
                 context.addAdditionalImport("from rune.runtime.object_builder import ObjectBuilder");
             }
-            for (String setName : scope.getObjectBuilderNames()) {
-                writer.appendLine(setName + " = " + setName + ".to_model()");
-            }
             return writer.toString();
         }
         return "";
@@ -696,7 +694,7 @@ public final class PythonFunctionGenerator {
                 writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
             } else {
                 writer.appendLine(
-                        "set_rune_attr("
+                        rootName + " = set_rune_attr("
                         + rootName
                         + ", "
                         + generateAttributesPath(operation.getPath())
@@ -906,14 +904,5 @@ public final class PythonFunctionGenerator {
         public boolean hasObjectBuilders() {
             return !objectBuilderNames.isEmpty();
         }
-
-
-        /**
-         * @return the set of names that are ObjectBuilders
-         */
-        public Set<String> getObjectBuilderNames() {
-            return objectBuilderNames;
-        }
     }
-
 }

@@ -115,6 +115,5 @@ public class PythonFunctionAliasTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = ObjectBuilder(com_rosetta_test_model_C)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "c.valueC = (rune_resolve_attr(self, \"Alias1\") * rune_resolve_attr(self, \"Alias2\"))");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = c.to_model()");
     }
 }

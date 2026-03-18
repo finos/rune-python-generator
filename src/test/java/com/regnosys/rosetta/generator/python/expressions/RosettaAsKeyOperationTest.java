@@ -41,7 +41,6 @@ public class RosettaAsKeyOperationTest {
         String generatedPython = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "bar = ObjectBuilder(com_rosetta_test_model_Bar)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "bar.field = {rune_resolve_attr(self, \"val\"): True}");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "bar = bar.to_model()");
+                "bar.field = Reference(rune_resolve_attr(self, \"val\"))");
     }
 }

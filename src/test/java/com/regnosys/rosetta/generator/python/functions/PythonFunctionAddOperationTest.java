@@ -166,7 +166,6 @@ public class PythonFunctionAddOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = ObjectBuilder(com_rosetta_test_model_IntHolder)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result.items = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result.items, [1, 2, 3])");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = result.to_model()");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");
     }
 

@@ -80,18 +80,18 @@ public class PythonFunctionTypeTest {
     public void testGeneratedFunctionTypeAsOutput() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        type AOutput : <\"AOutput type\">
-                            a number (1..1)
+                type AOutput : <\"AOutput type\">
+                    a number (1..1)
 
-                        func TestAbsOutputType: <\"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.\">
-                            inputs:
-                                arg number (1..1)
-                            output:
-                                result AOutput (1..1)
-                            set result: AOutput {
-                                a: if arg < 0 then arg * -1 else arg
-                            }
-                        """);
+                func TestAbsOutputType: <\"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.\">
+                    inputs:
+                        arg number (1..1)
+                    output:
+                        result AOutput (1..1)
+                    set result: AOutput {
+                        a: if arg < 0 then arg * -1 else arg
+                    }
+                """);
 
         String expectedBundle = """
                 @replaceable
@@ -135,12 +135,12 @@ public class PythonFunctionTypeTest {
     public void testNumericPrecisionWithDecimals() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        func TestPrecision:
-                            output:
-                                result number (1..1)
-                            set result:
-                                0.1 + 0.2
-                        """);
+                func TestPrecision:
+                    output:
+                        result number (1..1)
+                    set result:
+                        0.1 + 0.2
+                """);
         String generatedPython = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "def com_rosetta_test_model_TestPrecision() -> Decimal:");
@@ -155,36 +155,36 @@ public class PythonFunctionTypeTest {
     public void testGenerateFunctionWithEnum() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        enum ArithmeticOperationEnum: <"An arithmetic operator that can be passed to a function">
-                            Add <"Addition">
-                            Subtract <"Subtraction">
-                            Multiply <"Multiplication">
-                            Divide <"Division">
-                            Max <"Max of 2 values">
-                            Min <"Min of 2 values">
+                enum ArithmeticOperationEnum: <"An arithmetic operator that can be passed to a function">
+                    Add <"Addition">
+                    Subtract <"Subtraction">
+                    Multiply <"Multiplication">
+                    Divide <"Division">
+                    Max <"Max of 2 values">
+                    Min <"Min of 2 values">
 
-                        func ArithmeticOperation:
-                            inputs:
-                                n1 number (1..1)
-                                op ArithmeticOperationEnum (1..1)
-                                n2 number (1..1)
-                            output:
-                                result number (1..1)
+                func ArithmeticOperation:
+                    inputs:
+                        n1 number (1..1)
+                        op ArithmeticOperationEnum (1..1)
+                        n2 number (1..1)
+                    output:
+                        result number (1..1)
 
-                            set result:
-                                if op = ArithmeticOperationEnum -> Add then
-                                    n1 + n2
-                                else if op = ArithmeticOperationEnum -> Subtract then
-                                    n1 - n2
-                                else if op = ArithmeticOperationEnum -> Multiply then
-                                    n1 * n2
-                                else if op = ArithmeticOperationEnum -> Divide then
-                                    n1 / n2
-                                else if op = ArithmeticOperationEnum -> Max then
-                                    [n1, n2] max
-                                else if op = ArithmeticOperationEnum -> Min then
-                                    [n1, n2] min
-                        """);
+                    set result:
+                        if op = ArithmeticOperationEnum -> Add then
+                            n1 + n2
+                        else if op = ArithmeticOperationEnum -> Subtract then
+                            n1 - n2
+                        else if op = ArithmeticOperationEnum -> Multiply then
+                            n1 * n2
+                        else if op = ArithmeticOperationEnum -> Divide then
+                            n1 / n2
+                        else if op = ArithmeticOperationEnum -> Max then
+                            [n1, n2] max
+                        else if op = ArithmeticOperationEnum -> Min then
+                            [n1, n2] min
+                """);
         String expectedBundle = """
                 @replaceable
                 @validate_call
@@ -351,7 +351,6 @@ public class PythonFunctionTypeTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers = ObjectBuilder(com_rosetta_test_model_ObservationIdentifier)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers.rateOption = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, \"payout\"), \"rateSpecification\"), \"floatingRate\"), \"rateOption\")");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers.observationDate = rune_resolve_attr(self, \"date\")");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers = identifiers.to_model()");
     }
     /**
      * Test case for 'as-key' syntax.
@@ -375,7 +374,47 @@ public class PythonFunctionTypeTest {
                         h House (1..1)
                     set h -> owner: p as-key
                 """);
+        String expectedBundle = """
+                    self = inspect.currentframe()
 
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "SHOULD_FAIL");
+                    p = rune_cow(p)
+
+
+                    h = ObjectBuilder(com_rosetta_test_model_House)
+                    h.owner = Reference(rune_resolve_attr(self, "p"))
+
+
+                    return h
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+    }
+
+    @Test
+    public void testAsKeyMulti() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                type Person:
+                    [metadata key]
+                    name string (1..1)
+
+                type House:
+                    owners Person (1..*)
+                        [metadata reference]
+
+                func TestAsKeyMulti:
+                    inputs:
+                        ps Person (0..*)
+                    output:
+                        h House (1..1)
+                    set h -> owners: ps as-key
+                """);
+        String expectedBundle = """
+                    h = ObjectBuilder(com_rosetta_test_model_House)
+                    h.owners = [Reference(x) for x in (rune_resolve_attr(self, "ps") or []) if x is not None]
+
+
+                    return h
+                """;
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 }
