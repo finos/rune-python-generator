@@ -1,0 +1,32 @@
+namespace fpml.consolidated.clearing.processes : < "fpml definition" >
+version "${project.version}"
+
+type RequestClearingEligibility extends fpml.consolidated.msg.CorrectableRequestMessage:
+    [rootType]
+
+    requestingPartyReference fpml.consolidated.shared.PartyReference (0..1)
+    tradingEventsModel fpml.consolidated.business.events.TradingEventsModel (0..1)
+    deClear fpml.consolidated.business.events.DeClear (0..1) <"A structure describing a declear event. The deClear event allows a firm to request that a trade be removed from clearing, or a clearing service to request consent for this, or to report that it has been done.">
+    partiesAndAccountsModel fpml.consolidated.shared.PartiesAndAccountsModel (1..1)
+
+type ClearingEligibility extends fpml.consolidated.msg.ResponseMessage:
+    [rootType]
+
+    tradingEventsModel fpml.consolidated.business.events.TradingEventsModel (0..1)
+    deClear fpml.consolidated.business.events.DeClear (0..1) <"A structure describing a declear event. The deClear event allows a firm to request that a trade be removed from clearing, or a clearing service to request consent for this, or to report that it has been done.">
+    partyTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..1)
+    eligibleForClearing boolean (1..1)
+    clearingRequirements ClearingRequirements (0..*)
+    partiesAndAccountsModel fpml.consolidated.shared.PartiesAndAccountsModel (1..1)
+
+type ClearingEligibilityException extends fpml.consolidated.msg.Exception:
+    [rootType]
+
+type ClearingEligibilityAcknowledgement extends fpml.consolidated.msg.Acknowledgement:
+    [rootType]
+
+type ClearingRequirements:
+
+    supervisoryBody fpml.consolidated.shared.SupervisoryBody (1..1) <"The regulator or other supervisory body to which the clearing requirements apply.">
+    mandatorilyClearable boolean (1..1) <"Whether the particular trade type in question is required by this regulator to be cleared.">
+    reason fpml.consolidated.doc.Reason (0..*) <"Indicates a reason supporting why the trade is mandatorily clearable or not.">

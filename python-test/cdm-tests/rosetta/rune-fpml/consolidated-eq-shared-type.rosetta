@@ -1,0 +1,504 @@
+namespace fpml.consolidated.eq.shared : < "fpml definition" >
+version "${project.version}"
+
+type InterestLeg extends fpml.consolidated.shared.DirectionalLeg: <"The fixed income amounts of the return type swap. A type describing the fixed income leg of the equity swap.">
+
+    interestLegCalculationPeriodDates InterestLegCalculationPeriodDates (0..1) <"Component that holds the various dates used to specify the interest leg of the equity swap. It is used to define the InterestPeriodDates identifyer.">
+    notional ReturnSwapNotional (0..1) <"Specifies the notional of a return type swap. When used in the equity leg, the definition will typically combine the actual amount (using the notional component defined by the FpML industry group) and the determination method. When used in the interest leg, the definition will typically point to the definition of the equity leg.">
+    interestAmount LegAmount (0..1) <"Specifies, in relation to each Interest Payment Date, the amount to which the Interest Payment Date relates. Unless otherwise specified, this term has the meaning defined in the ISDA 2000 ISDA Definitions.">
+    interestCalculation InterestCalculation (1..1) <"Specifies the calculation method of the interest rate leg of the equity swap. Includes the floating or fixed rate calculation definitions, along with the determination of the day count fraction.">
+    stubCalculationPeriod StubCalculationPeriod (0..1) <"Specifies the stub calculation period.">
+
+type ReturnLeg extends ReturnSwapLegUnderlyer: <"Return amounts of the return type swap. A type describing the return leg of a return type swap.">
+
+    rateOfReturn ReturnLegValuation (1..1) <"Specifies the terms of the initial price of the return type swap and of the subsequent valuations of the underlyer.">
+    notional ReturnSwapNotional (0..1) <"Specifies the notional of a return type swap. When used in the equity leg, the definition will typically combine the actual amount (using the notional component defined by the FpML industry group) and the determination method. When used in the interest leg, the definition will typically point to the definition of the equity leg.">
+    amount ReturnSwapAmount (1..1) <"Specifies, in relation to each Payment Date, the amount to which the Payment Date relates. For return swaps this element is equivalent to the Equity Amount term as defined in the ISDA 2002 Equity Derivatives Definitions.">
+    return Return (0..1) <"Specifies the conditions under which dividend affecting the underlyer will be paid to the receiver of the amounts.">
+    notionalAdjustments fpml.consolidated.fpmlenum.NotionalAdjustmentEnum (0..1) <"Specifies the conditions that govern the adjustment to the number of units of the return swap.">
+    fxFeature fpml.consolidated.option.shared.FxFeature (0..1) <"A quanto or composite FX feature.">
+    averagingDates fpml.consolidated.option.shared.AveragingPeriod (0..1) <"Averaging Dates used in the swap.">
+
+type ReturnSwap extends ReturnSwapBase: <"Specifies the structure of a return type swap. It can represent return swaps, total return swaps, variance swaps. A type describing return swaps including return swaps (long form), total return swaps, and variance swaps.">
+
+    earlyTermination ReturnSwapEarlyTermination (0..*) <"Specifies, for one or for both the parties to the trade, the date from which it can early terminate it.">
+    extraordinaryEvents ExtraordinaryEvents (0..1) <"Where the underlying is shares, specifies events affecting the issuer of those shares that may require the terms of the transaction to be adjusted.">
+
+type AdditionalDisruptionEvents: <"A type for defining ISDA 2002 Equity Derivative Additional Disruption Events.">
+
+    changeInLaw boolean (0..1) <"If true, then change in law is applicable.">
+    failureToDeliver boolean (0..1) <"Where the underlying is shares and the transaction is physically settled, then, if true, a failure to deliver the shares on the settlement date will not be an event of default for the purposes of the master agreement.">
+    insolvencyFiling boolean (0..1) <"If true, then insolvency filing is applicable.">
+    hedgingDisruption boolean (0..1) <"If true, then hedging disruption is applicable.">
+    stockLoanModel fpml.consolidated.shared.StockLoanModel (1..1)
+    increasedCostOfHedging boolean (0..1) <"If true, then increased cost of hedging is applicable.">
+    determiningPartyReference fpml.consolidated.shared.PartyReference (0..1) <"A reference to the party which determines additional disruption events.">
+    foreignOwnershipEvent boolean (0..1) <"If true, then foreign ownership event is applicable.">
+
+type AdditionalPaymentAmount: <"Specifies the amount of the fee along with, when applicable, the formula that supports its determination.">
+
+    paymentAmount fpml.consolidated.shared.NonNegativeMoney (0..1) <"The currency amount of the payment.">
+    formula fpml.consolidated.shared.Formula (0..1) <"Specifies a formula, with its description and components.">
+
+type AdjustableDateOrRelativeDateSequence: <"A type describing a date defined as subject to adjustment or defined in reference to another date through one or several date offsets.">
+
+    adjustableDate fpml.consolidated.shared.AdjustableDate (0..1) <"A date that shall be subject to adjustment if it would otherwise fall on a day that is not a business day in the specified business centers, together with the convention for adjusting the date.">
+    relativeDateSequence fpml.consolidated.shared.RelativeDateSequence (0..1) <"A date specified in relation to some other date defined in the document (the anchor date), where there is the opportunity to specify a combination of offset rules. This component will typically be used for defining the valuation date in relation to the payment date, as both the currency and the exchange holiday calendars need to be considered.">
+    id string (0..1)
+
+    condition Choice:
+        required choice adjustableDate, relativeDateSequence
+
+type BoundedCorrelation: <"A type describing correlation bounds, which form a cap and a floor on the realized correlation.">
+
+    minimumBoundaryPercent number (0..1) <"Minimum Boundary as a percentage of the Strike Price.">
+    maximumBoundaryPercent number (0..1) <"Maximum Boundary as a percentage of the Strike Price.">
+
+type BoundedVariance: <"A type describing variance bounds, which are used to exclude money price values outside of the specified range In a Up Conditional Swap Underlyer price must be equal to or higher than Lower Barrier In a Down Conditional Swap Underlyer price must be equal to or lower than Upper Barrier In a Corridor Conditional Swap Underlyer price must be equal to or higher than Lower Barrier and must be equal to or lower than Upper Barrier.">
+
+    realisedVarianceMethod fpml.consolidated.fpmlenum.RealisedVarianceMethodEnum (0..1) <"The contract specifies whether which price must satisfy the boundary condition.">
+    daysInRangeAdjustment boolean (0..1) <"The contract specifies whether the notional should be scaled by the Number of Days in Range divided by the Expected N. The number of Days in Ranges refers to the number of returns that contribute to the realized volatility.">
+    upperBarrier fpml.consolidated.shared.NonNegativeDecimal (0..1) <"All observations above this price level will be excluded from the variance calculation.">
+    lowerBarrier fpml.consolidated.shared.NonNegativeDecimal (0..1) <"All observations below this price level will be excluded from the variance calculation.">
+
+type CalculatedAmount: <"An abstract base class for all calculated money amounts, which are in the currency of the cash multiplier of the calculation.">
+
+    calculationDates fpml.consolidated.shared.AdjustableRelativeOrPeriodicDates (0..1) <"Specifies the date on which a calculation or an observation will be performed for the purpose of calculating the amount.">
+    observationStartDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"The start of the period over which observations are made which are used in the calculation Used when the observation start date differs from the trade date such as for forward starting swaps. Observation Start Date in accordance with the ISDA 2002 Equity Derivatives Definitions. Observation Period Start Date in accordance with the ISDA 2011 Equity Derivatives Definitions.">
+    dividendsModel DividendsModel (1..1)
+
+type CalculationFromObservation: <"Abstract base class for all calculation from observed values.">
+
+    calculationFromObservationChoice CalculationFromObservationChoice (0..1)
+    closingLevel boolean (0..1) <"DEPRECATED. If true this contract will strike off the closing level of the default exchange traded contract.">
+    expiringLevel boolean (0..1) <"DEPRECATED. If true this contract will strike off the expiring level of the default exchange traded contract.">
+    expectedN int(min: 1) (0..1) <"Expected number of trading days.">
+
+    condition Choice:
+        required choice calculationFromObservationChoice, closingLevel , expiringLevel
+
+type CalculationFromObservationChoice:
+
+    calculationFromObservationChoiceSequence CalculationFromObservationChoiceSequence (0..1)
+    initialLevelSource fpml.consolidated.shared.DeterminationMethod (0..1) <"Specifies whether the Initial Index Level determination method should be the Closing Price Level, the Expiring Contract Level, VWAPPrice, TWAPPrice, NAV or Open Price. Note: the AgreedInitialPrice value is not allowed here.">
+
+    condition Choice:
+        one-of
+
+type CalculationFromObservationChoiceSequence:
+
+    initialLevel number (1..1) <"Contract will strike off this initial level. Providing just the initialLevel without initialLevelSource, infers that this is AgreedInitialPrice - a specified Initial Index Level.">
+    initialLevelSource fpml.consolidated.shared.DeterminationMethod (0..1) <"In this context, this is AgreedInitialPrice - a specified Initial Index Level. Note: No other values from the DeterminationMethodScheme should not be provided.">
+
+type Compounding: <"Specifies the compounding method and the compounding rate.">
+
+    compoundingMethod fpml.consolidated.fpmlenum.CompoundingMethodEnum (0..1) <"If more that one calculation period contributes to a single payment amount this element specifies whether compounding is applicable, and if so, what compounding method is to be used. This element must only be included when more that one calculation period contributes to a single payment amount.">
+    compoundingRate CompoundingRate (0..1) <"Defines a compounding rate. The compounding interest can either point back to the interest calculation node on the Interest Leg, or be defined specifically.">
+    compoundingSpread number (0..1) <"Defines the spread to be used for compounding. This field should be used in scenarios where the interest payment is based on a compounding formula that uses a compounding spread in addition to the regular spread.">
+    compoundingDates fpml.consolidated.shared.AdjustableRelativeOrPeriodicDates2 (0..1) <"Defines the compounding dates.">
+
+type CompoundingRate: <"A type defining a compounding rate. The compounding interest can either point back to the floating rate calculation of interest calculation node on the Interest Leg, or be defined specifically.">
+
+    interestLegRate FloatingRateCalculationReference (0..1) <"Reference to the floating rate calculation of interest calculation node on the Interest Leg.">
+    specificRate fpml.consolidated.shared.InterestAccrualsMethod (0..1) <"Defines a specific rate.">
+
+    condition Choice:
+        one-of
+
+type Correlation extends CalculationFromObservation: <"A type describing the correlation amount of a correlation swap.">
+
+    notionalAmount fpml.consolidated.shared.NonNegativeMoney (1..1) <"Notional amount, which is a cash multiplier.">
+    correlationStrikePrice fpml.consolidated.shared.CorrelationValue (1..1) <"Correlation Strike Price.">
+    boundedCorrelation BoundedCorrelation (0..1) <"Bounded Correlation.">
+    numberOfDataSeries int(min: 1) (0..1) <"Number of data series, normal market practice is that correlation data sets are drawn from geographic market areas, such as America, Europe and Asia Pacific, each of these geographic areas will have its own data series to avoid contagion.">
+
+type DirectionalLegUnderlyer extends fpml.consolidated.shared.DirectionalLeg: <"An abstract base class for all directional leg types with effective date, termination date, and underlyer where a payer makes a stream of payments of greater than zero value to a receiver.">
+
+    underlyer fpml.consolidated.asset.Underlyer (1..1) <"Specifies the underlyer of the leg.">
+    optionSettlementModel fpml.consolidated.option.shared.OptionSettlementModel (1..1)
+    fxFeature fpml.consolidated.option.shared.FxFeature (0..1) <"Quanto, Composite, or Cross Currency FX features.">
+
+type DirectionalLegUnderlyerValuation extends DirectionalLegUnderlyer: <"An abstract base class for all directional leg types with effective date, termination date, and underlyer, where a payer makes a stream of payments of greater than zero value to a receiver.">
+
+    valuation EquityValuation (1..1) <"Valuation of the underlyer.">
+
+type DividendAdjustment: <"Container for Dividend Adjustment Periods, which are used to calculate the Deviation between Expected Dividend and Actual Dividend in that Period.">
+
+    dividendPeriod DividendPeriodDividend (0..*) <"A single Dividend Adjustment Period.">
+
+type DividendConditions: <"A type describing the conditions governing the payment of dividends to the receiver of the equity return. With the exception of the dividend payout ratio, which is defined for each of the underlying components.">
+
+    dividendReinvestment boolean (0..1) <"Boolean element that defines whether the dividend will be reinvested or not.">
+    dividendEntitlement fpml.consolidated.fpmlenum.DividendEntitlementEnum (0..1) <"Defines the date on which the receiver on the equity return is entitled to the dividend.">
+    dividendAmount fpml.consolidated.fpmlenum.DividendAmountTypeEnum (0..1)
+    dividendPaymentDate DividendPaymentDate (0..1) <"Specifies when the dividend will be paid to the receiver of the equity return. Has the meaning as defined in the ISDA 2002 Equity Derivatives Definitions. Is not applicable in the case of a dividend reinvestment election.">
+    dividendConditionsSequence DividendConditionsSequence (0..1)
+    dividendPeriod fpml.consolidated.fpmlenum.DividendPeriodEnum (0..1) <"Defines the First Period or the Second Period, as defined in the 2002 ISDA Equity Derivatives Definitions.">
+    extraOrdinaryDividends fpml.consolidated.shared.PartyReference (0..1) <"Reference to the party which determines if dividends are extraordinary in relation to normal levels.">
+    excessDividendAmount fpml.consolidated.fpmlenum.DividendAmountTypeEnum (0..1) <"Determination of Gross Cash Dividend per Share.">
+    currencyAndDeterminationMethodModel CurrencyAndDeterminationMethodModel (0..1)
+    dividendFxTriggerDate DividendPaymentDate (0..1) <"Specifies the date on which the FX rate will be considered in the case of a Composite FX swap.">
+    interestAccrualsMethod fpml.consolidated.shared.InterestAccrualsCompoundingMethod (0..1) <"Defines the way in which interests are accrued: the applicable rate (fixed or floating reference) and the compounding method. FpML entity">
+    numberOfIndexUnits fpml.consolidated.shared.NonNegativeDecimal (0..1) <"Defines the Number Of Index Units applicable to a Dividend.">
+    declaredCashAndCashEquivalentDividendPercentageModel DeclaredCashAndCashEquivalentDividendPercentageModel (1..1)
+    nonCashDividendTreatment fpml.consolidated.fpmlenum.NonCashDividendTreatmentEnum (0..1) <"Defines treatment of Non-Cash Dividends.">
+    dividendComposition fpml.consolidated.fpmlenum.DividendCompositionEnum (0..1) <"Defines how the composition of Dividends is to be determined.">
+    specialDividends boolean (0..1) <"Specifies the method according to which special dividends are determined.">
+
+    condition Choice:
+        optional choice dividendConditionsSequence, dividendPeriod
+
+type DividendConditionsSequence:
+
+    dividendPeriodEffectiveDate fpml.consolidated.shared.DateReference (0..1) <"Dividend period has the meaning as defined in the ISDA 2002 Equity Derivatives Definitions. This element specifies the date on which the dividend period will commence.">
+    dividendPeriodEndDate fpml.consolidated.shared.DateReference (0..1) <"Dividend period has the meaning as defined in the ISDA 2002 Equity Derivatives Definitions. This element specifies the date on which the dividend period will end. It includes a boolean attribute for defining whether this end date is included or excluded from the dividend period.">
+
+type DividendPaymentDate: <"A type describing the date on which the dividend will be paid/received. This type is also used to specify the date on which the FX rate will be determined, when applicable.">
+
+    dividendPaymentDateSequence DividendPaymentDateSequence (0..1)
+    adjustableDate fpml.consolidated.shared.AdjustableDate (0..1) <"A date that shall be subject to adjustment if it would otherwise fall on a day that is not a business day in the specified business centers, together with the convention for adjusting the date.">
+
+    condition Choice:
+        optional choice dividendPaymentDateSequence, adjustableDate
+
+type DividendPaymentDateSequence:
+
+    dividendDateReference fpml.consolidated.fpmlenum.DividendDateReferenceEnum (0..1) <"Specification of the dividend date using an enumeration, with values such as the pay date, the ex date or the record date.">
+    paymentDateOffset fpml.consolidated.shared.Offset (0..1) <"Only to be used when SharePayment has been specified in the dividendDateReference element. The number of Currency Business Days following the day on which the Issuer of the Shares pays the relevant dividend to holders of record of the Shares.">
+
+type DividendPeriod: <"Abstract base class of all time bounded dividend period types.">
+
+    unadjustedStartDate fpml.consolidated.shared.IdentifiedDate (0..1) <"Unadjusted inclusive dividend period start date.">
+    unadjustedEndDate fpml.consolidated.shared.IdentifiedDate (0..1) <"Unadjusted inclusive dividend period end date.">
+    dateAdjustments fpml.consolidated.shared.BusinessDayAdjustments (0..1) <"Date adjustments for all unadjusted dates in this dividend period.">
+    underlyerReference fpml.consolidated.asset.AssetReference (0..1) <"Reference to the underlyer which is paying dividends. This should be used in all cases, and must be used where there are multiple underlying assets, to avoid any ambiguity about which asset the dividend period relates to.">
+    id string (0..1)
+
+type DividendPeriodDividend extends DividendPeriod: <"A time bounded dividend period, with an expected dividend for each period.">
+
+    dividend fpml.consolidated.shared.NonNegativeMoney (0..1) <"Expected dividend in this period.">
+    multiplier fpml.consolidated.shared.PositiveDecimal (0..1) <"Multiplier is a percentage value which is used to produce Deviation by multiplying the difference between Expected Dividend and Actual Dividend Deviation = Multiplier * (Expected Dividend — Actual Dividend).">
+
+type EquityCorporateEvents: <"A type for defining the merger events and their treatment.">
+
+    shareForShare fpml.consolidated.fpmlenum.ShareExtraordinaryEventEnum (0..1) <"The consideration paid for the original shares following the Merger Event consists wholly of new shares.">
+    shareForOther fpml.consolidated.fpmlenum.ShareExtraordinaryEventEnum (0..1) <"The consideration paid for the original shares following the Merger Event consists wholly of cash/securities other than new shares.">
+    shareForCombined fpml.consolidated.fpmlenum.ShareExtraordinaryEventEnum (0..1) <"The consideration paid for the original shares following the Merger Event consists of both cash/securities and new shares.">
+
+type EquityPremium extends fpml.consolidated.shared.PaymentBase: <"A type used to describe the amount paid for an equity option.">
+
+    payerReceiverModel fpml.consolidated.shared.PayerReceiverModel (1..1)
+    premiumType fpml.consolidated.fpmlenum.PremiumTypeEnum (0..1) <"Forward start Premium type">
+    paymentAmount fpml.consolidated.shared.NonNegativeMoney (0..1) <"The currency amount of the payment.">
+    paymentDate fpml.consolidated.shared.AdjustableDate (0..1) <"The payment date. This date is subject to adjustment in accordance with any applicable business day convention.">
+    swapPremium boolean (0..1) <"Specifies whether or not the premium is to be paid in the style of payments under an interest rate swap contract.">
+    pricePerOption fpml.consolidated.shared.NonNegativeMoney (0..1) <"The amount of premium to be paid expressed as a function of the number of options.">
+    percentageOfNotional fpml.consolidated.shared.DecimalFraction (0..1) <"The amount of premium to be paid expressed as a percentage of the notional value of the transaction. A percentage of 5% would be expressed as 0.05.">
+
+type EquityStrike: <"A type for defining the strike price for an equity option. The strike price is either: (i) in respect of an index option transaction, the level of the relevant index specified or otherwise determined in the transaction; or (ii) in respect of a share option transaction, the price per share specified or otherwise determined in the transaction. This can be expressed either as a percentage of notional amount or as an absolute value.">
+
+    strikePrice number (0..1) <"The price or level at which the option has been struck.">
+    equityStrikeSequence EquityStrikeSequence (0..1)
+    currency fpml.consolidated.shared.Currency (0..1) <"The currency in which an amount is denominated.">
+
+    condition Choice:
+        optional choice strikePrice, equityStrikeSequence
+
+type EquityStrikeSequence:
+
+    strikePercentage fpml.consolidated.shared.Percentage (0..1) <"The price or level expressed as a percentage of the forward starting spot price. A value expressed in percentage units i.e. 5 means 5%.">
+    strikeDeterminationDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"The date on which the strike is determined, where this is not the effective date of a forward starting option.">
+
+type EquityValuation: <"A type for defining how and when an equity option is to be valued.">
+
+    valuationDate AdjustableDateOrRelativeDateSequence (0..1) <"The term \"Valuation Date\" is assumed to have the meaning as defined in the ISDA 2002 Equity Derivatives Definitions. Cash Settlement Payment Date in accordance with the ISDA 2002 Equity Derivatives Definitions. SettlementCycle in accordance with the ISDA 2011 Equity Derivatives Definitions.">
+    valuationDates fpml.consolidated.shared.AdjustableRelativeOrPeriodicDates (0..1) <"Specifies the interim equity valuation dates of a swap.">
+    valuationTimeType fpml.consolidated.fpmlenum.TimeTypeEnum (0..1) <"The time of day at which the calculation agent values the underlying, for example the official closing time of the exchange.">
+    valuationTime fpml.consolidated.shared.BusinessCenterTime (0..1) <"The specific time of day at which the calculation agent values the underlying. The SpecificTime is the only case when the valuationTime (time + business center location – e.g. 10:00:00 USNY) should be provided. You should be able to provide just the valuationTime without valuationTimeType, which infer that this is a specific time.">
+    futuresPriceValuation boolean (0..1) <"The official settlement price as announced by the related exchange is applicable, in accordance with the ISDA 2002 definitions.">
+    optionsPriceValuation boolean (0..1) <"The official settlement price as announced by the related exchange is applicable, in accordance with the ISDA 2002 definitions.">
+    numberOfValuationDates int(min: 0) (0..1) <"The number of valuation dates between valuation start date and valuation end date.">
+    dividendValuationDates fpml.consolidated.shared.AdjustableRelativeOrPeriodicDates (0..1) <"Specifies the dividend valuation dates of the swap.">
+    fPVFinalPriceElectionFallback fpml.consolidated.fpmlenum.FPVFinalPriceElectionFallbackEnum (0..1) <"Specifies the fallback provisions for Hedging Party in the determination of the Final Price.">
+    id string (0..1)
+
+    condition Choice0:
+        optional choice valuationDate, valuationDates
+
+    condition Choice1:
+        optional choice futuresPriceValuation, optionsPriceValuation
+
+type ExtraordinaryEvents: <"Where the underlying is shares, defines market events affecting the issuer of those shares that may require the terms of the transaction to be adjusted.">
+
+    mergerEvents EquityCorporateEvents (0..1) <"Occurs when the underlying ceases to exist following a merger between the Issuer and another company.">
+    tenderOffer boolean (0..1) <"DEPRECATED. If present and true, then tender offer is applicable.">
+    tenderOfferEvents EquityCorporateEvents (0..1) <"ISDA 2002 Equity Tender Offer Events.">
+    compositionOfCombinedConsideration boolean (0..1) <"If present and true, then composition of combined consideration is applicable.">
+    indexAdjustmentEvents IndexAdjustmentEvents (0..1) <"ISDA 2002 Equity Index Adjustment Events.">
+    additionalDisruptionEvents AdditionalDisruptionEvents (0..1) <"ISDA 2002 Equity Additional Disruption Events.">
+    failureToDeliver boolean (0..1) <"If true, failure to deliver is applicable.">
+    representations Representations (0..1) <"ISDA 2002 Equity Derivative Representations.">
+    nationalisationOrInsolvency fpml.consolidated.fpmlenum.NationalisationOrInsolvencyOrDelistingEventEnum (0..1) <"The terms \"Nationalisation\" and \"Insolvency\" have the meaning as defined in the ISDA 2002 Equity Derivatives Definitions.">
+    delisting fpml.consolidated.fpmlenum.NationalisationOrInsolvencyOrDelistingEventEnum (0..1) <"The term \"Delisting\" has the meaning defined in the ISDA 2002 Equity Derivatives Definitions.">
+    exchangeIdentifierModel fpml.consolidated.asset.ExchangeIdentifierModel (0..1)
+
+    condition Choice:
+        optional choice additionalDisruptionEvents, failureToDeliver
+
+type FloatingRateCalculationReference extends fpml.consolidated.shared.Reference: <"Reference to a floating rate calculation of interest calculation component.">
+
+    href string (1..1)
+
+type IndexAdjustmentEvents: <"Defines the specification of the consequences of Index Events as defined by the 2002 ISDA Equity Derivatives Definitions.">
+
+    indexModification fpml.consolidated.fpmlenum.IndexEventConsequenceEnum (0..1) <"Consequence of index modification.">
+    indexCancellation fpml.consolidated.fpmlenum.IndexEventConsequenceEnum (0..1) <"Consequence of index cancellation.">
+    indexDisruption fpml.consolidated.fpmlenum.IndexEventConsequenceEnum (0..1) <"Consequence of index disruption.">
+
+type InterestCalculation extends fpml.consolidated.shared.InterestAccrualsMethod: <"Specifies the calculation method of the interest rate leg of the return swap. Includes the floating or fixed rate calculation definitions, along with the determination of the day count fraction.">
+
+    dayCountFraction fpml.consolidated.shared.DayCountFraction (0..1) <"The day count fraction.">
+    compounding Compounding (0..1) <"Defines compounding rates on the Interest Leg.">
+    interestCalculationSequence InterestCalculationSequence (0..1)
+    id string (0..1)
+
+type InterestCalculationSequence:
+
+    interpolationMethod fpml.consolidated.shared.InterpolationMethod (0..1) <"Specifies the type of interpolation used.">
+    interpolationPeriod fpml.consolidated.fpmlenum.InterpolationPeriodEnum (0..1) <"Defines applicable periods for interpolation.">
+
+type InterestLegCalculationPeriodDates: <"Component that holds the various dates used to specify the interest leg of the return swap. It is used to define the InterestPeriodDates identifyer.">
+
+    effectiveDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Specifies the effective date of the return swap. This global element is valid within the return swaps namespace. Within the FpML namespace, another effectiveDate global element has been defined, that is different in the sense that it does not propose the choice of refering to another date in the document.">
+    terminationDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Specifies the termination date of the return swap. This global element is valid within the return swaps namespace. Within the FpML namespace, another terminationDate global element has been defined, that is different in the sense that it does not propose the choice of refering to another date in the document.">
+    interestLegResetDates InterestLegResetDates (0..1) <"Specifies the reset dates of the interest leg of the swap.">
+    interestLegPaymentDates fpml.consolidated.shared.AdjustableRelativeOrPeriodicDates2 (0..1) <"Specifies the payment dates of the interest leg of the swap. When defined in relation to a date specified somewhere else in the document (through the relativeDates component), this element will typically point to the payment dates of the equity leg of the swap.">
+    id string (1..1)
+
+type InterestLegCalculationPeriodDatesReference extends fpml.consolidated.shared.Reference: <"Reference to the calculation period dates of the interest leg.">
+
+    href string (1..1)
+
+type InterestLegResetDates:
+
+    calculationPeriodDatesReference InterestLegCalculationPeriodDatesReference (0..1) <"A pointer style reference to the associated calculation period dates component defined elsewhere in the document.">
+    resetRelativeTo fpml.consolidated.fpmlenum.ResetRelativeToEnum (0..1) <"Specifies whether the reset dates are determined with respect to each adjusted calculation period start date or adjusted calculation period end date. If the reset frequency is specified as daily this element must not be included.">
+    resetFrequency fpml.consolidated.shared.ResetFrequency (0..1) <"The frequency at which reset dates occur. In the case of a weekly reset frequency, also specifies the day of the week that the reset occurs. If the reset frequency is greater than the calculation period frequency then this implies that more than one reset date is established for each calculation period and some form of rate averaging is applicable.">
+    initialFixingDate fpml.consolidated.shared.RelativeDateOffset (0..1) <"Initial fixing date expressed as an offset to another date defined elsewhere in the document.">
+    fixingDates fpml.consolidated.shared.AdjustableDatesOrRelativeDateOffset (0..1) <"Specifies the fixing date relative to the reset date in terms of a business days offset, or by providing a series of adjustable dates.">
+
+    condition Choice:
+        optional choice resetRelativeTo, resetFrequency
+
+type LegAmount: <"A type describing the amount that will paid or received on each of the payment dates. This type is used to define both the Equity Amount and the Interest Amount.">
+
+    currencyAndDeterminationMethodModel CurrencyAndDeterminationMethodModel (0..1)
+    referenceAmount fpml.consolidated.shared.ReferenceAmount (0..1) <"Specifies the reference Amount when this term either corresponds to the standard ISDA Definition (either the 2002 Equity Definition for the Equity Amount, or the 2000 Definition for the Interest Amount), or points to a term defined elsewhere in the swap document.">
+    formula fpml.consolidated.shared.Formula (0..1) <"Specifies a formula, with its description and components.">
+    encodedDescription string (0..1) <"Description of the leg amount when represented through an encoded image.">
+    calculationDates fpml.consolidated.shared.AdjustableRelativeOrPeriodicDates (0..1) <"Specifies the date on which a calculation or an observation will be performed for the purpose of defining the Equity Amount, and in accordance to the definition terms of this latter.">
+
+    condition Choice:
+        optional choice referenceAmount, formula , encodedDescription
+
+type MakeWholeProvisions: <"A type to hold early exercise provisions.">
+
+    makeWholeDate zonedDateTime (0..1) <"Date through which option can not be exercised without penalty.">
+    recallSpread number (0..1) <"Spread used if exercised before make whole date. Early termination penalty. Expressed in bp, e.g. 25 bp.">
+
+type NettedSwapBase extends fpml.consolidated.shared.Product: <"An abstract base class for all swap types which have a single netted leg, such as Variance Swaps, and Correlation Swaps.">
+
+    additionalPayment fpml.consolidated.option.shared.ClassifiablePayment (0..*) <"Specifies additional payment(s) between the principal parties to the netted swap.">
+    extraordinaryEvents ExtraordinaryEvents (0..1) <"Where the underlying is shares, specifies events affecting the issuer of those shares that may require the terms of the transaction to be adjusted.">
+
+type OptionFeatures: <"A type for defining option features.">
+
+    asian fpml.consolidated.option.shared.Asian (0..1) <"An option where and average price is taken on valuation.">
+    barrier fpml.consolidated.option.shared.Barrier (0..1) <"An option with a barrier feature.">
+    knock fpml.consolidated.option.shared.Knock (0..1) <"A knock feature.">
+    passThrough fpml.consolidated.option.shared.PassThrough (0..1) <"Pass through payments from the underlyer, such as dividends.">
+    dividendAdjustment DividendAdjustment (0..1) <"Dividend adjustment of the contract is driven by the difference between the Expected Dividend, and the Actual Dividend, which is multiplied by an agreed Factor to produce a Deviation, which is used as the basis for adjusting the contract. The parties acknowledge that in determining the Call Strike Price of the Transaction the parties have assumed that the Dividend scheduled to be paid by the Issuer to holders of record of the Shares, in the period set out in Column headed Relevant Period will equal per Share the amount stated in respect of such Relevant Period.">
+
+type PrincipalExchangeAmount: <"Specifies the principal exchange amount, either by explicitly defining it, or by point to an amount defined somewhere else in the swap document.">
+
+    amountRelativeTo fpml.consolidated.shared.AmountReference (0..1) <"Reference to an amount defined elsewhere in the document.">
+    determinationMethod fpml.consolidated.shared.DeterminationMethod (0..1) <"Specifies the method according to which an amount or a date is determined.">
+    principalAmount fpml.consolidated.shared.NonNegativeMoney (0..1) <"Principal exchange amount when explictly stated.">
+
+    condition Choice:
+        one-of
+
+type PrincipalExchangeDescriptions: <"Specifies each of the characteristics of the principal exchange cashflows, in terms of paying/receiving counterparties, amounts and dates.">
+
+    payerReceiverModel fpml.consolidated.shared.PayerReceiverModel (1..1)
+    principalExchangeAmount PrincipalExchangeAmount (0..1) <"Specifies the principal echange amount, either by explicitly defining it, or by point to an amount defined somewhere else in the swap document.">
+    principalExchangeDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Date on which each of the principal exchanges will take place. This date is either explictly stated, or is defined by reference to another date in the swap document. In this latter case, it will typically refer to one other date of the equity leg: either the effective date (initial exchange), or the last payment date (final exchange).">
+
+type PrincipalExchangeFeatures: <"A type describing the principal exchange features of the return swap.">
+
+    principalExchanges fpml.consolidated.shared.PrincipalExchanges (0..1) <"The true/false flags indicating whether initial, intermediate or final exchanges of principal should occur.">
+    principalExchangeDescriptions PrincipalExchangeDescriptions (0..*) <"Specifies each of the characteristics of the principal exchange cashflows, in terms of paying/receiving counterparties, amounts and dates.">
+
+type Representations: <"A type for defining ISDA 2002 Equity Derivative Representations.">
+
+    nonReliance boolean (0..1) <"If true, then non reliance is applicable.">
+    agreementsRegardingHedging boolean (0..1) <"If true, then agreements regarding hedging are applicable.">
+    indexDisclaimer boolean (0..1) <"If present and true, then index disclaimer is applicable.">
+    additionalAcknowledgements boolean (0..1) <"If true, then additional acknowledgements are applicable.">
+
+type Return: <"A type describing the dividend return conditions applicable to the swap.">
+
+    returnType fpml.consolidated.fpmlenum.ReturnTypeEnum (1..1) <"Defines the type of return associated with the return swap.">
+    dividendConditions DividendConditions (0..1) <"Specifies the conditions governing the payment of the dividends to the receiver of the equity return. With the exception of the dividend payout ratio, which is defined for each of the underlying components.">
+
+type ReturnLegValuation: <"A type describing the initial and final valuation of the underlyer.">
+
+    initialPrice ReturnLegValuationPrice (0..1) <"Specifies the initial reference price of the underlyer. This price can be expressed either as an actual amount/currency, as a determination method, or by reference to another value specified in the swap document.">
+    notionalReset boolean (0..1) <"For return swaps, this element is equivalent to the term \"Equity Notional Reset\" as defined in the ISDA 2002 Equity Derivatives Definitions. The reference to the ISDA definition is either \"Applicable\" or \'Inapplicable\".">
+    valuationPriceInterim ReturnLegValuationPrice (0..1) <"Specifies the final valuation price of the underlyer. This price can be expressed either as an actual amount/currency, as a determination method, or by reference to another value specified in the swap document.">
+    valuationPriceFinal ReturnLegValuationPrice (0..1) <"Specifies the final valuation price of the underlyer. This price can be expressed either as an actual amount/currency, as a determination method, or by reference to another value specified in the swap document.">
+    paymentDates ReturnSwapPaymentDates (0..1) <"Specifies the payment dates of the swap.">
+    exchangeTradedContractNearest fpml.consolidated.asset.ExchangeTradedContract (0..1) <"References a Contract on the Exchange.">
+
+type ReturnLegValuationPrice extends fpml.consolidated.asset.Price:
+
+    valuationRules EquityValuation (0..1) <"Specifies valuation.">
+
+type ReturnSwapAdditionalPayment extends fpml.consolidated.shared.PaymentBase: <"A type describing the additional payment(s) between the principal parties to the trade. This component extends some of the features of the additionalPayment component previously developed in FpML. Appropriate discussions will determine whether it would be appropriate to extend the shared component in order to meet the further requirements of equity swaps.">
+
+    payerReceiverModel fpml.consolidated.shared.PayerReceiverModel (1..1)
+    additionalPaymentAmount AdditionalPaymentAmount (0..1) <"Specifies the amount of the fee along with, when applicable, the formula that supports its determination.">
+    additionalPaymentDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Specifies the value date of the fee payment/receipt.">
+    paymentType fpml.consolidated.shared.PaymentType (0..1) <"Classification of the payment.">
+
+type ReturnSwapAmount extends LegAmount: <"Specifies, in relation to each Payment Date, the amount to which the Payment Date relates. For Equity Swaps this element is equivalent to the Equity Amount term as defined in the ISDA 2002 Equity Derivatives Definitions.">
+
+    cashSettlement boolean (0..1) <"If true, then cash settlement is applicable.">
+    dividendsModel DividendsModel (1..1)
+
+type ReturnSwapBase extends fpml.consolidated.shared.Product: <"A type describing the components that are common for return type swaps, including short and long form return swaps representations.">
+
+    buyerSellerModel fpml.consolidated.shared.BuyerSellerModel (0..1)
+    returnSwapLeg fpml.consolidated.shared.DirectionalLeg (1..2)
+    principalExchangeFeatures PrincipalExchangeFeatures (0..1) <"This is used to document a Fully Funded Return Swap.">
+    additionalPayment ReturnSwapAdditionalPayment (0..*) <"Specifies additional payment(s) between the principal parties to the trade.">
+
+type ReturnSwapEarlyTermination: <"A type describing the date from which each of the party may be allowed to terminate the trade.">
+
+    partyReference fpml.consolidated.shared.PartyReference (0..1) <"Reference to a party defined elsewhere in this document which may be allowed to terminate the trade.">
+    startingDate StartingDate (0..1) <"Specifies the date from which the early termination clause can be exercised.">
+
+type ReturnSwapLegUnderlyer extends fpml.consolidated.shared.DirectionalLeg: <"A base class for all return leg types with an underlyer.">
+
+    strikeDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Specifies the strike date of this leg of the swap, used for forward starting swaps. When defined in relation to a date specified somewhere else in the document (through the relativeDate component), this element will typically by relative to the trade date of the swap.">
+    underlyer fpml.consolidated.asset.Underlyer (1..1) <"Specifies the underlying component of the leg, which can be either one or many and consists in either equity, index or convertible bond component, or a combination of these.">
+    optionSettlementModel fpml.consolidated.option.shared.OptionSettlementModel (1..1)
+
+type ReturnSwapNotional: <"Specifies the notional of return type swap. When used in the equity leg, the definition will typically combine the actual amount (using the notional component defined by the FpML industry group) and the determination method. When used in the interest leg, the definition will typically point to the definition of the equity leg.">
+
+    relativeNotionalAmount fpml.consolidated.shared.ReturnSwapNotionalAmountReference (0..1) <"A reference to the return swap notional amount defined elsewhere in this document.">
+    relativeDeterminationMethod fpml.consolidated.shared.DeterminationMethodReference (0..1) <"A reference to the return swap notional determination method defined elsewhere in this document.">
+    determinationMethod fpml.consolidated.shared.DeterminationMethod (0..1) <"Specifies the method according to which an amount or a date is determined.">
+    notionalAmount fpml.consolidated.shared.NotionalAmount (0..1) <"The notional amount.">
+    id string (0..1)
+
+    condition Choice:
+        required choice relativeNotionalAmount, relativeDeterminationMethod , determinationMethod , notionalAmount
+
+type ReturnSwapPaymentDates: <"A type describing the return payment dates of the swap.">
+
+    paymentDatesInterim fpml.consolidated.shared.AdjustableOrRelativeDates (0..1) <"Specifies the interim payment dates of the swap. When defined in relation to a date specified somewhere else in the document (through the relativeDates component), this element will typically refer to the valuation dates and add a lag corresponding to the settlement cycle of the underlyer.">
+    paymentDateFinal fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Specifies the final payment date of the swap. When defined in relation to a date specified somewhere else in the document (through the relativeDate component), this element will typically refer to the final valuation date and add a lag corresponding to the settlement cycle of the underlyer.">
+    id string (0..1)
+
+type StartingDate: <"A type specifying the date from which the early termination clause can be exercised.">
+
+    dateRelativeTo fpml.consolidated.shared.DateReference (0..1) <"Reference to a date defined elswhere in the document.">
+    adjustableDate fpml.consolidated.shared.AdjustableDate (0..1) <"Date from which early termination clause can be exercised.">
+
+    condition Choice:
+        one-of
+
+type StubCalculationPeriod: <"A type describing the Stub Calculation Period.">
+
+    stubCalculationPeriodSequence StubCalculationPeriodSequence (0..1)
+    finalStub fpml.consolidated.shared.Stub (0..1)
+
+type StubCalculationPeriodSequence:
+
+    initialStub fpml.consolidated.shared.Stub (0..1)
+    finalStub fpml.consolidated.shared.Stub (0..1)
+
+type Variance extends CalculationFromObservation: <"A type describing the variance amount of a variance swap.">
+
+    varianceAmount fpml.consolidated.shared.NonNegativeMoney (1..1) <"Variance amount, which is a cash multiplier.">
+    volatilityStrikePrice fpml.consolidated.shared.NonNegativeDecimal (0..1)
+    varianceStrikePrice fpml.consolidated.shared.NonNegativeDecimal (0..1)
+    varianceCap boolean (0..1) <"If present and true, then variance cap is applicable.">
+    unadjustedVarianceCap fpml.consolidated.shared.PositiveDecimal (0..1) <"For use when varianceCap is applicable. Contains the scaling factor of the Variance Cap that can differ on a trade-by-trade basis in the European market. For example, a Variance Cap of 2.5^2 x Variance Strike Price has an unadjustedVarianceCap of 2.5.">
+    boundedVariance BoundedVariance (0..1) <"Conditions which bound variance. The contract specifies one or more boundary levels. These levels are expressed as prices for confirmation purposes Underlyer price must be equal to or higher than Lower Barrier is known as Up Conditional Swap Underlyer price must be equal to or lower than Upper Barrier is known as Down Conditional Swap Underlyer price must be equal to or higher than Lower Barrier and must be equal to or lower than Upper Barrier is known as Barrier Conditional Swap.">
+    exchangeTradedContractNearest fpml.consolidated.asset.ExchangeTradedContract (0..1) <"Specification of the exchange traded contract nearest.">
+    vegaNotionalAmount number (0..1) <"Vega Notional represents the approximate gain/loss at maturity for a 1% difference between RVol (realised vol) and KVol (strike vol). It does not necessarily represent the Vega Risk of the trade.">
+
+    condition Choice:
+        required choice volatilityStrikePrice, varianceStrikePrice
+
+type CurrencyAndDeterminationMethodModel: <"A group containing return swap amount currency definition methods">
+
+    currency fpml.consolidated.shared.IdentifiedCurrency (0..1) <"The currency in which an amount is denominated.">
+    determinationMethod fpml.consolidated.shared.DeterminationMethod (0..1) <"Specifies the method according to which an amount or a date is determined.">
+    currencyReference fpml.consolidated.shared.IdentifiedCurrencyReference (0..1) <"Reference to a currency defined elsewhere in the document">
+
+    condition Choice:
+        one-of
+
+type DeclaredCashAndCashEquivalentDividendPercentageModel:
+
+    declaredCashDividendPercentage fpml.consolidated.shared.Percentage (0..1) <"Declared Cash Dividend Percentage. A value expressed in percentage units i.e. 5 means 5%.">
+    declaredCashEquivalentDividendPercentage fpml.consolidated.shared.Percentage (0..1) <"Declared Cash Equivalent Dividend Percentage. A value expressed in percentage units i.e. 5 means 5%.">
+
+type DividendsModel: <"A group containing Dividend content">
+
+    optionsExchangeDividends boolean (0..1) <"If present and true, then options exchange dividends are applicable.">
+    additionalDividends boolean (0..1) <"If present and true, then additional dividends are applicable.">
+    allDividends boolean (0..1) <"Represents the European Master Confirmation value of \'All Dividends\' which, when applicable, signifies that, for a given Ex-Date, the daily observed Share Price for that day is adjusted (reduced) by the cash dividend and/or the cash value of any non cash dividend per Share (including Extraordinary Dividends) declared by the Issuer. All Dividends in accordance with the ISDA 2002 Equity Derivatives Definitions.">
+
+type EquityUnderlyerProvisionsModel: <"A group containing Equity Underlyer provisions.">
+
+    indexAnnexFallbackModel IndexAnnexFallbackModel (0..1)
+    localJurisdiction fpml.consolidated.shared.CountryCode (0..1) <"Local Jurisdiction is a term used in the AEJ Master Confirmation, which is used to determine local taxes, which shall mean taxes, duties, and similar charges imposed by the taxing authority of the Local Jurisdiction If this element is not present Local Jurisdiction is Not Applicable.">
+    relevantJurisdiction fpml.consolidated.shared.CountryCode (0..1) <"Relevent Jurisdiction is a term used in the AEJ Master Confirmation, which is used to determine local taxes, which shall mean taxes, duties and similar charges that would be imposed by the taxing authority of the Country of Underlyer on a Hypothetical Broker Dealer assuming the Applicable Hedge Positions are held by its office in the Relevant Jurisdiction. If this element is not present Relevant Jurisdiction is Not Applicable.">
+
+type FeatureModel: <"A group containing Swap and Derivative features.">
+
+    feature OptionFeatures (0..1) <"Asian, Barrier, Knock and Pass Through features.">
+    fxFeature fpml.consolidated.option.shared.FxFeature (0..1) <"Quanto, Composite, or Cross Currency FX features.">
+
+type IndexAnnexFallbackModel:
+
+    multipleExchangeIndexAnnexFallback boolean (0..1) <"For an index option transaction, a flag to indicate whether a relevant Multiple Exchange Index Annex is applicable to the transaction. This annex defines additional provisions which are applicable where an index is comprised of component securities that are traded on multiple exchanges.">
+    componentSecurityIndexAnnexFallback boolean (0..1) <"For an index option transaction, a flag to indicate whether a relevant Component Security Index Annex is applicable to the transaction.">
+
+    condition Choice:
+        one-of
+
+type MutualOrOptionalEarlyTerminationModel:
+
+    mutualEarlyTermination boolean (0..1) <"Used for specifying whether the Mutual Early Termination Right that is detailed in the Master Confirmation will apply.">
+    mutualOrOptionalEarlyTerminationModelSequence MutualOrOptionalEarlyTerminationModelSequence (0..1)
+
+    condition Choice:
+        one-of
+
+type MutualOrOptionalEarlyTerminationModelSequence:
+
+    optionalEarlyTermination boolean (0..1) <"A Boolean element used for specifying whether the Optional Early Termination clause detailed in the agreement will apply.">
+    optionalEarlyTerminationDate fpml.consolidated.fpmlenum.EarlyTerminationDateEnum (0..1) <"Optional Early Termination Date">
+    optionalEarlyTerminationElectingPartyReference fpml.consolidated.shared.PartyReference (0..1) <"Optional Early Termination Electing Party Reference">
+    breakFundingRecovery boolean (0..1) <"A Boolean element used for specifying whether the Break Funding Recovery detailed in the agreement will apply.">
+    mutualOrOptionalEarlyTerminationModelSequenceSequence MutualOrOptionalEarlyTerminationModelSequenceSequence (0..1)
+
+type MutualOrOptionalEarlyTerminationModelSequenceSequence:
+
+    breakFeeElection fpml.consolidated.fpmlenum.FeeElectionEnum (0..1) <"Defines the fee type.">
+    breakFeeRate fpml.consolidated.shared.NonNegativeDecimal (0..1)

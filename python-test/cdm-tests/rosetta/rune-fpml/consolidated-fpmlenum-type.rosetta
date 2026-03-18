@@ -1,0 +1,5 @@
+namespace fpml.consolidated.fpmlenum : < "fpml definition" >
+version "${project.version}"
+
+typeAlias ESMAIndexName: <"ESMA Index Name">
+    string(pattern: "[A-Z][A-Z0-9]{0,24}")

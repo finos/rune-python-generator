@@ -48,6 +48,6 @@ jobs:
 
       - name: Run Python Unit Tests
         run: |
-          test/python_unit_tests/run_python_unit_tests.sh
+          python-test/unit-tests/run_python_unit_tests.sh
 
 

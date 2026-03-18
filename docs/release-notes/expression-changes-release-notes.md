@@ -68,7 +68,7 @@ This closes a gap between the CDM (Common Domain Model) usage and generator supp
 To support the above features (which require services like `RosettaTypeProvider`), the generator's internal structure was refined.
 
 - **Isolated Expression Generators**: `PythonFunctionGenerator` and `PythonModelObjectGenerator` now use a Guice `Provider<PythonExpressionGenerator>`.
-- **State Isolation**: A fresh generator instance is created for every function or class body. This prevents clashing of stateful variables (like `generatedFunctionCounter` and `ifCondBlocks`) that could lead to naming collisions or incorrect logic when processing large models.
+- **State Isolation and Companion Blocks**: A fresh generator instance is created for every function or class body. Furthermore, the expression generator was refactored to return an `ExpressionResult` natively containing its expression and any `companionBlocks` (e.g., `if` conditions). This eliminates the fragile reliance on a shared stateful `ifCondBlocks` list, preventing logic bleeding and incorrect scoping in nested generation steps.
 
 ## 6. Support for `as-key` Syntax
 
@@ -83,3 +83,13 @@ The generator now correctly translates the `as-key` operation in Rosetta to use 
 ### Context
 
 Correct `as-key` translation is essential for maintaining graph structures and referential integrity within Rune models, particularly when defining object properties that point to other existing instances (like `owner` -> `Person`).
+
+## 7. Support for `with-meta` Expressions [FIXED]
+
+The generator now translates the `with-meta` syntax in Rosetta that attaches metadata blocks onto existing objects.
+
+### Changes
+
+- **Metadata Instantiation**: Added support for inline `with-meta ...` creation in Python generation.
+- **`rune_with_meta` utility**: Values are now routed through a new `rune_with_meta` utility function, ensuring that the base value and its metadata map (e.g., `{'@scheme': ...}`) seamlessly combine into the correct meta-wrapper python instances at runtime.
+- **Enum stringification**: When metadata is driven by enumerations, the generator automatically formats and resolves those definitions via `rune_str()`.

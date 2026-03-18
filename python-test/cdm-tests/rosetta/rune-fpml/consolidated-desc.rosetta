@@ -1,0 +1,8 @@
+namespace fpml.consolidated : < "fpml definition" >
+version "${project.version}"
+
+body Source ISDA
+
+corpus Schema "FPML" FPML
+
+segment version

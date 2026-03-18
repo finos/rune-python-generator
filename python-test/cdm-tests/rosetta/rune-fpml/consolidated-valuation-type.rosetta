@@ -1,0 +1,43 @@
+namespace fpml.consolidated.valuation : < "fpml definition" >
+version "${project.version}"
+
+type ValuationSet: <"A set of valuation inputs and results. This structure can be used for requesting valuations, or for reporting them. In general, the request fills in fewer elements.">
+    [rootType]
+
+    name fpml.consolidated.shared.NonEmptyToken (0..1) <"The name of the valuation set, used to understand what it means. E.g., \"EOD Values and Risks for Party A\".">
+    valuationScenario fpml.consolidated.riskdef.ValuationScenario (0..*) <"Valuation scenerios used (requested/reported) in this valuation set. E.g., the EOD valuation scenario for a particular value date. Used for the first occurrence of a valuation scenario in a document.">
+    valuationScenarioReference fpml.consolidated.riskdef.ValuationScenarioReference (0..*) <"References to valuation scenarios used (requested/reported) in this valuation set. E..g, a reference to the EOD valuation scenario for a particular value date. Used for subsequence occurrences of a valuation set in an FpML document.">
+    baseParty fpml.consolidated.shared.PartyReference (0..1) <"Reference to the party from whose point of view the assets are valued.">
+    quotationCharacteristics fpml.consolidated.asset.QuotationCharacteristics (0..*) <"Charactistics (measure types, units, sides, etc.) of the quotes used (requested/reported) in the valuation set.">
+    sensitivitySetDefinition fpml.consolidated.riskdef.SensitivitySetDefinition (0..*) <"Definition(s) of sensitivity sets used (requested or reported) in this valuation set.">
+    detail ValuationSetDetail (0..1) <"Does this valuation set include a market environment?">
+    assetValuation AssetValuation (0..*) <"Valuations reported in this valuation set. These values can be values (NPVs, prices, etc.) or risks (DAR, etc.) and can include sensitivities.">
+    id string (0..1)
+
+type AssetValuation extends fpml.consolidated.riskdef.Valuation: <"A structure that holds a set of measures about an asset, including possibly their sensitivities.">
+
+    quote Quotation (0..*) <"One or more numerical measures relating to the asset, possibly together with sensitivities of that measure to pricing inputs.">
+    fxRate fpml.consolidated.shared.FxRate (0..*) <"Indicates the rate of a currency conversion that may have been used to compute valuations.">
+
+type Quotation: <"Some kind of numerical measure about an asset, eg. its NPV, together with characteristics of that measure, together with optional sensitivities.">
+
+    quotationModel fpml.consolidated.asset.QuotationModel (1..1)
+    sensitivitySet SensitivitySet (0..*) <"Zero or more sets of sensitivities of this measure to various input parameters.">
+
+type Sensitivity: <"The sensitivity of a value to a defined change in input parameters.">
+
+    value number (1..1)
+    name fpml.consolidated.shared.NormalizedString (0..1) <"A optional name for this sensitivity. This is primarily intended for display purposes.">
+    definitionRef string (0..1) <"A optional (but normally supplied) reference to the definition of this sensitivity.">
+
+type SensitivitySet: <"A collection of sensitivities. References a definition that explains the meaning/type of the sensitivities.">
+
+    name fpml.consolidated.shared.NonEmptyToken (0..1)
+    definitionReference fpml.consolidated.riskdef.SensitivitySetDefinitionReference (0..1) <"A reference to a sensitivity set definition.">
+    sensitivity Sensitivity (0..*)
+    id string (0..1)
+
+type ValuationSetDetail: <"The amount of detail provided in the valuation set, e.g. is market environment data provided, are risk definitions provided, etc.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    valuationSetDetailScheme fpml.consolidated.shared.NonEmptyURI (0..1)
