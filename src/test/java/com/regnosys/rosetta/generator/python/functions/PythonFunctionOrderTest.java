@@ -46,15 +46,15 @@ public class PythonFunctionOrderTest {
                             val string (1..1)
                         """);
 
-        String bundle = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
 
         // Check ordering in the bundle.
         // We expect ClassA to be defined before ClassB (because B depends on A)
         // and both to be defined before MyFunc (because MyFunc depends on B and A).
 
-        int classAIndex = bundle.indexOf("class com_rosetta_test_model_ClassA");
-        int classBIndex = bundle.indexOf("class com_rosetta_test_model_ClassB");
-        int funcIndex = bundle.indexOf("def com_rosetta_test_model_MyFunc");
+        int classAIndex = generatedPython.indexOf("class com_rosetta_test_model_ClassA");
+        int classBIndex = generatedPython.indexOf("class com_rosetta_test_model_ClassB");
+        int funcIndex = generatedPython.indexOf("def com_rosetta_test_model_MyFunc");
 
         assertTrue(classAIndex < funcIndex, "ClassA should be defined before MyFunc");
         assertTrue(classBIndex < funcIndex, "ClassB should be defined before MyFunc");
@@ -77,10 +77,10 @@ public class PythonFunctionOrderTest {
                             a ClassA (0..1)
                         """);
 
-        String bundle = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
 
-        int classAIndex = bundle.indexOf("class com_rosetta_test_model_ClassA");
-        int classBIndex = bundle.indexOf("class com_rosetta_test_model_ClassB");
+        int classAIndex = generatedPython.indexOf("class com_rosetta_test_model_ClassA");
+        int classBIndex = generatedPython.indexOf("class com_rosetta_test_model_ClassB");
 
         // Ideally, one should be defined, and the other use a forward reference or
         // string type hint.

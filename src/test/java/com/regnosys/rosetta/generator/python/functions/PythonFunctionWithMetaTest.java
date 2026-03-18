@@ -27,22 +27,22 @@ public class PythonFunctionWithMetaTest {
     public void testFunctionWithMeta() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        namespace com.test
+                namespace com.test
 
-                        type Foo:
-                            [metadata scheme]
-                            val string (1..1)
+                type Foo:
+                    [metadata scheme]
+                    val string (1..1)
 
-                        func TestWithMeta:
-                            inputs:
-                                f Foo (1..1)
-                            output:
-                                res Foo (1..1)
-                            set res:
-                                f with-meta { scheme: "myScheme" }
-                        """);
-        String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated,
+                func TestWithMeta:
+                    inputs:
+                        f Foo (1..1)
+                    output:
+                        res Foo (1..1)
+                    set res:
+                        f with-meta { scheme: "myScheme" }
+                """);
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})");
     }
 
@@ -53,26 +53,26 @@ public class PythonFunctionWithMetaTest {
     public void testFunctionWithMetaEnumDependency() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        namespace com.test
+                namespace com.test
 
-                        enum MyEnum:
-                            Value1
+                enum MyEnum:
+                    Value1
 
-                        type Foo:
-                            [metadata scheme]
-                            val string (1..1)
+                type Foo:
+                    [metadata scheme]
+                    val string (1..1)
 
-                        func TestWithMetaEnum:
-                            inputs:
-                                f Foo (1..1)
-                            output:
-                                res Foo (1..1)
-                            set res:
-                                f with-meta { scheme: (MyEnum -> Value1) to-string }
-                        """);
-        String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated,
+                func TestWithMetaEnum:
+                    inputs:
+                        f Foo (1..1)
+                    output:
+                        res Foo (1..1)
+                    set res:
+                        f with-meta { scheme: (MyEnum -> Value1) to-string }
+                """);
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': rune_str(com.test.MyEnum.MyEnum.VALUE_1)})");
-        testUtils.assertGeneratedContainsExpectedString(generated, "import com.test.MyEnum");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "import com.test.MyEnum");
     }
 }

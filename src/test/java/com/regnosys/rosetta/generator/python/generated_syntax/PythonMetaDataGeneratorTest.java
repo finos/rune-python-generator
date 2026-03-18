@@ -180,14 +180,14 @@ public class PythonMetaDataGeneratorTest {
         @Test
         public void testExpectedBundleA() {
                 initPython();
-                String bundle = python.get("src/test/_bundle.py").toString();
+                String generatedPython = python.get("src/test/_bundle.py").toString();
 
                 // Native types are not delayed
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "class test_generated_syntax_metadata_A(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "_ALLOWED_METADATA = {'@key', '@key:external'}");
-                testUtils.assertGeneratedContainsExpectedString(bundle, "fieldA: str = Field(..., description='')");
+                testUtils.assertGeneratedContainsExpectedString(generatedPython, "fieldA: str = Field(..., description='')");
         }
 
         /**
@@ -196,14 +196,14 @@ public class PythonMetaDataGeneratorTest {
         @Test
         public void testExpectedBundleAttributeRef() {
                 initPython();
-                String bundle = python.get("src/test/_bundle.py").toString();
+                String generatedPython = python.get("src/test/_bundle.py").toString();
 
                 // Date is a basic type, so DateWithMeta is currently not delayed
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "class test_generated_syntax_metadata_AttributeRef(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "dateField: Annotated[Optional[DateWithMeta], DateWithMeta.serializer(), DateWithMeta.validator(('@key', '@key:external'))]");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "dateReference: Annotated[Optional[DateWithMeta | BaseReference], DateWithMeta.serializer(), DateWithMeta.validator(('@ref', '@ref:external'))]");
         }
 
@@ -213,24 +213,24 @@ public class PythonMetaDataGeneratorTest {
         @Test
         public void testExpectedBundleNodeRef() {
                 initPython();
-                String bundle = python.get("src/test/_bundle.py").toString();
+                String generatedPython = python.get("src/test/_bundle.py").toString();
 
                 // Phase 1: Clean Body
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "class test_generated_syntax_metadata_NodeRef(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "typeA: Optional[test_generated_syntax_metadata_A] = Field(None, description='')");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "aReference: Optional[test_generated_syntax_metadata_A | BaseReference] = Field(None, description='')");
 
                 // Phase 2: Delayed Update
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "test_generated_syntax_metadata_NodeRef.__annotations__[\"typeA\"] = Annotated[Optional[test_generated_syntax_metadata_A], test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator()]");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "test_generated_syntax_metadata_NodeRef.__annotations__[\"aReference\"] = Annotated[Optional[test_generated_syntax_metadata_A | BaseReference], test_generated_syntax_metadata_A.serializer(), test_generated_syntax_metadata_A.validator(('@key', '@key:external', '@ref', '@ref:external'))]");
 
                 // Phase 3: Rebuild
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "test_generated_syntax_metadata_NodeRef.model_rebuild()");
         }
 
@@ -240,24 +240,24 @@ public class PythonMetaDataGeneratorTest {
         @Test
         public void testExpectedBundleRoot() {
                 initPython();
-                String bundle = python.get("src/test/_bundle.py").toString();
+                String generatedPython = python.get("src/test/_bundle.py").toString();
 
                 // Phase 1: Clean Body
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "class test_generated_syntax_metadata_Root(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "nodeRef: Optional[test_generated_syntax_metadata_NodeRef] = Field(None, description='')");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "attributeRef: Optional[test_generated_syntax_metadata_AttributeRef] = Field(None, description='')");
 
                 // Phase 2: Delayed Update
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "test_generated_syntax_metadata_Root.__annotations__[\"nodeRef\"] = Annotated[Optional[test_generated_syntax_metadata_NodeRef], test_generated_syntax_metadata_NodeRef.serializer(), test_generated_syntax_metadata_NodeRef.validator()]");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "test_generated_syntax_metadata_Root.__annotations__[\"attributeRef\"] = Annotated[Optional[test_generated_syntax_metadata_AttributeRef], test_generated_syntax_metadata_AttributeRef.serializer(), test_generated_syntax_metadata_AttributeRef.validator()]");
 
                 // Phase 3: Rebuild
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "test_generated_syntax_metadata_Root.model_rebuild()");
         }
 
@@ -267,11 +267,11 @@ public class PythonMetaDataGeneratorTest {
         @Test
         public void testExpectedBundleScheme() {
                 initPython();
-                String bundle = python.get("src/test/_bundle.py").toString();
+                String generatedPython = python.get("src/test/_bundle.py").toString();
 
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "class test_generated_syntax_metadata_SchemeTest(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(bundle, "_ALLOWED_METADATA = {'@scheme'}");
-                testUtils.assertGeneratedContainsExpectedString(bundle, "a: str = Field(..., description='')");
+                testUtils.assertGeneratedContainsExpectedString(generatedPython, "_ALLOWED_METADATA = {'@scheme'}");
+                testUtils.assertGeneratedContainsExpectedString(generatedPython, "a: str = Field(..., description='')");
         }
 }

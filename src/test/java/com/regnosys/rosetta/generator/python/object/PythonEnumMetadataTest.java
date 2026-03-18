@@ -42,15 +42,15 @@ public class PythonEnumMetadataTest {
                                 [metadata id]
                         """);
 
-        String bundle = gf.get("src/test/_bundle.py").toString();
+        String generatedPython = gf.get("src/test/_bundle.py").toString();
 
         // Assert that the 'currency' field in CashTransfer is using a metadata
         // wrapper with the correct @key tags.
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "currency: Annotated[test.metadata.CurrencyEnum.CurrencyEnum, test.metadata.CurrencyEnum.CurrencyEnum.serializer(), test.metadata.CurrencyEnum.CurrencyEnum.validator(('@key', '@key:external'))]");
 
         // Also verify the key-ref constraints
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "'currency': {'@key', '@key:external'}");
     }
 
@@ -74,12 +74,12 @@ public class PythonEnumMetadataTest {
                                 [metadata id]
                         """);
 
-        String bundle = gf.get("src/test/_bundle.py").toString();
+        String generatedPython = gf.get("src/test/_bundle.py").toString();
 
         // Enums should be consistently wrapped in Annotated to support metadata
         // during deserialization even if not explicitly required in Rosetta.
 
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "currency: Annotated[test.metadata.CurrencyEnum.CurrencyEnum, test.metadata.CurrencyEnum.CurrencyEnum.serializer(), test.metadata.CurrencyEnum.CurrencyEnum.validator(('@key', '@key:external'))] = Field(..., description='')");
     }
 }

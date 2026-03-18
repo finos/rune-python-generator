@@ -71,7 +71,7 @@ public final class PythonGeneratorTestUtils {
 
     public void assertBundleContainsExpectedString(String model, String expectedString) {
         // Generate the bundle using the existing function
-        String generatedBundle = generatePythonAndExtractBundle(model);
-        assertGeneratedContainsExpectedString(generatedBundle, expectedString);
+        String generatedPython = generatePythonAndExtractBundle(model);
+        assertGeneratedContainsExpectedString(generatedPython, expectedString);
     }
 }

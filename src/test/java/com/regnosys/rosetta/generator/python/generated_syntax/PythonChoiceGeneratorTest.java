@@ -45,7 +45,7 @@ public class PythonChoiceGeneratorTest {
                         # EOF
                         """);
 
-        String generatedBundle = python.get("src/test/_bundle.py").toString();
+        String generatedPython = python.get("src/test/_bundle.py").toString();
         String expectedChoice = """
                 class test_generated_syntax_semantic_Choice(BaseDataClass):
                     _FQRTN = 'test.generated_syntax.semantic.Choice'
@@ -57,6 +57,6 @@ public class PythonChoiceGeneratorTest {
                         item = self
                         return rune_check_one_of(self, 'intType', 'stringType', necessity=True)
                 """;
-        testUtils.assertGeneratedContainsExpectedString(generatedBundle, expectedChoice);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedChoice);
     }
 }

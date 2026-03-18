@@ -53,24 +53,24 @@ public class PythonMetaKeyRefGeneratorTest {
                 testUtils.assertGeneratedContainsExpectedString(proxyScopedKeyRef,
                                 "from test._bundle import test_generated_syntax_meta_key_ref_ScopedKeyRef as ScopedKeyRef");
 
-                String bundle = python.get("src/test/_bundle.py").toString();
-                assertNotNull(bundle, "src/test/_bundle.py was not found");
+                String generatedPython = python.get("src/test/_bundle.py").toString();
+                assertNotNull(generatedPython, "src/test/_bundle.py was not found");
 
                 // KeyRef checks
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "class test_generated_syntax_meta_key_ref_KeyRef(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "'fieldA': {'@ref', '@ref:external', '@key', '@key:external'}");
                 // Check if delayed or inline (StrWithMeta is currently inline as it's a basic
                 // type)
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "fieldA: Annotated[StrWithMeta | BaseReference, StrWithMeta.serializer(), StrWithMeta.validator(('@ref', '@ref:external', '@key', '@key:external'))] = Field(..., description='')");
 
                 // ScopedKeyRef checks
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "class test_generated_syntax_meta_key_ref_ScopedKeyRef(BaseDataClass):");
-                testUtils.assertGeneratedContainsExpectedString(bundle, "'fieldA': {'@key:scoped', '@ref:scoped'}");
-                testUtils.assertGeneratedContainsExpectedString(bundle,
+                testUtils.assertGeneratedContainsExpectedString(generatedPython, "'fieldA': {'@key:scoped', '@ref:scoped'}");
+                testUtils.assertGeneratedContainsExpectedString(generatedPython,
                                 "fieldA: Annotated[StrWithMeta | BaseReference, StrWithMeta.serializer(), StrWithMeta.validator(('@key:scoped', '@ref:scoped'))] = Field(..., description='')");
         }
 }

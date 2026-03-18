@@ -27,17 +27,17 @@ public class PythonFunctionTypeTest {
     public void testGeneratedFunctionTypeAsInput() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        type AInput : <\"A type\">
-                            a number (1..1)
+                type AInput : <\"A type\">
+                    a number (1..1)
 
-                        func TestAbsType: <\"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.\">
-                            inputs:
-                                arg  AInput (1..1)
-                            output:
-                                result number (1..1)
-                            set result:
-                                if arg->a < 0 then -1 * arg->a else arg->a
-                        """);
+                func TestAbsType: <\"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.\">
+                    inputs:
+                        arg  AInput (1..1)
+                    output:
+                        result number (1..1)
+                    set result:
+                        if arg->a < 0 then -1 * arg->a else arg->a
+                """);
         String expectedBundle = """
                 @replaceable
                 @validate_call
@@ -141,11 +141,11 @@ public class PythonFunctionTypeTest {
                             set result:
                                 0.1 + 0.2
                         """);
-        String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated,
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "def com_rosetta_test_model_TestPrecision() -> Decimal:");
-        testUtils.assertGeneratedContainsExpectedString(generated, "result = (Decimal('0.1') + Decimal('0.2'))");
-        testUtils.assertGeneratedContainsExpectedString(generated, "return result");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = (Decimal('0.1') + Decimal('0.2'))");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");
     }
 
     /**
@@ -262,20 +262,20 @@ public class PythonFunctionTypeTest {
     public void testObjectCreationFromFields() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                                        type BaseObject:
-                                            value1 int (1..1)
-                                            value2 int (1..1)
-                                        func TestObjectCreationFromFields:
-                                            inputs:
-                                                baseObject BaseObject (1..1)
-                                            output:
-                                                result BaseObject (1..1)
-                                            set result:
-                                                BaseObject {
-                                                    value1: baseObject->value1,
-                                                    value2: baseObject->value2
-                                                }
-                        """);
+                type BaseObject:
+                    value1 int (1..1)
+                    value2 int (1..1)
+                func TestObjectCreationFromFields:
+                    inputs:
+                        baseObject BaseObject (1..1)
+                    output:
+                        result BaseObject (1..1)
+                    set result:
+                        BaseObject {
+                            value1: baseObject->value1,
+                            value2: baseObject->value2
+                        }
+                """);
 
         String expectedBundle = """
                 @replaceable
@@ -344,12 +344,38 @@ public class PythonFunctionTypeTest {
                 def com_rosetta_test_model_ResolveInterestRateObservationIdentifiers(payout: com_rosetta_test_model_InterestRatePayout, date: datetime.date) -> com_rosetta_test_model_ObservationIdentifier:
                     \"\"\"
                 """;
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
         // Check signature
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedBundle);
         // Check ObjectBuilder usage
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers = ObjectBuilder(com_rosetta_test_model_ObservationIdentifier)");
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers.rateOption = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, \"payout\"), \"rateSpecification\"), \"floatingRate\"), \"rateOption\")");
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers.observationDate = rune_resolve_attr(self, \"date\")");
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers = identifiers.to_model()");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers = ObjectBuilder(com_rosetta_test_model_ObservationIdentifier)");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers.rateOption = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, \"payout\"), \"rateSpecification\"), \"floatingRate\"), \"rateOption\")");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers.observationDate = rune_resolve_attr(self, \"date\")");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers = identifiers.to_model()");
+    }
+    /**
+     * Test case for 'as-key' syntax.
+     */
+    @Test
+    public void testAsKey() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                type Person:
+                    [metadata key]
+                    name string (1..1)
+
+                type House:
+                    owner Person (1..1)
+                        [metadata reference]
+
+                func TestAsKey:
+                    inputs:
+                        p Person (1..1)
+                    output:
+                        h House (1..1)
+                    set h -> owner: p as-key
+                """);
+
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "SHOULD_FAIL");
     }
 }

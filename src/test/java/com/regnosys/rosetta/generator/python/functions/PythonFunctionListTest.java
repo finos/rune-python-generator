@@ -37,8 +37,8 @@ public class PythonFunctionListTest {
                 """;
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(rosetta);
 
-        String bundle = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
 
-        testUtils.assertGeneratedContainsExpectedString(bundle, "item * rune_resolve_attr(self, \"multiplier\")");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "item * rune_resolve_attr(self, \"multiplier\")");
     }
 }

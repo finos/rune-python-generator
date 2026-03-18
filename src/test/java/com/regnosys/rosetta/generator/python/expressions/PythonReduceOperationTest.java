@@ -35,8 +35,8 @@ public class PythonReduceOperationTest {
                         reduce a, b [ a + b ]
                 """);
 
-        String bundle = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
 
-        testUtils.assertGeneratedContainsExpectedString(bundle, "functools.reduce(lambda a, b: (a + b), rune_resolve_attr(self, \"items\"))");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "functools.reduce(lambda a, b: (a + b), rune_resolve_attr(self, \"items\"))");
     }
 }

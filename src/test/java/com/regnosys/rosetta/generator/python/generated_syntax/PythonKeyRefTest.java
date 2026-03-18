@@ -34,7 +34,7 @@ public class PythonKeyRefTest {
                             ke KeyEntity (1..1)
                                 [metadata reference]
                         """);
-        String generated = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
         String expectedClass = """
                 class com_rosetta_test_model_RefEntity(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.RefEntity'
@@ -45,7 +45,7 @@ public class PythonKeyRefTest {
                     }
                 """;
         String expectedPhase2 = "com_rosetta_test_model_RefEntity.__annotations__[\"ke\"] = Annotated[com_rosetta_test_model_KeyEntity | BaseReference, com_rosetta_test_model_KeyEntity.serializer(), com_rosetta_test_model_KeyEntity.validator(('@key', '@key:external', '@ref', '@ref:external'))]";
-        testUtils.assertGeneratedContainsExpectedString(generated, expectedClass);
-        testUtils.assertGeneratedContainsExpectedString(generated, expectedPhase2);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedClass);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedPhase2);
     }
 }

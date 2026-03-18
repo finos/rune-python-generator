@@ -41,29 +41,29 @@ public class PythonCircularReferenceImplementationTest {
                             a A (0..1)
                         """);
 
-        String bundle = gf.get("src/rosetta_dsl/_bundle.py").toString();
+        String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
 
         // 1. Verify Clean Definitions in Phase 1
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class rosetta_dsl_test_language_CircularDependency_A(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "b: rosetta_dsl_test_language_CircularDependency_B = Field(..., description='')");
 
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class rosetta_dsl_test_language_CircularDependency_B(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "a: Optional[rosetta_dsl_test_language_CircularDependency_A] = Field(None, description='')");
 
         // 2. Verify Delayed Annotation Updates in Phase 2
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_A.__annotations__[\"b\"] = Annotated[rosetta_dsl_test_language_CircularDependency_B, rosetta_dsl_test_language_CircularDependency_B.serializer(), rosetta_dsl_test_language_CircularDependency_B.validator()]");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_B.__annotations__[\"a\"] = Annotated[Optional[rosetta_dsl_test_language_CircularDependency_A], rosetta_dsl_test_language_CircularDependency_A.serializer(), rosetta_dsl_test_language_CircularDependency_A.validator()]");
 
         // 3. Verify Model Rebuilds in Phase 3
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_A.model_rebuild()");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_B.model_rebuild()");
     }
 }

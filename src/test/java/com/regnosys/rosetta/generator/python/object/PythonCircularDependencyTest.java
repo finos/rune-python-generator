@@ -44,11 +44,11 @@ public class PythonCircularDependencyTest {
                             set result->p1: 1
                             set result->p2: 2
                         """);
-        String bundle = gf.get("src/rosetta_dsl/_bundle.py").toString();
+        String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(
-                bundle, "from rune.runtime.object_builder import ObjectBuilder");
+                generatedPython, "from rune.runtime.object_builder import ObjectBuilder");
         testUtils.assertGeneratedContainsExpectedString(
-                bundle,
+                generatedPython,
                 """
                             result = ObjectBuilder(rosetta_dsl_test_semantic_object_construction_C)
                             result.p1 = 1
@@ -77,10 +77,10 @@ public class PythonCircularDependencyTest {
                             then bar1->number1 > 0
                 """);
 
-        String bundle = gf.toString();
+        String generatedPython = gf.toString();
 
         testUtils.assertGeneratedContainsExpectedString(
-                bundle,
+                generatedPython,
                 """
                 # Phase 2: Delayed Annotation Updates
                 rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__["bar2"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]
@@ -88,7 +88,7 @@ public class PythonCircularDependencyTest {
                 """);
 
         testUtils.assertGeneratedContainsExpectedString(
-                bundle,
+                generatedPython,
                 """
 
 
@@ -116,10 +116,10 @@ public class PythonCircularDependencyTest {
                     a CircularA (1..1)
                 """);
 
-        String bundle = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
 
         testUtils.assertGeneratedContainsExpectedString(
-                bundle,
+                generatedPython,
                 """
                 class com_rosetta_test_model_CircularA(BaseDataClass):
                     _FQRTN = 'com.rosetta.test.model.CircularA'
@@ -161,10 +161,10 @@ public class PythonCircularDependencyTest {
                             val int (1..1)
                         """);
 
-        String bundle = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
 
-        int parentIndex = bundle.indexOf("class com_rosetta_test_model_Parent");
-        int childIndex = bundle.indexOf("class com_rosetta_test_model_Child(com_rosetta_test_model_Parent)");
+        int parentIndex = generatedPython.indexOf("class com_rosetta_test_model_Parent");
+        int childIndex = generatedPython.indexOf("class com_rosetta_test_model_Child(com_rosetta_test_model_Parent)");
 
         // This assertion will likely FAIL or be inconsistent with the current
         // generator.

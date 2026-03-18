@@ -111,10 +111,10 @@ public class PythonFunctionAliasTest {
                                 Alias1*Alias2
                         """);
 
-        String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated, "c = ObjectBuilder(com_rosetta_test_model_C)");
-        testUtils.assertGeneratedContainsExpectedString(generated,
+        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = ObjectBuilder(com_rosetta_test_model_C)");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "c.valueC = (rune_resolve_attr(self, \"Alias1\") * rune_resolve_attr(self, \"Alias2\"))");
-        testUtils.assertGeneratedContainsExpectedString(generated, "c = c.to_model()");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = c.to_model()");
     }
 }

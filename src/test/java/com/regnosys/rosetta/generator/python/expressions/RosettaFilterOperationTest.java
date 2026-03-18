@@ -26,7 +26,7 @@ public class RosettaFilterOperationTest {
      */
     @Test
     public void testFilterOperation() {
-        String bundle = testUtils.generatePythonAndExtractBundle("""
+        String generatedPython = testUtils.generatePythonAndExtractBundle("""
                 type Item:
                     val int (1..1)
                 type TestFilter:
@@ -35,15 +35,15 @@ public class RosettaFilterOperationTest {
                         (items filter [ val > 5 ] then count) = 0
                 """);
 
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class com_rosetta_test_model_TestFilter(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "items: Optional[list[com_rosetta_test_model_Item | None]] = Field(None, description='')");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "com_rosetta_test_model_TestFilter.__annotations__[\"items\"] = Annotated[Optional[list[com_rosetta_test_model_Item | None]], com_rosetta_test_model_Item.serializer(), com_rosetta_test_model_Item.validator()]");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "com_rosetta_test_model_TestFilter.model_rebuild()");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
     }
 
@@ -52,7 +52,7 @@ public class RosettaFilterOperationTest {
      */
     @Test
     public void testNestedFilterMapCount() {
-        String bundle = testUtils.generatePythonAndExtractBundle("""
+        String generatedPython = testUtils.generatePythonAndExtractBundle("""
                 type Item:
                     val int (1..1)
                 func TestNestedNested:
@@ -62,9 +62,9 @@ public class RosettaFilterOperationTest {
                         items filter [ val > 5 ] then count
                 """);
 
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "def com_rosetta_test_model_TestNestedNested(items: list[com_rosetta_test_model_Item | None] | None) -> int:");
-        testUtils.assertGeneratedContainsExpectedString(bundle,
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "result = (lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
     }
 }
