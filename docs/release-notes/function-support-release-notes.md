@@ -18,9 +18,9 @@ Rosetta functions often populate an output object through multiple `set` operati
 
 ### Changes
 
-- **`model_construct()` Integration**: The generator now utilizes Pydantic’s `model_construct()` for partial object initialization.
-- **Deferred Validation**: Objects can be populated field-by-field without triggering `ValidationError` for missing required fields.
-- **Unwrapped Final Values**: Ensures that the final object is unwrapped and ready for use upon function return.
+- **`ObjectBuilder` Integration**: The generator now utilizes `ObjectBuilder` wrappers for partial object initialization.
+- **Deferred Validation**: Objects can be populated field-by-field, or via deep nested paths (`set result -> a -> b`), without triggering `ValidationError` for missing required fields during intermediate steps.
+- **Automatic Materialization**: The explicit `.to_model()` call has been removed from generated function bodies. The Rune runtime (`rune_finalize_return` via the `@replaceable` decorator) automatically unwraps and validates `ObjectBuilder` drafts into materialized models upon function return, resulting in cleaner generated code.
 
 ## 3. Support for Circular Dependencies [FIXED]
 

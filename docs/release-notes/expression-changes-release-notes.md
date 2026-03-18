@@ -69,3 +69,17 @@ To support the above features (which require services like `RosettaTypeProvider`
 
 - **Isolated Expression Generators**: `PythonFunctionGenerator` and `PythonModelObjectGenerator` now use a Guice `Provider<PythonExpressionGenerator>`.
 - **State Isolation**: A fresh generator instance is created for every function or class body. This prevents clashing of stateful variables (like `generatedFunctionCounter` and `ifCondBlocks`) that could lead to naming collisions or incorrect logic when processing large models.
+
+## 6. Support for `as-key` Syntax
+
+The generator now correctly translates the `as-key` operation in Rosetta to use the `Reference` construct in Python, aligning it with the expected runtime behavior for assigning references rather than creating new independent copies.
+
+### Changes
+
+- **Single Cardinality Reference**: Resolves single-item `as-key` operations to `Reference(x)`.
+- **Multiple Cardinality Collections**: Integrates `CardinalityProvider` checks to identify list targets. When setting multiple owners or items (`owners: ps as-key`), it generates a robust list comprehension `[Reference(x) for x in (... or []) if x is not None]`.
+- **Legacy Removal**: Replaced the outdated dictionary-based syntax (`{...: True}`) with the standard `Reference` object architecture.
+
+### Context
+
+Correct `as-key` translation is essential for maintaining graph structures and referential integrity within Rune models, particularly when defining object properties that point to other existing instances (like `owner` -> `Person`).
