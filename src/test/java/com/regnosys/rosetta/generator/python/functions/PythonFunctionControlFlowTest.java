@@ -27,14 +27,14 @@ public class PythonFunctionControlFlowTest {
     public void testGeneratedFunctionAbs() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        func Abs: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
-                            inputs:
-                                arg number (1..1)
-                            output:
-                                result number (1..1)
-                            set result:
-                                if arg < 0 then -1 * arg else arg
-                        """);
+                func Abs: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
+                    inputs:
+                        arg number (1..1)
+                    output:
+                        result number (1..1)
+                    set result:
+                        if arg < 0 then -1 * arg else arg
+                """);
 
         String expectedBundle = """
                 @replaceable

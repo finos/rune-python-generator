@@ -29,24 +29,24 @@ public class PythonFunctionNativeTest {
     public void testNativeFunctionSupport() {
 
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
-                namespace rosetta_dsl.test.functions
+            """
+            namespace rosetta_dsl.test.functions
 
-                enum RoundingModeEnum:
-                    Down
-                    Up
+            enum RoundingModeEnum:
+                Down
+                Up
 
-                func RoundToNearest: <"Round a number to the supplied nearest, using the supplied rounding mode.">
-                    [codeImplementation]
-                    inputs:
-                        value number (1..1) <"The original (unrounded) number.">
-                        nearest number (1..1) <"The nearest number to round to.">
-                        roundingMode RoundingModeEnum (1..1) <"The method of rounding (up to nearest/down to nearest.">
-                    output:
-                        roundedValue number (1..1)
-                    condition PositiveNearest:
-                        nearest > 0
-                """);
+            func RoundToNearest: <"Round a number to the supplied nearest, using the supplied rounding mode.">
+                [codeImplementation]
+                inputs:
+                    value number (1..1) <"The original (unrounded) number.">
+                    nearest number (1..1) <"The nearest number to round to.">
+                    roundingMode RoundingModeEnum (1..1) <"The method of rounding (up to nearest/down to nearest.">
+                output:
+                    roundedValue number (1..1)
+                condition PositiveNearest:
+                    nearest > 0
+            """);
         String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "from rune.runtime.native_registry import rune_attempt_register_native_functions");
@@ -55,36 +55,36 @@ public class PythonFunctionNativeTest {
         // Note: rosetta_dsl.test.functions.RoundToNearest is expected because
         // functions live in a 'functions' directory relative to their namespace.
         String expected = """
-                    self = inspect.currentframe()
+                self = inspect.currentframe()
 
-                    value = rune_cow(value)
-                    nearest = rune_cow(nearest)
-                    roundingMode = rune_cow(roundingMode)
+                value = rune_cow(value)
+                nearest = rune_cow(nearest)
+                roundingMode = rune_cow(roundingMode)
 
-                    _pre_registry = {}
-                    # conditions
+                _pre_registry = {}
+                # conditions
 
-                    @rune_local_condition(_pre_registry)
-                    def condition_0_PositiveNearest():
-                        item = self
-                        return rune_all_elements(rune_resolve_attr(self, \"nearest\"), \">\", 0)
-                    # Execute all registered conditions
-                    rune_execute_local_conditions(_pre_registry, 'Pre-condition')
+                @rune_local_condition(_pre_registry)
+                def condition_0_PositiveNearest():
+                    item = self
+                    return rune_all_elements(rune_resolve_attr(self, \"nearest\"), \">\", 0)
+                # Execute all registered conditions
+                rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
-                    roundedValue = rune_execute_native('rosetta_dsl.test.functions.RoundToNearest', value, nearest, roundingMode)
+                roundedValue = rune_execute_native('rosetta_dsl.test.functions.RoundToNearest', value, nearest, roundingMode)
 
 
-                    return roundedValue
-                """;
+                return roundedValue
+            """;
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expected);
         
         String registrationExpected = """
-                rune_attempt_register_native_functions(
-                    function_names=[
-                        'rosetta_dsl.test.functions.RoundToNearest',
-                    ]
-                )
-                """;
+            rune_attempt_register_native_functions(
+                function_names=[
+                    'rosetta_dsl.test.functions.RoundToNearest',
+                ]
+            )
+            """;
         testUtils.assertGeneratedContainsExpectedString(generatedPython, registrationExpected);
     }
 }

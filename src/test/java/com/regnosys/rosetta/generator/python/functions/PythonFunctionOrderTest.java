@@ -30,21 +30,21 @@ public class PythonFunctionOrderTest {
         // Rosetta allows defining them in any order, but Python requires definition
         // before use (or forward refs).
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
-                        type ClassB:
-                            attr ClassA (1..1)
+            """
+            type ClassB:
+                attr ClassA (1..1)
 
-                        func MyFunc:
-                            inputs:
-                                arg ClassB (1..1)
-                            output:
-                                out ClassA (1..1)
-                            set out:
-                                arg->attr
+            func MyFunc:
+                inputs:
+                    arg ClassB (1..1)
+                output:
+                    out ClassA (1..1)
+                set out:
+                    arg->attr
 
-                        type ClassA:
-                            val string (1..1)
-                        """);
+            type ClassA:
+                val string (1..1)
+            """);
 
         String generatedPython = gf.get("src/com/_bundle.py").toString();
 
@@ -69,13 +69,13 @@ public class PythonFunctionOrderTest {
         // This is a classic circular dependency which the topological sort cannot
         // handle.
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
-                        type ClassA:
-                            b ClassB (0..1)
+            """
+            type ClassA:
+                b ClassB (0..1)
 
-                        type ClassB:
-                            a ClassA (0..1)
-                        """);
+            type ClassB:
+                a ClassA (0..1)
+            """);
 
         String generatedPython = gf.get("src/com/_bundle.py").toString();
 

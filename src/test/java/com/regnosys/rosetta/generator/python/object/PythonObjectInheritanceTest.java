@@ -25,15 +25,15 @@ public class PythonObjectInheritanceTest {
     public void testPythonClassGenerationWithMultipleParents() {
         String pythonString = testUtils.generatePythonFromString(
                 """
-                        type D extends C:
-                            dd string (0..1)
-                        type B extends A:
-                            bb string (0..1)
-                        type C extends B:
-                            cc string (0..1)
-                        type A:
-                            aa string (0..1)
-                        """).toString();
+                type D extends C:
+                    dd string (0..1)
+                type B extends A:
+                    bb string (0..1)
+                type C extends B:
+                    cc string (0..1)
+                type A:
+                    aa string (0..1)
+                """).toString();
 
         String expectedA = """
                 class com_rosetta_test_model_A(BaseDataClass):
@@ -68,15 +68,15 @@ public class PythonObjectInheritanceTest {
     public void testSuperClasses() {
         String pythonString = testUtils.generatePythonFromString(
                 """
-                        namespace test
+                namespace test
 
-                        type Foo extends Bar:
+                type Foo extends Bar:
 
-                        type Bar extends Baz:
+                type Bar extends Baz:
 
-                        type Baz:
+                type Baz:
 
-                        """).toString();
+                """).toString();
 
         String expectedBaz = """
                 class test_Baz(BaseDataClass):
@@ -108,18 +108,18 @@ public class PythonObjectInheritanceTest {
     public void testEnumValue() {
         String pythonString = testUtils.generatePythonFromString(
                 """
-                        namespace test
-                        version "1.2.3"
+                namespace test
+                version "1.2.3"
 
-                        enum Foo:
-                            foo0 foo1
+                enum Foo:
+                    foo0 foo1
 
-                        enum Bar extends Foo:
-                            bar
+                enum Bar extends Foo:
+                    bar
 
-                        enum Baz extends Bar:
-                            baz
-                        """).toString();
+                enum Baz extends Bar:
+                    baz
+                """).toString();
 
         String expectedBar = """
                 class Bar(rune.runtime.metadata.EnumWithMetaMixin, Enum):

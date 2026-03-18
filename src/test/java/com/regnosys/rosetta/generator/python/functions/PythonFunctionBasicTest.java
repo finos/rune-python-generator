@@ -33,47 +33,47 @@ public class PythonFunctionBasicTest {
     @Test
     public void testGeneratedFunctionWithAddingNumbers() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
-                        func AddTwoNumbers: <\"Add two numbers together.\">
-                            inputs:
-                                number1 number (1..1) <\"The first number to add.\">
-                                number2 number (1..1) <\"The second number to add.\">
-                            output:
-                                result number (1..1)
-                            set result:
-                                number1 + number2
-                            """);
+            """
+            func AddTwoNumbers: <"Add two numbers together.">
+                inputs:
+                    number1 number (1..1) <"The first number to add.">
+                    number2 number (1..1) <"The second number to add.">
+                output:
+                    result number (1..1)
+                set result:
+                    number1 + number2
+            """);
         String expectedBundle = """
-                @replaceable
-                @validate_call
-                def com_rosetta_test_model_AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
-                    \"\"\"
-                    Add two numbers together.
+            @replaceable
+            @validate_call
+            def com_rosetta_test_model_AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
+                \"\"\"
+                Add two numbers together.
 
-                    Parameters
-                    ----------
-                    number1 : Decimal
-                    The first number to add.
+                Parameters
+                ----------
+                number1 : Decimal
+                The first number to add.
 
-                    number2 : Decimal
-                    The second number to add.
+                number2 : Decimal
+                The second number to add.
 
-                    Returns
-                    -------
-                    result : Decimal
+                Returns
+                -------
+                result : Decimal
 
-                    \"\"\"
-                    self = inspect.currentframe()
+                \"\"\"
+                self = inspect.currentframe()
 
-                    number1 = rune_cow(number1)
-                    number2 = rune_cow(number2)
-
-
-                    result = (rune_resolve_attr(self, \"number1\") + rune_resolve_attr(self, \"number2\"))
+                number1 = rune_cow(number1)
+                number2 = rune_cow(number2)
 
 
-                    return result
-                """;
+                result = (rune_resolve_attr(self, \"number1\") + rune_resolve_attr(self, \"number2\"))
+
+
+                return result
+            """;
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
     }
 
@@ -83,73 +83,73 @@ public class PythonFunctionBasicTest {
     @Test
     public void testFunctionWithFunctionCallingFunction() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
-                func BaseFunction:
-                    inputs:
-                        value number (1..1)
-                    output:
-                        result number (1..1)
-                    set result:
-                        value * 2
-                func MainFunction:
-                    inputs:
-                        value number (1..1)
-                    output:
-                        result number (1..1)
-                    set result:
-                        BaseFunction(value)
-                    """);
+            """
+            func BaseFunction:
+                inputs:
+                    value number (1..1)
+                output:
+                    result number (1..1)
+                set result:
+                    value * 2
+            func MainFunction:
+                inputs:
+                    value number (1..1)
+                output:
+                    result number (1..1)
+                set result:
+                    BaseFunction(value)
+            """);
 
         String expectedBundleBaseFunction = """
-                @replaceable
-                @validate_call
-                def com_rosetta_test_model_BaseFunction(value: Decimal) -> Decimal:
-                    \"\"\"
+            @replaceable
+            @validate_call
+            def com_rosetta_test_model_BaseFunction(value: Decimal) -> Decimal:
+                \"\"\"
 
-                    Parameters
-                    ----------
-                    value : Decimal
+                Parameters
+                ----------
+                value : Decimal
 
-                    Returns
-                    -------
-                    result : Decimal
+                Returns
+                -------
+                result : Decimal
 
-                    \"\"\"
-                    self = inspect.currentframe()
+                \"\"\"
+                self = inspect.currentframe()
 
-                    value = rune_cow(value)
-
-
-                    result = (rune_resolve_attr(self, "value") * 2)
+                value = rune_cow(value)
 
 
-                    return result
-                """;
+                result = (rune_resolve_attr(self, "value") * 2)
+
+
+                return result
+            """;
         String expectedBundleMainFunction = """
-                @replaceable
-                @validate_call
-                def com_rosetta_test_model_MainFunction(value: Decimal) -> Decimal:
-                    \"\"\"
+            @replaceable
+            @validate_call
+            def com_rosetta_test_model_MainFunction(value: Decimal) -> Decimal:
+                \"\"\"
 
-                    Parameters
-                    ----------
-                    value : Decimal
+                Parameters
+                ----------
+                value : Decimal
 
-                    Returns
-                    -------
-                    result : Decimal
+                Returns
+                -------
+                result : Decimal
 
-                    \"\"\"
-                    self = inspect.currentframe()
+                \"\"\"
+                self = inspect.currentframe()
 
-                    value = rune_cow(value)
-
-
-                    result = rune_call_unchecked(com_rosetta_test_model_BaseFunction, rune_resolve_attr(self, "value"))
+                value = rune_cow(value)
 
 
-                    return result
-                """;
+                result = rune_call_unchecked(com_rosetta_test_model_BaseFunction, rune_resolve_attr(self, "value"))
+
+
+                return result
+            """;
 
         String expectedBundleString = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(expectedBundleString, expectedBundleBaseFunction);

@@ -29,18 +29,18 @@ public class PythonEnumMetadataTest {
         // fail to generate the necessary metadata handling infrastructure.
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        namespace test.metadata : <"test">
+                namespace test.metadata : <"test">
 
-                        enum CurrencyEnum:
-                            USD
-                            EUR
-                            GBP
+                enum CurrencyEnum:
+                    USD
+                    EUR
+                    GBP
 
-                        type CashTransfer:
-                            amount number (1..1)
-                            currency CurrencyEnum (1..1)
-                                [metadata id]
-                        """);
+                type CashTransfer:
+                    amount number (1..1)
+                    currency CurrencyEnum (1..1)
+                        [metadata id]
+                """);
 
         String generatedPython = gf.get("src/test/_bundle.py").toString();
 

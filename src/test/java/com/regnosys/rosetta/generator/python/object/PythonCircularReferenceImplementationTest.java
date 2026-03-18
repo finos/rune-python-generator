@@ -32,14 +32,14 @@ public class PythonCircularReferenceImplementationTest {
     public void testCircularDependencyImplementation() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        namespace rosetta_dsl.test.language.CircularDependency
+                namespace rosetta_dsl.test.language.CircularDependency
 
-                        type A:
-                            b B (1..1)
+                type A:
+                        b B (1..1)
 
-                        type B:
-                            a A (0..1)
-                        """);
+                type B:
+                        a A (0..1)
+                """);
 
         String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
 

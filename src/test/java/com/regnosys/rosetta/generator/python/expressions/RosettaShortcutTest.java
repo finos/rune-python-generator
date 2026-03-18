@@ -37,29 +37,29 @@ public class RosettaShortcutTest {
                     set result: MyShortcut * 2
                 """,
                 """
-                        @replaceable
-                        @validate_call
-                        def com_rosetta_test_model_UseShortcut(val: int) -> int:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def com_rosetta_test_model_UseShortcut(val: int) -> int:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            val : int
+                    Parameters
+                    ----------
+                    val : int
 
-                            Returns
-                            -------
-                            result : int
+                    Returns
+                    -------
+                    result : int
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            val = rune_cow(val)
-
-
-                            MyShortcut = (rune_resolve_attr(self, "val") + 5)
-                            result = (rune_resolve_attr(self, "MyShortcut") * 2)
+                    val = rune_cow(val)
 
 
-                            return result""");
-    }
+                    MyShortcut = (rune_resolve_attr(self, "val") + 5)
+                    result = (rune_resolve_attr(self, "MyShortcut") * 2)
+
+
+                    return result""");
+}
 }

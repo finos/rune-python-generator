@@ -625,16 +625,23 @@ public final class PythonFunctionGenerator {
                     // A root is a candidate for initialization if it's first touched by an 'add' or a nested path
                     // A root is a candidate for initialization if it's first touched by an 'add' or a nested path
                     if (operation.isAdd() || operation.getPath() != null) {
-                        Attribute attribute = (Attribute) root;
-                        RosettaType type = attribute.getTypeCall().getType();
-                        boolean isEnum = type instanceof RosettaEnumeration;
-                        if (attribute.getCard().isIsMany() || isEnum) {
-                            writer.appendLine(rootName + " = rune_cow([])");
-                            scope.markInitialized(rootName);
-                        } else if (operation.getPath() != null) {
-                            String bundleName = RuneToPythonMapper.getBundleObjectName(type);
-                            scope.markAsObjectBuilder(rootName);
-                            writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                        if (root instanceof Attribute attribute) {
+                            RosettaType type = attribute.getTypeCall().getType();
+                            boolean isEnum = type instanceof RosettaEnumeration;
+                            if (attribute.getCard().isIsMany() || isEnum) {
+                                writer.appendLine(rootName + " = rune_cow([])");
+                                scope.markInitialized(rootName);
+                            } else if (operation.getPath() != null) {
+                                String bundleName = RuneToPythonMapper.getBundleObjectName(type);
+                                scope.markAsObjectBuilder(rootName);
+                                writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                            }
+                        } else {
+                            // Handle ShortcutDeclaration or other AssignPathRoots
+                            if (operation.isAdd()) {
+                                writer.appendLine(rootName + " = rune_cow([])");
+                                scope.markInitialized(rootName);
+                            }
                         }
                     }
                 }
@@ -677,17 +684,19 @@ public final class PythonFunctionGenerator {
     private String generateSetOperation(AssignPathRoot root, Operation operation,
             String expression, PythonFunctionGenerationScope scope) {
         PythonCodeWriter writer = new PythonCodeWriter();
-        Attribute attributeRoot = (Attribute) root;
-        String rootName = attributeRoot.getName();
+        String rootName = root.getName();
+        RosettaType rootType = (root instanceof Attribute attr) ? attr.getTypeCall().getType() : null;
 
-        if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
+        if (rootType instanceof RosettaEnumeration || operation.getPath() == null) {
             writer.appendLine(rootName + " = " + expression);
             scope.markInitialized(rootName);
         } else {
             if (!scope.isInitialized(rootName)) {
-                String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
-                scope.markAsObjectBuilder(rootName);
-                writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                if (rootType != null) {
+                    String bundleName = RuneToPythonMapper.getBundleObjectName(rootType);
+                    scope.markAsObjectBuilder(rootName);
+                    writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                }
             }
 
             if (scope.isObjectBuilder(rootName)) {
@@ -716,11 +725,11 @@ public final class PythonFunctionGenerator {
     private String generateAddOperation(AssignPathRoot root, Operation operation,
             String expression, PythonFunctionGenerationScope scope) {
         PythonCodeWriter writer = new PythonCodeWriter();
-        Attribute attribute = (Attribute) root;
+        Attribute attribute = root instanceof Attribute ? (Attribute) root : null;
         String rootName = root.getName();
-        RosettaType attributeType = attribute.getTypeCall().getType();
-        if (attributeType == null) {
-            throw new RuntimeException("Attribute type is null");
+        RosettaType attributeType = attribute != null ? attribute.getTypeCall().getType() : null;
+        if (attributeType == null && attribute != null) {
+            throw new RuntimeException("Attribute type is null for " + rootName);
         }
 
         if (attributeType instanceof RosettaEnumeration) {
@@ -769,13 +778,13 @@ public final class PythonFunctionGenerator {
 
     private boolean isMany(Operation operation) {
         if (operation.getPath() == null) {
-            return ((Attribute) operation.getAssignRoot()).getCard().isIsMany();
+            return operation.getAssignRoot() instanceof Attribute attr && attr.getCard().isIsMany();
         }
         Segment current = operation.getPath();
         while (current.getNext() != null) {
             current = current.getNext();
         }
-        return ((Attribute) current.getFeature()).getCard().isIsMany();
+        return current.getFeature() instanceof Attribute attr && attr.getCard().isIsMany();
     }
 
     private void initializePathInPreamble(String rootName, Segment path, Function function,
@@ -784,11 +793,10 @@ public final class PythonFunctionGenerator {
         String currentPath = rootName;
 
         while (current != null) {
-            Attribute attribute = (Attribute) current.getFeature();
-            String attrName = attribute.getName();
+            String attrName = current.getFeature().getName();
             currentPath += "." + attrName;
 
-            if (!scope.isInitialized(currentPath)) {
+            if (current.getFeature() instanceof Attribute attribute && !scope.isInitialized(currentPath)) {
                 // Determine if this path element is ever first-touched by an 'add'
                 boolean needsPreamble = false;
                 for (Operation op : function.getOperations()) {

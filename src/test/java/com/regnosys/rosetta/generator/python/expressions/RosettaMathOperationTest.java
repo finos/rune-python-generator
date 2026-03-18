@@ -41,21 +41,21 @@ public class RosettaMathOperationTest {
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 """
-                        class com_rosetta_test_model_TestMath(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestMath'
-                            a: int = Field(..., description='')
-                            b: int = Field(..., description='')
+                class com_rosetta_test_model_TestMath(BaseDataClass):
+                    _FQRTN = 'com.rosetta.test.model.TestMath'
+                    a: int = Field(..., description='')
+                    b: int = Field(..., description='')
 
-                            @rune_condition
-                            def condition_0_MathCheck(self):
-                                item = self
-                                def _then_fn0():
-                                    return True
+                    @rune_condition
+                    def condition_0_MathCheck(self):
+                        item = self
+                        def _then_fn0():
+                            return True
 
-                                def _else_fn0():
-                                    return True
+                        def _else_fn0():
+                            return True
 
-                                return if_cond_fn(((rune_all_elements((rune_resolve_attr(self, "a") * rune_resolve_attr(self, "b")), "=", 10) and rune_all_elements((rune_resolve_attr(self, "a") - rune_resolve_attr(self, "b")), "=", 3)) and rune_all_elements((rune_resolve_attr(self, "a") / rune_resolve_attr(self, "b")), "=", 2)), _then_fn0, _else_fn0)""");
+                        return if_cond_fn(((rune_all_elements((rune_resolve_attr(self, "a") * rune_resolve_attr(self, "b")), "=", 10) and rune_all_elements((rune_resolve_attr(self, "a") - rune_resolve_attr(self, "b")), "=", 3)) and rune_all_elements((rune_resolve_attr(self, "a") / rune_resolve_attr(self, "b")), "=", 2)), _then_fn0, _else_fn0)""");
     }
 
     /**
@@ -76,20 +76,20 @@ public class RosettaMathOperationTest {
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
                 """
-                        class com_rosetta_test_model_ArithmeticTest(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.ArithmeticTest'
-                            a: int = Field(..., description='')
-                            b: int = Field(..., description='')
+                class com_rosetta_test_model_ArithmeticTest(BaseDataClass):
+                    _FQRTN = 'com.rosetta.test.model.ArithmeticTest'
+                    a: int = Field(..., description='')
+                    b: int = Field(..., description='')
 
-                            @rune_condition
-                            def condition_0_Test(self):
-                                item = self
-                                def _then_fn0():
-                                    return True
+                    @rune_condition
+                    def condition_0_Test(self):
+                        item = self
+                        def _then_fn0():
+                            return True
 
-                                def _else_fn0():
-                                    return False
+                        def _else_fn0():
+                            return False
 
-                                return if_cond_fn(rune_all_elements((rune_resolve_attr(self, "a") + rune_resolve_attr(self, "b")), "=", 3), _then_fn0, _else_fn0)""");
+                        return if_cond_fn(rune_all_elements((rune_resolve_attr(self, "a") + rune_resolve_attr(self, "b")), "=", 3), _then_fn0, _else_fn0)""");
     }
 }

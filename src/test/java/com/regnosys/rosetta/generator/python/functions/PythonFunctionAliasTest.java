@@ -28,18 +28,18 @@ public class PythonFunctionAliasTest {
 
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        func TestAlias:
-                            inputs:
-                                inp1 number(1..1)
-                                inp2 number(1..1)
-                            output:
-                                result number(1..1)
-                            alias Alias:
-                                if inp1 < 0 then inp1 else inp2
+                func TestAlias:
+                    inputs:
+                        inp1 number(1..1)
+                        inp2 number(1..1)
+                    output:
+                        result number(1..1)
+                    alias Alias:
+                        if inp1 < 0 then inp1 else inp2
 
-                            set result:
-                                Alias
-                        """);
+                    set result:
+                        Alias
+                """);
 
         String expectedBundle = """
                 @replaceable
@@ -88,28 +88,28 @@ public class PythonFunctionAliasTest {
 
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        type A:
-                            valueA number(1..1)
+                type A:
+                    valueA number(1..1)
 
-                        type B:
-                            valueB number(1..1)
+                type B:
+                    valueB number(1..1)
 
-                        type C:
-                            valueC number(1..1)
+                type C:
+                    valueC number(1..1)
 
-                        func TestAliasWithTypeOutput:
-                            inputs:
-                                a A (1..1)
-                                b B (1..1)
-                            output:
-                                c C (1..1)
-                            alias Alias1:
-                                a->valueA
-                            alias Alias2:
-                                b->valueB
-                            set c->valueC:
-                                Alias1*Alias2
-                        """);
+                func TestAliasWithTypeOutput:
+                    inputs:
+                        a A (1..1)
+                        b B (1..1)
+                    output:
+                        c C (1..1)
+                    alias Alias1:
+                        a->valueA
+                    alias Alias2:
+                        b->valueB
+                    set c->valueC:
+                        Alias1*Alias2
+                """);
 
         String generatedPython = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = ObjectBuilder(com_rosetta_test_model_C)");

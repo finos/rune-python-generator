@@ -26,48 +26,48 @@ public class PythonFunctionOverloadingTest {
     @Test
     public void testFunctionDispatcher() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
-                namespace com.test
+            """
+            namespace com.test
 
-                enum DayCountFractionEnum:
-                    ACT_360
-                    ACT_365
+            enum DayCountFractionEnum:
+                ACT_360
+                ACT_365
 
-                func DayCountBasis: <"Return the day count basis (the denominator of the day count fraction) for the day count fraction.">
-                    [codeImplementation]
-                    [calculation]
-                    inputs:
-                        dcf DayCountFractionEnum (1..1) <"Day count fraction.">
-                    output:
-                        basis int (1..1) <"The corresponding basis, typically 360 or 365.">
+            func DayCountBasis: <"Return the day count basis (the denominator of the day count fraction) for the day count fraction.">
+                [codeImplementation]
+                [calculation]
+                inputs:
+                    dcf DayCountFractionEnum (1..1) <"Day count fraction.">
+                output:
+                    basis int (1..1) <"The corresponding basis, typically 360 or 365.">
 
-                func DayCountBasis(dcf: DayCountFractionEnum -> ACT_360):
-                    set basis: 360
+            func DayCountBasis(dcf: DayCountFractionEnum -> ACT_360):
+                set basis: 360
 
-                func DayCountBasis(dcf: DayCountFractionEnum -> ACT_365):
-                    set basis: 365
-                """);
+            func DayCountBasis(dcf: DayCountFractionEnum -> ACT_365):
+                set basis: 365
+            """);
         String generatedPython = gf.get("src/com/_bundle.py").toString();
         
         // Verify the dispatcher structure and correct pairing
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "match dcf:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                """
-                        case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_360:
-                            return _com_test_DayCountBasis_ACT_360(dcf)
-                """);
+            """
+                    case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_360:
+                        return _com_test_DayCountBasis_ACT_360(dcf)
+            """);
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                """
-                        case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_365:
-                            return _com_test_DayCountBasis_ACT_365(dcf)
-                """);
+            """
+                    case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_365:
+                        return _com_test_DayCountBasis_ACT_365(dcf)
+            """);
 
         // Verify the default native fallback
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                """
-                        case _:
-                            basis = rune_execute_native('com.test.DayCountBasis', dcf)
-                """);
+            """
+                    case _:
+                        basis = rune_execute_native('com.test.DayCountBasis', dcf)
+            """);
 
         // Verify specialized helper functions are present and have correct distinct logic
         testUtils.assertGeneratedContainsExpectedString(generatedPython,

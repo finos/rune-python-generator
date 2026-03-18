@@ -32,18 +32,18 @@ public class PythonCircularDependencyTest {
     public void testLazyConstruction() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        namespace rosetta_dsl.test.semantic.object_construction
-                        type C:
-                            p1 int(1..1)
-                            p2 int(1..1)
+                namespace rosetta_dsl.test.semantic.object_construction
+                type C:
+                    p1 int(1..1)
+                    p2 int(1..1)
 
 
-                        func TestLazyConstruction:
-                            output:
-                                result C(1..1)
-                            set result->p1: 1
-                            set result->p2: 2
-                        """);
+                func TestLazyConstruction:
+                    output:
+                        result C(1..1)
+                    set result->p1: 1
+                    set result->p2: 2
+                """);
         String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython, "from rune.runtime.object_builder import ObjectBuilder");
@@ -153,12 +153,12 @@ public class PythonCircularDependencyTest {
         // reference in Parent.
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        type Parent:
-                            child Child (0..1)
+                type Parent:
+                    child Child (0..1)
 
-                        type Child extends Parent:
-                            val int (1..1)
-                        """);
+                type Child extends Parent:
+                    val int (1..1)
+                """);
 
         String generatedPython = gf.get("src/com/_bundle.py").toString();
 
