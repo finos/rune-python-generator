@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.generator.python.generated_syntax;
+package com.regnosys.rosetta.generator.python.syntax;
 
 import jakarta.inject.Inject;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;

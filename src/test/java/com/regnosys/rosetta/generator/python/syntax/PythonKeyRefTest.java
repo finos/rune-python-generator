@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.generator.python.generated_syntax;
+package com.regnosys.rosetta.generator.python.syntax;
 
 import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;

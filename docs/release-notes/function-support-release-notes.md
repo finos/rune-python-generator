@@ -59,3 +59,13 @@ The execution of pre-conditions and post-conditions has been standardized to ens
 
 - **Registry-Based Execution**: Conditions are registered in a local `_pre_registry` or `_post_registry` and executed via `rune_execute_local_conditions`.
 - **Improved Scoping**: Uses `inspect.currentframe()` to provide a reliable `self` context for condition evaluation within function bodies.
+
+## 7. Support for Enum-Based Function Specializations [FIXED]
+
+Rosetta allows functions to be overloaded/specialized based on enum input parameters. The generator now correctly translates this into a native Python dispatch mechanism.
+
+### Changes
+
+- **Python `match` Dispatching**: The generator now correctly identifies enum-driven dispatch functions and emits a structural pattern matching `match` statement over the enum values.
+- **Specialized Helpers**: Functions with specialized cases based on enum values are generated as isolated helper functions (e.g., `_my_func_ACT_360`).
+- **Native Fallback Logic**: The dispatcher integrates fully with the `codeImplementation` logic, handling the `case _:` default condition by correctly delegating to external native Python implementations when appropriate.
