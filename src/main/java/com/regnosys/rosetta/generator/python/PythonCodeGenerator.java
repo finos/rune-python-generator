@@ -245,7 +245,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             // 2. Traversal and Partitioning
             while (topologicalOrderIterator.hasNext()) {
                 String name = topologicalOrderIterator.next();
-                String bundleClassName = name.replace('.', '_');
+                String bundleClassName = PythonCodeGeneratorUtil.toFlattenedName(name);
                 CharSequence object = nameSpaceObjects.get(name);
                 if (object != null) {
                     boolean isFunction = context.hasFunctionName(name);
@@ -270,8 +270,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                     }
 
                     // 3. Create the stub (as before)
-                    String[] parsedName = name.split("\\.");
-                    String stubFileName = SRC + String.join("/", parsedName) + ".py";
+                    String stubFileName = SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py";
 
                     PythonCodeWriter stubWriter = new PythonCodeWriter();
                     stubWriter.appendLine("# pylint: disable=unused-import");
@@ -280,6 +279,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                         stubWriter.appendLine("from rune.runtime.func_proxy import create_module_attr_guardian");
                     }
                     stubWriter.append("from ");
+                    String[] parsedName = name.split("\\.");
                     stubWriter.append(parsedName[0]);
                     stubWriter.append("._bundle import ");
                     stubWriter.append(bundleClassName);

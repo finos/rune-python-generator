@@ -72,8 +72,16 @@ public final class PythonCodeGeneratorUtil {
                 """.stripIndent();
     }
 
+    public static String toFileSystemPath(String namespace) {
+        return namespace.replace(".", "/");
+    }
+
+    public static String toFlattenedName(String name) {
+        return name.replace(".", "_");
+    }
+
     public static String toFileName(String namespace, String fileName) {
-        return "src/" + namespace.replace(".", "/") + "/" + fileName;
+        return "src/" + toFileSystemPath(namespace) + "/" + fileName;
     }
 
     public static String toPyFileName(String namespace, String fileName) {

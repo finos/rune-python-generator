@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import jakarta.inject.Inject;
 import java.util.Map;
-import org.junit.jupiter.api.Disabled;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
@@ -59,7 +58,6 @@ public class PythonEnumMetadataTest {
      * Test case for enum without metadata.
      */
     @Test
-    @Disabled("Blocked by Enum Wrapper implementation - see Backlog")
     public void testEnumWithoutMetadata() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
@@ -73,13 +71,15 @@ public class PythonEnumMetadataTest {
                         type CashTransfer:
                             amount number (1..1)
                             currency CurrencyEnum (1..1)
+                                [metadata id]
                         """);
 
         String bundle = gf.get("src/test/_bundle.py").toString();
 
         // Enums should be consistently wrapped in Annotated to support metadata
         // during deserialization even if not explicitly required in Rosetta.
+
         testUtils.assertGeneratedContainsExpectedString(bundle,
-                "currency: Annotated[test.metadata.CurrencyEnum.CurrencyEnum, test.metadata.CurrencyEnum.CurrencyEnum.serializer(), test.metadata.CurrencyEnum.CurrencyEnum.validator()]");
+                "currency: Annotated[test.metadata.CurrencyEnum.CurrencyEnum, test.metadata.CurrencyEnum.CurrencyEnum.serializer(), test.metadata.CurrencyEnum.CurrencyEnum.validator(('@key', '@key:external'))] = Field(..., description='')");
     }
 }

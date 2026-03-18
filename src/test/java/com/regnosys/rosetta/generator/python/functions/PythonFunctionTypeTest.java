@@ -4,7 +4,6 @@ import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import jakarta.inject.Inject;
@@ -309,75 +308,48 @@ public class PythonFunctionTypeTest {
     /**
      * Test case for complex set constructors.
      */
-    @Disabled
     @Test
     public void testComplexSetConstructors() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
-                        type InterestRatePayout:
-                            [metadata key]
-                            rateSpecification RateSpecification (0..1)
+                type InterestRatePayout:
+                    rateSpecification RateSpecification (0..1)
 
-                        type RateSpecification:
-                            floatingRate FloatingRateSpecification (0..1)
+                type RateSpecification:
+                    floatingRate FloatingRateSpecification (0..1)
 
-                        type FloatingRateSpecification:
-                            [metadata key]
-                            rateOption FloatingRateOption (0..1)
+                type FloatingRateSpecification:
+                    rateOption int (0..1)
 
-                        type FloatingRateOption:
-                            value int(1..1)
+                type ObservationIdentifier:
+                    rateOption int (0..1)
+                    observationDate date (1..1)
 
-                        type ObservationIdentifier:
-                            observable Observable (1..1)
-                            observationDate date (1..1)
+                func ResolveInterestRateObservationIdentifiers:
+                    inputs:
+                        payout InterestRatePayout (1..1)
+                        date date (1..1)
+                    output:
+                        identifiers ObservationIdentifier (1..1)
 
-                        type Observable:
-                            [metadata key]
-                            rateOption FloatingRateOption (0..1)
-
-                        func ResolveInterestRateObservationIdentifiers:
-                            inputs:
-                                payout InterestRatePayout (1..1)
-                                date date (1..1)
-                            output:
-                                identifiers ObservationIdentifier (1..1)
-
-                            set identifiers -> observable -> rateOption:
-                                payout -> rateSpecification -> floatingRate -> rateOption
-                            set identifiers -> observationDate:
-                                date
-                        """);
+                    set identifiers -> rateOption:
+                        payout -> rateSpecification -> floatingRate -> rateOption
+                    set identifiers -> observationDate:
+                        date
+                """);
 
         String expectedBundle = """
                 @replaceable
                 @validate_call
                 def com_rosetta_test_model_ResolveInterestRateObservationIdentifiers(payout: com_rosetta_test_model_InterestRatePayout, date: datetime.date) -> com_rosetta_test_model_ObservationIdentifier:
                     \"\"\"
-
-                    Parameters
-                    ----------
-                    payout : com.rosetta.test.model.InterestRatePayout
-
-                    date : datetime.date
-
-                    Returns
-                    -------
-                    identifiers : com.rosetta.test.model.ObservationIdentifier
-
-                    \"\"\"
-                    self = inspect.currentframe()
-
-                    payout = rune_cow(payout)
-                    date = rune_cow(date)
-
-
-                    identifiers = _get_rune_object('com_rosetta_test_model_ObservationIdentifier', 'observable', _get_rune_object('com_rosetta_test_model_Observable', 'rateOption', rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "payout"), "rateSpecification"), "floatingRate"), "rateOption")))
-                    identifiers = set_rune_attr(rune_resolve_attr(self, 'identifiers'), 'observationDate', rune_resolve_attr(self, "date"))
-
-
-                    return identifiers
                 """;
+        // Check signature
         testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        // Check ObjectBuilder usage
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers = ObjectBuilder(com_rosetta_test_model_ObservationIdentifier)");
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers.rateOption = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, \"payout\"), \"rateSpecification\"), \"floatingRate\"), \"rateOption\")");
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers.observationDate = rune_resolve_attr(self, \"date\")");
+        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), "identifiers = identifiers.to_model()");
     }
 }

@@ -52,7 +52,7 @@ public class PythonFunctionAddOperationTest {
 
         String generated = gf.get("src/com/_bundle.py").toString();
         // Check core logic separately to maintain robustness
-        testUtils.assertGeneratedContainsExpectedString(generated, "filteredQuantities = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "filteredQuantities = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generated,
                 "rune_add_to_list(filteredQuantities, rune_filter(rune_resolve_attr(self, \"quantities\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"unit\"), \"=\", rune_resolve_attr(self, \"unit\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "return filteredQuantities");
@@ -94,7 +94,7 @@ public class PythonFunctionAddOperationTest {
                 """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generated, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");
@@ -119,7 +119,7 @@ public class PythonFunctionAddOperationTest {
                 """);
 
         String generated = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"list\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"value\"))");
     }
@@ -143,7 +143,7 @@ public class PythonFunctionAddOperationTest {
 
         String generated = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generated, "tempList = [2, 3]");
-        testUtils.assertGeneratedContainsExpectedString(generated, "result = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "result = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"list\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result, rune_resolve_attr(self, \"value\"))");
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");
@@ -164,7 +164,7 @@ public class PythonFunctionAddOperationTest {
 
         String generated = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generated, "result = ObjectBuilder(com_rosetta_test_model_IntHolder)");
-        testUtils.assertGeneratedContainsExpectedString(generated, "result.items = []");
+        testUtils.assertGeneratedContainsExpectedString(generated, "result.items = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generated, "rune_add_to_list(result.items, [1, 2, 3])");
         testUtils.assertGeneratedContainsExpectedString(generated, "result = result.to_model()");
         testUtils.assertGeneratedContainsExpectedString(generated, "return result");

@@ -153,7 +153,7 @@ public final class RuneToPythonMapper {
         if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
             return fullyQualifiedObjectName;
         }
-        String bundleName = fullyQualifiedObjectName.replace(".", "_");
+        String bundleName = PythonCodeGeneratorUtil.toFlattenedName(fullyQualifiedObjectName);
         if (useQuotes) {
             return "\"" + bundleName + "\"";
         }
@@ -284,7 +284,7 @@ public final class RuneToPythonMapper {
         if (isRosettaBasicType(type) || type instanceof REnumType) {
             return typeName;
         }
-        return typeName.replace('.', '_');
+        return PythonCodeGeneratorUtil.toFlattenedName(typeName);
     }
 
     /**
