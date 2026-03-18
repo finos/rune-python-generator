@@ -1,0 +1,53 @@
+namespace fpml.consolidated.accumulator : < "fpml definition" >
+version "${project.version}"
+
+type EquityAccumulator extends fpml.consolidated.shared.Product:
+
+    buyerSellerModel fpml.consolidated.shared.BuyerSellerModel (1..1)
+    notional fpml.consolidated.shared.NonNegativeMoney (1..1) <"The notional amount">
+    underlyer fpml.consolidated.asset.Underlyer (1..1) <"Specifies the underlying component, which can be either one security or a basket.">
+    forwardPrice fpml.consolidated.shared.NonNegativeMoney (0..1) <"The price the shares will be accumulated at.">
+    spotPrice fpml.consolidated.shared.NonNegativeMoney (0..1) <"The current price of the stock">
+    numberOfSharesPerDay fpml.consolidated.shared.NonNegativeDecimal (1..1) <"The number of shares to be purchased per day">
+    maxNoOfTradingDays int (0..1) <"Maximum number of trading days">
+    gearing Gearing (0..1) <"Leverage or Gearing. Optional condition where if shares fall below trigger price, number of shares purchased increase by the gearing factor.">
+    guaranteedPeriodEndDate zonedDateTime (0..1) <"End date of guaranteed period. If knock out is triggered within guaranteed period, guaranteed number of shares will be delivered.">
+    observationPeriod ObservationPeriod (1..*) <"Period when accumulator will accumulate shares">
+    expiration EquityForwardExpiration (1..1) <"Expiration date of accumulator.">
+    prePayment fpml.consolidated.eqd.PrePayment (0..1) <"A payment made in advance for the purchase of the shares.">
+    settlementType fpml.consolidated.fpmlenum.SettlementTypeEnum (1..1) <"How the accululator will be settled.">
+    settlementCurrency fpml.consolidated.shared.Currency (0..1) <"The currency in which a cash settlement for non-deliverable forward and non-deliverable options.">
+    settlementPriceSource fpml.consolidated.shared.SettlementPriceSource (0..1) <"The source from which the settlement price is to be obtained, e.g. a Reuters page, Prezzo di Riferimento, etc.">
+    knockOut AccumulatorKnockOut (0..1) <"Termination of contract prior to maturity date as a result of stock price exceeding specified level or performance reaching target performance.">
+
+type EquityForwardExpiration extends fpml.consolidated.shared.Exercise: <"A type for defining expiry of an equity forward contract.">
+
+    expirationDate fpml.consolidated.shared.AdjustableOrRelativeDate (1..1) <"The last day within an exercise period for an American style option. For a European style option it is the only day within the exercise period.">
+    equityExpirationModel fpml.consolidated.eqd.EquityExpirationModel (1..1)
+
+type SharesPerDay:
+
+type Gearing: <"Leverage or Gearing. Optional condition where if shares fall below trigger price, number of shares puchased increase by the gearing factor.">
+
+    gearingFactor number (1..1) <"Increase in number of shares purchased.">
+    leverageTriggerPrice number (0..1) <"If specified, gearing factor applied only if share price falls below this trigger price.">
+
+type ObservationPeriod: <"Period when accumulator will accumulate shares.">
+
+    observationPeriodStartDate zonedDateTime (1..1) <"Start date of observation period">
+    observationPeriodEndDate zonedDateTime (1..1) <"End date of observation period">
+    observationPeriodSettlementDate zonedDateTime (0..1) <"Settlement date for shares accumulated during the observation period.">
+    observationPeriodNoOfTradingDays int (0..1) <"Number of trading days in observation period">
+    upFrontSettlement boolean (0..1) <"Does the investor need to invest the maximum notional amount for this observation period upfront ? The alternative is to transact on a margin basis.">
+    noOfScheduledTradingDays int (0..1) <"Number of scheduled trading days in observation period">
+
+type AccumulatorKnockOut: <"Termination of contract prior to maturity date as a result of stock price reaching specified level or performance reaching target performance.">
+
+    accumulatorKnockOutSequence AccumulatorKnockOutSequence (0..1)
+    level number (0..1) <"The share price, above which the contract is terminated.">
+    triggerTimeType fpml.consolidated.fpmlenum.TriggerTimeTypeEnum (1..1) <"The time of day which would be considered for valuing the knock event.">
+
+type AccumulatorKnockOutSequence:
+
+    targetPerformance fpml.consolidated.shared.NonNegativeDecimal (1..1) <"The target performance.">
+    level number (0..1) <"The share price, above which the contract is terminated.">

@@ -1,0 +1,7 @@
+namespace fpml.consolidated.business.events : < "fpml definition" >
+version "${project.version}"
+
+enum CashOrPhysicalSettlementEnum:
+
+    Cash
+    Physical

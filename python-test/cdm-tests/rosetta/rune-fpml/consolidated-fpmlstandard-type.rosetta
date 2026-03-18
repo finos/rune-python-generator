@@ -1,0 +1,7 @@
+namespace fpml.consolidated.fpmlstandard : < "fpml definition" >
+version "${project.version}"
+
+type StandardProduct extends fpml.consolidated.shared.Product: <"Deprecated: Standard product - for use in Transparency reporting to define a product that represents a standardized OTC derivative transaction whose economics do not need to be fully described using an FpML schema because they are implied by the product ID. In other views, standard products are present for convenience to support internal messaging and workflows that are cross-product. Standard products are not full trade representations as such they are not intended to be used for confirming trades. Simple product representation providing key information about a variety of different products. Standard products - for use in Transparency reporting to define a product that represents a standardized OTC derivative transaction whose economics do not need to be fully described using an FpML schema because they are implied by the product ID. In other views, standard products are present for convenience to support internal messaging and workflows that are cross-product. Standard products are not full trade representations as such they are not intended to be used for confirming trades.">
+
+    notional fpml.consolidated.shared.CashflowNotional (0..1) <"The notional amount that was traded.">
+    quote fpml.consolidated.asset.BasicQuotation (0..*) <"Pricing information for the trade.">

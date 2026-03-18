@@ -1,0 +1,126 @@
+namespace fpml.consolidated.reg.fpmlreporting.product : < "fpml definition" >
+version "${project.version}"
+
+type RegulatoryProductInfo extends RegulatoryReportingProduct: <"Product data fields required by regulators in satisfaction of non-public (recordkeeping) regulatory reporting regulations. These are identified where possible using CPMI-IOSCO Common Data Element lexicon and terminology, but include additional fields required by other regulations. This product is not intended to provide the full trade economics required for confirmation or valuation purposes. This product allows a simpler representation of OTC derivative products that have full standardized representations in FpML. DEPRECATED. Reason: Not used. (RPTWG decision 2024-05-30)">
+
+type RegReportingPayment extends fpml.consolidated.shared.NonNegativePayment: <"Simple product representation providing key information about trade economics of any type of trade for regulatory reporting purposes. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    paymentType fpml.consolidated.shared.PaymentType (0..1) <"A classification of the type of fee or additional payment, e.g. brokerage, upfront fee etc. FpML does not define domain values for this element. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingNonCDEOptionDetails: <"This defines data elements not defined in CDE that describe option characteristics. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    optionType fpml.consolidated.fpmlenum.OptionTypeEnum (0..1) <"For options, what type of option it is (e.g. butterfly). DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    firstExerciseDate zonedDateTime (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    optionExpirationDate zonedDateTime (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    underlyerMaturityDate zonedDateTime (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    exerciseStyle fpml.consolidated.generic.GenericExerciseStyle (0..1) <"For options, whether the option is a put or call option. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    feature fpml.consolidated.generic.GenericProductFeature (0..*) <"Special features that the option may have, such as Asian averaging, Barriers, Digital payout, etc. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingNonCDEProductCommodityDetails: <"Commodity product data fields not called out in CPMI-IOSCO CDE. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    genericCommodityAttributesModel fpml.consolidated.generic.GenericCommodityAttributesModel (1..1)
+
+type RegulatoryReportingProduct extends fpml.consolidated.shared.Product: <"Simple product representation providing key information about trade economics of any type of trade for regulatory reporting purposes. DEPRECATED. Reason: Not used. (RPTWG decision 2024-05-30)">
+
+    parties RegulatoryReportingProductParties (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    dates RegulatoryReportingProductDates (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    sizes RegulatoryReportingProductSizes (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    underlyers RegulatoryReportingProductUnderlyers (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    priceTerms RegulatoryReportingProductPriceTerms (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    otherCalculationTerms RegulatoryReportingProductCalculationTerms (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    optionDetails RegulatoryReportingNonCDEOptionDetails (0..1) <"DEPRECATED. Reason: Deprecated parent element. (RPTWG decision 2024-05-30)">
+    settlementDetails RegulatoryReportingProductSettlementDetails (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    otherPayment RegReportingPayment (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    creditDetails RegulatoryReportingProductCreditDetails (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    fxDetails RegulatoryReportingProductNonCDEFxDetails (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    commodityDetails RegulatoryReportingNonCDEProductCommodityDetails (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingProductCalculationTerms: <"Calculation terms. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    dayCountFraction fpml.consolidated.shared.DayCountFraction (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    paymentFrequency fpml.consolidated.shared.Frequency (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    regulatoryReportingNonCDECalculationTermsModel RegulatoryReportingNonCDECalculationTermsModel (1..1)
+
+type RegulatoryReportingProductCreditDetails: <"Credit related fields. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    attachmentPoint number (0..1) <"Lower bound percentage of the loss that the Tranche can endure, expressed as a decimal. An attachment point of 5% would be represented as 0.05. The difference between Attachment and Exhaustion points is call the width of the Tranche. A schema facet to constraint the value between 0 to 1 will be introduced in FpML 4.3. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    exhaustionPoint number (0..1) <"Upper bound percentage of the loss that the Tranche can endure, expressed as a decimal. An exhaustion point of 5% would be represented as 0.05. The difference between Attachment and Exhaustion points is call the width of the Tranche. A schema facet to constraint the value between 0 to 1 will be introduced in FpML 4.3. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    regulatoryReportingNonCDECreditDetailsModel RegulatoryReportingNonCDECreditDetailsModel (1..1)
+
+type RegulatoryReportingProductDates: <"Date related fields. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    effectiveDate zonedDateTime (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    contractExpirationDate zonedDateTime (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    finalContractualSettlementDate zonedDateTime (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingProductNonCDEFxDetails: <"FX-related data elements not called out in CPMI-IOSCO CDE. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    fxType string (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    deliveryCurrency fpml.consolidated.shared.Currency (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    deliveryCurrency2 fpml.consolidated.shared.Currency (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    forwardExchangeRate number (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingProductParties: <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    regulatoryBuyerAndSellerModel fpml.consolidated.shared.RegulatoryBuyerAndSellerModel (1..1)
+    regulatoryNonCDEPartyInfoModel RegulatoryNonCDEPartyInfoModel (1..1)
+
+type RegulatoryReportingProductPriceTerms: <"All price term information is defined by CPMI-IOSCO CDE. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    fixedRate number (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    fixedRateNotation string (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    fixedRateSchedule fpml.consolidated.shared.Schedule (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    spread number (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    spreadCurrency fpml.consolidated.shared.Currency (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    spreadNotation string (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    strikePrice number (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    strikePriceNotation string (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    strikePriceSchedule fpml.consolidated.shared.Schedule (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    exchangeRate fpml.consolidated.fx.ExchangeRate (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingProductSettlementDetails: <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    settlementMethod fpml.consolidated.fpmlenum.SettlementTypeEnum (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    settlementCurrency fpml.consolidated.shared.Currency (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    settlementLocation fpml.consolidated.shared.BusinessCenter (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingProductSizes: <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    notional fpml.consolidated.shared.NonNegativeMoney (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    callAmount fpml.consolidated.shared.NonNegativeMoney (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    putAmount fpml.consolidated.shared.NonNegativeMoney (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    notionalSchedule fpml.consolidated.shared.NonNegativeAmountSchedule (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    regulatoryReportingNonCDESizeFieldsModel RegulatoryReportingNonCDESizeFieldsModel (0..1)
+
+type RegulatoryReportingProductUnderlyers: <"At the moment all of the underlyer information is non-CDE, as CPMI-IOSCO CDE doesn not define underlier information. Instead, it relies on the UPI to convey this information. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    underlyer fpml.consolidated.generic.TradeUnderlyer2 (0..*)
+
+type RegulatoryNonCDEPartyInfoModel: <"Data fields related to parties participating in the trade economics that are not specifically called out in the CPMI-IOSCO Critical Data Elements. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    fixedPayerPartyReference fpml.consolidated.shared.PartyReference (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    fixedReceiverPartyReference fpml.consolidated.shared.PartyReference (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    floatingPayerPartyReference fpml.consolidated.shared.PartyReference (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    floatingReceiverPartyReference fpml.consolidated.shared.PartyReference (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    floating2PayerPartyReference fpml.consolidated.shared.PartyReference (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    floating2ReceiverPartyReference fpml.consolidated.shared.PartyReference (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingNonCDECalculationTermsModel: <"Product settlement calcuation terms not defined by CPMI-IOSCO CDE. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    calculationFrequency fpml.consolidated.shared.Frequency (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    resetFrequency fpml.consolidated.shared.Frequency (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingNonCDECreditDetailsModel:
+
+    seniority fpml.consolidated.shared.CreditSeniority (0..1) <"DEPRECATED. Use instead the field within credit products: indexReferenceInformation/seniority (RPTWG decision 2017-09)">
+    indexFactor number (0..1) <"DEPRECATED. Use instead the field within credit products: indexReferenceInformation/indexFactor (RPTWG decision 2017-09)">
+    indexSeries int(min: 1) (0..1) <"A CDS index series identifier, e.g. 1, 2, 3 etc. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    indexAnnexVersion int(min: 1) (0..1) <"A CDS index series version identifier, e.g. 1, 2, 3 etc. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    fixedRecoveryFinalPrice number (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+type RegulatoryReportingNonCDESizeFieldsModel: <"Fields related to product size that are not specifically called out in CPMI-IOSCO CDE. DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+
+    quantity fpml.consolidated.shared.NonNegativeDecimal (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    quantityFrequency fpml.consolidated.shared.NonNegativeDecimal (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    quantitySchedule fpml.consolidated.com.CommodityPhysicalQuantitySchedule (0..1) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">
+    totalNotionalQuantity fpml.consolidated.shared.NonNegativeDecimal (0..*) <"DEPRECATED. Reason: Not used, deprecated parent element. (RPTWG decision 2024-05-30)">

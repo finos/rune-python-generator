@@ -1,0 +1,978 @@
+namespace fpml.consolidated.business.events : < "fpml definition" >
+version "${project.version}"
+
+type BasketChange extends BasketChangeEvent: <"Describes a change due to change in composition of basket underlyer">
+    [rootType]
+
+type ChangeEvent extends AbstractEvent: <"Abstract substitutable place holder for specific change details. Abstract base type for non-negotiated trade change descriptions">
+    [rootType]
+
+type CreditChangeEvent extends CreditChangeEventBase: <"Describes a change due to a credit event. A structure indicating that a trade has changed due to a credit event, including both shared (by single name, index and basket) and index specific components.">
+    [rootType]
+
+    indexReferenceInformation fpml.consolidated.cd.CreditEventIndexReferenceInformation (0..1) <"A type defining the Credit Default Swap Index impacted by the credit event.">
+    excludedReferenceEntity fpml.consolidated.cd.ReferenceInformation (0..1) <"The corporate or sovereign entity (and, optionally, associated obligations) in a basket impacted by the credit event.">
+
+    condition Choice:
+        optional choice indexReferenceInformation, excludedReferenceEntity
+
+type CorporateAction extends CorporateActionEvent: <"Describes a change due to a corporate action">
+    [rootType]
+
+type IndexChange extends ChangeEvent: <"Describes a change due to an index component being adjusted. A structure describing the effect of a change to an index.">
+    [rootType]
+
+    indexFactor number (0..1)
+    factoredCalculationAmount fpml.consolidated.shared.Money (0..1)
+
+type AbstractEvent: <"Abstract base type for all events.">
+
+    eventIdentifier BusinessEventIdentifier (0..*)
+
+type ActionOnExpiration:
+
+    optionExerciseAmountModel OptionExerciseAmountModel (1..1)
+
+type AdditionalEvent extends AbstractEvent: <"Abstract base type for an extension/substitution point to customize FpML and add additional events.">
+
+type AmountRef: <"A type defining a nominal amount with a reference.">
+
+    amount fpml.consolidated.shared.PositiveDecimal (1..1)
+    amountReference fpml.consolidated.shared.AmountReference (0..1)
+
+type BasketChangeEvent extends ChangeEvent: <"A structure indicating that the basket underlyer of the trade has changed due to client trading activity">
+
+type BusinessEventIdentifier: <"A type defining an event identifier issued by the indicated party.">
+
+    partyAndAccountReferencesModel fpml.consolidated.shared.PartyAndAccountReferencesModel (1..1)
+    eventId EventId (1..1)
+    id string (0..1)
+
+type ResetCalculationDetails: <"A cashflow component with optional calculation details that explain how the reset value was computed.">
+
+    observation Observation (0..*) <"The underlyer rate or price observation(s) used to compute the amount of this cashflow component.">
+    calculationElements ResetCalculationElements (0..1) <"The calculation details used to compute the reset rate.">
+
+type ResetCalculationElements:
+
+    notional fpml.consolidated.shared.CashflowNotional (0..1) <"Identifies the notional in effect for this calculation period.">
+    calculatedRate CashflowFixing (0..1) <"The computed rate(s) or price(s) used to calculate the amount of this reset. These computed rates or prices may include averaging and/or various types of rate treatment rules.">
+    calculationPeriod ResetCalculationPeriod (0..1) <"The period details for calculation/accrual periods that comprise this reset.">
+
+type ResetCalculationPeriod: <"The period calculation details for a calculation/accrual period. This will include information about the dates and duration of the accrual period, the rate fixing(s), the notional in effect, and the amount of the accrual.">
+
+    cashflowCalculationPeriodDatesModel CashflowCalculationPeriodDatesModel (1..1)
+    dayCountAndYearFractionModel DayCountAndYearFractionModel (1..1)
+
+type CashflowFixing: <"Details of the computation of a computed rate or price used to calculate the amount of a cashflow component. This computed rate or price may include averaging and/or various types of rate treatment rules. The details include all of the observations, the calculation parameters, and the resulting value.">
+
+    observationReference CashflowObservationReference (0..*) <"Reference to the observation details of a particular rate observation.">
+    calculatedValue number (0..1) <"The value computed based on averaging the underlying observation and applying any spreads, multipliers, and cap and floors values. average or treated value computed based on the underlyer observations, following the calculation rules.">
+    multiplier number (0..1) <"A rate multiplier to apply to the floating rate. The multiplier can be a positive or negative decimal. This element should only be included if the multiplier is not equal to 1 (one).">
+    spread number (0..1) <"The ISDA Spread, if any, which applies for the calculation period. It also defines spread as price. The spread is a per annum rate, expressed as a decimal. For purposes of determining a calculation period amount, if positive the spread will be added to the floating rate and if negative the spread will be subtracted from the floating rate. A positive 10 basis point (0.1%) spread would be represented as 0.001.">
+    capValue fpml.consolidated.shared.Strike (0..*) <"The cap rate or price, if any, which applies to the floating rate for the calculation period. The cap rate (strike) is only required where the floating rate on a swap stream is capped at a certain strike level. The cap rate is assumed to be exclusive of any spread and is a per annum rate, expressed as a decimal. A cap rate of 5% would be represented as 0.05.">
+    floorValue fpml.consolidated.shared.Strike (0..*) <"The floor rate or price, if any, which applies to the floating rate for the calculation period. The floor rate (strike) is only required where the floating rate on a swap stream is floored at a certain strike level. The floor rate is assumed to be exclusive of any spread and is a per annum rate, expressed as a decimal. The floor rate of 5% would be represented as 0.05.">
+    negativeInterestRate boolean (0..1) <"Flag to indicate if negative interest rate is applied.">
+    rounding fpml.consolidated.shared.Rounding (0..1) <"Rounding direction and precision for price values.">
+    id string (0..1)
+
+type CashflowObservationReference extends fpml.consolidated.shared.Reference: <"Reference to a cash flow observation component.">
+
+    href string (1..1)
+
+type ClearingInstructions:
+
+    requestedClearingAction RequestedClearingAction (0..1)
+    requestedClearingOrganizationPartyReference fpml.consolidated.shared.PartyReference (0..1)
+
+type CorporateActionEvent extends ChangeEvent: <"A structure indicating that a trade has changed due to a corporate action">
+
+    ^type CorporateActionType (0..1)
+
+type CorporateActionType: <"A type that describes what type of corporate action occurred.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    corporateActionScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type CreditChangeEventBase extends ChangeEvent: <"A structure indicating that a trade has changed due to a credit event and containing only components shared by single name, index and basket.">
+
+    creditEventType CreditEventType (0..1) <"Specifies the type of credit event taking place.">
+    eventDeterminationDate zonedDateTime (0..1) <"The date at which a Credit Event Resolution Request Date (CERD) or Notice Delivery Date occurs.">
+    auctionDate zonedDateTime (0..1) <"The date on which the auction is scheduled to occur.">
+    settlementMethod CashOrPhysicalSettlementEnum (0..1) <"Specifies whether the process is to be physically settled or cash settled.">
+    settlementDate zonedDateTime (0..1) <"The date on which settlement is scheduled to occur.">
+    finalPrice number (0..1) <"The final price resulting from the auction.">
+    recoveryPercent number (0..1) <"The percentage of the original value of the asset affected by the credit event that can be recovered.">
+    publiclyAvailableInformation fpml.consolidated.shared.Resource (0..*) <"A public information source, e.g. a particular newspaper or electronic news service, that may publish relevant information used in the determination of whether or not a credit event has occurred.">
+
+type EventId: <"A post-trade event reference identifier allocated by a party. FpML does not define the domain values associated with this element. Note that the domain values for this element are not strictly an enumerated list.">
+
+    value fpml.consolidated.shared.NonEmptyScheme (1..1)
+    eventIdScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+    id string (0..1)
+
+type EventTaxonomy:
+
+    value fpml.consolidated.shared.NonEmptyScheme (1..1)
+    eventTaxonomyScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type EventType:
+
+    value fpml.consolidated.shared.NonEmptyScheme (1..1)
+    eventTypeScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type KnockOutRateObservation extends TriggerRateObservation: <"Describes an observation that caused a barrier knock out to trigger">
+
+    rebatePayment fpml.consolidated.shared.NonNegativePayment (0..1) <"Any rebate payable as a result of the knock out">
+
+type MoneyRef extends fpml.consolidated.shared.PositiveMoney: <"A type defining a currency amount with a reference.">
+
+    notionalReference fpml.consolidated.shared.NotionalReference (0..1) <"A pointer style reference to the associated notional schedule defined elsewhere in the document.">
+
+type NoTouchLowerBarrierObservation:
+
+    noTouchLowerBarrierObservationSequence0 NoTouchLowerBarrierObservationSequence0 (0..1)
+    noTouchLowerBarrierObservationSequence1 NoTouchLowerBarrierObservationSequence1 (0..1)
+
+    condition Choice:
+        one-of
+
+type NoTouchLowerBarrierObservationSequence0:
+
+    triggerRate number (0..1) <"The rate value (level) which was attained/breached, in order to trigger the barrier event.">
+    quotedCurrencyPair fpml.consolidated.shared.QuotedCurrencyPair (0..1) <"Defines the currency pair and quote basis for an FX rate.">
+    minimumObservedRate ObservedRate (0..1) <"The minimum value observed during the condition period.">
+
+type NoTouchLowerBarrierObservationSequence1:
+
+    triggerPrice fpml.consolidated.shared.PositiveMoney (0..1) <"The price value (level) which was attained/breached, in order to trigger the barrier event.">
+    minimumObservedPrice ObservedPrice (0..1) <"The minimum value observed during the condition period">
+
+type NoTouchRateObservation:
+
+    observationStartDate zonedDateTime (0..1)
+    observationEndDate zonedDateTime (0..1)
+    noTouchRateObservationSequence0 NoTouchRateObservationSequence0 (0..1)
+    upperBarrier NoTouchUpperBarrierObservation (0..1)
+    noTouchRateObservationSequence1 NoTouchRateObservationSequence1 (0..1)
+    isExercisable boolean (0..1) <"If the touch or no touch event hasn\'t generated an exercise, then we specify whether the option is exercisable or not.">
+
+    condition Choice0:
+        optional choice noTouchRateObservationSequence0, upperBarrier
+
+    condition Choice1:
+        optional choice noTouchRateObservationSequence1, isExercisable
+
+type NoTouchRateObservationSequence0:
+
+    lowerBarrier NoTouchLowerBarrierObservation (1..1)
+    upperBarrier NoTouchUpperBarrierObservation (0..1)
+
+type NoTouchRateObservationSequence1:
+
+    exerciseSide fpml.consolidated.fpmlenum.ExerciseSideEnum (0..1)
+    settlementType fpml.consolidated.fpmlenum.SettlementTypeEnum (0..1)
+    cashSettlement fpml.consolidated.shared.SimplePayment (0..1)
+    physicalSettlement PhysicalSettlement (0..1)
+    payment fpml.consolidated.shared.NonNegativePayment (0..1)
+    clearingInstructions ClearingInstructions (0..1)
+
+    condition Choice:
+        optional choice settlementType, cashSettlement , physicalSettlement
+
+type NoTouchUpperBarrierObservation:
+
+    noTouchUpperBarrierObservationSequence0 NoTouchUpperBarrierObservationSequence0 (0..1)
+    noTouchUpperBarrierObservationSequence1 NoTouchUpperBarrierObservationSequence1 (0..1)
+
+    condition Choice:
+        one-of
+
+type NoTouchUpperBarrierObservationSequence0:
+
+    triggerRate number (0..1) <"The rate value (level) which was attained/breached, in order to trigger the barrier event.">
+    quotedCurrencyPair fpml.consolidated.shared.QuotedCurrencyPair (0..1) <"Defines the currency pair and quote basis for an FX rate.">
+    maximumObservedRate ObservedRate (0..1) <"The maximum value observed during the condition period">
+
+type NoTouchUpperBarrierObservationSequence1:
+
+    triggerPrice fpml.consolidated.shared.PositiveMoney (0..1) <"The price value (level) which was attained/breached, in order to trigger the barrier event.">
+    maximumObservedPrice ObservedPrice (0..1) <"The maximum value observed during the condition period">
+
+type Observation:
+
+    observationReference ObservationReference (0..1)
+    weight number (0..1)
+
+type ObservationEvent extends AbstractEvent:
+
+    date zonedDateTime (1..1) <"Date of observation.">
+    time fpml.consolidated.shared.TimeZone (0..1) <"The observation time, with a possible indication of the timezone dimension.">
+    side fpml.consolidated.fpmlenum.QuotationRateTypeEnum (0..1) <"The side (bid/mid/ask) of the observation, when applicable.">
+    observedValue number (1..1) <"The observation value.">
+    source ObservationSource (0..1) <"The observation source.">
+
+type ObservationSource: <"The observation source can be composed of an curve and/or and information source.">
+
+    informationSource fpml.consolidated.shared.InformationSource (0..1) <"The source of the observation.">
+    underlyer fpml.consolidated.generic.TradeUnderlyer2 (0..1)
+
+type ObservedPrice:
+
+    price fpml.consolidated.shared.NonNegativeMoney (0..1) <"The observed rate value which triggered the barrier event.">
+    date zonedDateTime (0..1) <"The date when the rate was observed.">
+    time time (0..1) <"The time when the rate ws observed.">
+    informationSource fpml.consolidated.shared.InformationSource (0..1) <"The source of the observation.">
+
+type ObservedRate:
+
+    rate number (0..1) <"The observed rate value which triggered the barrier event.">
+    date zonedDateTime (0..1) <"The date when the rate was observed.">
+    time time (0..1) <"The time when the rate ws observed.">
+    informationSource fpml.consolidated.shared.InformationSource (0..1) <"The source of the observation.">
+
+type ObservationReference extends AbstractEvent: <"Reference to the observation details of a particular rate observation.">
+
+type OptionEvent extends AbstractEvent:
+
+    originalTrade fpml.consolidated.doc.Trade (0..1) <"Fully describes the original trade (prior to the exercise).">
+    tradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..*) <"Identified the trade to which the option event applies.">
+    knockIn TriggerRateObservation (0..1) <"A structure describing a barrier knock in event">
+    knockOut KnockOutRateObservation (0..1) <"A structure describing a barrier knock out event">
+    touch TouchRateObservation (0..2) <"A structure describing a touch event">
+    noTouch NoTouchRateObservation (0..1) <"A structure describing the outcome of an option having no touch events">
+
+    condition Choice0:
+        optional choice originalTrade, tradeIdentifier
+
+    condition Choice1:
+        optional choice knockIn, knockOut , touch , noTouch
+
+type OptionExercise extends AbstractEvent: <"A structure describing an option exercise. The OptionExercise type supports partial exercise (specify the number of options or amount to exercise), full exercise (use fullExercise flag), as well as the option to request options not to be exercised.">
+
+    optionSeller fpml.consolidated.shared.PartyReference (0..1)
+    optionBuyer fpml.consolidated.shared.PartyReference (0..1)
+    originalTrade fpml.consolidated.doc.Trade (0..1) <"Fully describes the original trade (prior to the exercise).">
+    tradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..*)
+    optionExerciseSequence OptionExerciseSequence (0..1)
+    exerciseTiming fpml.consolidated.fpmlenum.ExerciseTimingEnum (0..1)
+    optionExerciseAmountModel OptionExerciseAmountModel (1..1)
+    exerciseSide fpml.consolidated.fpmlenum.ExerciseSideEnum (0..1)
+    settlementType fpml.consolidated.fpmlenum.SettlementTypeEnum (0..1)
+    cashSettlement fpml.consolidated.shared.SimplePayment (0..1)
+    physicalSettlement PhysicalSettlement (0..1)
+    payment fpml.consolidated.shared.NonNegativePayment (0..1)
+    clearingInstructions ClearingInstructions (0..1)
+
+    condition Choice0:
+        optional choice originalTrade, tradeIdentifier
+
+    condition Choice1:
+        optional choice optionExerciseSequence, exerciseTiming
+
+    condition Choice2:
+        optional choice settlementType, cashSettlement , physicalSettlement
+
+type OptionExerciseSequence:
+
+    exerciseDate zonedDateTime (0..1)
+    exerciseTime time (0..1)
+
+type OptionExerciseAmounts:
+
+    optionExerciseAmountsSequence0 OptionExerciseAmountsSequence0 (0..1)
+    optionExerciseAmountsSequence1 OptionExerciseAmountsSequence1 (0..1)
+    optionExerciseAmountsSequence2 OptionExerciseAmountsSequence2 (0..1)
+    optionExerciseAmountsSequence3 OptionExerciseAmountsSequence3 (0..1)
+
+    condition Choice:
+        one-of
+
+type OptionExerciseAmountsSequence0:
+
+    notionalReference fpml.consolidated.shared.NotionalReference (0..1)
+    exerciseInNotionalAmount fpml.consolidated.shared.Money (0..1) <"Specifies the fixed amount by which the option should be exercised expressed as notional amount.">
+    outstandingNotionalAmount fpml.consolidated.shared.Money (0..1) <"Specifies the Notional amount after the Change">
+
+type OptionExerciseAmountsSequence1:
+
+    notionalScheduleReference fpml.consolidated.shared.NotionalReference (0..1)
+    exerciseInNotionalSchedule fpml.consolidated.shared.NonNegativeAmountSchedule (0..1) <"Specifies the amount by which the option should be exercised expressed as notional schedule.">
+    outstandingNotionalSchedule fpml.consolidated.shared.NonNegativeAmountSchedule (0..1) <"Specifies the Notional schedule after the Change">
+
+type OptionExerciseAmountsSequence2:
+
+    numberOfOptionsReference fpml.consolidated.shared.NumberOfOptionsReference (0..1)
+    exerciseInNumberOfOptions number (0..1) <"Specifies the fixed amount by which the option should be exercised expressed as number of options.">
+    outstandingNumberOfOptions number (0..1) <"Specifies the Number of Options after the Change.">
+
+type OptionExerciseAmountsSequence3:
+
+    numberOfUnitsReference fpml.consolidated.shared.NumberOfUnitsReference (0..1)
+    exerciseInNumberOfUnits number (0..1) <"Specifies the fixed amount by which the option should be exercised express as number of units.">
+    outstandingNumberOfUnits number (0..1) <"Specifies the Number of Units">
+
+type OptionExpiry extends AbstractEvent: <"A structure describing an option expiring (i.e. passing its last exercise time and becoming worthless.)">
+
+    originalTrade fpml.consolidated.doc.Trade (0..1) <"Fully describes the original trade (prior to the exercise).">
+    tradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..*)
+    date zonedDateTime (0..1)
+    time time (0..1)
+    exerciseProcedure fpml.consolidated.shared.ExerciseProcedureOption (0..1)
+    actionOnExpiration ActionOnExpiration (0..1)
+
+    condition Choice:
+        optional choice originalTrade, tradeIdentifier
+
+type PhysicalSettlement: <"A structure that describes how an option settles into a physical trade.">
+
+    resultingTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..1) <"The ID of the trade that resulted from the physical settlement.">
+    resultingTrade fpml.consolidated.doc.Trade (0..1) <"The trade that resulted from the physical settlement.">
+    product fpml.consolidated.shared.Product (0..1)
+
+    condition Choice:
+        one-of
+
+type RequestedClearingAction: <"A type that describes whether a trade is to be cleared.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    requestedClearingActionScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type RequestedWithdrawalAction: <"A type that describes what the requester would like to see done to implement the withdrawal, e.g. ExpungeRecords, RetainRecords.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    requestedWithdrawalActionScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type ResetEvent extends AbstractEvent:
+
+    tradeReference fpml.consolidated.doc.PartyTradeIdentifiers (0..1) <"A container since an individual trade can be referenced by two or more different partyTradeIdentifier elements - each allocated by a different party.">
+    legIdentifier fpml.consolidated.shared.LegIdentifier (0..*) <"Version aware identification of this leg.">
+    date fpml.consolidated.shared.RequiredIdentifierDate (0..1) <"Date of reset.">
+    resetValue fpml.consolidated.shared.IdentifiedRate (0..1) <"Value of reset.">
+    calculationDetails ResetCalculationDetails (0..1) <"The set of calculations that comprise this reset value.">
+
+type TerminatingEvent: <"A type that describes why a trade terminated.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    terminatingEventScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type TradeAmendmentContent extends AbstractEvent: <"A structure describing a negotiated amendment.">
+
+    trade fpml.consolidated.doc.Trade (1..1) <"A full description of the amended trade (i.e. the trade after the amendment).">
+    agreementAndEffectiveDatesModel AgreementAndEffectiveDatesModel (1..1)
+    reportingNotionalChangeModel ReportingNotionalChangeModel (0..1)
+    tradeAlterationPaymentModel TradeAlterationPaymentModel (1..1)
+
+type TradeChangeBase extends AbstractEvent: <"A structure describing a trade change.">
+
+    tradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..*)
+    originalTrade fpml.consolidated.doc.Trade (0..1)
+    resultingTrade fpml.consolidated.doc.Trade (0..1)
+    agreementAndEffectiveDatesModel AgreementAndEffectiveDatesModel (1..1)
+    tradeAlterationPaymentModel TradeAlterationPaymentModel (1..1)
+
+    condition Choice:
+        optional choice tradeIdentifier, originalTrade
+
+type TradeChangeContent: <"A structure describing a non-negotiated trade resulting from a market event.">
+
+    oldTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..1) <"The original qualified trade identifier.">
+    oldTrade fpml.consolidated.doc.Trade (0..1) <"The original trade details.">
+    trade fpml.consolidated.doc.Trade (0..1) <"A full description of the amended trade.">
+    effectiveDate zonedDateTime (0..1) <"The date on which the change become effective">
+    changeEvent ChangeEvent (0..1)
+    payment fpml.consolidated.shared.Payment (0..*) <"Describes a payment made in settlement of the change.">
+
+    condition Choice:
+        optional choice oldTradeIdentifier, oldTrade
+
+type TradeLegPriceChange: <"A structure describing a change to the size of a single leg or stream of a trade.">
+
+    priceReference fpml.consolidated.shared.Reference (0..1)
+    instrumentId fpml.consolidated.shared.InstrumentId (0..*) <"Identification of the underlying asset, using public and/or private identifiers.">
+    priceChangeAmount number (0..1)
+    newPrice number (0..1)
+
+    condition Choice:
+        optional choice priceReference, instrumentId
+
+type TradeLegSizeChange: <"A structure describing a change to the size of a single leg or stream of a trade.">
+
+    tradeLegNotionalChangeModel TradeLegNotionalChangeModel (0..1)
+    tradeLegNumberOfOptionsChangeModel TradeLegNumberOfOptionsChangeModel (0..1)
+    tradeLegNumberOfUnitsChangeModel TradeLegNumberOfUnitsChangeModel (0..1)
+    tradeLegNotionalScheduleChangeModel TradeLegNotionalScheduleChangeModel (0..1)
+    tradeLegFixedAmountChangeModel TradeLegFixedAmountChangeModel (0..1)
+
+    condition Choice:
+        one-of
+
+type TradeNotionalChange extends TradeChangeBase: <"A structure describing a change to the size of a trade.">
+
+    tradeNotionalChangeModel TradeNotionalChangeModel (0..1)
+    sizeChange TradeLegSizeChange (0..*)
+    priceChange TradeLegPriceChange (0..*)
+
+    condition Choice:
+        optional choice tradeNotionalChangeModel, sizeChange
+
+type TradeNovationContent extends AbstractEvent: <"A structure describing a novation.">
+
+    newTradeModel NewTradeModel (0..1)
+    tradeNovationContentSequence0 TradeNovationContentSequence0 (0..1)
+    tradeNovationContentSequence1 TradeNovationContentSequence1 (0..1)
+    novationRolesModel NovationRolesModel (1..1)
+    novationDatesModel NovationDatesModel (1..1)
+    novationAmountsModel NovationAmountsModel (0..1)
+    novationTermsModel NovationTermsModel (1..1)
+    payment fpml.consolidated.shared.Payment (0..1) <"Describes a payment made in settlement of the novation.">
+
+    condition Choice:
+        optional choice newTradeModel, tradeNovationContentSequence0 , tradeNovationContentSequence1
+
+type TradeNovationContentSequence0:
+
+    oldTradeModel OldTradeModel (1..1)
+    feeTradeModel FeeTradeModel (0..1)
+    newTradeModel NewTradeModel (0..1)
+
+type TradeNovationContentSequence1:
+
+    feeTradeModel FeeTradeModel (1..1)
+    newTradeModel NewTradeModel (0..1)
+
+type TradingEventSummary: <"A type that records a short form event history of a trade.">
+
+    eventIdentifier BusinessEventIdentifier (0..*)
+    eventType EventType (1..1)
+    agreementAndEffectiveDatesModel AgreementAndEffectiveDatesModel (1..1)
+    reportingNotionalChangeModel ReportingNotionalChangeModel (0..1)
+    payment fpml.consolidated.shared.NonNegativePayment (0..1) <"A fee which compensates one of the parties for taking on a position that is off market.">
+
+type TouchRateObservation extends TriggerRateObservation:
+
+    touchRateObservationSequence TouchRateObservationSequence (0..1)
+    isExercisable boolean (0..1) <"If the touch or no touch event hasn\'t generated an exercise, then we specify whether the option is exercisable or not.">
+
+    condition Choice:
+        optional choice touchRateObservationSequence, isExercisable
+
+type TouchRateObservationSequence:
+
+    exerciseSide fpml.consolidated.fpmlenum.ExerciseSideEnum (0..1)
+    settlementType fpml.consolidated.fpmlenum.SettlementTypeEnum (0..1)
+    cashSettlement fpml.consolidated.shared.SimplePayment (0..1)
+    physicalSettlement PhysicalSettlement (0..1)
+    payment fpml.consolidated.shared.NonNegativePayment (0..1)
+    clearingInstructions ClearingInstructions (0..1)
+
+    condition Choice:
+        optional choice settlementType, cashSettlement , physicalSettlement
+
+type TriggerRateObservation:
+
+    observationDate zonedDateTime (0..1) <"The date on which the rate observation occurred, in order to trigger the barrier event.observationDate">
+    observationTime fpml.consolidated.shared.BusinessCenterTime (0..1) <"The time at which the observation occurred.">
+    informationSource fpml.consolidated.shared.InformationSource (0..1)
+    triggerRateObservationSequence0 TriggerRateObservationSequence0 (0..1)
+    triggerRateObservationSequence1 TriggerRateObservationSequence1 (0..1)
+    triggerCondition fpml.consolidated.fpmlenum.TriggerConditionEnum (0..1) <"The side of the trigger rate/price (level) on which a rate observation occurred, in order to trigger the barrier event.">
+
+    condition Choice:
+        optional choice triggerRateObservationSequence0, triggerRateObservationSequence1
+
+type TriggerRateObservationSequence0:
+
+    triggerRate number (0..1) <"The rate value (level) which was attained/breached, in order to trigger the barrier event.">
+    quotedCurrencyPair fpml.consolidated.shared.QuotedCurrencyPair (0..1) <"Defines the currency pair and quote basis for an FX rate.">
+    observedRate number (0..1) <"The observed rate value which triggered the barrier event.">
+
+type TriggerRateObservationSequence1:
+
+    triggerPrice fpml.consolidated.shared.PositiveMoney (0..1) <"The price value (level) which was attained/breached, in order to trigger the barrier event.">
+    observedPrice fpml.consolidated.shared.PositiveMoney (0..1) <"The observed price value which triggered the barrier event.">
+
+type Withdrawal: <"A structure describing the removal of a trade from a service, such as a reporting service.">
+
+    withdrawalSequence WithdrawalSequence (0..1)
+    trade fpml.consolidated.doc.Trade (0..1) <"The full trade representation that is being withdrawn.">
+    effectiveDate zonedDateTime (0..1)
+    requestedAction RequestedWithdrawalAction (0..1)
+    reason WithdrawalReason (0..*)
+    reportingRegime fpml.consolidated.doc.ReportingRegimeIdentifier (0..*) <"DEPRECATED. The supervisor/regulator to which this withdrawal applies">
+
+    condition Choice:
+        optional choice withdrawalSequence, trade
+
+type WithdrawalSequence:
+
+    partyTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..*) <"Identifiers of the trade that is being withdrawn.">
+    partyTradeInformation WithdrawalPartyTradeInformation (0..*) <"Holds party-specific information about the trade that is being withdrawn from.">
+
+type WithdrawalPartyTradeInformation: <"A type defining party-specific additional information that may be recorded against a trade, for withdrawal purposes.">
+
+    partyAndAccountReferencesModel fpml.consolidated.shared.PartyAndAccountReferencesModel (1..1)
+    relatedParty fpml.consolidated.shared.RelatedParty (0..*) <"This may be used to identify one or more parties that perform a role within the transaction. If this is within a partyTradeInformation block, the related party performs the role with respect to the party identifie by the \"partyReference\" in the partyTradeInformation block.">
+    category fpml.consolidated.doc.TradeCategory (0..*) <"Used to categorize trades into user-defined categories, such as house trades vs. customer trades.">
+    reportingRegime fpml.consolidated.doc.ReportingRegimeIdentifier (0..*) <"Allows the organization to specify which if any relevant regulators or other supervisory bodies this is relevant for, and what reporting rules apply.">
+
+type WithdrawalReason: <"A type that describes why a trade was withdrawn.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    withdrawalReasonScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type AgreementAndEffectiveDatesModel: <"A model group defining agreement and effective dates.">
+
+    agreementDate zonedDateTime (0..1) <"The date on which the change was agreed.">
+    executionDateTime fpml.consolidated.doc.ExecutionDateTime (0..1) <"The date and time at which the negotiated change to the terms of the original contract was agreed, such as via telephone or electronic trading system (i.e., agreement date/time).">
+    effectiveDate zonedDateTime (0..1) <"The date on which the change become effective.">
+
+type CashflowCalculationPeriodDatesModel:
+
+    adjustedStartDate zonedDateTime (0..1) <"Date that defines the beginning of the calculation period.">
+    adjustedEndDate zonedDateTime (0..1) <"Date that defines the end of the calculation period.">
+    numberOfDays int(min: 1) (0..1) <"The number of days from the adjusted effective / start date to the adjusted termination / end date calculated in accordance with the applicable day count fraction.">
+
+type ChangeEventsBaseModel: <"Choice between change-related events.">
+
+    change TradeChangeContent (1..1)
+
+type DayCountAndYearFractionModel:
+
+    dayCountFraction fpml.consolidated.shared.DayCountFraction (0..1) <"The specification for how the number of days between two dates is calculated for purposes of calculation of a fixed or floating payment amount and the basis for how many days are assumed to be in a year. Day Count Fraction is an ISDA term. The equivalent AFB (Association Francaise de Banques) term is Calculation Basis.">
+    dayCountYearFraction number (0..1) <"The year fraction value of the calculation period, result of applying the ISDA rules for day count fraction defined in the ISDA Annex.">
+
+type OptionsEventsBaseModel: <"Choice between options related events.">
+
+    optionExercise OptionExercise (0..1) <"A structure describing an option exercise event. The optionExercise event supports partial exercise (specify the number of options or amount to exercise), full exercise (use fullExercise flag), as well as the option to request options not to be exercised.">
+    optionExpiry OptionExpiry (0..*) <"A structure describing an option expiring event (i.e. passing its last exercise time and becoming worthless.)">
+    optionEvent OptionEvent (0..1) <"A structure describing knock in, knock out, touch and no touch events.">
+
+    condition Choice:
+        one-of
+
+type PostTradeEventsBaseModel: <"Choice between amendment, increase, termination, and novation events.">
+
+    amendment TradeAmendmentContent (0..1)
+    increase TradeNotionalChange (0..1)
+    postTradeEventsBaseModelSequence PostTradeEventsBaseModelSequence (0..1)
+    novation TradeNovationContent (0..1)
+    withdrawal Withdrawal (0..1)
+    postTradeEventsBaseModelChoice PostTradeEventsBaseModelChoice (0..1)
+
+    condition Choice:
+        one-of
+
+type PostTradeEventsBaseModelSequence:
+
+    terminatingEvent TerminatingEvent (0..1) <"This may be used to describe why a trade was terminated.">
+    termination TradeNotionalChange (1..1)
+
+type PostTradeEventsBaseModelChoice:
+
+    postTradeEventsBaseModelChoiceSequence PostTradeEventsBaseModelChoiceSequence (0..1)
+    reset ResetEvent (0..*)
+
+    condition Choice:
+        one-of
+
+type PostTradeEventsBaseModelChoiceSequence:
+
+    observation ObservationEvent (1..*)
+    reset ResetEvent (0..*)
+
+type EventValuationModel: <"A model group holding valuation information for an event.">
+
+    quote fpml.consolidated.asset.BasicQuotation (0..*) <"Pricing information for the trade.">
+
+type FeeTradeModel:
+
+    feeTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..1) <"Indicates a reference to the implied trade (the \"fee trade\") that the associated novation fee based on. This is equivalent to the new trade that is created by the novation (between the transferee and the remaining party), but is between the transferor and the transferee. A reference to the Fee Trade supports regulatory reporting of novations.">
+    feeTrade fpml.consolidated.doc.Trade (0..1) <"Indicates the implied trade (the \"fee trade\") that the associated novation fee based on. This is equivalent to the new trade that is created by the novation (between the transferee and the remaining party), but is between the transferor and the transferee. Fee Trade supports regulatory reporting of novations.">
+
+    condition Choice:
+        one-of
+
+type NewTradeModel:
+
+    newTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..*) <"Indicates a reference to the new trade between the transferee and the remaining party.">
+    newTrade fpml.consolidated.doc.Trade (0..1) <"Indicates the new trade between the transferee and the remaining party.">
+
+    condition Choice:
+        one-of
+
+type NovationAmountsModel:
+
+    novationAmountsOldModel NovationAmountsOldModel (0..1)
+    novationAmount TradeLegSizeChange (0..*)
+
+    condition Choice:
+        one-of
+
+type NovationAmountsOldModel:
+
+    novationAmountsOldModelSequence0 NovationAmountsOldModelSequence0 (0..1)
+    novationAmountsOldModelSequence1 NovationAmountsOldModelSequence1 (0..1)
+    novationAmountsOldModelSequence2 NovationAmountsOldModelSequence2 (0..1)
+
+    condition Choice:
+        one-of
+
+type NovationAmountsOldModelSequence0:
+
+    novatedAmount fpml.consolidated.shared.Money (1..*) <"The amount which represents the portion of the Old Contract being novated.">
+    remainingAmount fpml.consolidated.shared.Money (0..*) <"The amount which represents the portion of the Old Contract not being novated.">
+
+type NovationAmountsOldModelSequence1:
+
+    novatedNumberOfOptions number (1..1) <"The number of options which represent the portion of the Old Contract being novated.">
+    remainingNumberOfOptions number (0..1) <"The number of options which represent the portion of the Old Contract not being novated.">
+
+type NovationAmountsOldModelSequence2:
+
+    novatedNumberOfUnits number (1..1) <"The number of options which represent the portion of the Old Contract being novated.">
+    remainingNumberOfUnits number (0..1) <"The number of options which represent the portion of the Old Contract not being novated.">
+
+type NovationDatesModel:
+
+    novationDate zonedDateTime (0..1) <"Specifies the date that one party\'s legal obligations with regard to a trade are transferred to another party. It corresponds to the Novation Date section of the 2004 ISDA Novation Definitions, section 1.16.">
+    executionDateTime fpml.consolidated.doc.ExecutionDateTime (0..1) <"The date and time at which the change was agreed.">
+    novationTradeDate zonedDateTime (0..1) <"Specifies the date the parties agree to assign or novate a Contract. If this element is not specified, the novationContractDate will be deemed to be the novationDate. It corresponds to the Novation Trade Date section of the 2004 ISDA Novation Definitions, section 1.17.">
+
+type NovationRolesModel: <"The roles of the parties involved in the novation.">
+
+    transferor fpml.consolidated.shared.PartyReference (0..1) <"A pointer style reference to a party identifier defined elsewhere in the document. In a three-way novation the party referenced is the Transferor (outgoing party) in the novation. The Transferor means a party which transfers by novation to a Transferee all of its rights, liabilities, duties and obligations with respect to a Remaining Party. In a four-way novation the party referenced is Transferor 1 which transfers by novation to Transferee 1 all of its rights, liabilities, duties and obligations with respect to Transferor 2. ISDA 2004 Novation Term: Transferor (three-way novation) or Transferor 1 (four-way novation).">
+    transferorAccount fpml.consolidated.shared.AccountReference (0..1)
+    transferee fpml.consolidated.shared.PartyReference (0..1) <"A pointer style reference to a party identifier defined elsewhere in the document. In a three-way novation the party referenced is the Transferee (incoming party) in the novation. Transferee means a party which accepts by way of novation all rights, liabilities, duties and obligations of a Transferor with respect to a Remaining Party. In a four-way novation the party referenced is Transferee 1 which accepts by way of novation the rights, liabilities, duties and obligations of Transferor 1. ISDA 2004 Novation Term: Transferee (three-way novation) or Transferee 1 (four-way novation).">
+    otherTransferee fpml.consolidated.shared.PartyReference (0..1) <"A pointer style reference to a party identifier defined elsewhere in the document. In a five-way novation the party referenced is the Transferee\'s legal entity that is involved in the settlement of the fee leg of the novation transaction (this might be a different legal entity than the one that assumes the novation trade). NB: this element has been added pending confirmation of the business need/context in which it would be used, and might not appear in a subsequent draft of this schema.">
+    transfereeAccount fpml.consolidated.shared.AccountReference (0..1)
+    otherTransfereeAccount fpml.consolidated.shared.AccountReference (0..1)
+    remainingParty fpml.consolidated.shared.PartyReference (0..1) <"A pointer style reference to a party identifier defined elsewhere in the document. In a three-way novation the party referenced is the Remaining Party in the novation. Remaining Party means a party which consents to a Transferor\'s transfer by novation and the acceptance thereof by the Transferee of all of the Transferor\'s rights, liabilities, duties and obligations with respect to such Remaining Party under and with respect of the Novated Amount of a transaction. In a four-way novation the party referenced is Transferor 2 per the ISDA definition and acts in the role of a Transferor. Transferor 2 transfers by novation to Transferee 2 all of its rights, liabilities, duties and obligations with respect to Transferor 1. ISDA 2004 Novation Term: Remaining Party (three-way novation) or Transferor 2 (four-way novation).">
+    remainingPartyAccount fpml.consolidated.shared.AccountReference (0..1)
+    otherRemainingParty fpml.consolidated.shared.PartyReference (0..1) <"A pointer style reference to a party identifier defined elsewhere in the document. This element is not applicable in a three-way novation and should be omitted. In a four-way novation the party referenced is Transferee 2. Transferee 2 means a party which accepts by way of novation the rights, liabilities, duties and obligations of Transferor 2. ISDA 2004 Novation Term: Transferee 2 (four-way novation).">
+    otherRemainingPartyAccount fpml.consolidated.shared.AccountReference (0..1)
+
+type NovationTermsModel: <"Documentation and other terms (such as date terms) specific to this novation event.">
+
+    fullFirstCalculationPeriod boolean (0..1) <"This element corresponds to the applicability of the Full First Calculation Period as defined in the 2004 ISDA Novation Definitions, section 1.20.">
+    firstPeriodStartDate fpml.consolidated.doc.FirstPeriodStartDate (0..2) <"Element that is used to be able to make sense of the “new transaction” without requiring reference back to the “old transaction”. In the case of interest rate products there are potentially 2 “first period start dates” to reference – one with respect to each party to the new transaction. For Credit Default Swaps there is just the one with respect to the party that is the fixed rate payer.">
+    nonReliance fpml.consolidated.shared.Empty (0..1) <"This element corresponds to the non-Reliance section in the 2004 ISDA Novation Definitions, section 2.1 (c) (i). The element appears in the instance document when non-Reliance is applicable.">
+    creditDerivativesNotices fpml.consolidated.doc.CreditDerivativesNotices (0..1) <"This element should be specified if one or more of either a Credit Event Notice, Notice of Publicly Available Information, Notice of Physical Settlement or Notice of Intended Physical Settlement, as applicable, has been delivered by or to the Transferor or the Remaining Party. The type of notice or notices that have been delivered should be indicated by setting the relevant boolean element value(s) to true. The absence of the element means that no Credit Event Notice, Notice of Publicly Available Information, Notice of Physical Settlement or Notice of Intended Physical Settlement, as applicable, has been delivered by or to the Transferor or the Remaining Party.">
+    contractualDefinitions fpml.consolidated.shared.ContractualDefinitions (0..*) <"The definitions (such as those published by ISDA) that will define the terms of the novation transaction.">
+    contractualTermsSupplement fpml.consolidated.shared.ContractualTermsSupplement (0..*) <"A contractual supplement (such as those published by ISDA) that will apply to the trade.">
+
+type OldTradeModel:
+
+    oldTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (0..*) <"Indicates a reference to the original trade between the transferor and the remaining party.">
+    oldTrade fpml.consolidated.doc.Trade (0..1) <"Indicates the original trade between the transferor and the remaining party.">
+
+    condition Choice:
+        one-of
+
+type OptionExerciseAmountModel:
+
+    exerciseAction fpml.consolidated.fpmlenum.ExerciseActionEnum (0..1)
+    expiry boolean (0..1)
+    fullExercise boolean (0..1)
+    optionExerciseAmountModelSequence0 OptionExerciseAmountModelSequence0 (0..1)
+    optionExerciseAmountModelSequence1 OptionExerciseAmountModelSequence1 (0..1)
+    optionExerciseAmountModelSequence2 OptionExerciseAmountModelSequence2 (0..1)
+    specifiedExercise OptionExerciseAmounts (0..*) <"Specifies the Number of Units">
+
+    condition Choice:
+        one-of
+
+type OptionExerciseAmountModelSequence0:
+
+    exerciseInNotionalAmount fpml.consolidated.shared.Money (0..1) <"Specifies the fixed amount by which the option should be exercised expressed as notional amount.">
+    outstandingNotionalAmount fpml.consolidated.shared.Money (0..1) <"Specifies the Notional amount after the Change">
+
+type OptionExerciseAmountModelSequence1:
+
+    exerciseInNumberOfOptions number (0..1) <"Specifies the fixed amount by which the option should be exercised expressed as number of options.">
+    outstandingNumberOfOptions number (0..1) <"Specifies the Number of Options after the Change.">
+
+type OptionExerciseAmountModelSequence2:
+
+    exerciseInNumberOfUnits number (0..1) <"Specifies the fixed amount by which the option should be exercised express as number of units.">
+    outstandingNumberOfUnits number (0..1) <"Specifies the Number of Units">
+
+type ReportingNotionalChangeModel:
+
+    notionalChange fpml.consolidated.fpmlenum.NotionalChangeEnum (0..1) <"Indication as to whether the transaction is an increase or decrease of notional of a derivative contract. Only applies when there is change in notional for a derivative contract">
+    changeInNotional MoneyRef (0..*) <"The change in notional amount for a prior report as a result of this event. The current notional will be reported in the trade itself. This corresponds to MiFIR Nominal or Monetary amount values; these can be distinguished by the esmaNotionalType indicator.">
+    changeInNumberOfOptions AmountRef (0..*) <"The change in nominal amount from a prior report as a result of this event. The current number of options will be reported in the trade itself. This corresponds to the MiFIR \"units\" value.">
+    changeInQuantity UnitQuantityRef (0..*) <"The change in quantity(s) from a prior report as a result of this event. The current quantity will be reported in the trade itself. This corresponds to the MiFIR \"units\" value.">
+
+    condition Choice:
+        optional choice changeInNotional, changeInNumberOfOptions , changeInQuantity
+
+type TradeAlterationPaymentModel: <"A model group defining a payment structure.">
+
+    payment fpml.consolidated.shared.Payment (0..*) <"Describes a payment made in settlement of the change. Normally there will be a single fee, but there could be additional payments such as principal exchanges resulting from the termination.">
+
+type TradeLegFixedAmountChangeModel:
+
+    knownAmountReference fpml.consolidated.shared.AmountReference (0..1)
+    changeInKnownAmount fpml.consolidated.shared.NonNegativeMoney (1..1)
+    outstandingKnownAmount fpml.consolidated.shared.NonNegativeMoney (1..1)
+
+type TradeLegNotionalChangeModel:
+
+    notionalReference fpml.consolidated.shared.NotionalReference (0..1)
+    changeInNotionalAmount fpml.consolidated.shared.NonNegativeMoney (1..1)
+    outstandingNotionalAmount fpml.consolidated.shared.NonNegativeMoney (1..1)
+
+type TradeLegNotionalScheduleChangeModel:
+
+    notionalScheduleReference fpml.consolidated.shared.NotionalReference (0..1)
+    changeInNotionalSchedule fpml.consolidated.shared.NonNegativeAmountSchedule (1..1)
+    outstandingNotionalSchedule fpml.consolidated.shared.NonNegativeAmountSchedule (1..1)
+
+type TradeLegNumberOfOptionsChangeModel:
+
+    numberOfOptionsReference fpml.consolidated.shared.NumberOfOptionsReference (0..1)
+    changeInNumberOfOptions number (1..1)
+    outstandingNumberOfOptions number (1..1)
+
+type TradeLegNumberOfUnitsChangeModel:
+
+    numberOfUnitsReference fpml.consolidated.shared.NumberOfUnitsReference (0..1)
+    changeInNumberOfUnits number (1..1)
+    outstandingNumberOfUnits number (1..1)
+
+type TradeNotionalChangeModel: <"DEPRECATED. A structure describing a change to the trade notional.">
+
+    tradeNotionalChangeModelSequence0 TradeNotionalChangeModelSequence0 (0..1)
+    tradeNotionalChangeModelSequence1 TradeNotionalChangeModelSequence1 (0..1)
+    tradeNotionalChangeModelSequence2 TradeNotionalChangeModelSequence2 (0..1)
+
+    condition Choice:
+        one-of
+
+type TradeNotionalChangeModelSequence0:
+
+    changeInNotionalAmount fpml.consolidated.shared.NonNegativeMoney (1..*) <"Specifies the fixed amount by which the Notional Amount changes. The direction of the change (increase or decrease) is specified by the event type (Termination =&gt; reduction, Increase =&gt; greater.)">
+    outstandingNotionalAmount fpml.consolidated.shared.NonNegativeMoney (0..*) <"Specifies the Notional amount after the Change">
+
+type TradeNotionalChangeModelSequence1:
+
+    changeInNumberOfOptions number (1..1) <"Specifies the fixed amount by which the Number of Options changes">
+    outstandingNumberOfOptions number (0..1) <"Specifies the Number of Options after the Change.">
+
+type TradeNotionalChangeModelSequence2:
+
+    changeInNumberOfUnits number (1..1) <"Specifies the fixed amount by which the Number of Units changes">
+    outstandingNumberOfUnits number (0..1) <"Specifies the Number of Units">
+
+type UnitQuantityRef extends fpml.consolidated.com.UnitQuantity: <"A type defining a quantity and unit with a reference.">
+
+    quantityReference fpml.consolidated.shared.NotionalReference (0..1)
+
+type CreditEventType: <"A type that describes which credit event is taking place, e.g. Bankruptcy, FailureToPay, etc.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    creditEventTypeScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type ClearingStatusItem: <"A component of a clearing status report. This provides the clearing status for a single trade.">
+
+    tradeIdentifier fpml.consolidated.doc.TradeIdentifier (0..*) <"Identifier(s) for the trade which is the subject of the clearing request to which this status relates.">
+    tradeReferenceInformationModel TradeReferenceInformationModel (0..1)
+    trade fpml.consolidated.doc.Trade (0..1) <"Complete economics of the trade">
+    tradePackage TradePackage (0..1)
+    eventValuationModel EventValuationModel (0..1)
+    clearingStatusValue fpml.consolidated.doc.ClearingStatusValue (1..1) <"The status of the clearing process for the identified trade. For example, Received, Pending (Approval), Registered (i.e. cleared), Rejected, etc.">
+    updatedDateTime zonedDateTime (0..1) <"When the clearing status changed to the current value. This is mostly useful if the clearing status messages could be delayed from when the status actually changes; this could be important if the status date is used as the basis of any settlement calculations.">
+    reason fpml.consolidated.doc.Reason (0..*) <"Supporting information which may be produced to explain the clearing process status. This may be a business reason e.g. failed eligibility criteria for a trade in Rejected status.">
+    statusAppliesTo fpml.consolidated.shared.PartyReference (0..2) <"Reference to parties currently in this status, e.g. parties for which we are awaiting approval. For example, if a trade is in \"Pending\" status, this would identify which parties\' approval the trade was pending.">
+
+type CompressionActivity: <"A type that shows how multiple trades have been combined into a result.">
+
+    compressionType CompressionType (0..1)
+    compressionActivitySequence0 CompressionActivitySequence0 (0..1)
+    compressionActivitySequence1 CompressionActivitySequence1 (0..1)
+
+type CompressionActivitySequence0:
+
+    replacementTradeIdentifier fpml.consolidated.doc.TradeIdentifier (0..1)
+    originatingTradeIdentifier fpml.consolidated.doc.TradeIdentifier (0..*)
+
+type CompressionActivitySequence1:
+
+    replacementTradeId fpml.consolidated.shared.TradeId (0..1)
+    originatingTradeId fpml.consolidated.shared.TradeId (0..*)
+
+type CompressionType: <"A type that identifies the type of trade amalgamation, for example netting or portfolio compression.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    compressionTypeScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type CreditLimitBase: <"A structure describing a basic credit limit.">
+
+    limitId LimitId (1..1)
+    productModel fpml.consolidated.shared.ProductModel (1..1)
+    currency fpml.consolidated.shared.Currency (1..1)
+    tenor fpml.consolidated.shared.Period (1..1) <"The maximum allowed tenor for a trade under this limit. When this structure is used as part of a suspendCredit message, this tenor imposes a temporary tenor limit on allowed trade types.">
+
+type CreditLimit extends CreditLimitBase: <"A structure describing a credit limit with applicability constraints.">
+
+    limitApplicable LimitApplicable (1..*)
+    expirationDate zonedDateTime (0..1)
+
+type CreditLimitInformation:
+
+    partyInformation fpml.consolidated.doc.PartyTradeInformation (1..1)
+    limitModel fpml.consolidated.fpmlenum.LimitModelEnum (1..1)
+    creditLimit CreditLimit (1..*)
+
+type CreditLimitUtilization:
+
+    executed CreditLimitUtilizationPosition (1..1) <"Credit limit utilization attributable to executed trades.">
+    pending CreditLimitUtilizationPosition (1..1) <"Credit limit utilization attributable to pending unexecuted orders.">
+
+type CreditLimitUtilizationPosition:
+
+    creditLimitUtilizationPositionSequence CreditLimitUtilizationPositionSequence (0..1)
+    global fpml.consolidated.shared.NonNegativeDecimal (0..1) <"Global credit limit utilization amount, agnostic of long/short position direction.">
+
+type CreditLimitUtilizationPositionSequence:
+
+    short fpml.consolidated.shared.NonNegativeDecimal (1..1) <"Credit limit utilization attributable to short positions.">
+    long fpml.consolidated.shared.NonNegativeDecimal (1..1) <"Credit limit utilization attributable to long positions.">
+    global fpml.consolidated.shared.NonNegativeDecimal (0..1) <"Global credit limit utilization amount, agnostic of long/short position direction.">
+
+type DeClear: <"A structure describing a declear event. The deClear event allows a firm to request that a trade be removed from clearing, or a clearing service to request consent for this, or to report that is has been done.">
+
+    tradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (1..*)
+    effectiveDate zonedDateTime (1..1)
+    reason DeclearReason (0..1)
+
+type DeclearReason: <"A type that describes why a trade was removed from clearing.">
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    declearReasonScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type EventProposedMatch: <"A structure that describes a proposed match between trades or post-trade event reports.">
+
+    tradingEventsBaseModel TradingEventsBaseModel (0..1)
+    postTradeEventsBaseModel PostTradeEventsBaseModel (0..1)
+    changeEventsBaseModel ChangeEventsBaseModel (0..1)
+    optionsEventsBaseModel OptionsEventsBaseModel (0..1)
+    additionalEvent AdditionalEvent (0..1)
+    proposedMatchModel ProposedMatchModel (1..1)
+
+type EventsChoice:
+
+    tradingEventsBaseModel TradingEventsBaseModel (0..1)
+    postTradeEventsBaseModel PostTradeEventsBaseModel (0..1)
+    changeEventsBaseModel ChangeEventsBaseModel (0..1)
+    optionsEventsBaseModel OptionsEventsBaseModel (0..1)
+    additionalEvent AdditionalEvent (0..1)
+
+type LimitApplicable:
+
+    limitType LimitType (1..1) <"Standard code to indicate which type of credit line is being referred to - i.e. IM, DV01, PV01, CS01, Notional, Clip Size, Notional, maximumOrderQuantity">
+    clipSize int (1..1)
+    amountUtilized int (0..1)
+    utilization CreditLimitUtilization (0..1) <"Credit limit utilization breakdown by executed trades and pending orders.">
+    amountRemaining int (0..1)
+    currency fpml.consolidated.shared.Currency (0..1)
+    velocity Velocity (0..1)
+
+type LimitId:
+
+    value fpml.consolidated.shared.NonEmptyScheme (1..1)
+    creditLimitIdScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type LimitType:
+
+    value fpml.consolidated.shared.Scheme (1..1)
+    creditLimitTypeScheme fpml.consolidated.shared.NonEmptyURI (0..1)
+
+type OptionExpiryBase: <"A structure describing an option expiring.">
+
+    tradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (1..*)
+    date zonedDateTime (1..1)
+    time time (1..1)
+
+type PackageHeader: <"Identifying information for a tradePackage (a bundle of trades).">
+
+    packageIdentifier fpml.consolidated.shared.IssuerTradeId (0..1)
+    orderIdentifier fpml.consolidated.doc.OrderIdentifier (0..1)
+    packageType fpml.consolidated.doc.PackageType (0..*) <"Classification of the package. FpML has defined a list of coding scheme values. Different organizations might have different naming schemes for the packages so the multiplicity of unbounded is meant to support synonyms but it does not mean that a trade has multiple package types.">
+    size fpml.consolidated.shared.PositiveDecimal (0..1)
+    originatingEvent fpml.consolidated.shared.OriginatingEvent (0..1) <"This may be used to describe why a package was created. This can be used to provide context for a newly created package that is not part of a post-trade event. For example, it can report that the package was created as a result of netting activity, or due to a transfer, an allocation process, etc.">
+    packageInformation fpml.consolidated.doc.PackageInformation (0..1)
+
+type TradeMaturity: <"A structure describing a trade maturing.">
+
+    tradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (1..*)
+    date zonedDateTime (1..1)
+
+type TradePackage: <"A bundle of trades collected together into a single unit for reporting.">
+
+    packageHeader PackageHeader (0..1)
+    trade fpml.consolidated.doc.Trade (0..*)
+    tradeReferenceInformationModel TradeReferenceInformationModel (0..*)
+    tradeIdentifier fpml.consolidated.doc.TradeIdentifier (0..*)
+    approvals fpml.consolidated.doc.Approvals (0..1) <"A container for approval states in the workflow.">
+
+type TradeReferenceInformation: <"Defines a type that allows trade identifiers and/or trade information to be represented for a trade.">
+
+    originatingEvent fpml.consolidated.shared.OriginatingEvent (0..1) <"This may be used to describe why a trade was created. This can be used to provide context for a newly created trade that is not part of a post-trade event. For example, it can report that the trade was created as a result of netting activity, or due to a transfer, an allocation process, etc. Omitting this implies that the trade record was created as a result of a negotiated new trade.">
+    terminatingEvent TerminatingEvent (0..1) <"This may be used to describe why a trade was terminated.">
+    partyTradeIdentifier fpml.consolidated.doc.PartyTradeIdentifier (1..*) <"This allows the acknowledging party to supply additional trade identifiers for a trade underlying a request relating to a business event.">
+    partyTradeInformation fpml.consolidated.doc.PartyTradeInformation (0..*) <"This allows the acknowledging party to supply additional trade information about a trade underlying a request relating to a business event.">
+    productType fpml.consolidated.shared.ProductType (0..1)
+    productId fpml.consolidated.shared.ProductId (0..1)
+
+type Velocity:
+
+    periodMultiplier int (1..1)
+    period fpml.consolidated.fpmlenum.PeriodTimeEnum (1..1)
+
+type CompressionModel: <"A model group holding information about compressions affecting this trade/event.">
+
+    compressionActivity CompressionActivity (1..1) <"Compression information for the trade.">
+
+type TradingAndPostTradeEventsModel: <"Choice between a trading, a post-trade event, and the extension point additional event">
+
+    tradingEventsBaseModel TradingEventsBaseModel (0..1)
+    postTradeEventsBaseModel PostTradeEventsBaseModel (0..1)
+    additionalEvent AdditionalEvent (0..1)
+
+type TradingEventsModel: <"Information about a trading event that represent a new trading activity (on a newly-created trade), or in some cases the a representation of the trade\'s current state. Also allows the \"additionEvent\" extension point.">
+
+    tradingEventsBaseModel TradingEventsBaseModel (0..1)
+    additionalEvent AdditionalEvent (0..1)
+
+type TradingEventsBaseModel: <"Information about a trading event that represents a new trading activity (on a newly-created trade or package of trades), or in some cases the a representation of the trade\'s current state..">
+
+    tradePackage TradePackage (0..1)
+    tradingEventsBaseModelSequence TradingEventsBaseModelSequence (0..1)
+
+type TradingEventsBaseModelSequence:
+
+    originatingEvent fpml.consolidated.shared.OriginatingEvent (0..1)
+    trade fpml.consolidated.doc.Trade (1..1)
+
+type ProposedMatchModel: <"A structure that describes a potential match for a trade or event, together with descriptors of that match (quality, etc.).">
+
+    matchId fpml.consolidated.shared.MatchId (0..1) <"A unique identifier assigned by the matching service to each set of matched positions.">
+    difference fpml.consolidated.doc.TradeDifference (0..*) <"A type used to record the details of a difference between two sides of a business event.">
+    matchScore number (0..1) <"Numeric score to represent the quality of the match.">
+
+type TradeOrInfoModel: <"Defines a model group that allows either details of an event or information about a trade to be provided. Typically this will be used in a response to a request.">
+
+    tradeOrInfoModelSequence TradeOrInfoModelSequence (0..1)
+    tradeReferenceInformationModel TradeReferenceInformationModel (0..1)
+    tradePackage TradePackage (0..1)
+
+type TradeOrInfoModelSequence:
+
+    originatingEvent fpml.consolidated.shared.OriginatingEvent (0..1) <"This may be used to describe why a trade was created. This can be used to provide context for a newly created trade that is not part of a post-trade event. For example, it can report that the trade was created as a result of netting activity, or due to a transfer, an allocation process, etc. Omitting this implies that the trade record was created as a result of a negotiated new trade.">
+    trade fpml.consolidated.doc.Trade (1..1)
+
+type TradeReferenceInformationModel: <"Defines a model group that allows information about a trade to be represented.">
+
+    tradeReferenceInformation TradeReferenceInformation (1..1) <"Information about a trade.">

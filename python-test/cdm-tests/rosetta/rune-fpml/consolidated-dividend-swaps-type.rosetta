@@ -1,0 +1,44 @@
+namespace fpml.consolidated.dividend.swaps : < "fpml definition" >
+version "${project.version}"
+
+type DividendSwapOptionTransactionSupplement extends fpml.consolidated.option.shared.OptionBase: <"Specifies the structure of the dividend swap transaction supplement.">
+
+    equityPremium fpml.consolidated.eq.shared.EquityPremium (0..1) <"The variance option premium payable by the buyer to the seller.">
+    equityExercise fpml.consolidated.eqd.EquityExerciseValuationSettlement (1..1) <"The parameters for defining how the equity option can be exercised, how it is valued and how it is settled.">
+    exchangeLookAlike boolean (0..1) <"For a share option transaction, a flag used to indicate whether the transaction is to be treated as an \'exchange look-alike\'. This designation has significance for how share adjustments (arising from corporate actions) will be determined for the transaction. For an \'exchange look-alike\' transaction the relevant share adjustments will follow that for a corresponding designated contract listed on the related exchange (referred to as Options Exchange Adjustment (ISDA defined term), otherwise the share adjustments will be determined by the calculation agent (referred to as Calculation Agent Adjustment (ISDA defined term)).">
+    methodOfAdjustment fpml.consolidated.fpmlenum.MethodOfAdjustmentEnum (0..1) <"Defines how adjustments will be made to the contract should one or more of the extraordinary events occur.">
+    optionEntitlement fpml.consolidated.shared.PositiveDecimal (0..1) <"The number of shares per option comprised in the option transaction supplement.">
+    multiplier fpml.consolidated.shared.PositiveDecimal (0..1) <"Specifies the contract multiplier that can be associated with an index option.">
+    clearingInstructions fpml.consolidated.shared.SwaptionPhysicalSettlement (0..1) <"Specifies any instructions on how the physical settlement is to be effected when the option is exercised.">
+    dividendSwapTransactionSupplement DividendSwapTransactionSupplement (1..1) <"The variance swap details.">
+
+    condition Choice:
+        optional choice optionEntitlement, multiplier
+
+type DividendSwapTransactionSupplement extends fpml.consolidated.shared.Product: <"Specifies the structure of the dividend swap transaction supplement. A Dividend Swap Transaction Supplement.">
+
+    dividendLeg DividendLeg (0..1) <"Dividend leg.">
+    fixedLeg FixedPaymentLeg (0..1) <"Fixed payment leg.">
+    equityUnderlyerProvisionsModel fpml.consolidated.eq.shared.EquityUnderlyerProvisionsModel (0..1)
+
+type DividendLeg extends fpml.consolidated.eq.shared.DirectionalLegUnderlyer: <"Floating Payment Leg of a Dividend Swap.">
+
+    declaredCashAndCashEquivalentDividendPercentageModel fpml.consolidated.eq.shared.DeclaredCashAndCashEquivalentDividendPercentageModel (1..1)
+    dividendPeriod DividendPeriodPayment (0..*) <"One to many time bounded dividend payment periods, each with a fixed strike and dividend payment date per period.">
+    specialDividends boolean (0..1) <"If present and true, then special dividends and memorial dividends are applicable.">
+    materialDividend boolean (0..1) <"If present and true, then material non cash dividends are applicable.">
+
+type DividendPeriodPayment extends fpml.consolidated.eq.shared.DividendPeriod: <"A time bounded dividend period, with fixed strike and a dividend payment date per period.">
+
+    fixedStrike fpml.consolidated.shared.PositiveDecimal (0..1) <"Fixed strike.">
+    paymentDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Dividend period amount payment date.">
+    valuationDate fpml.consolidated.shared.AdjustableOrRelativeDate (0..1) <"Dividend period amount valuation date.">
+
+type FixedPaymentAmount extends fpml.consolidated.shared.PaymentBase: <"Fixed payment amount within a Dividend Swap.">
+
+    paymentAmount fpml.consolidated.shared.NonNegativeMoney (0..1) <"Payment amount, which is optional since the payment amount may be calculated using fixed strike and number of open units.">
+    paymentDate fpml.consolidated.shared.RelativeDateOffset (0..1) <"Payment date relative to another date.">
+
+type FixedPaymentLeg extends fpml.consolidated.shared.DirectionalLeg: <"Fixed Payment Leg of a Dividend Swap.">
+
+    fixedPayment FixedPaymentAmount (0..*) <"Fixed payment of a dividend swap, payment date is relative to a dividend period payment date. Commonly the dividend leg and the fixed payment leg will pay out on the same date, and the payments will be netted.">

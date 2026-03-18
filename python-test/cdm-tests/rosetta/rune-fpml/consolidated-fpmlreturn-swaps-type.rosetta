@@ -1,0 +1,8 @@
+namespace fpml.consolidated.fpmlreturn.swaps : < "fpml definition" >
+version "${project.version}"
+
+type EquitySwapTransactionSupplement extends fpml.consolidated.eq.shared.ReturnSwapBase: <"Specifies the structure of the equity swap transaction supplement. A type for defining Equity Swap Transaction Supplement">
+
+    mutualOrOptionalEarlyTerminationModel fpml.consolidated.eq.shared.MutualOrOptionalEarlyTerminationModel (0..1)
+    equityUnderlyerProvisionsModel fpml.consolidated.eq.shared.EquityUnderlyerProvisionsModel (0..1)
+    extraordinaryEvents fpml.consolidated.eq.shared.ExtraordinaryEvents (0..1) <"Where the underlying is shares, specifies events affecting the issuer of those shares that may require the terms of the transaction to be adjusted.">

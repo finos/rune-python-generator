@@ -1,0 +1,31 @@
+namespace fpml.consolidated.bond.option : < "fpml definition" >
+version "${project.version}"
+
+type BondOption extends fpml.consolidated.option.shared.OptionBaseExtended: <"A component describing a Bond Option product. A Bond Option">
+
+    strike BondOptionStrike (1..1) <"Strike of the the Bond Option.">
+    bondChoiceModel fpml.consolidated.asset.BondChoiceModel (1..1)
+
+type BondOptionStrike: <"A complex type to specify the strike of a bond or convertible bond option.">
+
+    referenceSwapCurve ReferenceSwapCurve (0..1) <"The strike of an option when expressed by reference to a swap curve. (Typically the case for a convertible bond option.)">
+    price fpml.consolidated.option.shared.OptionStrike (0..1)
+
+    condition Choice:
+        one-of
+
+type MakeWholeAmount extends SwapCurveValuation: <"A complex type to specify the amount to be paid by the buyer of the option if the option is exercised prior to the Early Call Date (Typically applicable to the convertible bond options).">
+
+    interpolationMethod fpml.consolidated.shared.InterpolationMethod (0..1) <"The type of interpolation method that the calculation agent reserves the right to use.">
+    earlyCallDate fpml.consolidated.shared.IdentifiedDate (0..1) <"Date prior to which the option buyer will have to pay a Make Whole Amount to the option seller if he/she exercises the option.">
+
+type ReferenceSwapCurve: <"A complex type used to specify the option and convertible bond option strike when expressed in reference to a swap curve.">
+
+    swapUnwindValue SwapCurveValuation (0..1)
+    makeWholeAmount MakeWholeAmount (0..1) <"Amount to be paid by the buyer of the option if the option is exercised prior to the Early Call Date. (The market practice in the convertible bond option space being that the buyer should be penalized if he/she exercises the option early on.)">
+
+type SwapCurveValuation: <"A complex type to specify a valuation swap curve, which is used as part of the strike construct for the bond and convertible bond options.">
+
+    floatingRateIndexModel fpml.consolidated.shared.FloatingRateIndexModel (1..1)
+    spread number (0..1) <"Spread in basis points over the floating rate index.">
+    side fpml.consolidated.fpmlenum.QuotationSideEnum (0..1) <"The side (bid/mid/ask) of the measure.">
