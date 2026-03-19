@@ -9,7 +9,7 @@ func TestSum:
     output:
         result int (0..1)
     set result:
-        items extract [ val ] then sum
+        items extract val then sum
 
 func TestDistinct:
     inputs:
@@ -17,7 +17,7 @@ func TestDistinct:
     output:
         result int (0..*)
     set result:
-        items extract [ val ] then distinct
+        items extract val then distinct
 
 func TestReverse:
     inputs:
@@ -25,7 +25,7 @@ func TestReverse:
     output:
         result int (0..*)
     set result:
-        items extract [ val ] then reverse
+        items extract val then reverse
 
 type Nested:
     items Item (0..*)
@@ -36,7 +36,7 @@ func TestFlatten:
     output:
         result int (0..*)
     set result:
-        nested extract [ items ] then flatten extract [ val ]
+        nested extract items then flatten extract val
 
 func TestMax:
     inputs:
@@ -44,7 +44,7 @@ func TestMax:
     output:
         result int (0..1)
     set result:
-        items extract [ val ] then max
+        items extract val then max
 
 func TestMin:
     inputs:
@@ -52,7 +52,7 @@ func TestMin:
     output:
         result int (0..1)
     set result:
-        items extract [ val ] then min
+        items extract val then min
 
 func TestSort:
     inputs:
@@ -60,7 +60,7 @@ func TestSort:
     output:
         result int (0..*)
     set result:
-        items extract [ val ] then sort
+        items extract val then sort
 
 func TestCount:
     inputs:
@@ -68,7 +68,7 @@ func TestCount:
     output:
         result int (1..1)
     set result:
-        items extract [ val ] then count
+        items extract val then count
 
 func TestOnlyElement:
     inputs:
@@ -76,4 +76,4 @@ func TestOnlyElement:
     output:
         result int (0..1)
     set result:
-        items extract [ val ] then only-element
+        items extract val then only-element

@@ -25,7 +25,7 @@ func TestFirstFiltered:
     output:
         result int (0..1)
     set result:
-        items extract [ val ] then first
+        items extract val then first
 
 func TestLastFiltered:
     inputs:
@@ -33,7 +33,7 @@ func TestLastFiltered:
     output:
         result int (0..1)
     set result:
-        items extract [ val ] then last
+        items extract val then last
 
 func TestMin:
     inputs:
@@ -96,7 +96,7 @@ func TestFlatten:
     output:
         result int (0..*)
     set result:
-        groups extract [ items ] then flatten
+        groups extract items then flatten
 
 func TestDistinct:
     inputs:
@@ -120,7 +120,7 @@ func TestFilter:
     output:
         result int (0..*)
     set result:
-        items filter [ item > 0 ]
+        items filter item > 0
 
 func TestOnlyElement:
     inputs:

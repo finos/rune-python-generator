@@ -232,3 +232,38 @@ func TestContainerObjectCreationFromBaseObject:
             baseObject: baseObject,
             value3: value3
         }
+
+func TestPassByValue:
+    inputs:
+        baseObject BaseObject (1..1)
+    output:
+        result BaseObject (1..1)
+    set result:
+        TestSimpleObjectAssignment(baseObject)
+    set result->value1:
+        result->value1 * -1
+
+type NestedAttributeObject:
+    value int (1..1)
+
+type AttributeObject:
+    nested NestedAttributeObject (1..1)
+
+func TestSetAttributeOnObject:
+    inputs:
+        val int (1..1)
+    output:
+        result AttributeObject (1..1)
+    
+    set result -> nested -> value: val
+
+type ListAttributeObject:
+    values int (1..*)
+
+func TestAddAttributeOnObject:
+    inputs:
+        vals int (1..*)
+    output:
+        result ListAttributeObject (1..1)
+    
+    add result -> values: vals

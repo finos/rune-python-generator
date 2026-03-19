@@ -699,18 +699,7 @@ public final class PythonFunctionGenerator {
                 }
             }
 
-            if (scope.isObjectBuilder(rootName)) {
-                writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
-            } else {
-                writer.appendLine(
-                        rootName + " = set_rune_attr("
-                        + rootName
-                        + ", "
-                        + generateAttributesPath(operation.getPath())
-                        + ", "
-                        + expression
-                        + ")");
-            }
+            writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
         }
         return writer.toString();
     }
@@ -735,13 +724,8 @@ public final class PythonFunctionGenerator {
         if (attributeType instanceof RosettaEnumeration) {
             writer.appendLine(rootName + ".extend(" + expression + ")");
         } else if (isMany(operation)) {
-            if (scope.isObjectBuilder(rootName)) {
-                String path = generateDottedPath(operation.getPath());
-                writer.appendLine("rune_add_to_list(" + rootName + "." + path + ", " + expression + ")");
-            } else {
-                writer.newLine();
-                writer.appendLine("rune_add_to_list(" + rootName + ", " + expression + ")");
-            }
+            String path = (operation.getPath() == null) ? "" : "." + generateDottedPath(operation.getPath());
+            writer.appendLine("rune_add_to_list(" + rootName + path + ", " + expression + ")");
         } else {
             if (!scope.isInitialized(rootName)) {
                 if (operation.getPath() != null) {
@@ -755,21 +739,9 @@ public final class PythonFunctionGenerator {
                 }
             } else {
                 if (operation.getPath() == null) {
-                    writer.appendLine(rootName + ".add_rune_attr(self, " + expression + ")");
+                    writer.appendLine(rootName + " = " + expression);
                 } else {
-                    if (scope.isObjectBuilder(rootName)) {
-                        writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
-                    } else {
-                        String path = generateAttributesPath(operation.getPath());
-                        writer.appendLine(rootName
-                                + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
-                                + rootName
-                                + "), "
-                                + path
-                                + "), "
-                                + expression
-                                + ")");
-                    }
+                    writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
                 }
             }
         }
@@ -840,10 +812,6 @@ public final class PythonFunctionGenerator {
             o = o.getNext();
         }
         return false;
-    }
-
-    private String generateAttributesPath(Segment path) {
-        return "'" + String.join("->", getSegmentNames(path)) + "'";
     }
 
     private List<String> getSegmentNames(Segment path) {

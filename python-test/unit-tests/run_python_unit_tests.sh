@@ -188,6 +188,7 @@ cd "$MY_PATH" || error
 
 echo "Running tests in: $TEST_TARGET"
 python -m pytest -p no:cacheprovider "$TEST_TARGET"
+EXIT_CODE=$?
 
 if (( CLEANUP )); then
   echo "***** cleanup"
@@ -197,3 +198,5 @@ if (( CLEANUP )); then
 else
   echo "***** skipping cleanup (requested)"
 fi
+
+exit $EXIT_CODE

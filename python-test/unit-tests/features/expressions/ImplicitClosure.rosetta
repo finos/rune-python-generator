@@ -9,7 +9,7 @@ func MapFeatureImplicitExpression:
     output:
         result int (0..*)
     set result:
-        items extract [ val * 2 ]
+        items extract  val * 2 
 
 func MapImplicit:
     inputs:
@@ -17,5 +17,5 @@ func MapImplicit:
     output:
         result int (0..*)
     set result:
-        items extract [ item * 2 ]
+        items extract  item * 2 
 
