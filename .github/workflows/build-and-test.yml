@@ -48,6 +48,7 @@ jobs:
 
       - name: Run Python Unit Tests
         run: |
+          set -e
           python-test/unit-tests/run_python_unit_tests.sh
 
 
