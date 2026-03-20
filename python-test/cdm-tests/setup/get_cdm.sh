@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# utility script - pulls the version of CDM specified by CDM_VERSION 
+# utility script - pulls the version of CDM specified by its first argument (default to master)
 # supports build_cdm.sh
 #
 
@@ -26,9 +26,7 @@ echo "***** resetting the rosetta directory"
 rm -rf "${ROSETTA_DIR}"
 mkdir -p "${ROSETTA_DIR}/common-domain-model"
 
-# CDM_VERSION="5.x.x"
-# CDM_VERSION="6.10.0"
-CDM_VERSION="master"
+CDM_VERSION=${1:-"master"}
 
 echo "***** pull CDM rosetta definitions ($CDM_VERSION)"
 TEMP_CDM="${MY_PATH}/../temp_cdm"

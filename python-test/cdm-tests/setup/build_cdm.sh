@@ -3,8 +3,8 @@
 # utility script - builds CDM using PythonFilesGeneratorTest::generateCDMPythonFromRosetta
 # to use:
 # 1. remove disabled test by commenting @Disabled
-# 2. specify which version of CDM to pull in get_cdm.sh
-# 3. run this script
+# 2. specify which version of CDM to pull (optional, default to master)
+# 3. run this script: ./build_cdm.sh master
 #
 function error
 {
@@ -52,6 +52,7 @@ cd ${MY_PATH} || error
 source "$MY_PATH/../../common.sh" || { echo "Failed to source common.sh"; exit 1; }
 
 # Parse command-line arguments
+CDM_VERSION="master"
 SKIP_CDM=0
 for arg in "$@"; do
   case "$arg" in
@@ -61,11 +62,15 @@ for arg in "$@"; do
     -r|--reuse-env)
       export REUSE_ENV=1
       ;;
+    *)
+      # default any other argument to the CDM version
+      CDM_VERSION="$arg"
+      ;;
   esac
 done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
-    source $MY_PATH/get_cdm.sh
+    source $MY_PATH/get_cdm.sh "$CDM_VERSION"
 else
     echo "Skipping get_cdm.sh as requested."
 fi
