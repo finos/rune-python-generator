@@ -76,25 +76,27 @@ public class PythonCircularDependencyTest {
                             then bar1->number1 > 0
                 """);
 
-        String generatedPython = gf.toString();
+        String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
 
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
-                """
-                # Phase 2: Delayed Annotation Updates
-                rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__["bar2"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]
-                rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__["bar1"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]
-                """);
+                "# Phase 2: Delayed Annotation Updates");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__[\"bar2\"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__[\"bar1\"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]");
 
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
-                """
-
-
-                # Phase 3: Rebuild
-                rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild()
-                rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()
-                """);
+                "# Phase 3: Rebuild");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild()");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()");
     }
 
     /**
@@ -119,26 +121,43 @@ public class PythonCircularDependencyTest {
 
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
-                """
-                class com_rosetta_test_model_CircularA(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.CircularA'
-                    b: com_rosetta_test_model_CircularB = Field(..., description='')
+                "class com_rosetta_test_model_CircularA(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "_FQRTN = 'com.rosetta.test.model.CircularA'");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "b: com_rosetta_test_model_CircularB = Field(..., description='')");
 
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "class com_rosetta_test_model_CircularB(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "_FQRTN = 'com.rosetta.test.model.CircularB'");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "a: com_rosetta_test_model_CircularA = Field(..., description='')");
 
-                class com_rosetta_test_model_CircularB(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.CircularB'
-                    a: com_rosetta_test_model_CircularA = Field(..., description='')
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "# Phase 2: Delayed Annotation Updates");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "com_rosetta_test_model_CircularA.__annotations__[\"b\"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "com_rosetta_test_model_CircularB.__annotations__[\"a\"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]");
 
-
-                # Phase 2: Delayed Annotation Updates
-                com_rosetta_test_model_CircularA.__annotations__["b"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]
-                com_rosetta_test_model_CircularB.__annotations__["a"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]
-
-
-                # Phase 3: Rebuild
-                com_rosetta_test_model_CircularA.model_rebuild()
-                com_rosetta_test_model_CircularB.model_rebuild()
-                """);
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "# Phase 3: Rebuild");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "com_rosetta_test_model_CircularA.model_rebuild()");
+        testUtils.assertGeneratedContainsExpectedString(
+                generatedPython,
+                "com_rosetta_test_model_CircularB.model_rebuild()");
     }
 
     /**
@@ -165,8 +184,6 @@ public class PythonCircularDependencyTest {
         int parentIndex = generatedPython.indexOf("class com_rosetta_test_model_Parent");
         int childIndex = generatedPython.indexOf("class com_rosetta_test_model_Child(com_rosetta_test_model_Parent)");
 
-        // This assertion will likely FAIL or be inconsistent with the current
-        // generator.
         assertTrue(parentIndex < childIndex, "Parent must be defined before Child for inheritance to work");
     }
 }

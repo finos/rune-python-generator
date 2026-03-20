@@ -341,6 +341,16 @@ public final class PythonAttributeProcessor {
 
                 if (rt instanceof REnumType rEnumType) {
                     enumImports.add(String.format("import %s", rEnumType.getQualifiedName()));
+                } else if (rt instanceof RDataType rDataType) {
+                    String fullNamespace = rDataType.getNamespace().toString();
+                    String currentFullNamespace = rc.getModel().getName();
+                    String rootNamespace = fullNamespace.split("\\.")[0];
+                    String currentRootNamespace = currentFullNamespace.split("\\.")[0];
+
+                    if (!rootNamespace.equals(currentRootNamespace)) {
+                        String flattenedName = com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil.toFlattenedName(fullNamespace + "." + rDataType.getName());
+                        enumImports.add(String.format("from %s._bundle import %s", rootNamespace, flattenedName));
+                    }
                 }
             }
         }
@@ -375,13 +385,11 @@ public final class PythonAttributeProcessor {
             return hasReference;
         }
     }
-
     private record CardinalityInfo(String fieldDefault, String cardinalityString) {
     }
 
     private record AttributeResult(String attributeCode, Optional<String> annotationUpdate) {
     }
-
     private record PythonTypeHint(
             String baseType,
             boolean hasReference,

@@ -6,6 +6,9 @@ import java.util.Set;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
+import com.regnosys.rosetta.rosetta.RosettaTypeAlias;
+import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.types.RAliasType;
 import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RType;
@@ -130,6 +133,13 @@ public final class RuneToPythonMapper {
     }
 
     public static String getFullyQualifiedName(RosettaNamed rn) {
+        while (rn instanceof RosettaTypeAlias alias && !isRosettaBasicType(alias.getName())) {
+             if (alias.getTypeCall() != null && alias.getTypeCall().getType() != null) {
+                 rn = alias.getTypeCall().getType();
+             } else {
+                 break;
+             }
+        }
         RosettaModel model = (RosettaModel) rn.eContainer();
         if (model == null) {
             throw new RuntimeException("Rosetta model not found for data " + rn.getName());
@@ -140,7 +150,12 @@ public final class RuneToPythonMapper {
         }
         String typeName = toPythonBasicTypeInnerFunction(rn.getName());
         if (typeName == null) {
-            typeName = model.getName() + "." + rn.getName();
+            typeName = model.getName();
+            if (rn instanceof com.regnosys.rosetta.rosetta.simple.Function
+                 || rn instanceof com.regnosys.rosetta.rosetta.simple.FunctionDispatch) {
+                typeName += ".functions";
+            }
+            typeName += "." + rn.getName();
             if (rn instanceof RosettaEnumeration) {
                 typeName += "." + rn.getName();
             }
@@ -187,6 +202,9 @@ public final class RuneToPythonMapper {
     public static String toPythonType(RType rt, boolean useQuotes) {
         if (rt == null) {
             return null;
+        }
+        while (rt instanceof com.regnosys.rosetta.types.RAliasType alias && !isRosettaBasicType(alias.getName())) {
+            rt = alias.getRefersTo();
         }
         String typeName = rt.getName();
         // if it is a number type and it is an integer, then it is an int

@@ -18,9 +18,13 @@ public final class PythonCodeGeneratorContext {
      */
     private List<String> subfolders = null;
     /**
-     * The map of Python code for types by nameSpace, by type name.
+     * The map of Python code for classes by name.
      */
-    private Map<String, CharSequence> objects = null;
+    private Map<String, CharSequence> classObjects = null;
+    /**
+     * The map of Python code for functions by name.
+     */
+    private Map<String, CharSequence> functionObjects = null;
     /**
      * The dependency DAG.
      */
@@ -33,6 +37,10 @@ public final class PythonCodeGeneratorContext {
      * The set of function names.
      */
     private HashSet<String> functionNames = null;
+    /**
+     * The set of class names.
+     */
+    private HashSet<String> classNames = null;
     /**
      * The map of post definition updates.
      */
@@ -48,10 +56,12 @@ public final class PythonCodeGeneratorContext {
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new ArrayList<>();
-        this.objects = new HashMap<>();
+        this.classObjects = new HashMap<>();
+        this.functionObjects = new HashMap<>();
         this.dependencyDAG = new DirectedAcyclicGraph<>(DefaultEdge.class);
         this.enumImports = new HashSet<>();
         this.functionNames = new HashSet<>();
+        this.classNames = new HashSet<>();
         this.postDefinitionUpdates = new HashMap<>();
         this.additionalImports = new ArrayList<>();
         this.nativeFunctionNames = new LinkedHashSet<>();
@@ -61,8 +71,12 @@ public final class PythonCodeGeneratorContext {
         return subfolders;
     }
 
-    public Map<String, CharSequence> getObjects() {
-        return objects;
+    public Map<String, CharSequence> getClassObjects() {
+        return classObjects;
+    }
+
+    public Map<String, CharSequence> getFunctionObjects() {
+        return functionObjects;
     }
 
     public Graph<String, DefaultEdge> getDependencyDAG() {
@@ -95,6 +109,16 @@ public final class PythonCodeGeneratorContext {
 
     public boolean hasFunctionName(String functionName) {
         return functionNames.contains(functionName);
+    }
+
+    public void addClassName(String className) {
+        if (!classNames.contains(className)) {
+            classNames.add(className);
+        }
+    }
+
+    public boolean hasClassName(String className) {
+        return classNames.contains(className);
     }
 
     public boolean hasFunctions() {

@@ -71,7 +71,7 @@ public class PythonFunctionNativeTest {
                 # Execute all registered conditions
                 rune_execute_local_conditions(_pre_registry, 'Pre-condition')
 
-                roundedValue = rune_execute_native('rosetta_dsl.test.functions.RoundToNearest', value, nearest, roundingMode)
+                roundedValue = rune_execute_native('rosetta_dsl.test.functions.functions.RoundToNearest', value, nearest, roundingMode)
 
 
                 return roundedValue
@@ -81,7 +81,7 @@ public class PythonFunctionNativeTest {
         String registrationExpected = """
             rune_attempt_register_native_functions(
                 function_names=[
-                    'rosetta_dsl.test.functions.RoundToNearest',
+                    'rosetta_dsl.test.functions.functions.RoundToNearest',
                 ]
             )
             """;

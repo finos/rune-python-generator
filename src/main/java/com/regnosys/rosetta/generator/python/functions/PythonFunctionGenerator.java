@@ -299,8 +299,6 @@ public final class PythonFunctionGenerator {
     private String generateDispatchLogic(Function function, String pythonName, boolean isCodeImplementation) {
         PythonCodeWriter writer = new PythonCodeWriter();
 
-        appendCompanionBlock(writer, pythonName);
-
         Attribute enumInput = rosettaFunctionExtensions.getInputs(function).stream()
                 .filter(input -> input.getTypeCall().getType() instanceof RosettaEnumeration)
                 .findFirst()
@@ -344,8 +342,6 @@ public final class PythonFunctionGenerator {
 
     private String generateSpecializations(Function function, String pythonName, PythonCodeGeneratorContext context) {
         PythonCodeWriter writer = new PythonCodeWriter();
-
-        appendCompanionBlock(writer, pythonName);
 
         List<com.regnosys.rosetta.rosetta.simple.FunctionDispatch> specializations = getSortedSpecializations(function);
 
@@ -430,16 +426,6 @@ public final class PythonFunctionGenerator {
         return "";
     }
 
-    private void appendCompanionBlock(PythonCodeWriter writer, String className) {
-        writer.newLine();
-        writer.appendLine("@rune_companion");
-        writer.appendLine("@rune_func_dispatch");
-        writer.appendLine("class " + className + ":");
-        writer.indent();
-        writer.appendLine("pass");
-        writer.unindent();
-        writer.newLine();
-    }
 
     private String generateDescription(Function function) {
         List<Attribute> inputs = function.getInputs();
@@ -490,11 +476,12 @@ public final class PythonFunctionGenerator {
         Set<String> enumImports = new HashSet<>();
         DependencySet dependencySet = collectDependencyRoots(function);
 
+        String sourceNamespace = function.getModel().getName();
         for (RosettaNamed named : dependencySet.namedRoots()) {
-            functionDependencyProvider.addDependencies(named, enumImports);
+            functionDependencyProvider.addDependencies(named, enumImports, sourceNamespace);
         }
         for (RosettaExpression expression : dependencySet.expressionRoots()) {
-            functionDependencyProvider.addDependencies(expression, enumImports);
+            functionDependencyProvider.addDependencies(expression, enumImports, sourceNamespace);
         }
         return enumImports;
     }

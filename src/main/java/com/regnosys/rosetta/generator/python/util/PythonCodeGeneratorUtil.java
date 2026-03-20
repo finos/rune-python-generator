@@ -118,7 +118,7 @@ public final class PythonCodeGeneratorUtil {
                 requires-python = ">= 3.11"
                 dependencies = [
                    "pydantic>=2.10.3",
-                   "rune.runtime>=1.0.0,<1.1.0"
+                   "rune.runtime>=1.0.0,<1.5.0"
                 ]
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(namespace, version).stripIndent();

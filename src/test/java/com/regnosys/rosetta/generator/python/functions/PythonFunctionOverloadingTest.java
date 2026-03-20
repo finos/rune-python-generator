@@ -54,28 +54,28 @@ public class PythonFunctionOverloadingTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
             """
                     case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_360:
-                        return _com_test_DayCountBasis_ACT_360(dcf)
+                        return _com_test_functions_DayCountBasis_ACT_360(dcf)
             """);
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
             """
                     case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_365:
-                        return _com_test_DayCountBasis_ACT_365(dcf)
+                        return _com_test_functions_DayCountBasis_ACT_365(dcf)
             """);
 
         // Verify the default native fallback
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
             """
                     case _:
-                        basis = rune_execute_native('com.test.DayCountBasis', dcf)
+                        basis = rune_execute_native('com.test.functions.DayCountBasis', dcf)
             """);
 
         // Verify specialized helper functions are present and have correct distinct logic
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "def _com_test_DayCountBasis_ACT_360(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
+            "def _com_test_functions_DayCountBasis_ACT_360(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "    basis = 360");
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "def _com_test_DayCountBasis_ACT_365(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
+            "def _com_test_functions_DayCountBasis_ACT_365(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "    basis = 365");
     }
 }

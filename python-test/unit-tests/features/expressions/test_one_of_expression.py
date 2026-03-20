@@ -1,6 +1,6 @@
 """Tests for one-of expression support."""
 
-from rosetta_dsl.test.semantic.expressions.one_of_expression.CheckOneOf import (
+from rosetta_dsl.test.semantic.expressions.one_of_expression.functions.CheckOneOf import (
     CheckOneOf,
 )
 from rosetta_dsl.test.semantic.expressions.one_of_expression.Message import Message

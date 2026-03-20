@@ -41,7 +41,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_TestAbsType(arg: com_rosetta_test_model_AInput) -> Decimal:
+            def com_rosetta_test_model_functions_TestAbsType(arg: com_rosetta_test_model_AInput) -> Decimal:
                 \"\"\"
                 Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
@@ -96,7 +96,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_TestAbsOutputType(arg: Decimal) -> com_rosetta_test_model_AOutput:
+            def com_rosetta_test_model_functions_TestAbsOutputType(arg: Decimal) -> com_rosetta_test_model_AOutput:
                 \"\"\"
                 Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
@@ -143,7 +143,7 @@ public class PythonFunctionTypeTest {
             """);
         String generatedPython = gf.get("src/com/_bundle.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "def com_rosetta_test_model_TestPrecision() -> Decimal:");
+            "def com_rosetta_test_model_functions_TestPrecision() -> Decimal:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = (Decimal('0.1') + Decimal('0.2'))");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");
     }
@@ -188,7 +188,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_ArithmeticOperation(n1: Decimal, op: com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum, n2: Decimal) -> Decimal:
+            def com_rosetta_test_model_functions_ArithmeticOperation(n1: Decimal, op: com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum, n2: Decimal) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -280,7 +280,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_TestObjectCreationFromFields(baseObject: com_rosetta_test_model_BaseObject) -> com_rosetta_test_model_BaseObject:
+            def com_rosetta_test_model_functions_TestObjectCreationFromFields(baseObject: com_rosetta_test_model_BaseObject) -> com_rosetta_test_model_BaseObject:
                 \"\"\"
 
                 Parameters
@@ -341,7 +341,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_ResolveInterestRateObservationIdentifiers(payout: com_rosetta_test_model_InterestRatePayout, date: datetime.date) -> com_rosetta_test_model_ObservationIdentifier:
+            def com_rosetta_test_model_functions_ResolveInterestRateObservationIdentifiers(payout: com_rosetta_test_model_InterestRatePayout, date: datetime.date) -> com_rosetta_test_model_ObservationIdentifier:
             """;
         String generatedPython = gf.get("src/com/_bundle.py").toString();
         // Check signature

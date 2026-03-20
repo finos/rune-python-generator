@@ -179,11 +179,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
         }
 
-        Map<String, CharSequence> currentObjects = context.getObjects();
-        currentObjects.putAll(pojoGenerator.generate(rosettaClasses, context));
+        context.getClassObjects().putAll(pojoGenerator.generate(rosettaClasses, context));
         result.putAll(enumGenerator.generate(rosettaEnums));
-        Map<String, String> currentFunctions = funcGenerator.generate(rosettaFunctions, context);
-        currentObjects.putAll(currentFunctions);
+        context.getFunctionObjects().putAll(funcGenerator.generate(rosettaFunctions, context));
 
         return result;
     }
@@ -212,12 +210,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             throw new IllegalArgumentException("Invalid arguments");
         }
         Map<String, CharSequence> result = new HashMap<>();
-        Map<String, CharSequence> nameSpaceObjects = context.getObjects();
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         Set<String> enumImports = context.getEnumImports();
-
-        if (nameSpaceObjects != null
-            && !nameSpaceObjects.isEmpty()
+        if (context.getClassObjects() != null
+            && context.getFunctionObjects() != null
             && dependencyDAG != null
             && enumImports != null) {
             result.put(PYPROJECT_TOML,
@@ -239,42 +235,51 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             List<String> sortedEnumImports = new ArrayList<>(enumImports);
             Collections.sort(sortedEnumImports);
             for (String imp : sortedEnumImports) {
-                bundleWriter.appendLine(imp);
+                // Do not import from our own bundle
+                if (!imp.contains("from " + nameSpace + "._bundle")) {
+                    bundleWriter.appendLine(imp);
+                }
             }
 
             // 2. Traversal and Partitioning
             while (topologicalOrderIterator.hasNext()) {
                 String name = topologicalOrderIterator.next();
                 String bundleClassName = PythonCodeGeneratorUtil.toFlattenedName(name);
-                CharSequence object = nameSpaceObjects.get(name);
-                if (object != null) {
-                    boolean isFunction = context.hasFunctionName(name);
 
-                    if (isFunction) {
-                        functionsWriter.newLine();
-                        functionsWriter.newLine();
-                        functionsWriter.appendBlock(object.toString());
-                    } else {
-                        dataObjectsWriter.newLine();
-                        dataObjectsWriter.newLine();
-                        dataObjectsWriter.appendBlock(object.toString());
+                // Handle Class if it exists for this name
+                CharSequence classObject = context.getClassObjects().get(name);
+                if (classObject != null) {
+                    dataObjectsWriter.newLine();
+                    dataObjectsWriter.newLine();
+                    dataObjectsWriter.appendBlock(classObject.toString());
 
-                        // Collect Phase 2 & 3 updates for this class
-                        List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
-                        if (updates != null && !updates.isEmpty()) {
-                            for (String update : updates) {
-                                annotationUpdateWriter.appendLine(update);
-                            }
-                            rebuildWriter.appendLine(String.format("%s.model_rebuild()", bundleClassName));
+                    // Collect Phase 2 & 3 updates for this class
+                    List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
+                    if (updates != null && !updates.isEmpty()) {
+                        for (String update : updates) {
+                            annotationUpdateWriter.appendLine(update);
                         }
+                        rebuildWriter.appendLine(String.format("%s.model_rebuild()", bundleClassName));
                     }
+                }
+
+                // Handle Function if it exists for this name
+                CharSequence functionObject = context.getFunctionObjects().get(name);
+                if (functionObject != null) {
+                    functionsWriter.newLine();
+                    functionsWriter.newLine();
+                    functionsWriter.appendBlock(functionObject.toString());
+                }
+
+                if (classObject != null || functionObject != null) {
+                    boolean hasFunction = functionObject != null;
 
                     // 3. Create the stub (as before)
                     String stubFileName = SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py";
 
                     PythonCodeWriter stubWriter = new PythonCodeWriter();
                     stubWriter.appendLine("# pylint: disable=unused-import");
-                    if (isFunction) {
+                    if (hasFunction) {
                         stubWriter.appendLine("import sys");
                         stubWriter.appendLine("from rune.runtime.func_proxy import create_module_attr_guardian");
                     }

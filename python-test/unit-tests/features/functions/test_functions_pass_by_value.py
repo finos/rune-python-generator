@@ -1,5 +1,5 @@
 from rosetta_dsl.test.functions.BaseObject import BaseObject
-from rosetta_dsl.test.functions.TestPassByValue import TestPassByValue
+from rosetta_dsl.test.functions.functions.TestPassByValue import TestPassByValue
 
 
 def test_function_pass_by_value():

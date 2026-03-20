@@ -2,20 +2,20 @@
 
 from rosetta_dsl.test.functions.BaseObject import BaseObject
 
-from rosetta_dsl.test.functions.TestSimpleObjectAssignment import (
+from rosetta_dsl.test.functions.functions.TestSimpleObjectAssignment import (
     TestSimpleObjectAssignment,
 )
-from rosetta_dsl.test.functions.TestObjectCreationFromFields import (
+from rosetta_dsl.test.functions.functions.TestObjectCreationFromFields import (
     TestObjectCreationFromFields,
 )
-from rosetta_dsl.test.functions.TestContainerObjectCreation import (
+from rosetta_dsl.test.functions.functions.TestContainerObjectCreation import (
     TestContainerObjectCreation,
 )
-from rosetta_dsl.test.functions.TestContainerObjectCreationFromBaseObject import (
+from rosetta_dsl.test.functions.functions.TestContainerObjectCreationFromBaseObject import (
     TestContainerObjectCreationFromBaseObject,
 )
 
-from rosetta_dsl.test.functions.TestComplexTypeInputs import (
+from rosetta_dsl.test.functions.functions.TestComplexTypeInputs import (
     TestComplexTypeInputs,
 )
 from rosetta_dsl.test.functions.ComplexTypeA import ComplexTypeA

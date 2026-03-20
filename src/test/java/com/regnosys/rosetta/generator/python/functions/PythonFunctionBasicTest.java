@@ -46,7 +46,7 @@ public class PythonFunctionBasicTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
+            def com_rosetta_test_model_functions_AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
                 \"\"\"
                 Add two numbers together.
 
@@ -103,7 +103,7 @@ public class PythonFunctionBasicTest {
         String expectedBundleBaseFunction = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_BaseFunction(value: Decimal) -> Decimal:
+            def com_rosetta_test_model_functions_BaseFunction(value: Decimal) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -128,7 +128,7 @@ public class PythonFunctionBasicTest {
         String expectedBundleMainFunction = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_MainFunction(value: Decimal) -> Decimal:
+            def com_rosetta_test_model_functions_MainFunction(value: Decimal) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -145,7 +145,7 @@ public class PythonFunctionBasicTest {
                 value = rune_cow(value)
 
 
-                result = rune_call_unchecked(com_rosetta_test_model_BaseFunction, rune_resolve_attr(self, "value"))
+                result = rune_call_unchecked(com_rosetta_test_model_functions_BaseFunction, rune_resolve_attr(self, "value"))
 
 
                 return result

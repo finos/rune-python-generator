@@ -1,7 +1,7 @@
 """Sort Closure expression unit tests"""
 
 from rosetta_dsl.test.semantic.expressions.sort_closure.SortItem import SortItem
-from rosetta_dsl.test.semantic.expressions.sort_closure.SortItems import SortItems
+from rosetta_dsl.test.semantic.expressions.sort_closure.functions.SortItems import SortItems
 
 
 def test_sort_closure():

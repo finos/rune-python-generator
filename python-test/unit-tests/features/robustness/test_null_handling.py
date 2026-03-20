@@ -1,9 +1,9 @@
 """Null handling unit tests"""
 
-from rosetta_dsl.test.semantic.robustness.null_handling.IsAbsent import (
+from rosetta_dsl.test.semantic.robustness.null_handling.functions.IsAbsent import (
     IsAbsent,
 )
-from rosetta_dsl.test.semantic.robustness.null_handling.IsAbsentList import (
+from rosetta_dsl.test.semantic.robustness.null_handling.functions.IsAbsentList import (
     IsAbsentList,
 )
 

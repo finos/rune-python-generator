@@ -51,12 +51,17 @@ cd ${MY_PATH} || error
 
 source "$MY_PATH/../../common.sh" || { echo "Failed to source common.sh"; exit 1; }
 
-# Parse command-line arguments for --skip-cdm
+# Parse command-line arguments
 SKIP_CDM=0
 for arg in "$@"; do
-  if [[ "$arg" == "--skip-cdm" ]]; then
-    SKIP_CDM=1
-  fi
+  case "$arg" in
+    --skip-cdm)
+      SKIP_CDM=1
+      ;;
+    -r|--reuse-env)
+      export REUSE_ENV=1
+      ;;
+  esac
 done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
@@ -82,6 +87,9 @@ echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
 if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
 source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
+
+echo "***** removing prior instance of cdm"
+python -m pip uninstall -y python-cdm 2>/dev/null
 
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH

@@ -1,6 +1,6 @@
 """Implicit closure parameters tests."""
 
-from rosetta_dsl.test.semantic.expressions.implicit_closure.MapImplicit import (
+from rosetta_dsl.test.semantic.expressions.implicit_closure.functions.MapImplicit import (
     MapImplicit,
 )
 

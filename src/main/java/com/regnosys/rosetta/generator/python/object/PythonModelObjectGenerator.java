@@ -17,8 +17,12 @@ import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
+import com.regnosys.rosetta.types.RAliasType;
+import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.RObjectFactory;
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.TypeSystem;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -33,6 +37,12 @@ public class PythonModelObjectGenerator {
      */
     @Inject
     private RObjectFactory rObjectFactory;
+    
+    /**
+     * The type system.
+     */
+    @Inject
+    private TypeSystem typeSystem;
 
 
 
@@ -74,23 +84,44 @@ public class PythonModelObjectGenerator {
 
         Map<String, String> result = new HashMap<>();
 
+        // 1. First pass: Add all vertices and inheritance dependencies
+        // This ensures inheritance edges are prioritized over attribute edges in case of cycles.
         for (Data rc : rClasses) {
             RosettaModel model = (RosettaModel) rc.eContainer();
-            // Generate Python for the class
+            String className = model.getName() + "." + rc.getName();
+            context.addClassName(className);
+            dependencyDAG.addVertex(className);
+            
+            if (rc.getSuperType() != null) {
+                Data superClass = rc.getSuperType();
+                RosettaModel superModel = (RosettaModel) superClass.eContainer();
+                String superClassName = superModel.getName() + "." + superClass.getName();
+                addDependency(dependencyDAG, className, superClassName);
+            }
+        }
+
+        // 2. Second pass: Generate classes and add attribute dependencies
+        for (Data rc : rClasses) {
+            RosettaModel model = (RosettaModel) rc.eContainer();
+            String className = model.getName() + "." + rc.getName();
+            
             try {
                 String pythonClass = generateClass(rc, enumImports, context);
-
-                // construct the class name using "." as a delimiter
-                String className = model.getName() + "." + rc.getName();
                 result.put(className, pythonClass);
 
-                dependencyDAG.addVertex(className);
-                if (rc.getSuperType() != null) {
-                    Data superClass = rc.getSuperType();
-                    RosettaModel superModel = (RosettaModel) superClass.eContainer();
-                    String superClassName = superModel.getName() + "." + superClass.getName();
-
-                    addDependency(dependencyDAG, className, superClassName);
+                // Add dependencies for attributes
+                RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
+                for (RAttribute attr : rosettaDataType.getOwnAttributes()) {
+                    RType rt = attr.getRMetaAnnotatedType().getRType();
+                    if (rt instanceof RAliasType) {
+                        rt = typeSystem.stripFromTypeAliases(rt);
+                    }
+                    if (rt instanceof RDataType rdt) {
+                        if (!RuneToPythonMapper.isRosettaBasicType(rdt)) {
+                            String attrClassName = rdt.getNamespace().toString() + "." + rdt.getName();
+                            addDependency(dependencyDAG, className, attrClassName);
+                        }
+                    }
                 }
 
             } catch (Exception e) {

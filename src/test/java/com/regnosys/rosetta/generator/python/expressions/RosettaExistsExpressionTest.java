@@ -39,7 +39,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_ExistsBasic(bar: com_rosetta_test_model_Bar) -> bool:
+                        def com_rosetta_test_model_functions_ExistsBasic(bar: com_rosetta_test_model_Bar) -> bool:
                             \"\"\"
 
                             Parameters
@@ -81,7 +81,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_AbsentBasic(bar: com_rosetta_test_model_Bar) -> bool:
+                        def com_rosetta_test_model_functions_AbsentBasic(bar: com_rosetta_test_model_Bar) -> bool:
                             \"\"\"
 
                             Parameters
@@ -123,7 +123,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_SingleExists(bar: com_rosetta_test_model_Bar) -> bool:
+                        def com_rosetta_test_model_functions_SingleExists(bar: com_rosetta_test_model_Bar) -> bool:
                             \"\"\"
 
                             Parameters
@@ -165,7 +165,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_MultipleExists(bar: com_rosetta_test_model_Bar) -> bool:
+                        def com_rosetta_test_model_functions_MultipleExists(bar: com_rosetta_test_model_Bar) -> bool:
                             \"\"\"
 
                             Parameters
@@ -208,7 +208,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_ExistsWithMetadata(bar: com_rosetta_test_model_Bar) -> bool:
+                        def com_rosetta_test_model_functions_ExistsWithMetadata(bar: com_rosetta_test_model_Bar) -> bool:
                             \"\"\"
 
                             Parameters
@@ -251,7 +251,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_ExistsWithLogical(bar: com_rosetta_test_model_Bar) -> bool:
+                        def com_rosetta_test_model_functions_ExistsWithLogical(bar: com_rosetta_test_model_Bar) -> bool:
                             \"\"\"
 
                             Parameters
@@ -295,7 +295,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_DeepExists(bar: com_rosetta_test_model_Bar) -> bool:
+                        def com_rosetta_test_model_functions_DeepExists(bar: com_rosetta_test_model_Bar) -> bool:
                             \"\"\"
 
                             Parameters
@@ -337,7 +337,7 @@ public class RosettaExistsExpressionTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_ExistsArg(arg1: Decimal | None, arg2: Decimal | None) -> bool:
+                        def com_rosetta_test_model_functions_ExistsArg(arg1: Decimal | None, arg2: Decimal | None) -> bool:
                             \"\"\"
 
                             Parameters

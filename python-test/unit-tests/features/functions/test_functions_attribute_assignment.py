@@ -1,9 +1,9 @@
 """attribute assignment unit tests"""
 
-from rosetta_dsl.test.functions.TestSetAttributeOnObject import (
+from rosetta_dsl.test.functions.functions.TestSetAttributeOnObject import (
     TestSetAttributeOnObject,
 )
-from rosetta_dsl.test.functions.TestAddAttributeOnObject import (
+from rosetta_dsl.test.functions.functions.TestAddAttributeOnObject import (
     TestAddAttributeOnObject,
 )
 

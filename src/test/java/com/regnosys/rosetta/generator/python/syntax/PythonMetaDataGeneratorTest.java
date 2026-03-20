@@ -297,7 +297,7 @@ public class PythonMetaDataGeneratorTest {
     public void testFunctionWithMetaPath() {
         initPython();
         String generatedPython = python.get("src/test/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "def test_generated_syntax_metadata_TestMetaPath(inpRoot: test_generated_syntax_metadata_Root) -> test_generated_syntax_metadata_NodeRef:");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "def test_generated_syntax_metadata_functions_TestMetaPath(inpRoot: test_generated_syntax_metadata_Root) -> test_generated_syntax_metadata_NodeRef:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "out = rune_resolve_attr(rune_resolve_attr(self, \"inpRoot\"), \"nodeRef\")");
     }
 }
