@@ -42,20 +42,16 @@ public class RosettaCountOperationTest {
                         else False
                 """).toString();
 
-        // Targeted assertions for Test class (Phase 1, 2, 3)
+        // Targeted assertions for Test class (standalone — no Phase 2/3)
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "class com_rosetta_test_model_Test(BaseDataClass):");
+                "class Test(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "aValue: list[com_rosetta_test_model_A | None] = Field(..., description='Test A type aValue', min_length=1)");
+                "aValue: list[A | None] = Field(..., description='Test A type aValue', min_length=1)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "def condition_0_TestCond(self):");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_Test.__annotations__[\"aValue\"] = Annotated[list[com_rosetta_test_model_A | None], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_Test.model_rebuild()");
 
-        // Targeted assertions for A class (Native list fields, no Phase 2/3 needed)
+        // Targeted assertions for A class
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "class com_rosetta_test_model_A(BaseDataClass):");
+                "class A(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "field1: Optional[list[int | None]] = Field(None, description='Test int field 1')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,

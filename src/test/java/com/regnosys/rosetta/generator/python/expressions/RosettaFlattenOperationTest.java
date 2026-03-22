@@ -38,15 +38,11 @@ public class RosettaFlattenOperationTest {
                             then flatten)
                 """).toString();
 
-        // Targeted assertions for Foo class (Phase 1, 2, 3)
+        // Targeted assertions for Foo class (standalone — no Phase 2/3)
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "class com_rosetta_test_model_Foo(BaseDataClass):");
+                "class Foo(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "bars: Optional[list[com_rosetta_test_model_Bar | None]] = Field(None, description='test bar')");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_Foo.__annotations__[\"bars\"] = Annotated[Optional[list[com_rosetta_test_model_Bar | None]], com_rosetta_test_model_Bar.serializer(), com_rosetta_test_model_Bar.validator()]");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_Foo.model_rebuild()");
+                "bars: Optional[list[Bar | None]] = Field(None, description='test bar')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "return rune_all_elements([1, 2, 3], \"=\", (lambda item: (lambda nested: [x for sub in (nested or []) if sub is not None for x in (sub if (hasattr(sub, '__iter__') and not isinstance(sub, (str, dict, bytes, bytearray))) else [sub]) if x is not None] if nested is not None else None)(item))([x for x in map(lambda item: rune_resolve_attr(item, \"numbers\"), rune_resolve_attr(self, \"bars\") or []) if x is not None]))");
     }

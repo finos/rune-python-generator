@@ -38,8 +38,8 @@ public class RosettaAsKeyOperationTest {
                     set bar -> field:
                         val as-key
                 """);
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "bar = ObjectBuilder(com_rosetta_test_model_Bar)");
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/TestAsKey.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "bar = ObjectBuilder(Bar)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "bar.field = Reference(rune_resolve_attr(self, \"val\"))");
     }

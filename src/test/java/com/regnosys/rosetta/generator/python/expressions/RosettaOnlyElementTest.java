@@ -53,11 +53,10 @@ public class RosettaOnlyElementTest {
                     \"""";
 
         String expectedTest1 = """
-                class com_rosetta_test_model_Test1(BaseDataClass):
+                class Test1(BaseDataClass):
                     \"""
                     Test only-element condition.
                     \"""
-                    _FQRTN = 'com.rosetta.test.model.Test1'
                     field1: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='Test enum field 1')
                     \"""
                     Test enum field 1

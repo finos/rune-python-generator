@@ -65,5 +65,21 @@ public class PythonCircularReferenceImplementationTest {
                 "rosetta_dsl_test_language_CircularDependency_A.model_rebuild()");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_B.model_rebuild()");
+
+        // 4. Verify Proxy Stubs at FQ paths — external imports must always use
+        //    the fully-qualified path, never import from _bundle directly.
+        String proxyA = gf.get("src/rosetta_dsl/test/language/CircularDependency/A.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyA,
+                "# pylint: disable=unused-import");
+        testUtils.assertGeneratedContainsExpectedString(proxyA,
+                "from rosetta_dsl._bundle import rosetta_dsl_test_language_CircularDependency_A as A");
+        testUtils.assertGeneratedContainsExpectedString(proxyA, "# EOF");
+
+        String proxyB = gf.get("src/rosetta_dsl/test/language/CircularDependency/B.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyB,
+                "# pylint: disable=unused-import");
+        testUtils.assertGeneratedContainsExpectedString(proxyB,
+                "from rosetta_dsl._bundle import rosetta_dsl_test_language_CircularDependency_B as B");
+        testUtils.assertGeneratedContainsExpectedString(proxyB, "# EOF");
     }
 }

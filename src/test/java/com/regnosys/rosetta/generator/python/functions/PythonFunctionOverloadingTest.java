@@ -47,19 +47,19 @@ public class PythonFunctionOverloadingTest {
             func DayCountBasis(dcf: DayCountFractionEnum -> ACT_365):
                 set basis: 365
             """);
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/test/functions/DayCountBasis.py").toString();
         
         // Verify the dispatcher structure and correct pairing
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "match dcf:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
             """
                     case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_360:
-                        return _com_test_functions_DayCountBasis_ACT_360(dcf)
+                        return _DayCountBasis_ACT_360(dcf)
             """);
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
             """
                     case com.test.DayCountFractionEnum.DayCountFractionEnum.ACT_365:
-                        return _com_test_functions_DayCountBasis_ACT_365(dcf)
+                        return _DayCountBasis_ACT_365(dcf)
             """);
 
         // Verify the default native fallback
@@ -71,11 +71,11 @@ public class PythonFunctionOverloadingTest {
 
         // Verify specialized helper functions are present and have correct distinct logic
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "def _com_test_functions_DayCountBasis_ACT_360(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
+            "def _DayCountBasis_ACT_360(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "    basis = 360");
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "def _com_test_functions_DayCountBasis_ACT_365(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
+            "def _DayCountBasis_ACT_365(dcf: com.test.DayCountFractionEnum.DayCountFractionEnum) -> int:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "    basis = 365");
     }
 }

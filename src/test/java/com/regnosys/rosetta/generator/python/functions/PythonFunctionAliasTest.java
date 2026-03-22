@@ -44,7 +44,7 @@ public class PythonFunctionAliasTest {
         String expectedBundle = """
                 @replaceable
                 @validate_call
-                def com_rosetta_test_model_functions_TestAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
+                def TestAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
                     \"\"\"
 
                     Parameters
@@ -76,7 +76,8 @@ public class PythonFunctionAliasTest {
 
                     return result
                 """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/TestAlias.py").toString(), expectedBundle);
 
     }
 
@@ -111,8 +112,8 @@ public class PythonFunctionAliasTest {
                         Alias1*Alias2
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = ObjectBuilder(com_rosetta_test_model_C)");
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/TestAliasWithTypeOutput.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = ObjectBuilder(C)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "c.valueC = (rune_resolve_attr(self, \"Alias1\") * rune_resolve_attr(self, \"Alias2\"))");
     }

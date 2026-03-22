@@ -33,8 +33,7 @@ public class RosettaJoinOperationTest {
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 """
-                        class com_rosetta_test_model_TestJoin(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestJoin'
+                        class TestJoin(BaseDataClass):
                             field1: list[str | None] = Field(..., description='', min_length=1)
                             delimiter: str = Field(..., description='')
 

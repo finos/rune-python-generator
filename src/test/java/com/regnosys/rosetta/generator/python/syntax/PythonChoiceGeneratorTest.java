@@ -22,6 +22,8 @@ public class PythonChoiceGeneratorTest {
 
     /**
      * Test case for generating choice.
+     * Choice is acyclic — standalone. The class is written directly to
+     * Choice.py; there is no proxy stub and no bundle entry.
      */
     @Test
     public void testGeneration() {
@@ -35,20 +37,10 @@ public class PythonChoiceGeneratorTest {
                 condition Choice: one-of
             """);
 
-        // check proxies
-        testUtils.assertGeneratedContainsExpectedString(
-            python.get("src/test/generated_syntax/semantic/Choice.py").toString(),
-            """
-            # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_semantic_Choice as Choice
-
-            # EOF
-            """);
-
-        String generatedPython = python.get("src/test/_bundle.py").toString();
+        // Standalone file contains the class directly (not a proxy stub)
+        String choicePython = python.get("src/test/generated_syntax/semantic/Choice.py").toString();
         String expectedChoice = """
-            class test_generated_syntax_semantic_Choice(BaseDataClass):
-                _FQRTN = 'test.generated_syntax.semantic.Choice'
+            class Choice(BaseDataClass):
                 intType: Optional[int] = Field(None, description='')
                 stringType: Optional[str] = Field(None, description='')
 
@@ -57,6 +49,6 @@ public class PythonChoiceGeneratorTest {
                     item = self
                     return rune_check_one_of(self, 'intType', 'stringType', necessity=True)
             """;
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedChoice);
+        testUtils.assertGeneratedContainsExpectedString(choicePython, expectedChoice);
     }
 }

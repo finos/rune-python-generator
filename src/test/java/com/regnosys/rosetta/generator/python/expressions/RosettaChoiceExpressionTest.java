@@ -34,11 +34,10 @@ public class RosettaChoiceExpressionTest {
                 condition TestChoice: optional choice field1, field2, field3
                 """,
                 """
-                        class com_rosetta_test_model_Test1(BaseDataClass):
+                        class Test1(BaseDataClass):
                             \"""
                             Test choice condition.
                             \"""
-                            _FQRTN = 'com.rosetta.test.model.Test1'
                             field1: Optional[str] = Field(None, description='Test string field 1')
                             \"""
                             Test string field 1
@@ -69,12 +68,11 @@ public class RosettaChoiceExpressionTest {
                     condition OneOf: one-of
                 """,
                 """
-                        class com_rosetta_test_model_Test1(BaseDataClass):
+                        class Test1(BaseDataClass):
                             _CHOICE_ALIAS_MAP ={"field1":[]}
                             \"""
                             Test one-of condition.
                             \"""
-                            _FQRTN = 'com.rosetta.test.model.Test1'
                             field1: Optional[str] = Field(None, description='Test string field 1')
                             \"""
                             Test string field 1

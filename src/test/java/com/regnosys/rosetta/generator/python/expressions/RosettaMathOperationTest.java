@@ -41,8 +41,7 @@ public class RosettaMathOperationTest {
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 """
-                class com_rosetta_test_model_TestMath(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.TestMath'
+                class TestMath(BaseDataClass):
                     a: int = Field(..., description='')
                     b: int = Field(..., description='')
 
@@ -76,8 +75,7 @@ public class RosettaMathOperationTest {
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
                 """
-                class com_rosetta_test_model_ArithmeticTest(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.ArithmeticTest'
+                class ArithmeticTest(BaseDataClass):
                     a: int = Field(..., description='')
                     b: int = Field(..., description='')
 

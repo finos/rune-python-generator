@@ -22,11 +22,11 @@ public class PythonEnumMetadataTest {
 
     /**
      * Test case for enum with metadata id.
+     * CashTransfer is acyclic — standalone. The class is in CashTransfer.py.
+     * Enums use module-style imports so the reference remains fully qualified.
      */
     @Test
     public void testEnumWithMetadataId() {
-        // This test captures the "Unresolved Issue" where enums with [metadata id]
-        // fail to generate the necessary metadata handling infrastructure.
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                 namespace test.metadata : <"test">
@@ -42,10 +42,12 @@ public class PythonEnumMetadataTest {
                         [metadata id]
                 """);
 
-        String generatedPython = gf.get("src/test/_bundle.py").toString();
+        // CashTransfer is standalone — class is in its own file
+        String generatedPython = gf.get("src/test/metadata/CashTransfer.py").toString();
 
         // Assert that the 'currency' field in CashTransfer is using a metadata
-        // wrapper with the correct @key tags.
+        // wrapper with the correct @key tags. Enums use module-style import so
+        // the reference stays fully qualified as namespace.EnumName.EnumName.
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "currency: Annotated[test.metadata.CurrencyEnum.CurrencyEnum, test.metadata.CurrencyEnum.CurrencyEnum.serializer(), test.metadata.CurrencyEnum.CurrencyEnum.validator(('@key', '@key:external'))]");
 
@@ -74,11 +76,11 @@ public class PythonEnumMetadataTest {
                                 [metadata id]
                         """);
 
-        String generatedPython = gf.get("src/test/_bundle.py").toString();
+        // CashTransfer is standalone — class is in its own file
+        String generatedPython = gf.get("src/test/metadata/CashTransfer.py").toString();
 
         // Enums should be consistently wrapped in Annotated to support metadata
         // during deserialization even if not explicitly required in Rosetta.
-
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "currency: Annotated[test.metadata.CurrencyEnum.CurrencyEnum, test.metadata.CurrencyEnum.CurrencyEnum.serializer(), test.metadata.CurrencyEnum.CurrencyEnum.validator(('@key', '@key:external'))] = Field(..., description='')");
     }

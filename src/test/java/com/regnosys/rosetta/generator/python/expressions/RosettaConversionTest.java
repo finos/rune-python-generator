@@ -35,8 +35,7 @@ public class RosettaConversionTest {
                         s to-int = 1
                 """,
                 """
-                        class com_rosetta_test_model_TestConv(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestConv'
+                        class TestConv(BaseDataClass):
                             val: int = Field(..., description='')
                             s: str = Field(..., description='')
 
@@ -60,8 +59,7 @@ public class RosettaConversionTest {
                         s to-time = "12:00:00" to-time
                 """,
                 """
-                        class com_rosetta_test_model_TestDateConv(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestDateConv'
+                        class TestDateConv(BaseDataClass):
                             s: str = Field(..., description='')
 
                             @rune_condition
@@ -84,8 +82,7 @@ public class RosettaConversionTest {
                         s to-enum MyEnum = MyEnum -> Value1
                 """,
                 """
-                        class com_rosetta_test_model_TestEnumConv(BaseDataClass):
-                            _FQRTN = 'com.rosetta.test.model.TestEnumConv'
+                        class TestEnumConv(BaseDataClass):
                             s: str = Field(..., description='')
 
                             @rune_condition

@@ -7,7 +7,7 @@ import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.util.Map;
 
 @ExtendWith(InjectionExtension.class)
@@ -67,72 +67,56 @@ public class PythonBasicGeneratorTest {
     }
 
     /**
-     * Test case for BasicSingle proxy.
+     * BasicSingle is acyclic — standalone. The file contains the class directly.
      */
     @Test
-    public void testBasicSingleProxy() {
+    public void testBasicSingleStandalone() {
         Map<String, CharSequence> gf = getPython();
         testUtils.assertGeneratedContainsExpectedString(
             gf.get("src/test/generated_syntax/basic/BasicSingle.py").toString(),
-            """
-            # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_basic_BasicSingle as BasicSingle
-
-            # EOF
-            """);
+            "class BasicSingle(BaseDataClass):");
     }
 
     /**
-     * Test case for BasicList proxy.
+     * BasicList is acyclic — standalone. The file contains the class directly.
      */
     @Test
-    public void testBasicListProxy() {
+    public void testBasicListStandalone() {
         Map<String, CharSequence> gf = getPython();
         testUtils.assertGeneratedContainsExpectedString(
             gf.get("src/test/generated_syntax/basic/BasicList.py").toString(),
-            """
-            # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_basic_BasicList as BasicList
-
-            # EOF
-            """);
+            "class BasicList(BaseDataClass):");
     }
 
     /**
-     * Test case for Root proxy.
+     * Root is acyclic — standalone. The file contains the class directly.
      */
     @Test
-    public void testRootProxy() {
+    public void testRootStandalone() {
         Map<String, CharSequence> gf = getPython();
         testUtils.assertGeneratedContainsExpectedString(
             gf.get("src/test/generated_syntax/basic/Root.py").toString(),
-            """
-            # pylint: disable=unused-import
-            from test._bundle import test_generated_syntax_basic_Root as Root
-
-            # EOF
-            """);
+            "class Root(BaseDataClass):");
     }
 
     /**
-     * Test case for bundle.
+     * Test case for bundle existence (bundle is still generated, even when mostly empty).
      */
     @Test
     public void testBundleExists() {
         Map<String, CharSequence> gf = getPython();
-        assertTrue(gf.containsKey("src/test/_bundle.py"), "The bundle should be in the generated Python");
+        assertFalse(gf.containsKey("src/test/_bundle.py"), "No bundle should be generated for a standalone-only model");
     }
 
     /**
-     * Test case for bundle.
+     * Test case for BasicSingle standalone class fields.
      */
     @Test
-    public void testExpectedBundleBasic() {
+    public void testExpectedBasicSingle() {
         Map<String, CharSequence> gf = getPython();
-        String generatedPython = gf.get("src/test/_bundle.py").toString();
+        String generatedPython = gf.get("src/test/generated_syntax/basic/BasicSingle.py").toString();
         String expectedBasicSingle = """
-            class test_generated_syntax_basic_BasicSingle(BaseDataClass):
-                _FQRTN = 'test.generated_syntax.basic.BasicSingle'
+            class BasicSingle(BaseDataClass):
                 booleanType: bool = Field(..., description='')
                 numberType: Decimal = Field(..., description='')
                 parameterisedNumberType: Decimal = Field(..., description='', max_digits=18, decimal_places=2)
@@ -144,15 +128,14 @@ public class PythonBasicGeneratorTest {
     }
 
     /**
-     * Test case for bundle.
+     * Test case for BasicList standalone class fields.
      */
     @Test
-    public void testExpectedBundleList() {
+    public void testExpectedBasicList() {
         Map<String, CharSequence> gf = getPython();
-        String generatedPython = gf.get("src/test/_bundle.py").toString();
+        String generatedPython = gf.get("src/test/generated_syntax/basic/BasicList.py").toString();
         String expectedBasicList = """
-            class test_generated_syntax_basic_BasicList(BaseDataClass):
-                _FQRTN = 'test.generated_syntax.basic.BasicList'
+            class BasicList(BaseDataClass):
                 booleanTypes: list[bool | None] = Field(..., description='', min_length=1)
                 numberTypes: list[Decimal | None] = Field(..., description='', min_length=1)
                 parameterisedNumberTypes: list[Annotated[Decimal, Field(max_digits=18, decimal_places=2)] | None] = Field(..., description='', min_length=1)
@@ -164,29 +147,18 @@ public class PythonBasicGeneratorTest {
     }
 
     /**
-     * Test case for bundle.
+     * Root depends on BasicSingle and BasicList (both standalone). Attributes
+     * are referenced directly with short names — no Phase 2/3 needed.
      */
     @Test
-    public void testExpectedBundleRoot() {
+    public void testExpectedRoot() {
         Map<String, CharSequence> gf = getPython();
-        String generatedPython = gf.get("src/test/_bundle.py").toString();
-
-        // Phase 1, 2, and 3 for Root should be tested as a complete logical sequence
-        String expectedRootFull = """
-            class test_generated_syntax_basic_Root(BaseDataClass):
-                _FQRTN = 'test.generated_syntax.basic.Root'
-                basicSingle: Optional[test_generated_syntax_basic_BasicSingle] = Field(None, description='')
-                basicList: Optional[test_generated_syntax_basic_BasicList] = Field(None, description='')
-
-
-            # Phase 2: Delayed Annotation Updates
-            test_generated_syntax_basic_Root.__annotations__["basicSingle"] = Annotated[Optional[test_generated_syntax_basic_BasicSingle], test_generated_syntax_basic_BasicSingle.serializer(), test_generated_syntax_basic_BasicSingle.validator()]
-            test_generated_syntax_basic_Root.__annotations__["basicList"] = Annotated[Optional[test_generated_syntax_basic_BasicList], test_generated_syntax_basic_BasicList.serializer(), test_generated_syntax_basic_BasicList.validator()]
-
-
-            # Phase 3: Rebuild
-            test_generated_syntax_basic_Root.model_rebuild()
+        String generatedPython = gf.get("src/test/generated_syntax/basic/Root.py").toString();
+        String expectedRoot = """
+            class Root(BaseDataClass):
+                basicSingle: Optional[BasicSingle] = Field(None, description='')
+                basicList: Optional[BasicList] = Field(None, description='')
             """;
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedRootFull);
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedRoot);
     }
 }

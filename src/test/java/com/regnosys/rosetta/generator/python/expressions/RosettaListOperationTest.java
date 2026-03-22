@@ -38,7 +38,7 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_functions_TestAggregations(items: list[int | None] | None) -> bool:
+                        def TestAggregations(items: list[int | None] | None) -> bool:
                             \"\"\"
 
                             Parameters
@@ -78,7 +78,7 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_functions_TestAccessors(items: list[int | None] | None) -> bool:
+                        def TestAccessors(items: list[int | None] | None) -> bool:
                             \"\"\"
 
                             Parameters
@@ -117,7 +117,7 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_functions_TestSort(items: list[int | None] | None) -> list[int | None]:
+                        def TestSort(items: list[int | None] | None) -> list[int | None]:
                             \"\"\"
 
                             Parameters
@@ -158,7 +158,7 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_functions_TestListComparison(list1: list[int | None] | None, list2: list[int | None] | None) -> bool:
+                        def TestListComparison(list1: list[int | None] | None, list2: list[int | None] | None) -> bool:
                             \"\"\"
 
                             Parameters
@@ -199,7 +199,7 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_functions_TestLiteral() -> list[int | None]:
+                        def TestLiteral() -> list[int | None]:
                             \"\"\"
 
                             Parameters
@@ -234,7 +234,7 @@ public class RosettaListOperationTest {
                 """
                         @replaceable
                         @validate_call
-                        def com_rosetta_test_model_functions_TestReverse(items: list[int | None] | None) -> list[int | None]:
+                        def TestReverse(items: list[int | None] | None) -> list[int | None]:
                             \"\"\"
 
                             Parameters

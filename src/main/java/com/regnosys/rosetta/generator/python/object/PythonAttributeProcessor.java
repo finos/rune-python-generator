@@ -9,12 +9,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.types.RAliasType;
 import com.regnosys.rosetta.types.RAttribute;
 import com.regnosys.rosetta.types.RCardinality;
+import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RMetaAnnotatedType;
@@ -53,7 +56,8 @@ public final class PythonAttributeProcessor {
      *         a list of annotation updates.
      */
     public AttributeProcessingResult generateAllAttributes(Data rc,
-        Map<String, List<String>> keyRefConstraints) {
+        Map<String, List<String>> keyRefConstraints,
+        PythonCodeGeneratorContext context) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
@@ -64,7 +68,7 @@ public final class PythonAttributeProcessor {
         PythonCodeWriter writer = new PythonCodeWriter();
         List<String> annotationUpdates = new ArrayList<>();
         for (RAttribute ra : allAttributes) {
-            AttributeResult result = generateAttribute(rc, ra, keyRefConstraints);
+            AttributeResult result = generateAttribute(rc, ra, keyRefConstraints, context);
             writer.appendBlock(result.attributeCode());
             result.annotationUpdate().ifPresent(annotationUpdates::add);
         }
@@ -72,14 +76,18 @@ public final class PythonAttributeProcessor {
     }
 
     private AttributeResult generateAttribute(Data rc, RAttribute ra,
-            Map<String, List<String>> keyRefConstraints) {
+            Map<String, List<String>> keyRefConstraints,
+            PythonCodeGeneratorContext context) {
         MetaDataResult metaDataResult = processMetaDataAttributes(ra, keyRefConstraints);
-        return createAttributeResult(ra, metaDataResult);
+        return createAttributeResult(rc, ra, metaDataResult, context);
     }
 
-    private AttributeResult createAttributeResult(RAttribute ra, MetaDataResult metaDataResult) {
+    private AttributeResult createAttributeResult(Data rc, RAttribute ra, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
+        RosettaModel model = (RosettaModel) rc.eContainer();
+        String className = model.getName() + "." + rc.getName();
+        boolean isStandalone = context.getStandaloneClasses().contains(className);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
-        PythonTypeHint hint = deriveTypeHint(ra, metaDataResult);
+        PythonTypeHint hint = deriveTypeHint(rc, ra, metaDataResult, context);
 
         RType rt = ra.getRMetaAnnotatedType().getRType();
         if (rt instanceof RAliasType) {
@@ -89,7 +97,7 @@ public final class PythonAttributeProcessor {
 
         String pythonType;
         Optional<String> annotationUpdate = Optional.empty();
-        if (isDelayed) {
+        if (isDelayed && !isStandalone) {
             pythonType = hint.build(false);
             String update = String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true));
             annotationUpdate = Optional.of(update);
@@ -101,13 +109,40 @@ public final class PythonAttributeProcessor {
         return new AttributeResult(fieldDecl, annotationUpdate);
     }
 
-    private PythonTypeHint deriveTypeHint(RAttribute ra, MetaDataResult metaDataResult) {
+    private PythonTypeHint deriveTypeHint(Data rc, RAttribute ra, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
         RType rt = ra.getRMetaAnnotatedType().getRType();
-        if (rt instanceof RAliasType) {
-            rt = typeSystem.stripFromTypeAliases(rt);
+        if (rt instanceof RAliasType alias) {
+            rt = typeSystem.stripFromTypeAliases(alias);
         }
 
-        String attrTypeNameIn = RuneToPythonMapper.toPythonType(rt);
+        RosettaModel model = (RosettaModel) rc.eContainer();
+        String className = model.getName() + "." + rc.getName();
+        boolean isSourceStandalone = context.getStandaloneClasses().contains(className);
+
+        String typeRefName;
+        String fqnAttributeNamespace = rt.getNamespace().toString();
+        String fqnAttributeName = fqnAttributeNamespace + "." + rt.getName();
+        
+        if (RuneToPythonMapper.isRosettaBasicType(rt)) {
+            typeRefName = RuneToPythonMapper.toPythonType(rt);
+        } else if (rt instanceof REnumType) {
+            typeRefName = fqnAttributeName + "." + rt.getName();
+        } else {
+            // Data Type
+            boolean isTargetStandalone = context.getStandaloneClasses().contains(fqnAttributeName);
+            if (isSourceStandalone || isTargetStandalone) {
+                // Use short name (imported via 'from module import Class')
+                // If the attribute name matches the type name, use an alias to avoid shadowing
+                String attrPythonName = RuneToPythonMapper.mangleName(ra.getName());
+                boolean hasNamingConflict = attrPythonName.equals(rt.getName());
+                typeRefName = hasNamingConflict ? ("_" + rt.getName()) : rt.getName();
+            } else {
+                // Internal bundle reference
+                typeRefName = com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil.toFlattenedName(fqnAttributeName);
+            }
+        }
+
+        String attrTypeNameIn = typeRefName;
         if (attrTypeNameIn == null) {
             throw new RuntimeException("Attribute type is null for " + ra.getName());
         }
@@ -121,13 +156,14 @@ public final class PythonAttributeProcessor {
         String baseTypeName = (!validators.isEmpty())
                 ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
                 : attrTypeNameIn;
-        baseTypeName = RuneToPythonMapper.getFlattenedTypeName(rt, baseTypeName);
 
         String propString = validationProps.toFieldArgs();
         Optional<String> fieldProps = (isList && !propString.isEmpty()) ? Optional.of(propString) : Optional.empty();
 
         boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
-        boolean needsRuneAnns = isDelayed || !validators.isEmpty();
+        // STANDALONE strategy: omit Annotated wrapper unless there are validators
+        // BUNDLED strategy: always use Annotated for isDelayed to support Phase 2 updates
+        boolean needsRuneAnns = (isDelayed && !isSourceStandalone) || !validators.isEmpty();
         Optional<String> runeAnns = needsRuneAnns ? Optional.of(getRuneAnnotationArgs(validators, baseTypeName))
                 : Optional.empty();
 
@@ -311,14 +347,22 @@ public final class PythonAttributeProcessor {
         return new CardinalityInfo(fieldDefault, cardinalityString);
     }
 
-    public void getImportsFromAttributes(Data rc, Set<String> enumImports) {
-        /**
-         * Get ENUM imports from attributes (all other dependencies are handled by the
-         * bundle)
-         * 
-         * @param rc
-         * @param enumImports
-         */
+    /**
+     * Collects import statements for the attributes of a Data type.
+     *
+     * @param rc                  The Data type whose attributes are inspected.
+     * @param imports             The set to add import statements to.
+     * @param standaloneClasses   The set of fully-qualified names that are standalone.
+     * @param includeBundledTypes When {@code true} (standalone file context), imports
+     *                            are emitted for all Data types including bundled ones.
+     *                            When {@code false} (bundle header context), imports are
+     *                            only emitted for enums and standalone Data types —
+     *                            bundled types must not be imported via their proxy stub
+     *                            because that would create a circular import back into
+     *                            the bundle itself.
+     */
+    public void getImportsFromAttributes(Data rc, Set<String> imports,
+            Set<String> standaloneClasses, boolean includeBundledTypes) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
@@ -339,17 +383,27 @@ public final class PythonAttributeProcessor {
                             + rc.getName());
                 }
 
+                // Normalize RChoiceType to RDataType for import generation
+                if (rt instanceof RChoiceType rChoiceType) {
+                    rt = rChoiceType.asRDataType();
+                }
                 if (rt instanceof REnumType rEnumType) {
-                    enumImports.add(String.format("import %s", rEnumType.getQualifiedName()));
+                    imports.add(String.format("import %s", rEnumType.getQualifiedName()));
                 } else if (rt instanceof RDataType rDataType) {
                     String fullNamespace = rDataType.getNamespace().toString();
-                    String currentFullNamespace = rc.getModel().getName();
-                    String rootNamespace = fullNamespace.split("\\.")[0];
-                    String currentRootNamespace = currentFullNamespace.split("\\.")[0];
-
-                    if (!rootNamespace.equals(currentRootNamespace)) {
-                        String flattenedName = com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil.toFlattenedName(fullNamespace + "." + rDataType.getName());
-                        enumImports.add(String.format("from %s._bundle import %s", rootNamespace, flattenedName));
+                    String fqn = fullNamespace + "." + rDataType.getName();
+                    if (includeBundledTypes || standaloneClasses.contains(fqn)) {
+                        // If the attribute name matches the type name, use an alias to avoid
+                        // pydantic annotation resolution shadowing the imported class
+                        String attrPythonName = RuneToPythonMapper.mangleName(attr.getName());
+                        boolean hasNamingConflict = attrPythonName.equals(rDataType.getName());
+                        if (hasNamingConflict) {
+                            imports.add(String.format("from %s.%s import %s as _%s",
+                                    fullNamespace, rDataType.getName(), rDataType.getName(), rDataType.getName()));
+                        } else {
+                            imports.add(String.format("from %s.%s import %s",
+                                    fullNamespace, rDataType.getName(), rDataType.getName()));
+                        }
                     }
                 }
             }

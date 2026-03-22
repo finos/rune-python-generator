@@ -40,8 +40,7 @@ public class RosettaSwitchExpressionTest {
                         default False
             """,
             """
-            class com_rosetta_test_model_FooTest(BaseDataClass):
-                _FQRTN = 'com.rosetta.test.model.FooTest'
+            class FooTest(BaseDataClass):
                 a: int = Field(..., description='Test field a')
                 \"\"\"
                 Test field a

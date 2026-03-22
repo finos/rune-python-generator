@@ -35,11 +35,10 @@ public class RosettaAnyOperationTest {
                         then ["B", "C", "D"] any = field2
                 """,
                 """
-                        class com_rosetta_test_model_Test(BaseDataClass):
+                        class Test(BaseDataClass):
                             \"""
                             Test any operation condition
                             \"""
-                            _FQRTN = 'com.rosetta.test.model.Test'
                             field1: str = Field(..., description='Test string field1')
                             \"""
                             Test string field1

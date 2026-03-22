@@ -35,15 +35,11 @@ public class RosettaMapOperationTest {
                         (items extract val then count) = 0
                 """).toString();
 
-        // Targeted assertions for TestMap class (Phase 1, 2, 3)
+        // Targeted assertions for TestMap class (standalone — no Phase 2/3)
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "class com_rosetta_test_model_TestMap(BaseDataClass):");
+                "class TestMap(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "items: Optional[list[com_rosetta_test_model_Item | None]] = Field(None, description='')");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_TestMap.__annotations__[\"items\"] = Annotated[Optional[list[com_rosetta_test_model_Item | None]], com_rosetta_test_model_Item.serializer(), com_rosetta_test_model_Item.validator()]");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "com_rosetta_test_model_TestMap.model_rebuild()");
+                "items: Optional[list[Item | None]] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))([x for x in map(lambda item: rune_resolve_attr(item, \"val\"), rune_resolve_attr(self, \"items\") or []) if x is not None]), \"=\", 0)");
     }

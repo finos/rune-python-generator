@@ -36,7 +36,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Foo(BaseDataClass):");
+            "class Foo(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "bar: Optional[str] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
@@ -66,7 +66,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Foo(BaseDataClass):");
+            "class Foo(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_(self):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, \"bar\")), _then_fn0, _else_fn0)");
@@ -74,6 +74,8 @@ public class PythonDataRuleGeneratorTest {
 
     /**
      * Test case for conditions with exists statements.
+     * Quote depends on QuotePrice (one-way); both are standalone.
+     * No Phase 2/3 needed for standalone classes.
      */
     @Test
     public void testExists() {
@@ -91,26 +93,16 @@ public class PythonDataRuleGeneratorTest {
             """)
             .toString();
 
-        // Phase 1: Clean Body
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Quote(BaseDataClass):");
+            "class Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
+            "quotePrice: Optional[QuotePrice] = Field(None, description='')");
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_QuotePrice(BaseDataClass):");
+            "class QuotePrice(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "bidPrice: Optional[Decimal] = Field(None, description='')");
 
-        // Phase 2: Delayed Update
-        testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Annotated[Optional[com_rosetta_test_model_QuotePrice], com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]");
-
-        // Phase 3: Rebuild
-        testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "com_rosetta_test_model_Quote.model_rebuild()");
-
-        // Condition
         testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
     }
 
@@ -138,11 +130,9 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Quote(BaseDataClass):");
+            "class Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
-        testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Annotated[Optional[com_rosetta_test_model_QuotePrice], com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]");
+            "quotePrice: Optional[QuotePrice] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
     }
 
@@ -164,9 +154,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "quotePrice: Optional[com_rosetta_test_model_QuotePrice] = Field(None, description='')");
-        testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "com_rosetta_test_model_Quote.__annotations__[\"quotePrice\"] = Annotated[Optional[com_rosetta_test_model_QuotePrice], com_rosetta_test_model_QuotePrice.serializer(), com_rosetta_test_model_QuotePrice.validator()]");
+            "quotePrice: Optional[QuotePrice] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"quotePrice\"), \"bidPrice\"), \"=\", Decimal('0.0'))");
     }
@@ -193,7 +181,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Quote(BaseDataClass):");
+            "class Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return rune_all_elements(rune_call_unchecked(com_rosetta_test_model_functions_Foo, rune_resolve_attr(self, \"price\")), \"=\", Decimal('5.0'))");
     }
@@ -221,7 +209,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Quote(BaseDataClass):");
+            "class Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return if_cond_fn(rune_attr_exists(rune_resolve_attr(self, \"price\")), _then_fn0, _else_fn0)");
     }
@@ -243,7 +231,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Coin(BaseDataClass):");
+            "class Coin(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"head\"), \"=\", True), _then_fn0, _else_fn0)");
     }
@@ -265,7 +253,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Coin(BaseDataClass):");
+            "class Coin(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"tail\"), \"=\", True), _then_fn0, _else_fn0)");
     }
@@ -287,7 +275,7 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Coin(BaseDataClass):");
+            "class Coin(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return if_cond_fn(rune_all_elements(rune_resolve_attr(self, \"tail\"), \"=\", False), _then_fn0, _else_fn0)");
     }
@@ -307,11 +295,14 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_CondTest(BaseDataClass):");
+            "class CondTest(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return rune_all_elements((lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
     }
 
+    /**
+     * Bar extends Foo (one-way inheritance); both standalone.
+     */
     @Test
     public void checkConditionWithInheritedAttribute() {
         String pythonString = testUtils.generatePythonFromString(
@@ -331,9 +322,9 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Foo(BaseDataClass):");
+            "class Foo(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):");
+            "class Bar(Foo):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return rune_attr_exists(rune_resolve_attr(self, \"y\"))");
     }
@@ -360,9 +351,9 @@ public class PythonDataRuleGeneratorTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Foo(BaseDataClass):");
+            "class Foo(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "class com_rosetta_test_model_Bar(com_rosetta_test_model_Foo):");
+            "class Bar(Foo):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return rune_attr_exists(rune_resolve_attr(self, \"y\"))");
     }

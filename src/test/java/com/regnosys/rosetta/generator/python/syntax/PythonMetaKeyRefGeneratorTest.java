@@ -23,6 +23,9 @@ public class PythonMetaKeyRefGeneratorTest {
 
     /**
      * Test case for generating meta key ref.
+     * KeyRef and ScopedKeyRef are acyclic — both standalone. Classes are
+     * written directly to their FQ-path files; metadata annotations are
+     * inline in the class body (no Phase 2/3 needed).
      */
     @Test
     public void testGeneration() {
@@ -41,35 +44,28 @@ public class PythonMetaKeyRefGeneratorTest {
                 [metadata address]
             """);
 
-        // check proxies
-        String proxyKeyRef = python.get("src/test/generated_syntax/meta_key_ref/KeyRef.py").toString();
-        assertNotNull(proxyKeyRef, "KeyRef.py was not found");
-        testUtils.assertGeneratedContainsExpectedString(proxyKeyRef,
-            "from test._bundle import test_generated_syntax_meta_key_ref_KeyRef as KeyRef");
+        // Standalone files contain classes directly (not proxy stubs)
+        String keyRefPython = python.get("src/test/generated_syntax/meta_key_ref/KeyRef.py").toString();
+        assertNotNull(keyRefPython, "KeyRef.py was not found");
+        testUtils.assertGeneratedContainsExpectedString(keyRefPython,
+            "class KeyRef(BaseDataClass):");
 
-        String proxyScopedKeyRef = python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py")
-            .toString();
-        assertNotNull(proxyScopedKeyRef, "ScopedKeyRef.py was not found");
-        testUtils.assertGeneratedContainsExpectedString(proxyScopedKeyRef,
-            "from test._bundle import test_generated_syntax_meta_key_ref_ScopedKeyRef as ScopedKeyRef");
+        String scopedKeyRefPython = python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py").toString();
+        assertNotNull(scopedKeyRefPython, "ScopedKeyRef.py was not found");
+        testUtils.assertGeneratedContainsExpectedString(scopedKeyRefPython,
+            "class ScopedKeyRef(BaseDataClass):");
 
-        String generatedPython = python.get("src/test/_bundle.py").toString();
-        assertNotNull(generatedPython, "src/test/_bundle.py was not found");
-
-        // KeyRef checks
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "class test_generated_syntax_meta_key_ref_KeyRef(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+        // KeyRef checks — annotations are inline in the standalone file
+        testUtils.assertGeneratedContainsExpectedString(keyRefPython,
             "'fieldA': {'@ref', '@ref:external', '@key', '@key:external'}");
-        // Check if delayed or inline (StrWithMeta is currently inline as it's a basic type)
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+        // StrWithMeta is a basic type — annotation is always inline
+        testUtils.assertGeneratedContainsExpectedString(keyRefPython,
             "fieldA: Annotated[StrWithMeta | BaseReference, StrWithMeta.serializer(), StrWithMeta.validator(('@ref', '@ref:external', '@key', '@key:external'))] = Field(..., description='')");
 
         // ScopedKeyRef checks
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "class test_generated_syntax_meta_key_ref_ScopedKeyRef(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "'fieldA': {'@key:scoped', '@ref:scoped'}");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+        testUtils.assertGeneratedContainsExpectedString(scopedKeyRefPython,
+            "'fieldA': {'@key:scoped', '@ref:scoped'}");
+        testUtils.assertGeneratedContainsExpectedString(scopedKeyRefPython,
             "fieldA: Annotated[StrWithMeta | BaseReference, StrWithMeta.serializer(), StrWithMeta.validator(('@key:scoped', '@ref:scoped'))] = Field(..., description='')");
     }
 }

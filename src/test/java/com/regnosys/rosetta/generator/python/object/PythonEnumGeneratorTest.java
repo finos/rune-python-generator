@@ -58,12 +58,11 @@ public class PythonEnumGeneratorTest {
             .toString();
 
         String expectedTestType1 = """
-            class com_rosetta_test_model_LegalEntity(BaseDataClass):
+            class LegalEntity(BaseDataClass):
                 _ALLOWED_METADATA = {'@key', '@key:external'}
                 \"""
                 A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).
                 \"""
-                _FQRTN = 'com.rosetta.test.model.LegalEntity'
                 entityId: Annotated[Optional[list[StrWithMeta | None]], StrWithMeta.serializer(), StrWithMeta.validator(('@scheme', ))] = Field(None, description='A legal entity identifier (e.g. RED entity code).')
                 \"""
                 A legal entity identifier (e.g. RED entity code).
@@ -74,11 +73,10 @@ public class PythonEnumGeneratorTest {
                 \"""
             """;
         String expectedTestType2 = """
-            class com_rosetta_test_model_TelephoneNumber(BaseDataClass):
+            class TelephoneNumber(BaseDataClass):
                 \"""
                 A class to specify a telephone number as a type of phone number (e.g. work, personal, ...) alongside with the actual number.
                 \"""
-                _FQRTN = 'com.rosetta.test.model.TelephoneNumber'
                 telephoneNumberType: Optional[com.rosetta.test.model.TelephoneTypeEnum.TelephoneTypeEnum] = Field(None, description='The type of telephone number, e.g. work, mobile.')
                 \"""
                 The type of telephone number, e.g. work, mobile.
@@ -89,30 +87,20 @@ public class PythonEnumGeneratorTest {
                 \"""
             """;
         String expectedTestType3 = """
-            class com_rosetta_test_model_AncillaryEntity(BaseDataClass):
+            class AncillaryEntity(BaseDataClass):
                 \"""
                 Holds an identifier for an ancillary entity, either identified directly via its ancillary role or directly as a legal entity.
                 \"""
-                _FQRTN = 'com.rosetta.test.model.AncillaryEntity'
                 ancillaryParty: Optional[com.rosetta.test.model.AncillaryRoleEnum.AncillaryRoleEnum] = Field(None, description='Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)')
                 \"""
                 Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)
                 \"""
-                legalEntity: Optional[com_rosetta_test_model_LegalEntity] = Field(None, description='')
+                legalEntity: Optional[LegalEntity] = Field(None, description='')
 
                 @rune_condition
                 def condition_0_(self):
                     item = self
                     return rune_check_one_of(self, 'ancillaryParty', 'legalEntity', necessity=True)
-            """;
-
-        String expectedPhase2 = """
-            # Phase 2: Delayed Annotation Updates
-            com_rosetta_test_model_AncillaryEntity.__annotations__["legalEntity"] = Annotated[Optional[com_rosetta_test_model_LegalEntity], com_rosetta_test_model_LegalEntity.serializer(), com_rosetta_test_model_LegalEntity.validator()]
-
-
-            # Phase 3: Rebuild
-            com_rosetta_test_model_AncillaryEntity.model_rebuild()
             """;
 
         String expectedTestType4 = """
@@ -146,7 +134,6 @@ public class PythonEnumGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType1);
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType2);
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType3);
-        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedPhase2);
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType4);
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedTestType5);
     }
@@ -181,11 +168,10 @@ public class PythonEnumGeneratorTest {
             .toString();
 
         String expectedTestType = """
-            class com_rosetta_test_model_UnitType(BaseDataClass):
+            class UnitType(BaseDataClass):
                 \"""
                 Defines the unit to be used for price, quantity, or other purposes
                 \"""
-                _FQRTN = 'com.rosetta.test.model.UnitType'
                 capacityUnit: Optional[com.rosetta.test.model.CapacityUnitEnum.CapacityUnitEnum] = Field(None, description='Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.')
                 \"""
                 Provides an enumerated value for a capacity unit, generally used in the context of defining quantities for commodities.

@@ -47,13 +47,10 @@ public class PythonFunctionNativeTest {
                 condition PositiveNearest:
                     nearest > 0
             """);
-        String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
-
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "from rune.runtime.native_registry import rune_attempt_register_native_functions");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "from rune.runtime.native_registry import rune_execute_native");
-
+        // The function body lives in the standalone function file.
         // Note: rosetta_dsl.test.functions.RoundToNearest is expected because
         // functions live in a 'functions' directory relative to their namespace.
+        String funcPython = gf.get("src/rosetta_dsl/test/functions/functions/RoundToNearest.py").toString();
         String expected = """
                 self = inspect.currentframe()
 
@@ -76,8 +73,13 @@ public class PythonFunctionNativeTest {
 
                 return roundedValue
             """;
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expected);
+        testUtils.assertGeneratedContainsExpectedString(funcPython, expected);
+
+        // Native registry imports and registration block live in the bundle.
+        String bundlePython = gf.get("src/rosetta_dsl/_bundle.py").toString();
         
+        testUtils.assertGeneratedContainsExpectedString(bundlePython, "from rune.runtime.native_registry import rune_attempt_register_native_functions, rune_execute_native");
+
         String registrationExpected = """
             rune_attempt_register_native_functions(
                 function_names=[
@@ -85,6 +87,6 @@ public class PythonFunctionNativeTest {
                 ]
             )
             """;
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, registrationExpected);
+        testUtils.assertGeneratedContainsExpectedString(bundlePython, registrationExpected);
     }
 }

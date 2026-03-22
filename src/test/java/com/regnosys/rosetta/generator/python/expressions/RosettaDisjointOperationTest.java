@@ -37,11 +37,10 @@ public class RosettaDisjointOperationTest {
                         then field3=True
                 """,
                 """
-                        class com_rosetta_test_model_Test(BaseDataClass):
+                        class Test(BaseDataClass):
                             \"""
                             Test disjoint binary expression condition
                             \"""
-                            _FQRTN = 'com.rosetta.test.model.Test'
                             field1: str = Field(..., description='Test string field1')
                             \"""
                             Test string field1

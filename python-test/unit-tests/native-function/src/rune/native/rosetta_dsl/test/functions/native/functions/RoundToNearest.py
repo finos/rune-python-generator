@@ -4,7 +4,7 @@ Native Python implementation of the RoundToNearest function.
 
 from decimal import Decimal
 
-from rosetta_dsl.test.functions.RoundingModeEnum import RoundingModeEnum
+from rosetta_dsl.test.functions.native.RoundingModeEnum import RoundingModeEnum
 
 
 def RoundToNearest(

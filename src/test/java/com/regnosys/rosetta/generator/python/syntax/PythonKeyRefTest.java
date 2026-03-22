@@ -22,6 +22,8 @@ public class PythonKeyRefTest {
 
     /**
      * Test case for generating key ref.
+     * KeyEntity and RefEntity are acyclic — both standalone. RefEntity.py
+     * holds the class directly with inline annotation; no Phase 2/3 needed.
      */
     @Test
     public void testKeyRef() {
@@ -35,15 +37,16 @@ public class PythonKeyRefTest {
                 ke KeyEntity (1..1)
                     [metadata reference]
             """);
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
-        String expectedClass = """
-            class com_rosetta_test_model_RefEntity(BaseDataClass):
-                _FQRTN = 'com.rosetta.test.model.RefEntity'
-                ke: com_rosetta_test_model_KeyEntity | BaseReference = Field(..., description='')
-            """;
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedClass);
 
-        String expectedAnnotation = "com_rosetta_test_model_RefEntity.__annotations__[\"ke\"] = Annotated[com_rosetta_test_model_KeyEntity | BaseReference, com_rosetta_test_model_KeyEntity.serializer(), com_rosetta_test_model_KeyEntity.validator(('@key', '@key:external', '@ref', '@ref:external'))]";
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedAnnotation);
+        // RefEntity is standalone — class is in its own file, not the bundle
+        String refEntityPython = gf.get("src/com/rosetta/test/model/RefEntity.py").toString();
+
+        // Class declaration uses short name (no _FQRTN for standalone)
+        testUtils.assertGeneratedContainsExpectedString(refEntityPython,
+            "class RefEntity(BaseDataClass):");
+
+        // Annotation is inline in the class body (no Phase 2 __annotations__ update)
+        testUtils.assertGeneratedContainsExpectedString(refEntityPython,
+            "ke: Annotated[KeyEntity | BaseReference, KeyEntity.serializer(), KeyEntity.validator(('@key', '@key:external', '@ref', '@ref:external'))] = Field(..., description='')");
     }
 }

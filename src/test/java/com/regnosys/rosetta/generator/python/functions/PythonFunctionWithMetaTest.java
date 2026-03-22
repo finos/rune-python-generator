@@ -41,7 +41,7 @@ public class PythonFunctionWithMetaTest {
                     set res:
                         f with-meta { scheme: "myScheme" }
                 """);
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/test/functions/TestWithMeta.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})");
     }
@@ -70,9 +70,10 @@ public class PythonFunctionWithMetaTest {
                     set res:
                         f with-meta { scheme: (MyEnum -> Value1) to-string }
                 """);
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+        String funcPython = gf.get("src/com/test/functions/TestWithMetaEnum.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(funcPython,
                 "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': rune_str(com.test.MyEnum.MyEnum.VALUE_1)})");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "import com.test.MyEnum");
+        // Enum module imports are written to the standalone function file.
+        testUtils.assertGeneratedContainsExpectedString(funcPython, "import com.test.MyEnum");
     }
 }

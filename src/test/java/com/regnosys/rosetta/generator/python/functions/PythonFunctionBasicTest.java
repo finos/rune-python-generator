@@ -46,7 +46,7 @@ public class PythonFunctionBasicTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
+            def AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
                 \"\"\"
                 Add two numbers together.
 
@@ -74,7 +74,8 @@ public class PythonFunctionBasicTest {
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/AddTwoNumbers.py").toString(), expectedBundle);
     }
 
     /**
@@ -103,7 +104,7 @@ public class PythonFunctionBasicTest {
         String expectedBundleBaseFunction = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_BaseFunction(value: Decimal) -> Decimal:
+            def BaseFunction(value: Decimal) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -128,7 +129,7 @@ public class PythonFunctionBasicTest {
         String expectedBundleMainFunction = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_MainFunction(value: Decimal) -> Decimal:
+            def MainFunction(value: Decimal) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -145,14 +146,15 @@ public class PythonFunctionBasicTest {
                 value = rune_cow(value)
 
 
-                result = rune_call_unchecked(com_rosetta_test_model_functions_BaseFunction, rune_resolve_attr(self, "value"))
+                result = rune_call_unchecked(BaseFunction, rune_resolve_attr(self, "value"))
 
 
                 return result
             """;
 
-        String expectedBundleString = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(expectedBundleString, expectedBundleBaseFunction);
-        testUtils.assertGeneratedContainsExpectedString(expectedBundleString, expectedBundleMainFunction);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/BaseFunction.py").toString(), expectedBundleBaseFunction);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/MainFunction.py").toString(), expectedBundleMainFunction);
     }
 }

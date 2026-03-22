@@ -60,11 +60,10 @@ public class RosettaContainsOperationTest {
                 """;
 
         String expectedA = """
-                class com_rosetta_test_model_A(BaseDataClass):
+                class A(BaseDataClass):
                     \"""
                     Test type
                     \"""
-                    _FQRTN = 'com.rosetta.test.model.A'
                     field1: list[int | None] = Field(..., description='Test int field 1', min_length=1)
                     \"""
                     Test int field 1
@@ -76,41 +75,26 @@ public class RosettaContainsOperationTest {
                 """;
 
         String expectedBPhase1 = """
-                class com_rosetta_test_model_B(BaseDataClass):
+                class B(BaseDataClass):
                     \"""
                     Test type B
                     \"""
-                    _FQRTN = 'com.rosetta.test.model.B'
                     field2: list[int | None] = Field(..., description='Test int field 2', min_length=1)
                     \"""
                     Test int field 2
                     \"""
-                    aValue: list[com_rosetta_test_model_A | None] = Field(..., description='Test A type aValue', min_length=1)
+                    aValue: list[A | None] = Field(..., description='Test A type aValue', min_length=1)
                     \"""
                     Test A type aValue
                     \"""
                 """;
 
-        String expectedPhases = """
-
-
-                # Phase 2: Delayed Annotation Updates
-                com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[list[com_rosetta_test_model_A | None], com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
-                com_rosetta_test_model_Test.__annotations__["bValue"] = Annotated[list[com_rosetta_test_model_B | None], com_rosetta_test_model_B.serializer(), com_rosetta_test_model_B.validator()]
-
-
-                # Phase 3: Rebuild
-                com_rosetta_test_model_B.model_rebuild()
-                com_rosetta_test_model_Test.model_rebuild()
-                """;
-
         String expectedTestPhase1 = """
-                class com_rosetta_test_model_Test(BaseDataClass):
+                class Test(BaseDataClass):
                     \"""
                     Test filter operation condition
                     \"""
-                    _FQRTN = 'com.rosetta.test.model.Test'
-                    bValue: list[com_rosetta_test_model_B | None] = Field(..., description='Test B type bValue', min_length=1)
+                    bValue: list[B | None] = Field(..., description='Test B type bValue', min_length=1)
                     \"""
                     Test B type bValue
                     \"""
@@ -138,6 +122,5 @@ public class RosettaContainsOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedA);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedBPhase1);
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedTestPhase1);
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedPhases);
     }
 }

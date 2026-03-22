@@ -36,11 +36,10 @@ public class RosettaConditionalExpressionTest {
                         then field2=0
             """,
             """
-            class com_rosetta_test_model_Test1(BaseDataClass):
+            class Test1(BaseDataClass):
                 \"\"\"
                 Test if-then condition.
                 \"\"\"
-                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 \"\"\"
                 Test string field 1
@@ -78,11 +77,10 @@ public class RosettaConditionalExpressionTest {
                     else field2=1
             """,
             """
-            class com_rosetta_test_model_Test1(BaseDataClass):
+            class Test1(BaseDataClass):
                 \"\"\"
                 Test if-then-else condition.
                 \"\"\"
-                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: Optional[str] = Field(None, description='Test string field 1')
                 \"\"\"
                 Test string field 1
@@ -120,11 +118,10 @@ public class RosettaConditionalExpressionTest {
                     else field2=5
             """,
             """
-            class com_rosetta_test_model_Test1(BaseDataClass):
+            class Test1(BaseDataClass):
                 \"\"\"
                 Test boolean condition.
                 \"\"\"
-                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: bool = Field(..., description='Test booelan field 1')
                 \"\"\"
                 Test booelan field 1
@@ -162,11 +159,10 @@ public class RosettaConditionalExpressionTest {
                     else field2 is absent
             """,
             """
-            class com_rosetta_test_model_Test1(BaseDataClass):
+            class Test1(BaseDataClass):
                 \"\"\"
                 Test absent condition.
                 \"\"\"
-                _FQRTN = 'com.rosetta.test.model.Test1'
                 field1: bool = Field(..., description='Test booelan field 1')
                 \"\"\"
                 Test booelan field 1

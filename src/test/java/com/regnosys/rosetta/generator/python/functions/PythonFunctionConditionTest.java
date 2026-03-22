@@ -46,7 +46,7 @@ public class PythonFunctionConditionTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_MinMaxWithSimpleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+            def MinMaxWithSimpleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -95,7 +95,8 @@ public class PythonFunctionConditionTest {
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/MinMaxWithSimpleCondition.py").toString(), expectedBundle);
     }
 
     /**
@@ -123,7 +124,7 @@ public class PythonFunctionConditionTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_MinMaxWithPostCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+            def MinMaxWithPostCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -172,7 +173,8 @@ public class PythonFunctionConditionTest {
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/MinMaxWithPostCondition.py").toString(), expectedBundle);
     }
 
     /**
@@ -203,7 +205,7 @@ public class PythonFunctionConditionTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_MinMaxWithMPositiveNumbersAndMultipleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
+            def MinMaxWithMPositiveNumbersAndMultipleCondition(in1: Decimal, in2: Decimal, direction: str) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -257,6 +259,7 @@ public class PythonFunctionConditionTest {
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/MinMaxWithMPositiveNumbersAndMultipleCondition.py").toString(), expectedBundle);
     }
 }

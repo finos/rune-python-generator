@@ -1,7 +1,5 @@
 package com.regnosys.rosetta.generator.python.object;
 
-import java.util.Map;
-
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -12,9 +10,10 @@ import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 
 import jakarta.inject.Inject;
+import java.util.Map;
 
 /**
- * This is an Anchor test.
+ * This is an Anchor test for circular dependencies and complex generation patterns.
  * Every element of this test needs to check the entire generated Python.
  */
 @ExtendWith(InjectionExtension.class)
@@ -30,8 +29,7 @@ public class PythonCircularDependencyTest {
 
     @Test
     public void testLazyConstruction() {
-        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
+        String model = """
                 namespace rosetta_dsl.test.semantic.object_construction
                 type C:
                     p1 int(1..1)
@@ -43,26 +41,16 @@ public class PythonCircularDependencyTest {
                         result C(1..1)
                     set result->p1: 1
                     set result->p2: 2
-                """);
-        String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython, "from rune.runtime.object_builder import ObjectBuilder");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                """
-                            result = ObjectBuilder(rosetta_dsl_test_semantic_object_construction_C)
-                            result.p1 = 1
-                            result.p2 = 2
-
-
-                            return result
-                        """);
+                """;
+        
+        testUtils.assertBundleContainsExpectedString(model, "result = ObjectBuilder(C)");
+        testUtils.assertBundleContainsExpectedString(model, "result.p1 = 1");
+        testUtils.assertBundleContainsExpectedString(model, "result.p2 = 2");
     }
 
     @Test
     public void testForCircularDependency() {
-        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
-                """
+        String model = """
                 namespace rosetta_dsl.test.model.circular_dependency
 
                 type Bar1: <"Test Circular Dependency">
@@ -74,29 +62,17 @@ public class PythonCircularDependencyTest {
                     condition Test:
                         if bar1 exists
                             then bar1->number1 > 0
-                """);
+                """;
 
-        String generatedPython = gf.get("src/rosetta_dsl/_bundle.py").toString();
-
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "# Phase 2: Delayed Annotation Updates");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
+        testUtils.assertBundleContainsExpectedString(model, "# Phase 2: Delayed Annotation Updates");
+        testUtils.assertBundleContainsExpectedString(model,
                 "rosetta_dsl_test_model_circular_dependency_Bar1.__annotations__[\"bar2\"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar2], rosetta_dsl_test_model_circular_dependency_Bar2.serializer(), rosetta_dsl_test_model_circular_dependency_Bar2.validator()]");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
+        testUtils.assertBundleContainsExpectedString(model,
                 "rosetta_dsl_test_model_circular_dependency_Bar2.__annotations__[\"bar1\"] = Annotated[Optional[rosetta_dsl_test_model_circular_dependency_Bar1], rosetta_dsl_test_model_circular_dependency_Bar1.serializer(), rosetta_dsl_test_model_circular_dependency_Bar1.validator()]");
 
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "# Phase 3: Rebuild");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild()");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()");
+        testUtils.assertBundleContainsExpectedString(model, "# Phase 3: Rebuild");
+        testUtils.assertBundleContainsExpectedString(model, "rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild()");
+        testUtils.assertBundleContainsExpectedString(model, "rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild()");
     }
 
     /**
@@ -104,11 +80,42 @@ public class PythonCircularDependencyTest {
      */
     @Test
     public void testAttributeCircularDependency() {
-        // This test demonstrates a circular dependency via attributes.
-        // Pydantic works with this if 'from __future__ import annotations' is used,
-        // but the generated bundle order must still be legal.
-        // Currently, the DAG ignores cycles, so the order is non-deterministic.
-        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+        String model = """
+                type CircularA:
+                    b CircularB (1..1)
+
+                type CircularB:
+                    a CircularA (1..1)
+                """;
+
+        testUtils.assertBundleContainsExpectedString(model, "class com_rosetta_test_model_CircularA(BaseDataClass):");
+        testUtils.assertBundleContainsExpectedString(model, "_FQRTN = 'com.rosetta.test.model.CircularA'");
+        testUtils.assertBundleContainsExpectedString(model, "b: com_rosetta_test_model_CircularB = Field(..., description='')");
+
+        testUtils.assertBundleContainsExpectedString(model, "class com_rosetta_test_model_CircularB(BaseDataClass):");
+        testUtils.assertBundleContainsExpectedString(model, "_FQRTN = 'com.rosetta.test.model.CircularB'");
+        testUtils.assertBundleContainsExpectedString(model, "a: com_rosetta_test_model_CircularA = Field(..., description='')");
+
+        testUtils.assertBundleContainsExpectedString(model, "# Phase 2: Delayed Annotation Updates");
+        testUtils.assertBundleContainsExpectedString(model,
+                "com_rosetta_test_model_CircularA.__annotations__[\"b\"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]");
+        testUtils.assertBundleContainsExpectedString(model,
+                "com_rosetta_test_model_CircularB.__annotations__[\"a\"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]");
+
+        testUtils.assertBundleContainsExpectedString(model, "# Phase 3: Rebuild");
+        testUtils.assertBundleContainsExpectedString(model, "com_rosetta_test_model_CircularA.model_rebuild()");
+        testUtils.assertBundleContainsExpectedString(model, "com_rosetta_test_model_CircularB.model_rebuild()");
+    }
+
+    /**
+     * Bundled types must have proxy stubs at their FQ-path files so that
+     * external code can import via the fully-qualified name without touching
+     * _bundle.py directly.
+     */
+    @Test
+    public void testProxyStubsForBundledTypes() {
+        // Attribute cycle: CircularA ↔ CircularB (default namespace → com._bundle)
+        Map<String, CharSequence> gfAttr = testUtils.generatePythonFromString(
                 """
                 type CircularA:
                     b CircularB (1..1)
@@ -117,60 +124,18 @@ public class PythonCircularDependencyTest {
                     a CircularA (1..1)
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String proxyCircularA = gfAttr.get("src/com/rosetta/test/model/CircularA.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularA,
+                "from com._bundle import com_rosetta_test_model_CircularA as CircularA");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "# EOF");
 
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "class com_rosetta_test_model_CircularA(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "_FQRTN = 'com.rosetta.test.model.CircularA'");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "b: com_rosetta_test_model_CircularB = Field(..., description='')");
+        String proxyCircularB = gfAttr.get("src/com/rosetta/test/model/CircularB.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularB,
+                "from com._bundle import com_rosetta_test_model_CircularB as CircularB");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "# EOF");
 
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "class com_rosetta_test_model_CircularB(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "_FQRTN = 'com.rosetta.test.model.CircularB'");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "a: com_rosetta_test_model_CircularA = Field(..., description='')");
-
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "# Phase 2: Delayed Annotation Updates");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "com_rosetta_test_model_CircularA.__annotations__[\"b\"] = Annotated[com_rosetta_test_model_CircularB, com_rosetta_test_model_CircularB.serializer(), com_rosetta_test_model_CircularB.validator()]");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "com_rosetta_test_model_CircularB.__annotations__[\"a\"] = Annotated[com_rosetta_test_model_CircularA, com_rosetta_test_model_CircularA.serializer(), com_rosetta_test_model_CircularA.validator()]");
-
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "# Phase 3: Rebuild");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "com_rosetta_test_model_CircularA.model_rebuild()");
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "com_rosetta_test_model_CircularB.model_rebuild()");
-    }
-
-    /**
-     * Test case for inheritance circular dependency.
-     * This test demonstrates a circular dependency via inheritance.
-     */
-    @Test
-    public void testInheritanceCircularDependency() {
-        // Parent depends on Child via attribute
-        // Child depends on Parent via inheritance
-        // This creates a cycle that MUST be broken by making 'Child' a string forward
-        // reference in Parent.
-        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+        // Inheritance cycle: Parent ↔ Child (default namespace → com._bundle)
+        Map<String, CharSequence> gfInh = testUtils.generatePythonFromString(
                 """
                 type Parent:
                     child Child (0..1)
@@ -179,11 +144,37 @@ public class PythonCircularDependencyTest {
                     val int (1..1)
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String proxyParent = gfInh.get("src/com/rosetta/test/model/Parent.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyParent,
+                "from com._bundle import com_rosetta_test_model_Parent as Parent");
+        testUtils.assertGeneratedContainsExpectedString(proxyParent, "# EOF");
+
+        String proxyChild = gfInh.get("src/com/rosetta/test/model/Child.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyChild,
+                "from com._bundle import com_rosetta_test_model_Child as Child");
+        testUtils.assertGeneratedContainsExpectedString(proxyChild, "# EOF");
+    }
+
+    /**
+     * Test case for inheritance circular dependency.
+     */
+    @Test
+    public void testInheritanceCircularDependency() {
+        String model = """
+                type Parent:
+                    child Child (0..1)
+
+                type Child extends Parent:
+                    val int (1..1)
+                """;
+
+        String generatedPython = testUtils.generatePythonAndExtractBundle(model);
 
         int parentIndex = generatedPython.indexOf("class com_rosetta_test_model_Parent");
         int childIndex = generatedPython.indexOf("class com_rosetta_test_model_Child(com_rosetta_test_model_Parent)");
 
+        assertTrue(parentIndex != -1, "Parent class definition not found");
+        assertTrue(childIndex != -1, "Child class definition not found");
         assertTrue(parentIndex < childIndex, "Parent must be defined before Child for inheritance to work");
     }
 }

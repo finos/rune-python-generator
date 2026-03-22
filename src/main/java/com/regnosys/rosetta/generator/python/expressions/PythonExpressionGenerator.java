@@ -114,6 +114,15 @@ public final class PythonExpressionGenerator {
     private int generatedFunctionCounter = 0;
 
     /**
+     * The set of standalone class/function FQNs for context-aware name resolution.
+     */
+    private java.util.Set<String> standaloneClasses = java.util.Collections.emptySet();
+
+    public void setStandaloneClasses(java.util.Set<String> standaloneClasses) {
+        this.standaloneClasses = standaloneClasses;
+    }
+
+    /**
      * Clears the block list.
      */
     private void clearBlocks() {
@@ -414,7 +423,9 @@ public final class PythonExpressionGenerator {
     private String generateConstructorExpression(RosettaConstructorExpression expr, PythonExpressionScope scope) {
         String type = null;
         if (expr.getTypeCall() != null && expr.getTypeCall().getType() != null) {
-            type = RuneToPythonMapper.getBundleObjectName(expr.getTypeCall().getType());
+            com.regnosys.rosetta.rosetta.RosettaNamed typeNamed = expr.getTypeCall().getType();
+            String fqn = RuneToPythonMapper.getFullyQualifiedName(typeNamed);
+            type = standaloneClasses.contains(fqn) ? typeNamed.getName() : RuneToPythonMapper.getBundleObjectName(typeNamed);
         }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
@@ -508,7 +519,10 @@ public final class PythonExpressionGenerator {
         funcName = switch (funcName) {
             case "Max" -> "max";
             case "Min" -> "min";
-            case null, default -> RuneToPythonMapper.getBundleObjectName(s);
+            case null, default -> {
+                String fqn = RuneToPythonMapper.getFullyQualifiedName(s);
+                yield standaloneClasses.contains(fqn) ? s.getName() : RuneToPythonMapper.getBundleObjectName(s);
+            }
         };
         return "rune_call_unchecked(" + funcName + ", " + args + ")";
     }

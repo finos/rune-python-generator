@@ -41,7 +41,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_TestAbsType(arg: com_rosetta_test_model_AInput) -> Decimal:
+            def TestAbsType(arg: AInput) -> Decimal:
                 \"\"\"
                 Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
@@ -70,7 +70,8 @@ public class PythonFunctionTypeTest {
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/TestAbsType.py").toString(), expectedBundle);
     }
 
     /**
@@ -96,7 +97,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_TestAbsOutputType(arg: Decimal) -> com_rosetta_test_model_AOutput:
+            def TestAbsOutputType(arg: Decimal) -> AOutput:
                 \"\"\"
                 Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
@@ -120,12 +121,13 @@ public class PythonFunctionTypeTest {
                 def _else_fn0():
                     return rune_resolve_attr(self, "arg")
 
-                result = com_rosetta_test_model_AOutput(a=if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0))
+                result = AOutput(a=if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0))
 
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/TestAbsOutputType.py").toString(), expectedBundle);
     }
 
     /**
@@ -141,9 +143,9 @@ public class PythonFunctionTypeTest {
                 set result:
                     0.1 + 0.2
             """);
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/TestPrecision.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-            "def com_rosetta_test_model_functions_TestPrecision() -> Decimal:");
+            "def TestPrecision() -> Decimal:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = (Decimal('0.1') + Decimal('0.2'))");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");
     }
@@ -188,7 +190,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_ArithmeticOperation(n1: Decimal, op: com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum, n2: Decimal) -> Decimal:
+            def ArithmeticOperation(n1: Decimal, op: com.rosetta.test.model.ArithmeticOperationEnum.ArithmeticOperationEnum, n2: Decimal) -> Decimal:
                 \"\"\"
 
                 Parameters
@@ -252,7 +254,8 @@ public class PythonFunctionTypeTest {
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/ArithmeticOperation.py").toString(), expectedBundle);
     }
 
     /**
@@ -280,7 +283,7 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_TestObjectCreationFromFields(baseObject: com_rosetta_test_model_BaseObject) -> com_rosetta_test_model_BaseObject:
+            def TestObjectCreationFromFields(baseObject: BaseObject) -> BaseObject:
                 \"\"\"
 
                 Parameters
@@ -297,12 +300,13 @@ public class PythonFunctionTypeTest {
                 baseObject = rune_cow(baseObject)
 
 
-                result = com_rosetta_test_model_BaseObject(value1=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value1\"), value2=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value2\"))
+                result = BaseObject(value1=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value1\"), value2=rune_resolve_attr(rune_resolve_attr(self, \"baseObject\"), \"value2\"))
 
 
                 return result
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/TestObjectCreationFromFields.py").toString(), expectedBundle);
     }
 
     /**
@@ -341,13 +345,13 @@ public class PythonFunctionTypeTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def com_rosetta_test_model_functions_ResolveInterestRateObservationIdentifiers(payout: com_rosetta_test_model_InterestRatePayout, date: datetime.date) -> com_rosetta_test_model_ObservationIdentifier:
+            def ResolveInterestRateObservationIdentifiers(payout: InterestRatePayout, date: datetime.date) -> ObservationIdentifier:
             """;
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/ResolveInterestRateObservationIdentifiers.py").toString();
         // Check signature
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedBundle);
         // Check ObjectBuilder usage
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers = ObjectBuilder(com_rosetta_test_model_ObservationIdentifier)");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers = ObjectBuilder(ObservationIdentifier)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers.rateOption = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, \"payout\"), \"rateSpecification\"), \"floatingRate\"), \"rateOption\")");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "identifiers.observationDate = rune_resolve_attr(self, \"date\")");
     }
@@ -380,13 +384,14 @@ public class PythonFunctionTypeTest {
                 p = rune_cow(p)
 
 
-                h = ObjectBuilder(com_rosetta_test_model_House)
+                h = ObjectBuilder(House)
                 h.owner = Reference(rune_resolve_attr(self, "p"))
 
 
                 return h
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/TestAsKey.py").toString(), expectedBundle);
     }
 
     /**
@@ -412,12 +417,13 @@ public class PythonFunctionTypeTest {
                 set h -> owners: ps as-key
             """);
         String expectedBundle = """
-                h = ObjectBuilder(com_rosetta_test_model_House)
+                h = ObjectBuilder(House)
                 h.owners = [Reference(x) for x in (rune_resolve_attr(self, "ps") or []) if x is not None]
 
 
                 return h
             """;
-        testUtils.assertGeneratedContainsExpectedString(gf.get("src/com/_bundle.py").toString(), expectedBundle);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/TestAsKeyMulti.py").toString(), expectedBundle);
     }
 }

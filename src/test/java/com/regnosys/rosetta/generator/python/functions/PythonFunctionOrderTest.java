@@ -46,18 +46,13 @@ public class PythonFunctionOrderTest {
                 val string (1..1)
             """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
-
-        // Check ordering in the bundle.
-        // We expect ClassA to be defined before ClassB (because B depends on A)
-        // and both to be defined before MyFunc (because MyFunc depends on B and A).
-
-        int classAIndex = generatedPython.indexOf("class com_rosetta_test_model_ClassA");
-        int classBIndex = generatedPython.indexOf("class com_rosetta_test_model_ClassB");
-        int funcIndex = generatedPython.indexOf("def com_rosetta_test_model_functions_MyFunc");
-
-        assertTrue(classAIndex < funcIndex, "ClassA should be defined before MyFunc");
-        assertTrue(classBIndex < funcIndex, "ClassB should be defined before MyFunc");
+        // ClassA and ClassB have no cycle so they are standalone.
+        // MyFunc is also standalone. Ordering is enforced by Python imports, not file order.
+        assertTrue(gf.containsKey("src/com/rosetta/test/model/ClassA.py"), "ClassA should be generated standalone");
+        assertTrue(gf.containsKey("src/com/rosetta/test/model/ClassB.py"), "ClassB should be generated standalone");
+        assertTrue(gf.containsKey("src/com/rosetta/test/model/functions/MyFunc.py"), "MyFunc should be generated standalone");
+        String funcPython = gf.get("src/com/rosetta/test/model/functions/MyFunc.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(funcPython, "def MyFunc");
     }
 
     /**

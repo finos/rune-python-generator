@@ -9,8 +9,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
+
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.simple.Data;
+import com.regnosys.rosetta.rosetta.simple.Function;
 
 public final class PythonCodeGeneratorContext {
     /**
@@ -53,18 +57,49 @@ public final class PythonCodeGeneratorContext {
      * The set of native function names.
      */
     private LinkedHashSet<String> nativeFunctionNames = null;
+    /**
+     * The set of classes that are acyclic (standalone).
+     */
+    private Set<String> standaloneClasses = null;
+    /**
+     * All Data elements for this context.
+     */
+    private List<Data> allData = null;
+    /**
+     * All Function elements for this context.
+     */
+    private List<Function> allFunctions = null;
+    /**
+     * All Enum elements for this context.
+     */
+    private List<RosettaEnumeration> allEnums = null;
+    /**
+     * The map of child -> parent (FQN)
+     */
+    private Map<String, String> superTypes = null;
+    /**
+     * Per-function enum imports (function FQN -> set of "import X.Y.Z" strings).
+     * Used to emit enum imports into standalone function files.
+     */
+    private Map<String, Set<String>> functionEnumImports = null;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new ArrayList<>();
         this.classObjects = new HashMap<>();
         this.functionObjects = new HashMap<>();
-        this.dependencyDAG = new DirectedAcyclicGraph<>(DefaultEdge.class);
+        this.dependencyDAG = new DefaultDirectedGraph<>(DefaultEdge.class);
         this.enumImports = new HashSet<>();
         this.functionNames = new HashSet<>();
         this.classNames = new HashSet<>();
         this.postDefinitionUpdates = new HashMap<>();
         this.additionalImports = new ArrayList<>();
         this.nativeFunctionNames = new LinkedHashSet<>();
+        this.standaloneClasses = new HashSet<>();
+        this.allData = new ArrayList<>();
+        this.allFunctions = new ArrayList<>();
+        this.allEnums = new ArrayList<>();
+        this.superTypes = new HashMap<>();
+        this.functionEnumImports = new HashMap<>();
     }
 
     public List<String> getSubfolders() {
@@ -87,6 +122,10 @@ public final class PythonCodeGeneratorContext {
         return enumImports;
     }
 
+    public Map<String, Set<String>> getFunctionEnumImports() {
+        return functionEnumImports;
+    }
+
     public Map<String, List<String>> getPostDefinitionUpdates() {
         return postDefinitionUpdates;
     }
@@ -99,6 +138,10 @@ public final class PythonCodeGeneratorContext {
         if (!subfolders.contains(subfolder)) {
             subfolders.add(subfolder);
         }
+    }
+
+    public Set<String> getFunctionNames() {
+        return functionNames;
     }
 
     public void addFunctionName(String functionName) {
@@ -119,6 +162,10 @@ public final class PythonCodeGeneratorContext {
 
     public boolean hasClassName(String className) {
         return classNames.contains(className);
+    }
+
+    public Set<String> getClassNames() {
+        return classNames;
     }
 
     public boolean hasFunctions() {
@@ -144,5 +191,25 @@ public final class PythonCodeGeneratorContext {
 
     public Set<String> getNativeFunctionNames() {
         return nativeFunctionNames;
+    }
+
+    public Set<String> getStandaloneClasses() {
+        return standaloneClasses;
+    }
+
+    public List<Data> getAllData() {
+        return allData;
+    }
+
+    public List<Function> getAllFunctions() {
+        return allFunctions;
+    }
+
+    public List<RosettaEnumeration> getAllEnums() {
+        return allEnums;
+    }
+
+    public Map<String, String> getSuperTypes() {
+        return superTypes;
     }
 }

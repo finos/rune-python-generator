@@ -36,23 +36,25 @@ public class PythonObjectInheritanceTest {
                 """).toString();
 
         String expectedA = """
-                class com_rosetta_test_model_A(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.A'
+                class A(BaseDataClass):
                     aa: Optional[str] = Field(None, description='')
                 """;
         String expectedB = """
-                class com_rosetta_test_model_B(com_rosetta_test_model_A):
-                    _FQRTN = 'com.rosetta.test.model.B'
+                from com.rosetta.test.model.A import A
+
+                class B(A):
                     bb: Optional[str] = Field(None, description='')
                 """;
         String expectedC = """
-                class com_rosetta_test_model_C(com_rosetta_test_model_B):
-                    _FQRTN = 'com.rosetta.test.model.C'
+                from com.rosetta.test.model.B import B
+
+                class C(B):
                     cc: Optional[str] = Field(None, description='')
                 """;
         String expectedD = """
-                class com_rosetta_test_model_D(com_rosetta_test_model_C):
-                    _FQRTN = 'com.rosetta.test.model.D'
+                from com.rosetta.test.model.C import C
+
+                class D(C):
                     dd: Optional[str] = Field(None, description='')
                 """;
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedA);
@@ -79,20 +81,21 @@ public class PythonObjectInheritanceTest {
                 """).toString();
 
         String expectedBaz = """
-                class test_Baz(BaseDataClass):
-                    _FQRTN = 'test.Baz'
+                class Baz(BaseDataClass):
                     pass
                 """;
 
         String expectedBar = """
-                class test_Bar(test_Baz):
-                    _FQRTN = 'test.Bar'
+                from test.Baz import Baz
+
+                class Bar(Baz):
                     pass
                 """;
 
         String expectedFoo = """
-                class test_Foo(test_Bar):
-                    _FQRTN = 'test.Foo'
+                from test.Bar import Bar
+
+                class Foo(Bar):
                     pass
                 """;
 

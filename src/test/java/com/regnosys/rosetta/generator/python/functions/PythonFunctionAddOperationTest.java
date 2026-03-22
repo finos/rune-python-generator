@@ -50,7 +50,7 @@ public class PythonFunctionAddOperationTest {
                             filter quantities -> unit all = unit
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/FilterQuantity.py").toString();
         // Check core logic separately to maintain robustness
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "filteredQuantities = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
@@ -73,7 +73,7 @@ public class PythonFunctionAddOperationTest {
                     add result: tempList
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/MakeIntListWithAlias.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = [1]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
@@ -93,7 +93,7 @@ public class PythonFunctionAddOperationTest {
                     add result: tempList
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/MakeIntListOnlyWithAlias.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
@@ -118,7 +118,7 @@ public class PythonFunctionAddOperationTest {
                     add result: value
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/AppendToList.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result, rune_resolve_attr(self, \"list\"))");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result, rune_resolve_attr(self, \"value\"))");
@@ -141,7 +141,7 @@ public class PythonFunctionAddOperationTest {
                     add result: value
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/AppendToList.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "tempList = [2, 3]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result, rune_resolve_attr(self, \"list\"))");
@@ -162,8 +162,8 @@ public class PythonFunctionAddOperationTest {
                     add result -> items: [1,2,3]
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = ObjectBuilder(com_rosetta_test_model_IntHolder)");
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/MakeHolderWithItems.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = ObjectBuilder(IntHolder)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result.items = rune_cow([])");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result.items, [1, 2, 3])");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");

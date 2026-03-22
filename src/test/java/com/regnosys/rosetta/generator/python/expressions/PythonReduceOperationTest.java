@@ -35,7 +35,7 @@ public class PythonReduceOperationTest {
                         reduce a, b [ a + b ]
                 """);
 
-        String generatedPython = gf.get("src/com/_bundle.py").toString();
+        String generatedPython = gf.get("src/com/test/functions/SumList.py").toString();
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "functools.reduce(lambda a, b: (a + b), rune_resolve_attr(self, \"items\"))");
     }

@@ -38,8 +38,7 @@ public class PythonObjectConditionGeneratorTest {
                         a0 exists or a1 exists
                 """,
                 """
-                class com_rosetta_test_model_A(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.A'
+                class A(BaseDataClass):
                     a0: Optional[str] = Field(None, description='')
                     a1: Optional[str] = Field(None, description='')
 
@@ -64,11 +63,10 @@ public class PythonObjectConditionGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
                 """
-                class com_rosetta_test_model_TestType(BaseDataClass):
+                class TestType(BaseDataClass):
                     \"""
                     Test type description.
                     \"""
-                    _FQRTN = 'com.rosetta.test.model.TestType'
                     testTypeValue1: Optional[str] = Field(None, description='Test string')
                     \"""
                     Test string
@@ -101,8 +99,7 @@ public class PythonObjectConditionGeneratorTest {
                         then attr2 exists
                 """,
                 """
-                class com_rosetta_test_model_AttributeIfThenTest(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.AttributeIfThenTest'
+                class AttributeIfThenTest(BaseDataClass):
                     attr1: Optional[str] = Field(None, description='')
                     attr2: Optional[str] = Field(None, description='')
 
@@ -145,8 +142,7 @@ public class PythonObjectConditionGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
                 """
-                class com_rosetta_test_model_A(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.A'
+                class A(BaseDataClass):
                     a0: Optional[int] = Field(None, description='')
                     a1: Optional[int] = Field(None, description='')
 
@@ -158,11 +154,10 @@ public class PythonObjectConditionGeneratorTest {
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
                 """
-                class com_rosetta_test_model_B(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.B'
+                class B(BaseDataClass):
                     intValue1: Optional[int] = Field(None, description='')
                     intValue2: Optional[int] = Field(None, description='')
-                    aValue: com_rosetta_test_model_A = Field(..., description='')
+                    aValue: A = Field(..., description='')
 
                     @rune_condition
                     def condition_0_Rule(self):
@@ -192,14 +187,6 @@ public class PythonObjectConditionGeneratorTest {
                         \"""
                         item = self
                         return ((rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "aValue"), "a0")) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and rune_attr_exists(rune_resolve_attr(self, "intValue1")))) or ((rune_attr_exists(rune_resolve_attr(self, "intValue2")) and rune_attr_exists(rune_resolve_attr(self, "intValue1"))) and (not rune_attr_exists(rune_resolve_attr(self, "intValue1")))))
-
-
-                # Phase 2: Delayed Annotation Updates
-                com_rosetta_test_model_B.__annotations__["aValue"] = Annotated[com_rosetta_test_model_A, com_rosetta_test_model_A.serializer(), com_rosetta_test_model_A.validator()]
-
-
-                # Phase 3: Rebuild
-                com_rosetta_test_model_B.model_rebuild()
                 """);
     }
 
@@ -218,8 +205,7 @@ public class PythonObjectConditionGeneratorTest {
                         else attr3 exists
                 """,
                 """
-                class com_rosetta_test_model_AttributeIfThenElseTest(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.AttributeIfThenElseTest'
+                class AttributeIfThenElseTest(BaseDataClass):
                     attr1: Optional[str] = Field(None, description='')
                     attr2: Optional[str] = Field(None, description='')
                     attr3: Optional[str] = Field(None, description='')
@@ -248,8 +234,7 @@ public class PythonObjectConditionGeneratorTest {
                         a <= b
                 """,
                 """
-                class com_rosetta_test_model_Foo(BaseDataClass):
-                    _FQRTN = 'com.rosetta.test.model.Foo'
+                class Foo(BaseDataClass):
                     a: Optional[Decimal] = Field(None, description='')
                     b: Optional[Decimal] = Field(None, description='')
 
