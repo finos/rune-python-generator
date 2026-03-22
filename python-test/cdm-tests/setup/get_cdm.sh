@@ -54,28 +54,28 @@ FPML_VERSION=$(sed -n 's/.*<rune-fpml[-.]version>\(.*\)<\/rune-fpml[-.]version>.
 if [ -n "$FPML_VERSION" ]; then
     echo "***** Found rune-fpml-version: $FPML_VERSION"
     echo "***** pulling FpML definitions from https://github.com/rosetta-models/rune-fpml"
-    
+
     mkdir -p "${ROSETTA_DIR}/rune-fpml"
-    
+
     TEMP_FPML="${MY_PATH}/../temp_fpml"
     rm -rf "${TEMP_FPML}"
     mkdir -p "${TEMP_FPML}"
     cd "${TEMP_FPML}"
-    
+
     git init
     git config core.sparseCheckout true
     echo "rosetta-source/src/main/rosetta/*" >> .git/info/sparse-checkout
     git remote add origin https://github.com/rosetta-models/rune-fpml.git
-    
+
     # Attempt to pull the specific version/tag, fallback to master if it fails
     git pull --depth 1 origin "$FPML_VERSION" || {
         echo "WARNING: Failed to pull FpML version $FPML_VERSION. Falling back to master..."
         git pull --depth 1 origin master
     }
-    
+
     # Copy FpML files to the target 'rune-fpml' folder
     cp -r rosetta-source/src/main/rosetta/* "${ROSETTA_DIR}/rune-fpml/"
-    
+
     cd "${MY_PATH}"
     rm -rf "${TEMP_FPML}"
 fi

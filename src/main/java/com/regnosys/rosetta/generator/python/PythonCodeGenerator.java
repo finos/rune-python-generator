@@ -205,10 +205,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
     private void partitionClasses(PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
-        KosarajuStrongConnectivityInspector<String, DefaultEdge> inspector = 
+        KosarajuStrongConnectivityInspector<String, DefaultEdge> inspector =
             new KosarajuStrongConnectivityInspector<>(dependencyDAG);
         List<Set<String>> sccs = inspector.stronglyConnectedSets();
-        
+
         Set<String> standaloneClasses = context.getStandaloneClasses();
         for (Set<String> scc : sccs) {
             if (scc.size() == 1) {
@@ -218,6 +218,17 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                     standaloneClasses.add(node);
                     LOGGER.debug("Class {} is standalone", node);
                 }
+            }
+        }
+
+        // Types from other namespaces are always external — accessed via their fully-qualified
+        // proxy-stub path, never via another namespace's _bundle.  Mark them standalone
+        // unconditionally so that import generation uses "from fpml.x.y.Z import Z" rather
+        // than "from fpml._bundle import fpml_x_y_Z".
+        Set<String> ownTypes = context.getClassNames();
+        for (String vertex : dependencyDAG.vertexSet()) {
+            if (!ownTypes.contains(vertex)) {
+                standaloneClasses.add(vertex);
             }
         }
     }
@@ -243,13 +254,51 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         for (String imp : context.getAdditionalImports()) {
             bundleWriter.appendLine(imp);
         }
+        // Split imports: enum module imports are safe in the header (enums never import from
+        // the bundle). Standalone-class imports ("from X import Y") must be deferred until
+        // after all bundled class definitions, because a standalone class may itself transitively
+        // import a bundled class — and at header-evaluation time that bundled class is not yet
+        // defined in the partially-initialised bundle module.
+        //
+        // Exception: a standalone type used as a DIRECT BASE CLASS of a bundled type cannot be
+        // deferred. Python evaluates base-class expressions immediately at class-definition time
+        // (unlike attribute annotations which are lazy strings under PEP 563). Such imports must
+        // stay in the header.
+        Set<String> standaloneClasses = context.getStandaloneClasses();
+        Set<String> standaloneSupertypesOfBundled = new java.util.HashSet<>();
+        for (Map.Entry<String, String> entry : context.getSuperTypes().entrySet()) {
+            String childFqn = entry.getKey();
+            String parentFqn = entry.getValue();
+            if (parentFqn != null
+                    && !standaloneClasses.contains(childFqn)   // child is bundled
+                    && standaloneClasses.contains(parentFqn)) { // parent is standalone
+                standaloneSupertypesOfBundled.add(parentFqn);
+            }
+        }
+
+        List<String> deferredStandaloneImports = new ArrayList<>();
         List<String> sortedEnumImports = new ArrayList<>(enumImports);
         Collections.sort(sortedEnumImports);
         for (String imp : sortedEnumImports) {
             String bundleImportSource = "from " + nameSpace + "._bundle";
             // Allow imports from the same namespace if they are not from the bundle itself (e.g. Enums which are separate)
             if (!imp.contains(bundleImportSource)) {
-                bundleWriter.appendLine(imp);
+                if (imp.startsWith("from ")) {
+                    // Extract the FQN from "from <fqn> import <Name>"
+                    String fqn = imp.substring("from ".length(), imp.indexOf(" import "));
+                    if (standaloneSupertypesOfBundled.contains(fqn)) {
+                        // Standalone supertype of a bundled class: must be imported inline in the
+                        // bundle body, immediately before the bundled class that extends it, so
+                        // that all bundled types the standalone depends on are already defined.
+                        // Skip here — the emission loop handles it.
+                    } else {
+                        // Attribute-type-only import: safe to defer until after class definitions.
+                        deferredStandaloneImports.add(imp);
+                    }
+                } else {
+                    // Enum module import — safe to put in the header
+                    bundleWriter.appendLine(imp);
+                }
             }
         }
 
@@ -283,6 +332,8 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         }
         
         // 5. Emission
+        // Track standalone supertype imports already emitted inline to avoid duplicates.
+        Set<String> emittedInlineSupertypeImports = new java.util.HashSet<>();
         for (Integer sccId : sccOrder) {
             Set<String> scc = sccs.get(sccId);
             // Sort SCC members by inheritance for definition order
@@ -298,6 +349,17 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 if (!isStandalone) {
                     // BUNDLED CASE
                     if (classObject != null) {
+                        // If this bundled class extends a standalone type, emit that import
+                        // inline here — after all bundled types the standalone depends on have
+                        // been defined, and before the class statement that uses it as a base.
+                        String superFqn = context.getSuperTypes().get(name);
+                        if (superFqn != null && standaloneClasses.contains(superFqn)
+                                && emittedInlineSupertypeImports.add(superFqn)) {
+                            String superName = superFqn.substring(superFqn.lastIndexOf('.') + 1);
+                            dataObjectsWriter.newLine();
+                            dataObjectsWriter.newLine();
+                            dataObjectsWriter.appendLine(String.format("from %s import %s", superFqn, superName));
+                        }
                         dataObjectsWriter.newLine();
                         dataObjectsWriter.newLine();
                         dataObjectsWriter.appendBlock(classObject.toString());
@@ -321,22 +383,34 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                         functionsWriter.appendBlock(functionObject.toString());
                     }
 
-                    // Create Proxy Stub
+                    // Create Proxy Stub (lazy — defers bundle import until first attribute access)
+                    // A direct "from bundle import X" in the stub would trigger bundle loading
+                    // immediately, which can cause a circular ImportError when the stub itself
+                    // was the entry point that started the bundle loading.  Instead we use a
+                    // module-level __getattr__ so the stub module loads instantly and the bundle
+                    // import only happens when the exported name is first accessed (by which time
+                    // the bundle is fully initialised).
                     String[] parsedName = name.split("\\.");
+                    String shortName = parsedName[parsedName.length - 1];
                     String fileName = SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py";
                     PythonCodeWriter stubWriter = new PythonCodeWriter();
                     stubWriter.appendLine("# pylint: disable=unused-import");
                     if (functionObject != null) {
                         stubWriter.appendLine("import sys");
                         stubWriter.appendLine("from rune.runtime.func_proxy import create_module_attr_guardian");
+                        stubWriter.newLine();
                     }
-                    stubWriter.append("from ");
-                    stubWriter.append(nameSpace);
-                    stubWriter.append("._bundle import ");
-                    stubWriter.append(bundleClassName);
-                    stubWriter.append(" as ");
-                    stubWriter.append(parsedName[parsedName.length - 1]);
-                    stubWriter.newLine();
+                    stubWriter.appendLine("def __getattr__(name: str):");
+                    stubWriter.indent();
+                    stubWriter.appendLine("if name == '" + shortName + "':");
+                    stubWriter.indent();
+                    stubWriter.appendLine("import " + nameSpace + "._bundle as _b");
+                    stubWriter.appendLine("_v = _b." + bundleClassName);
+                    stubWriter.appendLine("globals()['" + shortName + "'] = _v");
+                    stubWriter.appendLine("return _v");
+                    stubWriter.unindent();
+                    stubWriter.appendLine("raise AttributeError(name)");
+                    stubWriter.unindent();
                     stubWriter.newLine();
                     stubWriter.appendLine("# EOF");
                     result.put(fileName, stubWriter.toString());
@@ -398,6 +472,18 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         // 6. Final Assembly of _bundle.py
         bundleWriter.appendBlock(dataObjectsWriter.toString());
+
+        // Deferred standalone-class imports: emitted after all bundled class definitions so
+        // that when those standalone modules are loaded they can safely import bundled types
+        // from this bundle (which are now already defined).
+        if (!deferredStandaloneImports.isEmpty()) {
+            bundleWriter.newLine();
+            bundleWriter.newLine();
+            bundleWriter.appendLine("# Standalone type imports (deferred to avoid circular import at bundle load time)");
+            for (String imp : deferredStandaloneImports) {
+                bundleWriter.appendLine(imp);
+            }
+        }
 
         if (!annotationUpdateWriter.toString().isEmpty()) {
             bundleWriter.newLine();

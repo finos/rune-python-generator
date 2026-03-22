@@ -90,11 +90,11 @@ public class PythonCircularDependencyTest {
 
         testUtils.assertBundleContainsExpectedString(model, "class com_rosetta_test_model_CircularA(BaseDataClass):");
         testUtils.assertBundleContainsExpectedString(model, "_FQRTN = 'com.rosetta.test.model.CircularA'");
-        testUtils.assertBundleContainsExpectedString(model, "b: com_rosetta_test_model_CircularB = Field(..., description='')");
+        testUtils.assertBundleContainsExpectedString(model, "b: None = Field(..., description='')");
 
         testUtils.assertBundleContainsExpectedString(model, "class com_rosetta_test_model_CircularB(BaseDataClass):");
         testUtils.assertBundleContainsExpectedString(model, "_FQRTN = 'com.rosetta.test.model.CircularB'");
-        testUtils.assertBundleContainsExpectedString(model, "a: com_rosetta_test_model_CircularA = Field(..., description='')");
+        testUtils.assertBundleContainsExpectedString(model, "a: None = Field(..., description='')");
 
         testUtils.assertBundleContainsExpectedString(model, "# Phase 2: Delayed Annotation Updates");
         testUtils.assertBundleContainsExpectedString(model,
@@ -125,13 +125,16 @@ public class PythonCircularDependencyTest {
                 """);
 
         String proxyCircularA = gfAttr.get("src/com/rosetta/test/model/CircularA.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(proxyCircularA,
-                "from com._bundle import com_rosetta_test_model_CircularA as CircularA");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "def __getattr__(name: str):");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "import com._bundle as _b");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "_v = _b.com_rosetta_test_model_CircularA");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "globals()['CircularA'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "# EOF");
 
         String proxyCircularB = gfAttr.get("src/com/rosetta/test/model/CircularB.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(proxyCircularB,
-                "from com._bundle import com_rosetta_test_model_CircularB as CircularB");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "def __getattr__(name: str):");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "_v = _b.com_rosetta_test_model_CircularB");
+        testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "globals()['CircularB'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "# EOF");
 
         // Inheritance cycle: Parent ↔ Child (default namespace → com._bundle)
@@ -145,13 +148,15 @@ public class PythonCircularDependencyTest {
                 """);
 
         String proxyParent = gfInh.get("src/com/rosetta/test/model/Parent.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(proxyParent,
-                "from com._bundle import com_rosetta_test_model_Parent as Parent");
+        testUtils.assertGeneratedContainsExpectedString(proxyParent, "def __getattr__(name: str):");
+        testUtils.assertGeneratedContainsExpectedString(proxyParent, "_v = _b.com_rosetta_test_model_Parent");
+        testUtils.assertGeneratedContainsExpectedString(proxyParent, "globals()['Parent'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyParent, "# EOF");
 
         String proxyChild = gfInh.get("src/com/rosetta/test/model/Child.py").toString();
-        testUtils.assertGeneratedContainsExpectedString(proxyChild,
-                "from com._bundle import com_rosetta_test_model_Child as Child");
+        testUtils.assertGeneratedContainsExpectedString(proxyChild, "def __getattr__(name: str):");
+        testUtils.assertGeneratedContainsExpectedString(proxyChild, "_v = _b.com_rosetta_test_model_Child");
+        testUtils.assertGeneratedContainsExpectedString(proxyChild, "globals()['Child'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyChild, "# EOF");
     }
 

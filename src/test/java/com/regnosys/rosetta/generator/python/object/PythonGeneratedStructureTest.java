@@ -120,4 +120,34 @@ public class PythonGeneratedStructureTest {
         testUtils.assertGeneratedDoesNotContain(bundlePython, "class SimpleType(BaseDataClass):");
         testUtils.assertGeneratedDoesNotContain(bundlePython, "class com_rosetta_test_model_SimpleType");
     }
+
+    /**
+     * A self-referential type (attribute whose type is the same class, via
+     * [metadata reference]) must NOT generate a self-import in its standalone file.
+     * Emitting {@code from <module> import <Class>} inside the file that defines
+     * {@code <Class>} causes a Python circular-import error on partially-initialized
+     * modules.
+     */
+    @Test
+    public void testSelfReferentialTypeHasNoSelfImport() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                namespace com.rosetta.test.model
+
+                type Node:
+                    [metadata key]
+                    value string (1..1)
+                    parent Node (0..1)
+                        [metadata reference]
+                """);
+
+        String nodePython = gf.get("src/com/rosetta/test/model/Node.py").toString();
+
+        // The self-referential attribute is legal — class must still be generated
+        testUtils.assertGeneratedContainsExpectedString(nodePython, "class Node(BaseDataClass):");
+
+        // No self-import must appear in the file that defines Node
+        testUtils.assertGeneratedDoesNotContain(nodePython,
+                "from com.rosetta.test.model.Node import Node");
+    }
 }

@@ -47,12 +47,12 @@ public class PythonCircularReferenceImplementationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class rosetta_dsl_test_language_CircularDependency_A(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "b: rosetta_dsl_test_language_CircularDependency_B = Field(..., description='')");
+                "b: None = Field(..., description='')");
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class rosetta_dsl_test_language_CircularDependency_B(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "a: Optional[rosetta_dsl_test_language_CircularDependency_A] = Field(None, description='')");
+                "a: None = Field(None, description='')");
 
         // 2. Verify Delayed Annotation Updates in Phase 2
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
@@ -69,17 +69,20 @@ public class PythonCircularReferenceImplementationTest {
         // 4. Verify Proxy Stubs at FQ paths — external imports must always use
         //    the fully-qualified path, never import from _bundle directly.
         String proxyA = gf.get("src/rosetta_dsl/test/language/CircularDependency/A.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyA, "# pylint: disable=unused-import");
+        testUtils.assertGeneratedContainsExpectedString(proxyA, "def __getattr__(name: str):");
+        testUtils.assertGeneratedContainsExpectedString(proxyA, "import rosetta_dsl._bundle as _b");
         testUtils.assertGeneratedContainsExpectedString(proxyA,
-                "# pylint: disable=unused-import");
-        testUtils.assertGeneratedContainsExpectedString(proxyA,
-                "from rosetta_dsl._bundle import rosetta_dsl_test_language_CircularDependency_A as A");
+                "_v = _b.rosetta_dsl_test_language_CircularDependency_A");
+        testUtils.assertGeneratedContainsExpectedString(proxyA, "globals()['A'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyA, "# EOF");
 
         String proxyB = gf.get("src/rosetta_dsl/test/language/CircularDependency/B.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(proxyB, "# pylint: disable=unused-import");
+        testUtils.assertGeneratedContainsExpectedString(proxyB, "def __getattr__(name: str):");
         testUtils.assertGeneratedContainsExpectedString(proxyB,
-                "# pylint: disable=unused-import");
-        testUtils.assertGeneratedContainsExpectedString(proxyB,
-                "from rosetta_dsl._bundle import rosetta_dsl_test_language_CircularDependency_B as B");
+                "_v = _b.rosetta_dsl_test_language_CircularDependency_B");
+        testUtils.assertGeneratedContainsExpectedString(proxyB, "globals()['B'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyB, "# EOF");
     }
 }

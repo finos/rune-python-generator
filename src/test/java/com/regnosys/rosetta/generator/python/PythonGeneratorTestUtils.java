@@ -106,6 +106,22 @@ public final class PythonGeneratorTestUtils {
     }
 
     /**
+     * Asserts that {@code first} appears before {@code second} in {@code generated}.
+     * Both strings must be present.
+     */
+    public void assertAppearsAfter(String generated, String first, String second) {
+        int firstIdx = generated.indexOf(first);
+        int secondIdx = generated.indexOf(second);
+        assertTrue(firstIdx >= 0,
+                String.format("Expected '%s' to be present but was not found", first));
+        assertTrue(secondIdx >= 0,
+                String.format("Expected '%s' to be present but was not found", second));
+        assertTrue(firstIdx < secondIdx, String.format(
+                "Expected '%s' (at %d) to appear before '%s' (at %d)",
+                first, firstIdx, second, secondIdx));
+    }
+
+    /**
      * Now searches across ALL generated files to find the expected string.
      */
     public void assertBundleContainsExpectedString(String model, String expectedString) {

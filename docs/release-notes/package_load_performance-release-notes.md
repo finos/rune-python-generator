@@ -45,15 +45,15 @@ Once the global structure is analyzed, the generator performs the actual code em
 
 ## CDM 6.0 Case Study: Cycle Analysis
 
-An analysis of the **CDM 6.0 Rosetta sources** (757 core types) yielded the following metrics for the partitioning strategy:
+An analysis of the **CDM 6.0 Rosetta sources** (973 core types) yielded the following metrics for the partitioning strategy:
 
-| Metric | Estimated Value |
+| Metric | Measured Value |
 | :--- | :--- |
-| **Total Rosetta Types** | **757** |
-| **Types in Cycles (Bundled)** | **32** (~4.2%) |
-| **Acyclic Types (Standalone)** | **725** (~95.8%) |
-| **Number of SCCs (Cycle Kernels)** | **10** |
-| **Biggest SCC Size** | **9** (`Trade`, `TradeState`, `EconomicTerms`, etc.) |
+| **Total Rosetta Types** | **973** |
+| **Types in Cycles (Bundled)** | **62** (~6.4%) |
+| **Acyclic Types (Standalone)** | **911** (~93.6%) |
+| **Number of SCCs (Cycle Kernels)** | **8** |
+| **Biggest SCC Size** | **44** (`Trade`, `Product`, `EconomicTerms`, `Payout`, etc.) |
 
 ### Impact Analysis
 The "Miserable" 2-minute load time is due to the cumulative cost of calling `model_rebuild()` on 2,000+ classes (including metadata wrappers). By moving **95%** of the model to standalone files, we eliminate this overhead for nearly the entire codebase, leaving only a small "kernel" in the cycle-bundle.

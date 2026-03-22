@@ -19,6 +19,7 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.types.RAliasType;
 import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
@@ -93,6 +94,13 @@ public class PythonModelObjectGenerator {
                 RType rt = attr.getRMetaAnnotatedType().getRType();
                 if (rt instanceof RAliasType) {
                     rt = typeSystem.stripFromTypeAliases(rt);
+                }
+                // Normalize choice types to their underlying data type, mirroring what
+                // getImportsFromAttributes does. Without this, a dependency on a choice-type
+                // attribute is invisible to the DAG, the cycle goes undetected, and both
+                // types are classified as standalone — causing a Python circular import.
+                if (rt instanceof RChoiceType rChoiceType) {
+                    rt = rChoiceType.asRDataType();
                 }
                 if (rt instanceof RDataType rdt) {
                     if (!RuneToPythonMapper.isRosettaBasicType(rdt)) {

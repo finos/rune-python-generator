@@ -98,7 +98,13 @@ public final class PythonAttributeProcessor {
         String pythonType;
         Optional<String> annotationUpdate = Optional.empty();
         if (isDelayed && !isStandalone) {
-            pythonType = hint.build(false);
+            // Phase 1 placeholder: use 'None' so pydantic does not attempt to resolve the type name
+            // at class-definition time. Pydantic adds vars(cls) to localns, so a field whose name
+            // matches its type name (e.g. CollateralIssuerType: Optional[CollateralIssuerType])
+            // would resolve the type to the FieldInfo default rather than the imported class,
+            // triggering ArbitraryTypeWarning. The Phase 2 annotation update below replaces 'None'
+            // with the real Annotated type at module level, and model_rebuild() picks it up.
+            pythonType = "None";
             String update = String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true));
             annotationUpdate = Optional.of(update);
         } else {
@@ -131,11 +137,19 @@ public final class PythonAttributeProcessor {
             // Data Type
             boolean isTargetStandalone = context.getStandaloneClasses().contains(fqnAttributeName);
             if (isSourceStandalone || isTargetStandalone) {
-                // Use short name (imported via 'from module import Class')
-                // If the attribute name matches the type name, use an alias to avoid shadowing
-                String attrPythonName = RuneToPythonMapper.mangleName(ra.getName());
-                boolean hasNamingConflict = attrPythonName.equals(rt.getName());
-                typeRefName = hasNamingConflict ? ("_" + rt.getName()) : rt.getName();
+                // Use short name (imported via 'from module import Class').
+                // For standalone source classes, pydantic adds vars(cls) to localns when resolving
+                // annotations. If the field name equals the type name, the class attribute (FieldInfo)
+                // would shadow the imported class. Alias the import as '_TypeName' to avoid this.
+                // For bundled source classes, Phase 2 annotation updates run at module level where
+                // vars(cls) is not in scope, so no alias is needed.
+                if (isSourceStandalone) {
+                    String attrPythonName = RuneToPythonMapper.mangleName(ra.getName());
+                    boolean hasNamingConflict = attrPythonName.equals(rt.getName());
+                    typeRefName = hasNamingConflict ? ("_" + rt.getName()) : rt.getName();
+                } else {
+                    typeRefName = rt.getName();
+                }
             } else {
                 // Internal bundle reference
                 typeRefName = com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil.toFlattenedName(fqnAttributeName);
@@ -365,6 +379,8 @@ public final class PythonAttributeProcessor {
             Set<String> standaloneClasses, boolean includeBundledTypes) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
+        RosettaModel rcModel = (RosettaModel) rc.eContainer();
+        String rcFqn = rcModel.getName() + "." + rc.getName();
 
         for (RAttribute attr : allAttributes) {
             if (!attr.getName().equals("reference")
@@ -392,15 +408,28 @@ public final class PythonAttributeProcessor {
                 } else if (rt instanceof RDataType rDataType) {
                     String fullNamespace = rDataType.getNamespace().toString();
                     String fqn = fullNamespace + "." + rDataType.getName();
+                    if (fqn.equals(rcFqn)) {
+                        // Skip self-import: the type references itself (e.g. via [metadata reference]).
+                        // Emitting 'from <module> import <Class>' in the file that defines <Class>
+                        // causes a circular import error during Python's partial module initialization.
+                        continue;
+                    }
                     if (includeBundledTypes || standaloneClasses.contains(fqn)) {
-                        // If the attribute name matches the type name, use an alias to avoid
-                        // pydantic annotation resolution shadowing the imported class
-                        String attrPythonName = RuneToPythonMapper.mangleName(attr.getName());
-                        boolean hasNamingConflict = attrPythonName.equals(rDataType.getName());
-                        if (hasNamingConflict) {
-                            imports.add(String.format("from %s.%s import %s as _%s",
-                                    fullNamespace, rDataType.getName(), rDataType.getName(), rDataType.getName()));
+                        if (includeBundledTypes) {
+                            // Standalone file context: pydantic adds vars(cls) to localns, so a field
+                            // whose name matches its type name would shadow the import. Alias as '_TypeName'.
+                            String attrPythonName = RuneToPythonMapper.mangleName(attr.getName());
+                            boolean hasNamingConflict = attrPythonName.equals(rDataType.getName());
+                            if (hasNamingConflict) {
+                                imports.add(String.format("from %s.%s import %s as _%s",
+                                        fullNamespace, rDataType.getName(), rDataType.getName(), rDataType.getName()));
+                            } else {
+                                imports.add(String.format("from %s.%s import %s",
+                                        fullNamespace, rDataType.getName(), rDataType.getName()));
+                            }
                         } else {
+                            // Bundle header context: Phase 2 annotation updates run at module level,
+                            // vars(cls) is not in scope — no alias needed.
                             imports.add(String.format("from %s.%s import %s",
                                     fullNamespace, rDataType.getName(), rDataType.getName()));
                         }
