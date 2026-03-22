@@ -1,24 +1,170 @@
 package com.regnosys.rosetta.generator.python.functions;
 
-import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
-import com.regnosys.rosetta.tests.RosettaInjectorProvider;
+import java.util.Map;
+
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import jakarta.inject.Inject;
-import java.util.Map;
 
+import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
+import com.regnosys.rosetta.tests.RosettaInjectorProvider;
+
+import jakarta.inject.Inject;
+
+/**
+ * Every element of this test needs to check the entire generated Python.
+ * Merge of: PythonFunctionBasicTest + PythonFunctionTypeTest + PythonFunctionControlFlowTest + PythonFunctionAliasTest
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("checkstyle:LineLength")
-public class PythonFunctionTypeTest {
+public class PythonFunctionDefinitionTest {
 
     /**
      * Test utils for generating Python code.
      */
     @Inject
     private PythonGeneratorTestUtils testUtils;
+
+    // -------------------------------------------------------------------------
+    // From PythonFunctionBasicTest
+    // -------------------------------------------------------------------------
+
+    /**
+     * Test case for generated function with adding numbers.
+     */
+    @Test
+    public void testGeneratedFunctionWithAddingNumbers() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+            """
+            func AddTwoNumbers: <"Add two numbers together.">
+                inputs:
+                    number1 number (1..1) <"The first number to add.">
+                    number2 number (1..1) <"The second number to add.">
+                output:
+                    result number (1..1)
+                set result:
+                    number1 + number2
+            """);
+        String expectedBundle = """
+            @replaceable
+            @validate_call
+            def AddTwoNumbers(number1: Decimal, number2: Decimal) -> Decimal:
+                \"\"\"
+                Add two numbers together.
+
+                Parameters
+                ----------
+                number1 : Decimal
+                The first number to add.
+
+                number2 : Decimal
+                The second number to add.
+
+                Returns
+                -------
+                result : Decimal
+
+                \"\"\"
+                self = inspect.currentframe()
+
+                number1 = rune_cow(number1)
+                number2 = rune_cow(number2)
+
+
+                result = (rune_resolve_attr(self, \"number1\") + rune_resolve_attr(self, \"number2\"))
+
+
+                return result
+            """;
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/AddTwoNumbers.py").toString(), expectedBundle);
+    }
+
+    /**
+     * Test case for function with function calling function.
+     */
+    @Test
+    public void testFunctionWithFunctionCallingFunction() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+            """
+            func BaseFunction:
+                inputs:
+                    value number (1..1)
+                output:
+                    result number (1..1)
+                set result:
+                    value * 2
+            func MainFunction:
+                inputs:
+                    value number (1..1)
+                output:
+                    result number (1..1)
+                set result:
+                    BaseFunction(value)
+            """);
+
+        String expectedBundleBaseFunction = """
+            @replaceable
+            @validate_call
+            def BaseFunction(value: Decimal) -> Decimal:
+                \"\"\"
+
+                Parameters
+                ----------
+                value : Decimal
+
+                Returns
+                -------
+                result : Decimal
+
+                \"\"\"
+                self = inspect.currentframe()
+
+                value = rune_cow(value)
+
+
+                result = (rune_resolve_attr(self, "value") * 2)
+
+
+                return result
+            """;
+        String expectedBundleMainFunction = """
+            @replaceable
+            @validate_call
+            def MainFunction(value: Decimal) -> Decimal:
+                \"\"\"
+
+                Parameters
+                ----------
+                value : Decimal
+
+                Returns
+                -------
+                result : Decimal
+
+                \"\"\"
+                self = inspect.currentframe()
+
+                value = rune_cow(value)
+
+
+                result = rune_call_unchecked(BaseFunction, rune_resolve_attr(self, "value"))
+
+
+                return result
+            """;
+
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/BaseFunction.py").toString(), expectedBundleBaseFunction);
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/MainFunction.py").toString(), expectedBundleMainFunction);
+    }
+
+    // -------------------------------------------------------------------------
+    // From PythonFunctionTypeTest
+    // -------------------------------------------------------------------------
 
     /**
      * Test case for generated function Abs.
@@ -425,5 +571,164 @@ public class PythonFunctionTypeTest {
             """;
         testUtils.assertGeneratedContainsExpectedString(
             gf.get("src/com/rosetta/test/model/functions/TestAsKeyMulti.py").toString(), expectedBundle);
+    }
+
+    // -------------------------------------------------------------------------
+    // From PythonFunctionControlFlowTest
+    // -------------------------------------------------------------------------
+
+    /**
+     * Test case for generated function Abs (tests if-then-else control flow in a function body).
+     */
+    @Test
+    public void testGeneratedFunctionAbs() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                func Abs: <"Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.">
+                    inputs:
+                        arg number (1..1)
+                    output:
+                        result number (1..1)
+                    set result:
+                        if arg < 0 then -1 * arg else arg
+                """);
+
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def Abs(arg: Decimal) -> Decimal:
+                    \"\"\"
+                    Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
+
+                    Parameters
+                    ----------
+                    arg : Decimal
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+                    arg = rune_cow(arg)
+
+
+                    def _then_fn0():
+                        return (-1 * rune_resolve_attr(self, "arg"))
+
+                    def _else_fn0():
+                        return rune_resolve_attr(self, "arg")
+
+                    result = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "arg"), "<", 0), _then_fn0, _else_fn0)
+
+
+                    return result
+                """;
+
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/Abs.py").toString(), expectedBundle);
+    }
+
+    // -------------------------------------------------------------------------
+    // From PythonFunctionAliasTest
+    // -------------------------------------------------------------------------
+
+    /**
+     * Test case for simple alias.
+     */
+    @Test
+    public void testAliasSimple() {
+
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                func TestAlias:
+                    inputs:
+                        inp1 number(1..1)
+                        inp2 number(1..1)
+                    output:
+                        result number(1..1)
+                    alias Alias:
+                        if inp1 < 0 then inp1 else inp2
+
+                    set result:
+                        Alias
+                """);
+
+        String expectedBundle = """
+                @replaceable
+                @validate_call
+                def TestAlias(inp1: Decimal, inp2: Decimal) -> Decimal:
+                    \"\"\"
+
+                    Parameters
+                    ----------
+                    inp1 : Decimal
+
+                    inp2 : Decimal
+
+                    Returns
+                    -------
+                    result : Decimal
+
+                    \"\"\"
+                    self = inspect.currentframe()
+
+                    inp1 = rune_cow(inp1)
+                    inp2 = rune_cow(inp2)
+
+
+                    def _then_fn0():
+                        return rune_resolve_attr(self, "inp1")
+
+                    def _else_fn0():
+                        return rune_resolve_attr(self, "inp2")
+
+                    Alias = if_cond_fn(rune_all_elements(rune_resolve_attr(self, "inp1"), "<", 0), _then_fn0, _else_fn0)
+                    result = rune_resolve_attr(self, "Alias")
+
+
+                    return result
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+            gf.get("src/com/rosetta/test/model/functions/TestAlias.py").toString(), expectedBundle);
+
+    }
+
+    /**
+     * Test case for alias with type output.
+     */
+    @Test
+    public void testAliasWithTypeOutput() {
+
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                type A:
+                    valueA number(1..1)
+
+                type B:
+                    valueB number(1..1)
+
+                type C:
+                    valueC number(1..1)
+
+                func TestAliasWithTypeOutput:
+                    inputs:
+                        a A (1..1)
+                        b B (1..1)
+                    output:
+                        c C (1..1)
+                    alias Alias1:
+                        a->valueA
+                    alias Alias2:
+                        b->valueB
+                    set c->valueC:
+                        Alias1*Alias2
+                """);
+
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/TestAliasWithTypeOutput.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "c = ObjectBuilder(C)");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+                "c.valueC = (rune_resolve_attr(self, \"Alias1\") * rune_resolve_attr(self, \"Alias2\"))");
     }
 }

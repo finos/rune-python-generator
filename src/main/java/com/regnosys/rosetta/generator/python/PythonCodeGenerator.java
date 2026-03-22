@@ -133,7 +133,6 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             ResourceSet set,
             Collection<? extends RosettaModel> models,
             String version) {
-        LOGGER.info("Starting Python code generation for {} models", models.size());
         this.contexts.clear();
         return super.beforeAllGenerate(set, models, version);
     }
@@ -143,7 +142,13 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
         PythonCodeGeneratorContext context = contexts.computeIfAbsent(nameSpace, k -> new PythonCodeGeneratorContext());
 
-        context.addSubfolder(model.getName());
+        boolean hasContent = model.getElements().stream()
+                .anyMatch(e -> e instanceof Data
+                        || (e instanceof Function && !(e instanceof FunctionDispatch))
+                        || e instanceof RosettaEnumeration);
+        if (hasContent) {
+            context.addSubfolder(model.getName());
+        }
         model.getElements().stream()
                 .filter(Data.class::isInstance)
                 .map(Data.class::cast)
@@ -153,6 +158,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                         modelName = "com.rosetta.test.model";
                     }
                     String className = modelName + "." + rc.getName();
+                    LOGGER.info("Processing class: {}", className);
                     context.getClassNames().add(className);
                     context.getSuperTypes().put(className,
                             rc.getSuperType() != null ? modelName + "." + rc.getSuperType().getName()
@@ -176,11 +182,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             ResourceSet set,
             Collection<? extends RosettaModel> models,
             String version) {
-        LOGGER.info("Starting bundling stage for {} namespaces", contexts.size());
         Map<String, CharSequence> result = new HashMap<>();
         String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
         for (String nameSpace : contexts.keySet()) {
-            LOGGER.info("Bundling namespace: {}", nameSpace);
             PythonCodeGeneratorContext context = contexts.get(nameSpace);
             
             // Phase 1: Scan

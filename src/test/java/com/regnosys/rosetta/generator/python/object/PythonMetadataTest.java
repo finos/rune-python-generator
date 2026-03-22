@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.generator.python.syntax;
+package com.regnosys.rosetta.generator.python.object;
 
 import jakarta.inject.Inject;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
@@ -8,12 +8,17 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.Map;
 
+/**
+ * Tests for Python metadata code generation, covering key/reference metadata,
+ * attribute metadata, and meta key-ref generation.
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("checkstyle:LineLength")
-public class PythonMetaDataGeneratorTest {
+public class PythonMetadataTest {
 
     /**
      * Test utils for generating Python.
@@ -68,11 +73,15 @@ public class PythonMetaDataGeneratorTest {
         return python;
     }
 
+    // -----------------------------------------------------------------------
+    // Methods from PythonMetaDataGeneratorTest (renamed)
+    // -----------------------------------------------------------------------
+
     /**
      * A is acyclic — standalone. File contains the class directly.
      */
     @Test
-    public void testAStandalone() {
+    public void testKeyMetadata() {
         String aPython = getPython().get("src/test/generated_syntax/metadata/A.py").toString();
         testUtils.assertGeneratedContainsExpectedString(aPython, "class A(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(aPython, "_ALLOWED_METADATA = {'@key', '@key:external'}");
@@ -84,7 +93,7 @@ public class PythonMetaDataGeneratorTest {
      * its annotation is inline; typeA has no metadata so it is Optional[A] directly.
      */
     @Test
-    public void testNodeRefStandalone() {
+    public void testReferenceMetadata() {
         String nodeRefPython = getPython().get("src/test/generated_syntax/metadata/NodeRef.py").toString();
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython, "class NodeRef(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython,
@@ -98,7 +107,7 @@ public class PythonMetaDataGeneratorTest {
      * are always inline (DateWithMeta is a basic type).
      */
     @Test
-    public void testAttributeRefStandalone() {
+    public void testAttributeWithDateMetadata() {
         String attrRefPython = getPython().get("src/test/generated_syntax/metadata/AttributeRef.py").toString();
         testUtils.assertGeneratedContainsExpectedString(attrRefPython, "class AttributeRef(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(attrRefPython,
@@ -112,7 +121,7 @@ public class PythonMetaDataGeneratorTest {
      * AttributeRef directly; no Phase 2/3 needed.
      */
     @Test
-    public void testRootStandalone() {
+    public void testRootWithMetadataDependency() {
         String rootPython = getPython().get("src/test/generated_syntax/metadata/Root.py").toString();
         testUtils.assertGeneratedContainsExpectedString(rootPython, "class Root(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(rootPython,
@@ -125,7 +134,7 @@ public class PythonMetaDataGeneratorTest {
      * SchemeTest is acyclic — standalone.
      */
     @Test
-    public void testSchemeTestStandalone() {
+    public void testSchemeMetadata() {
         String schemePython = getPython().get("src/test/generated_syntax/metadata/SchemeTest.py").toString();
         testUtils.assertGeneratedContainsExpectedString(schemePython, "class SchemeTest(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(schemePython, "_ALLOWED_METADATA = {'@scheme'}");
@@ -154,5 +163,91 @@ public class PythonMetaDataGeneratorTest {
             "def TestMetaPath(inpRoot: Root) -> NodeRef:");
         testUtils.assertGeneratedContainsExpectedString(functionPython,
             "out = rune_resolve_attr(rune_resolve_attr(self, \"inpRoot\"), \"nodeRef\")");
+    }
+
+    // -----------------------------------------------------------------------
+    // Method from PythonKeyRefTest (unchanged name)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Test case for generating key ref.
+     * KeyEntity and RefEntity are acyclic — both standalone. RefEntity.py
+     * holds the class directly with inline annotation; no Phase 2/3 needed.
+     */
+    @Test
+    public void testKeyRef() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+            """
+            type KeyEntity:
+                [metadata key]
+                value int (1..1)
+
+            type RefEntity:
+                ke KeyEntity (1..1)
+                    [metadata reference]
+            """);
+
+        // RefEntity is standalone — class is in its own file, not the bundle
+        String refEntityPython = gf.get("src/com/rosetta/test/model/RefEntity.py").toString();
+
+        // Class declaration uses short name (no _FQRTN for standalone)
+        testUtils.assertGeneratedContainsExpectedString(refEntityPython,
+            "class RefEntity(BaseDataClass):");
+
+        // Annotation is inline in the class body (no Phase 2 __annotations__ update)
+        testUtils.assertGeneratedContainsExpectedString(refEntityPython,
+            "ke: Annotated[KeyEntity | BaseReference, KeyEntity.serializer(), KeyEntity.validator(('@key', '@key:external', '@ref', '@ref:external'))] = Field(..., description='')");
+    }
+
+    // -----------------------------------------------------------------------
+    // Method from PythonMetaKeyRefGeneratorTest (renamed)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Test case for generating meta key ref (id/reference location metadata).
+     * KeyRef and ScopedKeyRef are acyclic — both standalone. Classes are
+     * written directly to their FQ-path files; metadata annotations are
+     * inline in the class body (no Phase 2/3 needed).
+     */
+    @Test
+    public void testIdReferenceLocationMetadata() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+            """
+            namespace test.generated_syntax.meta_key_ref : <"generate Python unit tests from Rosetta.">
+
+            type KeyRef:
+                fieldA string (1..1)
+                [metadata id]
+                [metadata reference]
+
+            type ScopedKeyRef:
+                fieldA string (1..1)
+                [metadata location]
+                [metadata address]
+            """);
+
+        // Standalone files contain classes directly (not proxy stubs)
+        String keyRefPython = python.get("src/test/generated_syntax/meta_key_ref/KeyRef.py").toString();
+        assertNotNull(keyRefPython, "KeyRef.py was not found");
+        testUtils.assertGeneratedContainsExpectedString(keyRefPython,
+            "class KeyRef(BaseDataClass):");
+
+        String scopedKeyRefPython = python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py").toString();
+        assertNotNull(scopedKeyRefPython, "ScopedKeyRef.py was not found");
+        testUtils.assertGeneratedContainsExpectedString(scopedKeyRefPython,
+            "class ScopedKeyRef(BaseDataClass):");
+
+        // KeyRef checks — annotations are inline in the standalone file
+        testUtils.assertGeneratedContainsExpectedString(keyRefPython,
+            "'fieldA': {'@ref', '@ref:external', '@key', '@key:external'}");
+        // StrWithMeta is a basic type — annotation is always inline
+        testUtils.assertGeneratedContainsExpectedString(keyRefPython,
+            "fieldA: Annotated[StrWithMeta | BaseReference, StrWithMeta.serializer(), StrWithMeta.validator(('@ref', '@ref:external', '@key', '@key:external'))] = Field(..., description='')");
+
+        // ScopedKeyRef checks
+        testUtils.assertGeneratedContainsExpectedString(scopedKeyRefPython,
+            "'fieldA': {'@key:scoped', '@ref:scoped'}");
+        testUtils.assertGeneratedContainsExpectedString(scopedKeyRefPython,
+            "fieldA: Annotated[StrWithMeta | BaseReference, StrWithMeta.serializer(), StrWithMeta.validator(('@key:scoped', '@ref:scoped'))] = Field(..., description='')");
     }
 }

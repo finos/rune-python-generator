@@ -14,10 +14,142 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("checkstyle:LineLength")
-public class PythonInheritanceGeneratorTest {
+public class PythonInheritanceTest {
 
     @Inject
     private PythonGeneratorTestUtils testUtils;
+
+    /**
+     * Test case for multiple parents.
+     */
+    @Test
+    public void testPythonClassGenerationWithMultipleParents() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                type D extends C:
+                    dd string (0..1)
+                type B extends A:
+                    bb string (0..1)
+                type C extends B:
+                    cc string (0..1)
+                type A:
+                    aa string (0..1)
+                """).toString();
+
+        String expectedA = """
+                class A(BaseDataClass):
+                    aa: Optional[str] = Field(None, description='')
+                """;
+        String expectedB = """
+                from com.rosetta.test.model.A import A
+
+                class B(A):
+                    bb: Optional[str] = Field(None, description='')
+                """;
+        String expectedC = """
+                from com.rosetta.test.model.B import B
+
+                class C(B):
+                    cc: Optional[str] = Field(None, description='')
+                """;
+        String expectedD = """
+                from com.rosetta.test.model.C import C
+
+                class D(C):
+                    dd: Optional[str] = Field(None, description='')
+                """;
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedA);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedB);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedC);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedD);
+    }
+
+    /**
+     * Test case for super classes.
+     */
+    @Test
+    public void testSuperClasses() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                namespace test
+
+                type Foo extends Bar:
+
+                type Bar extends Baz:
+
+                type Baz:
+
+                """).toString();
+
+        String expectedBaz = """
+                class Baz(BaseDataClass):
+                    pass
+                """;
+
+        String expectedBar = """
+                from test.Baz import Baz
+
+                class Bar(Baz):
+                    pass
+                """;
+
+        String expectedFoo = """
+                from test.Bar import Bar
+
+                class Foo(Bar):
+                    pass
+                """;
+
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBaz);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBar);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo);
+    }
+
+    /**
+     * Test case for enum value (enum inheritance).
+     */
+    @Test
+    public void testEnumValue() {
+        String pythonString = testUtils.generatePythonFromString(
+                """
+                namespace test
+                version "1.2.3"
+
+                enum Foo:
+                    foo0 foo1
+
+                enum Bar extends Foo:
+                    bar
+
+                enum Baz extends Bar:
+                    baz
+                """).toString();
+
+        String expectedBar = """
+                class Bar(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                    BAR = "bar"
+                    FOO_0 = "foo0"
+                    FOO_1 = "foo1"
+                """;
+
+        String expectedBaz = """
+                class Baz(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                    BAR = "bar"
+                    BAZ = "baz"
+                    FOO_0 = "foo0"
+                    FOO_1 = "foo1"
+                """;
+
+        String expectedFoo = """
+                class Foo(rune.runtime.metadata.EnumWithMetaMixin, Enum):
+                    FOO_0 = "foo0"
+                    FOO_1 = "foo1"
+                """;
+
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBar);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedBaz);
+        testUtils.assertGeneratedContainsExpectedString(pythonString, expectedFoo);
+    }
 
     @Test
     public void testInheritance() {
@@ -152,13 +284,13 @@ public class PythonInheritanceGeneratorTest {
                 \"\"\"
                 Defines a concrete measure as a number associated to a unit. It extends MeasureBase by requiring the value attribute to be present. A measure may be unit-less so the unit attribute is still optional.
                 \"\"\"
-            
+
                 @rune_condition
                 def condition_0_ValueExists(self):
                     item = self
                     return rune_attr_exists(rune_resolve_attr(self, "value"))
             """);
-            
+
         testUtils.assertBundleContainsExpectedString(model,
             """
             class UnitType(BaseDataClass):
@@ -181,7 +313,7 @@ public class PythonInheritanceGeneratorTest {
                 \"\"\"
                 Defines the currency to be used as a unit for a price, quantity, or other purpose.
                 \"\"\"
-            
+
                 @rune_condition
                 def condition_0_UnitType(self):
                     item = self

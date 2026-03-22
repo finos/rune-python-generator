@@ -14,18 +14,22 @@ import jakarta.inject.Inject;
 
 /**
  * Every element of this test needs to check the entire generated Python.
- * This class focuses on logic within function bodies.
+ * Merge of: PythonFunctionAddOperationTest + PythonFunctionListTest
  */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("LineLength")
-public class PythonFunctionAddOperationTest {
+public class PythonFunctionOutputTest {
 
     /**
      * Test utils for generating Python code.
      */
     @Inject
     private PythonGeneratorTestUtils testUtils;
+
+    // -------------------------------------------------------------------------
+    // From PythonFunctionAddOperationTest
+    // -------------------------------------------------------------------------
 
     /**
      * Test case for function with add operation.
@@ -78,7 +82,7 @@ public class PythonFunctionAddOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "result = [1]");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result, rune_resolve_attr(self, \"tempList\"))");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");
-    }   
+    }
 
     @Test
     public void testGenerateAddOperationWithIntListOnlyAndAlias() {
@@ -148,6 +152,7 @@ public class PythonFunctionAddOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "rune_add_to_list(result, rune_resolve_attr(self, \"value\"))");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");
     }
+
     @Test
     public void testGenerateAddOperationWithComplexObject() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
@@ -169,4 +174,29 @@ public class PythonFunctionAddOperationTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "return result");
     }
 
+    // -------------------------------------------------------------------------
+    // From PythonFunctionListTest
+    // -------------------------------------------------------------------------
+
+    /**
+     * Test case for function dependency order.
+     */
+    @Test
+    public void testFunctionList() {
+        String rosetta = """
+                func TestListFunction:
+                    inputs:
+                        list1 number (1..*)
+                        multiplier number (1..1)
+                    output:
+                        result number (1..*)
+                    set result:
+                        list1 extract [ item * multiplier ]
+                """;
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(rosetta);
+
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/TestListFunction.py").toString();
+
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "item * rune_resolve_attr(self, \"multiplier\")");
+    }
 }

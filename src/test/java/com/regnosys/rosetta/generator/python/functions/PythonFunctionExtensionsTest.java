@@ -12,15 +12,23 @@ import com.regnosys.rosetta.tests.RosettaInjectorProvider;
 
 import jakarta.inject.Inject;
 
+/**
+ * Merge of: PythonFunctionNativeTest + PythonFunctionWithMetaTest
+ */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("LineLength")
-public class PythonFunctionNativeTest {
+public class PythonFunctionExtensionsTest {
+
     /**
      * Test utils for generating Python code.
      */
     @Inject
     private PythonGeneratorTestUtils testUtils;
+
+    // -------------------------------------------------------------------------
+    // From PythonFunctionNativeTest
+    // -------------------------------------------------------------------------
 
     /**
      * Test case for native function support.
@@ -77,7 +85,7 @@ public class PythonFunctionNativeTest {
 
         // Native registry imports and registration block live in the bundle.
         String bundlePython = gf.get("src/rosetta_dsl/_bundle.py").toString();
-        
+
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "from rune.runtime.native_registry import rune_attempt_register_native_functions, rune_execute_native");
 
         String registrationExpected = """
@@ -88,5 +96,66 @@ public class PythonFunctionNativeTest {
             )
             """;
         testUtils.assertGeneratedContainsExpectedString(bundlePython, registrationExpected);
+    }
+
+    // -------------------------------------------------------------------------
+    // From PythonFunctionWithMetaTest
+    // -------------------------------------------------------------------------
+
+    /**
+     * Test case for function with meta.
+     */
+    @Test
+    public void testFunctionWithMeta() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                namespace com.test
+
+                type Foo:
+                    [metadata scheme]
+                    val string (1..1)
+
+                func TestWithMeta:
+                    inputs:
+                        f Foo (1..1)
+                    output:
+                        res Foo (1..1)
+                    set res:
+                        f with-meta { scheme: "myScheme" }
+                """);
+        String generatedPython = gf.get("src/com/test/functions/TestWithMeta.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})");
+    }
+
+    /**
+     * Test case for function with meta enum dependency.
+     */
+    @Test
+    public void testFunctionWithMetaEnumDependency() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                namespace com.test
+
+                enum MyEnum:
+                    Value1
+
+                type Foo:
+                    [metadata scheme]
+                    val string (1..1)
+
+                func TestWithMetaEnum:
+                    inputs:
+                        f Foo (1..1)
+                    output:
+                        res Foo (1..1)
+                    set res:
+                        f with-meta { scheme: (MyEnum -> Value1) to-string }
+                """);
+        String funcPython = gf.get("src/com/test/functions/TestWithMetaEnum.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(funcPython,
+                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': rune_str(com.test.MyEnum.MyEnum.VALUE_1)})");
+        // Enum module imports are written to the standalone function file.
+        testUtils.assertGeneratedContainsExpectedString(funcPython, "import com.test.MyEnum");
     }
 }

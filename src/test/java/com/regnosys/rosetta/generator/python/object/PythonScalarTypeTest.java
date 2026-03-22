@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("checkstyle:LineLength")
-public class PythonBasicTypeGeneratorTest {
+public class PythonScalarTypeTest {
 
     @Inject
     private PythonGeneratorTestUtils testUtils;
@@ -144,7 +144,7 @@ public class PythonBasicTypeGeneratorTest {
     }
 
     @Test
-    public void testGenerateTypes() {
+    public void testComplexTypeHierarchy() {
         String model = """
             type TestType: <"Test type description.">
                 testTypeValue1 string (1..1)
@@ -185,7 +185,7 @@ public class PythonBasicTypeGeneratorTest {
     }
 
     @Test
-    public void testGenerateTypesMethod2() {
+    public void testComplexTypeHierarchyWithInheritance() {
         String model = """
             type UnitType:
                 currency string (0..1)
@@ -198,7 +198,7 @@ public class PythonBasicTypeGeneratorTest {
                 multiplier number (0..1)
                 multiplierUnit UnitType (0..1)
             """;
-        
+
         testUtils.assertBundleContainsExpectedString(model,
             """
             class UnitType(BaseDataClass):

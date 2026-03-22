@@ -1,4 +1,4 @@
-package com.regnosys.rosetta.generator.python.syntax;
+package com.regnosys.rosetta.generator.python.object;
 
 import jakarta.inject.Inject;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
@@ -13,7 +13,7 @@ import java.util.Map;
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
 @SuppressWarnings("LineLength")
-public class PythonBasicGeneratorTest {
+public class PythonStandaloneStructureTest {
 
     /**
      * Test utils for generating Python.
