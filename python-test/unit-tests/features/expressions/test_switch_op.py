@@ -1,4 +1,9 @@
-"""Switch expression unit tests"""
+"""Switch expression unit tests — switch as a value-returning expression.
+
+Tests the switch keyword used inside a function body to return a value based
+on the input.  For switch used as a condition guard inside a type definition,
+see language/test_switch_operator.py.
+"""
 
 from rosetta_dsl.test.semantic.expressions.switch_op.functions.SwitchTest import (
     SwitchTest,

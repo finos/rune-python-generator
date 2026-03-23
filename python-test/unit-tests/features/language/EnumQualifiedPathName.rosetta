@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.ENUM : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.semantic.enum_qualified_path_name : <"generate Python unit tests from Rosetta.">
 
 enum TestEnum:
     A

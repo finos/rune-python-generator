@@ -1,4 +1,9 @@
-'''switch unit tests'''
+'''Switch operator unit tests — switch as a condition guard.
+
+Tests the switch keyword used inside type condition blocks to guard on literal
+values, choice types, and enum values.  For switch used as a value-returning
+expression inside a function, see expressions/test_switch_op.py.
+'''
 import pytest
 
 from rosetta_dsl.test.semantic.switch_operator.SwitchTestLiteral import SwitchTestLiteral
