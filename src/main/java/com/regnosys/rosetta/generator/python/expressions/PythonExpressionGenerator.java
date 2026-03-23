@@ -58,6 +58,7 @@ import com.regnosys.rosetta.rosetta.expression.ToDateOperation;
 import com.regnosys.rosetta.rosetta.expression.ToDateTimeOperation;
 import com.regnosys.rosetta.rosetta.expression.ToEnumOperation;
 import com.regnosys.rosetta.rosetta.expression.ToIntOperation;
+import com.regnosys.rosetta.rosetta.expression.ToNumberOperation;
 import com.regnosys.rosetta.rosetta.expression.ToStringOperation;
 import com.regnosys.rosetta.rosetta.expression.ToTimeOperation;
 import com.regnosys.rosetta.rosetta.expression.ToZonedDateTimeOperation;
@@ -242,6 +243,9 @@ public final class PythonExpressionGenerator {
             }
             case ToIntOperation toInt -> {
                 return "int(" + generateExpression(toInt.getArgument(), scope) + ")";
+            }
+            case ToNumberOperation toNumber -> {
+                return "Decimal(" + generateExpression(toNumber.getArgument(), scope) + ")";
             }
             case ReduceOperation reduceOp -> {
                 return generateReduceOperation(reduceOp, scope);
