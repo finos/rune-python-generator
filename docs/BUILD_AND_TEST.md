@@ -1,74 +1,94 @@
-# _Build and testing instructions_
+# Build and Testing Instructions
+
+For a detailed description of how each test suite is organized and how to write new tests, see [TESTING.md](TESTING.md).
+
+## Prerequisites
+
+- **Java 21** — required to build the generator
+- **Maven** — used to build and run JUnit tests
+- **Python 3.11+** — required to run Python unit and serialization tests
 
 ## Setup
 
-1. Clone the repo to your local directory
-2. Change to the installation directory
-
-## To build the generator and run the JUnit tests
+Clone the repository and change to the project root:
 
 ```sh
-mvn clean install
+git clone https://github.com/finos/rune-python-generator
+cd rune-python-generator
 ```
 
-The JUnit tests conduct string comparisons of Python generated from Rune samples expected results.
+All commands below are run from the **project root** unless stated otherwise.
+
+---
+
+## Build and Run JUnit Tests
+
+```sh
+mvn clean package
+```
+
+The JUnit tests compare generated Python output against expected results. All tests should pass.
+
+---
+
+## Run Python Unit Tests
+
+Assuming the build has completed successfully:
+
+```sh
+python-test/unit-tests/run_python_unit_tests.sh
+```
 
 All tests should pass.
 
-## To run the Python Unit Tests
+---
 
-Assuming the build and tests successfully complete and Python 3.11+ is installed.
+## Run Serialization Tests
+
+These tests implement the common serialization standards from the [Rune Common Repo](https://github.com/finos/rune-common.git).
+
+**Step 1** — Fetch the Rune source and JSON test fixtures:
 
 ```sh
-test/python_unit_tests/run_python_unit_tests.sh
+python-test/serialization-tests/get_serialization_source.sh
 ```
 
-All tests should pass
-
-## To test that the generated code successfully deserializes and serializes
-
-These tests implement the common standards found in the [Rune Common Repo](https://github.com/finos/rune-common.git).  
-
-1. Get the test Rune and JSON files
+**Step 2** — Generate Python from the Rune definitions:
 
 ```sh
-test/serialization/get_serialization_source.sh
+mvn clean package
 ```
 
-2. Generate Python from Rune definitions
+**Step 3** — Run the tests:
 
 ```sh
-mvn clean install
-```
-
-3. Run the tests
-
-```sh
-test/serialization/run_serialization_tests.sh
+python-test/serialization-tests/run_serialization_tests.sh
 ```
 
 All tests are expected to pass.
 
-Testing leverages `serialization_test.py` which can be used to test a directory of JSON or a specific file.
+---
 
-To use this script:
+## Using the Serialization Test Script Directly
 
-1. From the [Project Root], setup the environment:
+`serialization_test.py` can run against a directory of JSON files or a single file.
+
+**Step 1** — Set up the Python environment:
 
 ```sh
-build/setup_python.sh
+python-test/env-setup/setup_python_env.sh
 source .pyenv/bin/activate
 ```
 
-2. Then execute the script to get help instructions:
+**Step 2** — Show usage help:
 
 ```sh
-python test/serialization_test/serialization.py -h
+python python-test/serialization-tests/serialization_test.py -h
 ```
 
-3. To clean up the environment, execute the following from the Python project root:
+**Step 3** — When finished, deactivate and clean up the environment:
 
 ```sh
 deactivate
-build/cleanup_python_env.sh
+python-test/env-setup/cleanup_python_env.sh
 ```

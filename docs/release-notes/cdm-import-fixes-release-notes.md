@@ -5,38 +5,41 @@ This document describes fixes to the Python generator that resolve `ImportError`
 
 ---
 
-## 1. Runtime Change: Robust `_FQRTN` Lookup in `rune_serialize`
+## 1. Runtime Change: `_fqrtn()` Method Replaces Direct `_FQRTN` Access [FIXED]
 
 ### What Is the Issue
 
-The `rune_serialize` method in `BaseDataClass` uses the `_FQRTN` class attribute to record
-the fully-qualified Rune type name in the serialised JSON `@type` field. The generator only
-emits `_FQRTN` for bundled classes (those that live inside `_bundle.py`). Standalone classes
-— which have their own module file — do not have `_FQRTN` defined. Calling `rune_serialize`
-on an instance of a standalone class therefore raises:
+Serialization code in `BaseDataClass` and the metadata serializer previously accessed
+`self._FQRTN` directly to obtain the fully-qualified Rune type name for the `@type` field
+in serialised JSON. The generator only emits `_FQRTN` for bundled classes (those that live
+inside `_bundle.py`). Standalone classes — which have their own module file — do not have
+`_FQRTN` defined. Accessing `_FQRTN` directly on a standalone class therefore raises:
 
 ```
 AttributeError: _FQRTN
 ```
 
-### Proposed Change to the Runtime
+### What Changed in the Runtime
 
-Add a `try/except` fallback in `rune_serialize` so that when `_FQRTN` is absent the method
-falls back to `type(self).__module__`:
+A `_fqrtn()` classmethod was added to the base class in `metadata.py`. It resolves the
+fully-qualified type name using `getattr` with `cls.__module__` as the default:
 
 ```python
-try:
-    fqrtn = self._FQRTN
-except AttributeError:
-    fqrtn = type(self).__module__
+@classmethod
+def _fqrtn(cls):
+    return getattr(cls, '_FQRTN', cls.__module__)
 ```
+
+All serialization callsites — `rune_serialize` in `BaseDataClass` and the metadata
+serializer in `metadata.py` — now call `self._fqrtn()` instead of accessing `self._FQRTN`
+directly.
 
 ### Why This Addresses the Issue
 
-Standalone classes are named and placed in modules whose dotted path matches the Rune
-fully-qualified type name (e.g., `cdm.event.common.TradeState`). Using `type(self).__module__`
-therefore produces an equivalent `@type` value without requiring the generator to emit a
-redundant `_FQRTN` attribute in every standalone class file.
+Standalone classes are placed in modules whose dotted path matches the Rune fully-qualified
+type name (e.g., `cdm.event.common.TradeState`). When `_FQRTN` is absent, `cls.__module__`
+produces an equivalent `@type` value. Bundled classes retain their `_FQRTN` class variable
+and continue to work unchanged — `getattr` finds it before falling back to `__module__`.
 
 ---
 ## 2. Lazy Proxy Stubs via PEP 562 `__getattr__` [FIXED]

@@ -144,7 +144,7 @@ python -m pip install -e .
 
 When Rune generates code for a native function, it creates a wrapper that handles the bridge to your Python implementation using `rune_execute_native`.  
 
-**Note**: The exmaples are mocked up and do not include the complete code.
+**Note**: The examples are mocked up and do not include the complete code.
 
 **Generated Wrapper for `RoundToNearest`**:
 
@@ -173,6 +173,6 @@ def RoundUp(value: Decimal, digits: int) -> Decimal:
     return roundedValue
 ```
 
-#### Test Execution
+#### Runtime Behaviour
 
 Once installed, any Rune code calling `RoundUp` will automatically route through the native bridge to your Python logic.
