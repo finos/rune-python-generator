@@ -107,6 +107,10 @@ public final class PythonCodeWriter {
         }
     }
 
+    public boolean isEmpty() {
+        return sb.length() == 0;
+    }
+
     @Override
     public String toString() {
         return sb.toString();

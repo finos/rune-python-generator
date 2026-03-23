@@ -9,7 +9,8 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
@@ -32,6 +33,11 @@ import jakarta.inject.Provider;
  * Generate Python from Rune Types
  */
 public class PythonModelObjectGenerator {
+
+    /**
+     * The logger.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(PythonModelObjectGenerator.class);
 
     /**
      * The R object factory.
@@ -79,6 +85,7 @@ public class PythonModelObjectGenerator {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         for (Data rc : rClasses) {
             String className = RuneToPythonMapper.getFullyQualifiedName(rc);
+            LOGGER.info("Processing class: {}", className);
             context.addClassName(className);
             dependencyDAG.addVertex(className);
             
@@ -311,6 +318,10 @@ public class PythonModelObjectGenerator {
             writer.appendLine("\"\"\"");
         }
 
+        if (!isStandalone) {
+            writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedName(rc) + "'");
+        }
+
         AttributeProcessingResult attrResult = pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints, context);
         writer.appendBlock(attrResult.getAttributeCode());
 
@@ -329,10 +340,6 @@ public class PythonModelObjectGenerator {
         }
 
         writer.appendBlock(expressionGenerator.generateTypeConditions(rc));
-
-        if (!isStandalone) {
-            writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedName(rc) + "'");
-        }
 
         return writer.toString();
     }

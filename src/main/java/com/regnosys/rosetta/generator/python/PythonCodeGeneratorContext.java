@@ -18,9 +18,9 @@ import com.regnosys.rosetta.rosetta.simple.Function;
 
 public final class PythonCodeGeneratorContext {
     /**
-     * The list of subfolders.
+     * The set of subfolders (insertion-ordered for deterministic output).
      */
-    private List<String> subfolders = null;
+    private LinkedHashSet<String> subfolders = null;
     /**
      * The map of Python code for classes by name.
      */
@@ -50,9 +50,9 @@ public final class PythonCodeGeneratorContext {
      */
     private Map<String, List<String>> postDefinitionUpdates = null;
     /**
-     * Additional imports
+     * Additional imports (insertion-ordered for deterministic output).
      */
-    private List<String> additionalImports = null;
+    private LinkedHashSet<String> additionalImports = null;
     /**
      * The set of native function names.
      */
@@ -82,9 +82,14 @@ public final class PythonCodeGeneratorContext {
      * Used to emit enum imports into standalone function files.
      */
     private Map<String, Set<String>> functionEnumImports = null;
+    /**
+     * Strongly-connected components of the dependency DAG, computed once during
+     * partitioning and reused during DAG processing.
+     */
+    private List<Set<String>> sccs = null;
 
     public PythonCodeGeneratorContext() {
-        this.subfolders = new ArrayList<>();
+        this.subfolders = new LinkedHashSet<>();
         this.classObjects = new HashMap<>();
         this.functionObjects = new HashMap<>();
         this.dependencyDAG = new DefaultDirectedGraph<>(DefaultEdge.class);
@@ -92,7 +97,7 @@ public final class PythonCodeGeneratorContext {
         this.functionNames = new HashSet<>();
         this.classNames = new HashSet<>();
         this.postDefinitionUpdates = new HashMap<>();
-        this.additionalImports = new ArrayList<>();
+        this.additionalImports = new LinkedHashSet<>();
         this.nativeFunctionNames = new LinkedHashSet<>();
         this.standaloneClasses = new HashSet<>();
         this.allData = new ArrayList<>();
@@ -103,7 +108,7 @@ public final class PythonCodeGeneratorContext {
     }
 
     public List<String> getSubfolders() {
-        return subfolders;
+        return new ArrayList<>(subfolders);
     }
 
     public Map<String, CharSequence> getClassObjects() {
@@ -135,9 +140,7 @@ public final class PythonCodeGeneratorContext {
     }
 
     public void addSubfolder(String subfolder) {
-        if (!subfolders.contains(subfolder)) {
-            subfolders.add(subfolder);
-        }
+        subfolders.add(subfolder);
     }
 
     public Set<String> getFunctionNames() {
@@ -173,13 +176,11 @@ public final class PythonCodeGeneratorContext {
     }
 
     public List<String> getAdditionalImports() {
-        return additionalImports;
+        return new ArrayList<>(additionalImports);
     }
 
     public void addAdditionalImport(String importStatement) {
-        if (!additionalImports.contains(importStatement)) {
-            additionalImports.add(importStatement);
-        }
+        additionalImports.add(importStatement);
     }
 
     public boolean hasNativeFunctions() {
@@ -211,5 +212,13 @@ public final class PythonCodeGeneratorContext {
 
     public Map<String, String> getSuperTypes() {
         return superTypes;
+    }
+
+    public List<Set<String>> getSccs() {
+        return sccs;
+    }
+
+    public void setSccs(List<Set<String>> sccs) {
+        this.sccs = sccs;
     }
 }

@@ -70,7 +70,7 @@ public final class PythonAttributeProcessor {
         for (RAttribute ra : allAttributes) {
             AttributeResult result = generateAttribute(rc, ra, keyRefConstraints, context);
             writer.appendBlock(result.attributeCode());
-            result.annotationUpdate().ifPresent(annotationUpdates::add);
+            annotationUpdates.addAll(result.annotationUpdates());
         }
         return new AttributeProcessingResult(writer.toString(), annotationUpdates);
     }
@@ -87,40 +87,38 @@ public final class PythonAttributeProcessor {
         String className = model.getName() + "." + rc.getName();
         boolean isStandalone = context.getStandaloneClasses().contains(className);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
-        PythonTypeHint hint = deriveTypeHint(rc, ra, metaDataResult, context);
 
-        RType rt = ra.getRMetaAnnotatedType().getRType();
-        if (rt instanceof RAliasType) {
-            rt = typeSystem.stripFromTypeAliases(rt);
-        }
+        // Resolve type aliases and compute validation properties once for all downstream use
+        RType rt = resolveType(ra);
+        ValidationProperties validationProps = processProperties(rt);
         boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
 
+        PythonTypeHint hint = deriveTypeHint(rc, ra, rt, validationProps, isDelayed, metaDataResult, context);
+
         String pythonType;
-        Optional<String> annotationUpdate = Optional.empty();
+        List<String> annotationUpdates = new ArrayList<>();
         if (isDelayed && !isStandalone) {
             // Phase 1 placeholder: use 'None' so pydantic does not attempt to resolve the type name
             // at class-definition time. Pydantic adds vars(cls) to localns, so a field whose name
             // matches its type name (e.g. CollateralIssuerType: Optional[CollateralIssuerType])
             // would resolve the type to the FieldInfo default rather than the imported class,
-            // triggering ArbitraryTypeWarning. The Phase 2 annotation update below replaces 'None'
-            // with the real Annotated type at module level, and model_rebuild() picks it up.
+            // triggering ArbitraryTypeWarning.
+            // Phase 2 updates both __annotations__ (full Annotated type for pydantic schema) and
+            // model_fields[x].annotation (bare type, required so model_rebuild(force=True) picks up
+            // the real type rather than the NoneType placeholder stored in model_fields).
             pythonType = "None";
-            String update = String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true));
-            annotationUpdate = Optional.of(update);
+            annotationUpdates.add(String.format("model_fields[\"%s\"].annotation = %s", attrName, hint.build(false)));
+            annotationUpdates.add(String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true)));
         } else {
             pythonType = hint.build(true);
         }
 
-        String fieldDecl = generateFieldDeclaration(ra, attrName, pythonType, hint.fieldProperties().isPresent());
-        return new AttributeResult(fieldDecl, annotationUpdate);
+        String fieldDecl = generateFieldDeclaration(ra, validationProps, attrName, pythonType, hint.fieldProperties().isPresent());
+        return new AttributeResult(fieldDecl, annotationUpdates);
     }
 
-    private PythonTypeHint deriveTypeHint(Data rc, RAttribute ra, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
-        RType rt = ra.getRMetaAnnotatedType().getRType();
-        if (rt instanceof RAliasType alias) {
-            rt = typeSystem.stripFromTypeAliases(alias);
-        }
-
+    private PythonTypeHint deriveTypeHint(Data rc, RAttribute ra, RType rt, ValidationProperties validationProps,
+            boolean isDelayed, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
         RosettaModel model = (RosettaModel) rc.eContainer();
         String className = model.getName() + "." + rc.getName();
         boolean isSourceStandalone = context.getStandaloneClasses().contains(className);
@@ -161,7 +159,6 @@ public final class PythonAttributeProcessor {
             throw new RuntimeException("Attribute type is null for " + ra.getName());
         }
 
-        ValidationProperties validationProps = processProperties(rt);
         List<String> validators = metaDataResult.getValidators();
         RCardinality cardinality = ra.getCardinality();
         int max = cardinality.getMax().orElse(-1);
@@ -174,7 +171,6 @@ public final class PythonAttributeProcessor {
         String propString = validationProps.toFieldArgs();
         Optional<String> fieldProps = (isList && !propString.isEmpty()) ? Optional.of(propString) : Optional.empty();
 
-        boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
         // STANDALONE strategy: omit Annotated wrapper unless there are validators
         // BUNDLED strategy: always use Annotated for isDelayed to support Phase 2 updates
         boolean needsRuneAnns = (isDelayed && !isSourceStandalone) || !validators.isEmpty();
@@ -190,13 +186,8 @@ public final class PythonAttributeProcessor {
                 runeAnns);
     }
 
-    private String generateFieldDeclaration(RAttribute ra, String attrName, String pythonType,
-            boolean propertiesAppliedToInnerType) {
-        RType rt = ra.getRMetaAnnotatedType().getRType();
-        if (rt instanceof RAliasType) {
-            rt = typeSystem.stripFromTypeAliases(rt);
-        }
-        ValidationProperties validationProps = processProperties(rt);
+    private String generateFieldDeclaration(RAttribute ra, ValidationProperties validationProps,
+            String attrName, String pythonType, boolean propertiesAppliedToInnerType) {
         CardinalityInfo cardinalityInfo = processCardinality(ra);
         String propString = validationProps.toFieldArgs();
 
@@ -279,6 +270,11 @@ public final class PythonAttributeProcessor {
         }
         validators.addAll(otherMeta);
         return new MetaDataResult(validators, hasReference);
+    }
+
+    private RType resolveType(RAttribute ra) {
+        RType rt = ra.getRMetaAnnotatedType().getRType();
+        return (rt instanceof RAliasType) ? typeSystem.stripFromTypeAliases(rt) : rt;
     }
 
     private ValidationProperties processProperties(RType rt) {
@@ -387,10 +383,7 @@ public final class PythonAttributeProcessor {
                     && !attr.getName().equals("meta")
                     && !attr.getName().equals("scheme")
                     && !RuneToPythonMapper.isRosettaBasicType(attr)) {
-                RType rt = attr.getRMetaAnnotatedType().getRType();
-                if (rt instanceof RAliasType) {
-                    rt = typeSystem.stripFromTypeAliases(rt);
-                }
+                RType rt = resolveType(attr);
                 if (rt == null) {
                     throw new RuntimeException(
                             "Attribute type is null for "
@@ -471,7 +464,7 @@ public final class PythonAttributeProcessor {
     private record CardinalityInfo(String fieldDefault, String cardinalityString) {
     }
 
-    private record AttributeResult(String attributeCode, Optional<String> annotationUpdate) {
+    private record AttributeResult(String attributeCode, List<String> annotationUpdates) {
     }
     private record PythonTypeHint(
             String baseType,

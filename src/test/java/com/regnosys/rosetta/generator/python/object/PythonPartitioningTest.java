@@ -123,8 +123,8 @@ public class PythonPartitioningTest {
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "class com_rosetta_test_model_CycleB(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "_FQRTN = 'com.rosetta.test.model.CycleB'");
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "# Phase 2: Delayed Annotation Updates");
-        testUtils.assertGeneratedContainsExpectedString(bundlePython, "com_rosetta_test_model_CycleA.model_rebuild()");
-        testUtils.assertGeneratedContainsExpectedString(bundlePython, "com_rosetta_test_model_CycleB.model_rebuild()");
+        testUtils.assertGeneratedContainsExpectedString(bundlePython, "com_rosetta_test_model_CycleA.model_rebuild(force=True)");
+        testUtils.assertGeneratedContainsExpectedString(bundlePython, "com_rosetta_test_model_CycleB.model_rebuild(force=True)");
 
         // The standalone type must not be defined inside the bundle
         testUtils.assertGeneratedDoesNotContain(bundlePython, "class SimpleType(BaseDataClass):");
