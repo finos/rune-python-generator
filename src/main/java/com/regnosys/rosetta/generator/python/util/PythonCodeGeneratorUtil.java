@@ -63,13 +63,15 @@ public final class PythonCodeGeneratorUtil {
                 from pydantic import Field, validate_call
 
                 from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.cow import rune_cow, rune_unwrap
+                from rune.runtime.cow import rune_cow
                 from rune.runtime.conditions import *
                 from rune.runtime.func_proxy import *
                 from rune.runtime.metadata import *
+                from rune.runtime.native_registry import rune_attempt_register_native_functions, rune_execute_native
+                from rune.runtime.object_builder import ObjectBuilder
                 from rune.runtime.utils import *
 
-                """.stripIndent();
+                """;
     }
 
     public static String toFileSystemPath(String namespace) {
@@ -103,6 +105,9 @@ public final class PythonCodeGeneratorUtil {
     }
 
     public static String getNamespace(RosettaModel rm) {
+        if (rm.getName() == null) {
+            return "com.rosetta.test.model".split("\\.")[0];
+        }
         return rm.getName().split("\\.")[0];
     }
 

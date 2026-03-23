@@ -69,8 +69,7 @@ public final class PythonFunctionDependencyProvider {
             String sourceRoot = sourceNamespace.split("\\.")[0];
 
             if (!rootNamespace.equals(sourceRoot)) {
-                String flattenedName = com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil.toFlattenedName(fullNamespace + "." + name);
-                enumImports.add(String.format("from %s._bundle import %s", rootNamespace, flattenedName));
+                enumImports.add(String.format("from %s.%s import %s", fullNamespace, name, name));
             }
         } else if (named instanceof com.regnosys.rosetta.rosetta.RosettaTypeAlias alias) {
              // Recursive call with the referred type
@@ -175,8 +174,7 @@ public final class PythonFunctionDependencyProvider {
             String sourceRoot = sourceNamespace.split("\\.")[0];
 
             if (!rootNamespace.equals(sourceRoot)) {
-                String flattenedName = com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil.toFlattenedName(fullNamespace + "." + name);
-                enumImports.add(String.format("from %s._bundle import %s", rootNamespace, flattenedName));
+                enumImports.add(String.format("from %s.%s import %s", fullNamespace, name, name));
             }
         }
     }

@@ -18,11 +18,12 @@ import java.util.stream.Collectors;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.jgrapht.Graph;
+import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
+import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.regnosys.rosetta.generator.external.AbstractExternalGenerator;
 import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.functions.PythonFunctionGenerator;
@@ -34,9 +35,6 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
 import com.regnosys.rosetta.rosetta.simple.FunctionDispatch;
-
-// todo: function support
-// todo: review and consolidate unit tests
 // todo: review migrating choice alias processor to PythonModelObjectGenerator
 
 import jakarta.inject.Inject;
@@ -105,7 +103,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * The Python function generator.
      */
     @Inject
-    private PythonFunctionGenerator funcGenerator;
+    private PythonFunctionGenerator functionGenerator;
     /**
      * The Python enum generator.
      */
@@ -127,63 +125,44 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      */
     public PythonCodeGenerator() {
         super(PYTHON);
-        contexts = new HashMap<>();
+        this.contexts = new HashMap<>();
     }
 
     @Override
-    public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set,
-            Collection<? extends RosettaModel> models, String version) {
-        return Collections.emptyMap();
+    public Map<String, ? extends CharSequence> beforeAllGenerate(
+            ResourceSet set,
+            Collection<? extends RosettaModel> models,
+            String version) {
+        this.contexts.clear();
+        return super.beforeAllGenerate(set, models, version);
     }
 
     @Override
-    public Map<String, ? extends CharSequence> generate(Resource resource, 
-        RosettaModel model,
-        String version) {
-        if (model == null) {
-            throw new IllegalArgumentException("Model is null");
-        }
-        LOGGER.debug("Processing module: {}", model.getName());
-
+    public Map<String, ? extends CharSequence> generate(Resource resource, RosettaModel model, String version) {
         String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
-        PythonCodeGeneratorContext context = contexts.get(nameSpace);
-        if (context == null) {
-            context = new PythonCodeGeneratorContext();
-            contexts.put(nameSpace, context);
-        }
+        PythonCodeGeneratorContext context = contexts.computeIfAbsent(nameSpace, k -> new PythonCodeGeneratorContext());
 
-        Map<String, CharSequence> result = new HashMap<>();
-
-        List<Data> rosettaClasses = model.getElements()
-            .stream()
-            .filter(Data.class::isInstance)
-            .map(Data.class::cast)
-            .collect(Collectors.toList());
-
-        List<RosettaEnumeration> rosettaEnums = model.getElements()
-            .stream()
-            .filter(RosettaEnumeration.class::isInstance)
-            .map(RosettaEnumeration.class::cast)
-            .collect(Collectors.toList());
-
-        List<Function> rosettaFunctions = model.getElements()
-            .stream()
-            .filter(it -> it instanceof Function && !(it instanceof FunctionDispatch))
-            .map(Function.class::cast)
-            .collect(Collectors.toList());
-
-        if (!rosettaClasses.isEmpty() || !rosettaEnums.isEmpty() || !rosettaFunctions.isEmpty()) {
+        boolean hasContent = model.getElements().stream()
+                .anyMatch(e -> e instanceof Data
+                        || (e instanceof Function && !(e instanceof FunctionDispatch))
+                        || e instanceof RosettaEnumeration);
+        if (hasContent) {
             context.addSubfolder(model.getName());
-            if (!rosettaFunctions.isEmpty()) {
-                context.addSubfolder(model.getName() + ".functions");
-            }
         }
+        model.getElements().stream()
+                .filter(Data.class::isInstance)
+                .map(Data.class::cast)
+                .forEach(context.getAllData()::add);
+        model.getElements().stream()
+                .filter(e -> e instanceof Function && !(e instanceof FunctionDispatch))
+                .map(e -> (Function) e)
+                .forEach(rc -> context.getAllFunctions().add(rc));
+        model.getElements().stream()
+                .filter(RosettaEnumeration.class::isInstance)
+                .map(RosettaEnumeration.class::cast)
+                .forEach(context.getAllEnums()::add);
 
-        context.getClassObjects().putAll(pojoGenerator.generate(rosettaClasses, context));
-        result.putAll(enumGenerator.generate(rosettaEnums));
-        context.getFunctionObjects().putAll(funcGenerator.generate(rosettaFunctions, context));
-
-        return result;
+        return new HashMap<>();
     }
 
     @Override
@@ -195,164 +174,482 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
         for (String nameSpace : contexts.keySet()) {
             PythonCodeGeneratorContext context = contexts.get(nameSpace);
+            
+            // Phase 1: Scan
+            pojoGenerator.scan(context.getAllData(), context);
+            functionGenerator.scan(context.getAllFunctions(), context);
+
+            // Phase 2: Partitioned Analysis
+            partitionClasses(context);
+
+            // Phase 3: Emit
+            context.getClassObjects().putAll(pojoGenerator.generate(context.getAllData(), context));
+            context.getFunctionObjects().putAll(functionGenerator.generate(context.getAllFunctions(), context));
+
             List<String> subfolders = context.getSubfolders();
             result.putAll(generateWorkspaces(getWorkspaces(subfolders), cleanVersion));
             result.putAll(generateInits(subfolders));
             result.putAll(processDAG(nameSpace, context, cleanVersion));
+            result.putAll(enumGenerator.generate(context.getAllEnums()));
         }
         return result;
     }
 
-    private Map<String, CharSequence> processDAG(String nameSpace,
-        PythonCodeGeneratorContext context,
-        String cleanVersion) {
-        if (nameSpace == null || context == null || cleanVersion == null) {
-            throw new IllegalArgumentException("Invalid arguments");
-        }
-        Map<String, CharSequence> result = new HashMap<>();
+    private void partitionClasses(PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
-        Set<String> enumImports = context.getEnumImports();
-        if (context.getClassObjects() != null
-            && context.getFunctionObjects() != null
-            && dependencyDAG != null
-            && enumImports != null) {
-            result.put(PYPROJECT_TOML,
-                PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
-            PythonCodeWriter bundleWriter = new PythonCodeWriter();
-            PythonCodeWriter dataObjectsWriter = new PythonCodeWriter();
-            PythonCodeWriter functionsWriter = new PythonCodeWriter();
-            PythonCodeWriter annotationUpdateWriter = new PythonCodeWriter();
-            PythonCodeWriter rebuildWriter = new PythonCodeWriter();
+        KosarajuStrongConnectivityInspector<String, DefaultEdge> inspector =
+            new KosarajuStrongConnectivityInspector<>(dependencyDAG);
+        List<Set<String>> sccs = inspector.stronglyConnectedSets();
+        context.setSccs(sccs);
 
-            TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator =
-                new TopologicalOrderIterator<>(dependencyDAG);
-
-            // 1. Prepare Header (Imports)
-            bundleWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
-            for (String imp : context.getAdditionalImports()) {
-                bundleWriter.appendLine(imp);
+        Set<String> standaloneClasses = context.getStandaloneClasses();
+        for (Set<String> scc : sccs) {
+            if (scc.size() == 1) {
+                String node = scc.iterator().next();
+                // A node in size-1 SCC is standalone only if it has no self-loops
+                if (!dependencyDAG.containsEdge(node, node)) {
+                    standaloneClasses.add(node);
+                    LOGGER.debug("Class {} is standalone", node);
+                }
             }
-            List<String> sortedEnumImports = new ArrayList<>(enumImports);
-            Collections.sort(sortedEnumImports);
-            for (String imp : sortedEnumImports) {
-                // Do not import from our own bundle
-                if (!imp.contains("from " + nameSpace + "._bundle")) {
+        }
+
+        // Types from other namespaces are always external — accessed via their fully-qualified
+        // proxy-stub path, never via another namespace's _bundle.  Mark them standalone
+        // unconditionally so that import generation uses "from fpml.x.y.Z import Z" rather
+        // than "from fpml._bundle import fpml_x_y_Z".
+        Set<String> ownTypes = context.getClassNames();
+        for (String vertex : dependencyDAG.vertexSet()) {
+            if (!ownTypes.contains(vertex)) {
+                standaloneClasses.add(vertex);
+            }
+        }
+    }
+
+    private Map<String, CharSequence> processDAG(String nameSpace,
+            PythonCodeGeneratorContext context,
+            String cleanVersion) {
+        Map<String, CharSequence> result = new HashMap<>();
+        result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
+
+        PythonCodeWriter bundleWriter = new PythonCodeWriter();
+        PythonCodeWriter dataObjectsWriter = new PythonCodeWriter();
+        PythonCodeWriter functionsWriter = new PythonCodeWriter();
+        PythonCodeWriter annotationUpdateWriter = new PythonCodeWriter();
+        PythonCodeWriter rebuildWriter = new PythonCodeWriter();
+
+        BundleHeaderResult headerResult = buildBundleHeader(context, nameSpace, bundleWriter);
+
+        List<Set<String>> sccs = context.getSccs();
+        List<Integer> sccOrder = buildCondensationGraph(context.getDependencyDAG(), sccs);
+
+        emitSortedClasses(sccOrder, sccs, context, nameSpace,
+                headerResult.standaloneSupertypesOfBundled(),
+                dataObjectsWriter, functionsWriter, annotationUpdateWriter, rebuildWriter, result);
+
+        assembleBundleFile(nameSpace, context, bundleWriter, dataObjectsWriter, functionsWriter,
+                annotationUpdateWriter, rebuildWriter, headerResult.deferredStandaloneImports(), result);
+
+        return result;
+    }
+
+    /**
+     * Writes standard imports and additional imports to the bundle header, classifies enum imports
+     * as either header-safe (enum modules) or deferred (standalone class references), and identifies
+     * standalone supertypes of bundled classes that must be imported inline rather than deferred.
+     *
+     * @param context       The code generator context.
+     * @param nameSpace     The namespace of the bundle being generated.
+     * @param bundleWriter  The writer to append header content to (mutated).
+     * @return A {@link BundleHeaderResult} containing the deferred standalone imports and the set
+     *         of standalone supertypes of bundled classes.
+     */
+    private BundleHeaderResult buildBundleHeader(PythonCodeGeneratorContext context,
+            String nameSpace,
+            PythonCodeWriter bundleWriter) {
+        bundleWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
+        for (String imp : context.getAdditionalImports()) {
+            bundleWriter.appendLine(imp);
+        }
+
+        // Split imports: enum module imports are safe in the header (enums never import from
+        // the bundle). Standalone-class imports ("from X import Y") must be deferred until
+        // after all bundled class definitions, because a standalone class may itself transitively
+        // import a bundled class — and at header-evaluation time that bundled class is not yet
+        // defined in the partially-initialised bundle module.
+        //
+        // Exception: a standalone type used as a DIRECT BASE CLASS of a bundled type cannot be
+        // deferred. Python evaluates base-class expressions immediately at class-definition time
+        // (unlike attribute annotations which are lazy strings under PEP 563). Such imports must
+        // stay in the header.
+        Set<String> standaloneClasses = context.getStandaloneClasses();
+        Set<String> standaloneSupertypesOfBundled = new java.util.HashSet<>();
+        for (Map.Entry<String, String> entry : context.getSuperTypes().entrySet()) {
+            String childFqn = entry.getKey();
+            String parentFqn = entry.getValue();
+            if (parentFqn != null
+                    && !standaloneClasses.contains(childFqn)   // child is bundled
+                    && standaloneClasses.contains(parentFqn)) { // parent is standalone
+                standaloneSupertypesOfBundled.add(parentFqn);
+            }
+        }
+
+        List<String> deferredStandaloneImports = new ArrayList<>();
+        List<String> sortedEnumImports = new ArrayList<>(context.getEnumImports());
+        Collections.sort(sortedEnumImports);
+        String bundleImportSource = "from " + nameSpace + "._bundle";
+        for (String imp : sortedEnumImports) {
+            // Allow imports from the same namespace if they are not from the bundle itself (e.g. Enums which are separate)
+            if (!imp.contains(bundleImportSource)) {
+                if (imp.startsWith("from ")) {
+                    // Extract the FQN from "from <fqn> import <Name>"
+                    String fqn = imp.substring("from ".length(), imp.indexOf(" import "));
+                    if (!standaloneSupertypesOfBundled.contains(fqn)) {
+                        // Attribute-type-only import: safe to defer until after class definitions.
+                        // (Standalone supertypes of bundled classes are handled inline in emitSortedClasses.)
+                        deferredStandaloneImports.add(imp);
+                    }
+                } else {
+                    // Enum module import — safe to put in the header
                     bundleWriter.appendLine(imp);
                 }
             }
+        }
 
-            // 2. Traversal and Partitioning
-            while (topologicalOrderIterator.hasNext()) {
-                String name = topologicalOrderIterator.next();
-                String bundleClassName = PythonCodeGeneratorUtil.toFlattenedName(name);
+        return new BundleHeaderResult(deferredStandaloneImports, standaloneSupertypesOfBundled);
+    }
 
-                // Handle Class if it exists for this name
+    /**
+     * Builds the condensation graph of the dependency DAG (one node per SCC) and returns the
+     * topological ordering of SCC ids.
+     *
+     * @param dependencyDAG The type dependency graph.
+     * @param sccs          The strongly-connected components, indexed by id (list position).
+     * @return The SCC ids in topological order.
+     */
+    private List<Integer> buildCondensationGraph(Graph<String, DefaultEdge> dependencyDAG,
+            List<Set<String>> sccs) {
+        DefaultDirectedGraph<Integer, DefaultEdge> condensationGraph =
+            new DefaultDirectedGraph<>(DefaultEdge.class);
+        Map<String, Integer> typeToSccId = new HashMap<>();
+        for (int i = 0; i < sccs.size(); i++) {
+            condensationGraph.addVertex(i);
+            for (String type : sccs.get(i)) {
+                typeToSccId.put(type, i);
+            }
+        }
+        for (DefaultEdge edge : dependencyDAG.edgeSet()) {
+            int sourceId = typeToSccId.get(dependencyDAG.getEdgeSource(edge));
+            int targetId = typeToSccId.get(dependencyDAG.getEdgeTarget(edge));
+            if (sourceId != targetId) {
+                condensationGraph.addEdge(sourceId, targetId);
+            }
+        }
+
+        TopologicalOrderIterator<Integer, DefaultEdge> sccIterator =
+            new TopologicalOrderIterator<>(condensationGraph);
+        List<Integer> sccOrder = new ArrayList<>();
+        while (sccIterator.hasNext()) {
+            sccOrder.add(sccIterator.next());
+        }
+        return sccOrder;
+    }
+
+    /**
+     * Walks SCCs in topological order and emits bundled class/function bodies, proxy stubs, and
+     * standalone class/function files. Bundled-class annotation updates and rebuild calls are
+     * accumulated in the provided writers; proxy stub and standalone files are placed directly
+     * into {@code result}.
+     *
+     * @param sccOrder                    SCC ids in topological order.
+     * @param sccs                        Strongly-connected components (indexed by id).
+     * @param context                     The code generator context.
+     * @param nameSpace                   The bundle namespace.
+     * @param standaloneSupertypesOfBundled  Standalone types used as direct base classes of
+     *                                    bundled types, requiring inline import before the subclass.
+     * @param dataObjectsWriter           Accumulates bundled class bodies.
+     * @param functionsWriter             Accumulates bundled function bodies.
+     * @param annotationUpdateWriter      Accumulates Phase 2 annotation updates.
+     * @param rebuildWriter               Accumulates Phase 3 model_rebuild calls.
+     * @param result                      Map to receive proxy stub and standalone file entries.
+     */
+    private void emitSortedClasses(List<Integer> sccOrder, List<Set<String>> sccs,
+            PythonCodeGeneratorContext context, String nameSpace,
+            Set<String> standaloneSupertypesOfBundled,
+            PythonCodeWriter dataObjectsWriter, PythonCodeWriter functionsWriter,
+            PythonCodeWriter annotationUpdateWriter, PythonCodeWriter rebuildWriter,
+            Map<String, CharSequence> result) {
+        Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
+        Set<String> standaloneClasses = context.getStandaloneClasses();
+        // Track standalone supertype imports already emitted inline to avoid duplicates.
+        Set<String> emittedInlineSupertypeImports = new java.util.HashSet<>();
+
+        for (Integer sccId : sccOrder) {
+            Set<String> scc = sccs.get(sccId);
+            // Sort SCC members by inheritance for definition order
+            List<String> sortedScc = sortSccByInheritance(scc, context);
+
+            for (String name : sortedScc) {
+                String bundleClassName = getBundleClassName(name);
+                boolean isStandalone = standaloneClasses.contains(name);
+
                 CharSequence classObject = context.getClassObjects().get(name);
-                if (classObject != null) {
-                    dataObjectsWriter.newLine();
-                    dataObjectsWriter.newLine();
-                    dataObjectsWriter.appendBlock(classObject.toString());
-
-                    // Collect Phase 2 & 3 updates for this class
-                    List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
-                    if (updates != null && !updates.isEmpty()) {
-                        for (String update : updates) {
-                            annotationUpdateWriter.appendLine(update);
-                        }
-                        rebuildWriter.appendLine(String.format("%s.model_rebuild()", bundleClassName));
-                    }
-                }
-
-                // Handle Function if it exists for this name
                 CharSequence functionObject = context.getFunctionObjects().get(name);
-                if (functionObject != null) {
-                    functionsWriter.newLine();
-                    functionsWriter.newLine();
-                    functionsWriter.appendBlock(functionObject.toString());
-                }
 
-                if (classObject != null || functionObject != null) {
-                    boolean hasFunction = functionObject != null;
-
-                    // 3. Create the stub (as before)
-                    String stubFileName = SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py";
-
-                    PythonCodeWriter stubWriter = new PythonCodeWriter();
-                    stubWriter.appendLine("# pylint: disable=unused-import");
-                    if (hasFunction) {
-                        stubWriter.appendLine("import sys");
-                        stubWriter.appendLine("from rune.runtime.func_proxy import create_module_attr_guardian");
-                    }
-                    stubWriter.append("from ");
-                    String[] parsedName = name.split("\\.");
-                    stubWriter.append(parsedName[0]);
-                    stubWriter.append("._bundle import ");
-                    stubWriter.append(bundleClassName);
-                    stubWriter.append(" as ");
-                    stubWriter.append(parsedName[parsedName.length - 1]);
-                    stubWriter.newLine();
-                    stubWriter.newLine();
-                    stubWriter.appendLine("# EOF");
-
-                    result.put(stubFileName, stubWriter.toString());
+                if (!isStandalone) {
+                    emitBundledClass(name, bundleClassName, classObject, functionObject,
+                            nameSpace, context, standaloneClasses, standaloneSupertypesOfBundled,
+                            emittedInlineSupertypeImports,
+                            dataObjectsWriter, functionsWriter, annotationUpdateWriter, rebuildWriter,
+                            result);
+                } else {
+                    emitStandaloneFile(name, classObject, functionObject,
+                            nameSpace, context, dependencyDAG, result);
                 }
             }
+        }
+    }
 
-            // 4. Final Assembly into bundleWriter in requested order
-
-            // 4.1 Objects
-            bundleWriter.appendBlock(dataObjectsWriter.toString());
-
-            // 4.2 Phase 2: Delayed Annotation Updates
-            if (!annotationUpdateWriter.toString().isEmpty()) {
-                bundleWriter.newLine();
-                bundleWriter.newLine();
-                bundleWriter.appendLine("# Phase 2: Delayed Annotation Updates");
-                bundleWriter.appendBlock(annotationUpdateWriter.toString());
+    /**
+     * Emits a single bundled class or function body into the appropriate writers and creates
+     * a lazy proxy stub file for it.
+     */
+    private void emitBundledClass(String name, String bundleClassName,
+            CharSequence classObject, CharSequence functionObject,
+            String nameSpace, PythonCodeGeneratorContext context,
+            Set<String> standaloneClasses, Set<String> standaloneSupertypesOfBundled,
+            Set<String> emittedInlineSupertypeImports,
+            PythonCodeWriter dataObjectsWriter, PythonCodeWriter functionsWriter,
+            PythonCodeWriter annotationUpdateWriter, PythonCodeWriter rebuildWriter,
+            Map<String, CharSequence> result) {
+        if (classObject != null) {
+            // If this bundled class extends a standalone type, emit that import
+            // inline here — after all bundled types the standalone depends on have
+            // been defined, and before the class statement that uses it as a base.
+            String superFqn = context.getSuperTypes().get(name);
+            if (superFqn != null && standaloneClasses.contains(superFqn)
+                    && emittedInlineSupertypeImports.add(superFqn)) {
+                String superName = superFqn.substring(superFqn.lastIndexOf('.') + 1);
+                dataObjectsWriter.newLine();
+                dataObjectsWriter.newLine();
+                dataObjectsWriter.appendLine(String.format("from %s import %s", superFqn, superName));
             }
+            dataObjectsWriter.newLine();
+            dataObjectsWriter.newLine();
+            dataObjectsWriter.appendBlock(classObject.toString());
 
-            // 4.3 Phase 3: Rebuild
-            if (!rebuildWriter.toString().isEmpty()) {
-                bundleWriter.newLine();
-                bundleWriter.newLine();
-                bundleWriter.appendLine("# Phase 3: Rebuild");
-                bundleWriter.appendBlock(rebuildWriter.toString());
-            }
-
-            // 4.4 Functions
-            bundleWriter.appendBlock(functionsWriter.toString());
-
-            // 4.5 Native Function Registry
-            if (context.hasNativeFunctions()) {
-                bundleWriter.newLine();
-                bundleWriter.newLine();
-                bundleWriter.appendLine("rune_attempt_register_native_functions(");
-                bundleWriter.indent();
-                bundleWriter.appendLine("function_names=[");
-                bundleWriter.indent();
-                for (String nativeFunctionName : context.getNativeFunctionNames()) {
-                    bundleWriter.appendLine("'" + nativeFunctionName + "',");
+            // Phase 2: Attribute updates from context
+            List<String> updates = context.getPostDefinitionUpdates().get(bundleClassName);
+            if (updates != null && !updates.isEmpty()) {
+                for (String update : updates) {
+                    annotationUpdateWriter.appendLine(update);
                 }
-                bundleWriter.unindent();
-                bundleWriter.appendLine("]");
-                bundleWriter.unindent();
-                bundleWriter.appendLine(")");
+                // Phase 3: Rebuild — only needed when there are delayed annotation updates
+                rebuildWriter.appendLine(String.format("%s.model_rebuild(force=True)", bundleClassName));
             }
+        }
+        if (functionObject != null) {
+            functionsWriter.newLine();
+            functionsWriter.newLine();
+            functionsWriter.appendBlock(functionObject.toString());
+        }
 
-            // 4.6 Guardian (if functions are present)
-            if (context.hasFunctions()) {
-                bundleWriter.newLine();
-                bundleWriter.newLine();
-                bundleWriter.appendLine(
-                    "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
+        // Create Proxy Stub (lazy — defers bundle import until first attribute access).
+        // A direct "from bundle import X" in the stub would trigger bundle loading
+        // immediately, which can cause a circular ImportError when the stub itself
+        // was the entry point that started the bundle loading.  Instead we use a
+        // module-level __getattr__ so the stub module loads instantly and the bundle
+        // import only happens when the exported name is first accessed (by which time
+        // the bundle is fully initialised).
+        result.put(
+            SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py",
+            generateProxyStub(name, nameSpace, bundleClassName, functionObject != null));
+    }
+
+    /**
+     * Emits a standalone class or function file (not part of the bundle).
+     */
+    private void emitStandaloneFile(String name,
+            CharSequence classObject, CharSequence functionObject,
+            String nameSpace, PythonCodeGeneratorContext context,
+            Graph<String, DefaultEdge> dependencyDAG,
+            Map<String, CharSequence> result) {
+        String fileName = SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py";
+        PythonCodeWriter standAloneWriter = new PythonCodeWriter();
+        standAloneWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
+        standAloneWriter.newLine();
+
+        if (classObject != null) {
+            standAloneWriter.appendBlock(classObject.toString());
+            result.put(fileName, standAloneWriter.toString());
+        } else if (functionObject != null) {
+            // Add imports for data-type and function dependencies used in this standalone function
+            Set<DefaultEdge> inEdges = dependencyDAG.incomingEdgesOf(name);
+            List<String> typeImports = new ArrayList<>();
+            for (DefaultEdge edge : inEdges) {
+                String depName = dependencyDAG.getEdgeSource(edge);
+                if (context.getStandaloneClasses().contains(depName)
+                        && (context.getClassObjects().containsKey(depName)
+                            || context.getFunctionObjects().containsKey(depName))) {
+                    String shortName = depName.substring(depName.lastIndexOf('.') + 1);
+                    typeImports.add("from " + depName + " import " + shortName);
+                }
             }
+            // Add enum module imports collected during function generation
+            Set<String> enumImportsForFunc =
+                context.getFunctionEnumImports().getOrDefault(name, Collections.emptySet());
+            List<String> funcEnumImportsSorted = new ArrayList<>(enumImportsForFunc);
+            Collections.sort(funcEnumImportsSorted);
+            Collections.sort(typeImports);
+            for (String imp : typeImports) {
+                standAloneWriter.appendLine(imp);
+            }
+            for (String imp : funcEnumImportsSorted) {
+                standAloneWriter.appendLine(imp);
+            }
+            if (!typeImports.isEmpty() || !funcEnumImportsSorted.isEmpty()) {
+                standAloneWriter.newLine();
+            }
+            standAloneWriter.appendBlock(functionObject.toString());
+            // For standalone native functions, register the native implementation
+            if (context.getNativeFunctionNames().contains(name)) {
+                standAloneWriter.newLine();
+                standAloneWriter.appendLine("rune_attempt_register_native_functions(");
+                standAloneWriter.indent();
+                standAloneWriter.appendLine("function_names=['" + name + "']");
+                standAloneWriter.unindent();
+                standAloneWriter.appendLine(")");
+            }
+            result.put(fileName, standAloneWriter.toString());
+        }
+    }
 
+    /**
+     * Generates the lazy proxy stub file content for a bundled type.
+     *
+     * @param name            Fully-qualified type name (e.g., {@code com.example.Foo}).
+     * @param nameSpace       The bundle namespace (e.g., {@code com.example}).
+     * @param bundleClassName The flattened bundle class name (e.g., {@code com_example_Foo}).
+     * @param hasFunction     Whether the type has an associated function object in the bundle.
+     * @return The stub file content as a string.
+     */
+    private String generateProxyStub(String name, String nameSpace,
+            String bundleClassName, boolean hasFunction) {
+        String[] parsedName = name.split("\\.");
+        String shortName = parsedName[parsedName.length - 1];
+        PythonCodeWriter stubWriter = new PythonCodeWriter();
+        stubWriter.appendLine("# pylint: disable=unused-import");
+        if (hasFunction) {
+            stubWriter.appendLine("import sys");
+            stubWriter.appendLine("from rune.runtime.func_proxy import create_module_attr_guardian");
+            stubWriter.newLine();
+        }
+        stubWriter.appendLine("def __getattr__(name: str):");
+        stubWriter.indent();
+        stubWriter.appendLine("if name == '" + shortName + "':");
+        stubWriter.indent();
+        stubWriter.appendLine("import " + nameSpace + "._bundle as _b");
+        stubWriter.appendLine("_v = _b." + bundleClassName);
+        stubWriter.appendLine("globals()['" + shortName + "'] = _v");
+        stubWriter.appendLine("return _v");
+        stubWriter.unindent();
+        stubWriter.appendLine("raise AttributeError(name)");
+        stubWriter.unindent();
+        stubWriter.newLine();
+        stubWriter.appendLine("# EOF");
+        return stubWriter.toString();
+    }
+
+    /**
+     * Assembles the final {@code _bundle.py} content from the accumulated writers and adds it to
+     * the result map if there is any bundled content to emit.
+     *
+     * @param nameSpace              The bundle namespace.
+     * @param context                The code generator context.
+     * @param bundleWriter           Writer containing the bundle header (already populated).
+     * @param dataObjectsWriter      Accumulated bundled class bodies.
+     * @param functionsWriter        Accumulated bundled function bodies.
+     * @param annotationUpdateWriter Accumulated Phase 2 annotation updates.
+     * @param rebuildWriter          Accumulated Phase 3 model_rebuild calls.
+     * @param deferredImports        Standalone-class imports to emit after class definitions.
+     * @param result                 Map to receive the assembled bundle file entry.
+     */
+    private void assembleBundleFile(String nameSpace, PythonCodeGeneratorContext context,
+            PythonCodeWriter bundleWriter,
+            PythonCodeWriter dataObjectsWriter, PythonCodeWriter functionsWriter,
+            PythonCodeWriter annotationUpdateWriter, PythonCodeWriter rebuildWriter,
+            List<String> deferredImports,
+            Map<String, CharSequence> result) {
+        bundleWriter.appendBlock(dataObjectsWriter.toString());
+
+        // Deferred standalone-class imports: emitted after all bundled class definitions so
+        // that when those standalone modules are loaded they can safely import bundled types
+        // from this bundle (which are now already defined).
+        if (!deferredImports.isEmpty()) {
+            bundleWriter.newLine();
+            bundleWriter.newLine();
+            bundleWriter.appendLine("# Standalone type imports (deferred to avoid circular import at bundle load time)");
+            for (String imp : deferredImports) {
+                bundleWriter.appendLine(imp);
+            }
+        }
+
+        if (!annotationUpdateWriter.isEmpty()) {
+            bundleWriter.newLine();
+            bundleWriter.newLine();
+            bundleWriter.appendLine("# Phase 2: Delayed Annotation Updates");
+            bundleWriter.appendBlock(annotationUpdateWriter.toString());
+        }
+
+        if (!rebuildWriter.isEmpty()) {
+            bundleWriter.newLine();
+            bundleWriter.newLine();
+            bundleWriter.appendLine("# Phase 3: Rebuild");
+            bundleWriter.appendBlock(rebuildWriter.toString());
+        }
+
+        bundleWriter.appendBlock(functionsWriter.toString());
+
+        if (context.hasNativeFunctions()) {
+            bundleWriter.newLine();
+            bundleWriter.newLine();
+            bundleWriter.appendLine("rune_attempt_register_native_functions(");
+            bundleWriter.indent();
+            bundleWriter.appendLine("function_names=[");
+            bundleWriter.indent();
+            for (String nativeFunctionName : context.getNativeFunctionNames()) {
+                bundleWriter.appendLine("'" + nativeFunctionName + "',");
+            }
+            bundleWriter.unindent();
+            bundleWriter.appendLine("]");
+            bundleWriter.unindent();
+            bundleWriter.appendLine(")");
+        }
+
+        if (context.hasFunctions()) {
+            bundleWriter.newLine();
+            bundleWriter.newLine();
+            bundleWriter.appendLine(
+                "sys.modules[__name__].__class__ = create_module_attr_guardian(sys.modules[__name__].__class__)");
+        }
+
+        boolean hasBundledContent = !dataObjectsWriter.isEmpty()
+                || !functionsWriter.isEmpty()
+                || context.hasNativeFunctions();
+
+        if (hasBundledContent) {
             bundleWriter.newLine();
             bundleWriter.newLine();
             bundleWriter.appendLine("# EOF");
-            result.put(SRC + nameSpace + "/_bundle.py", bundleWriter.toString());
+            result.put(SRC + PythonCodeGeneratorUtil.toFileSystemPath(nameSpace) + "/_bundle.py",
+                    bundleWriter.toString());
         }
-        return result;
+    }
+
+    /** Carries the result of {@link #buildBundleHeader}. */
+    private record BundleHeaderResult(
+            List<String> deferredStandaloneImports,
+            Set<String> standaloneSupertypesOfBundled) {
     }
 
     private List<String> getWorkspaces(List<String> subfolders) {
@@ -391,4 +688,29 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         return result;
     }
 
+    private List<String> sortSccByInheritance(Set<String> scc, PythonCodeGeneratorContext context) {
+        DefaultDirectedGraph<String, DefaultEdge> inheritanceGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
+        for (String node : scc) {
+            inheritanceGraph.addVertex(node);
+        }
+        for (String node : scc) {
+            String parent = context.getSuperTypes().get(node);
+            if (parent != null && scc.contains(parent)) {
+                inheritanceGraph.addEdge(parent, node); // Super -> Child
+            }
+        }
+        TopologicalOrderIterator<String, DefaultEdge> topo = new TopologicalOrderIterator<>(inheritanceGraph);
+        List<String> sorted = new ArrayList<>();
+        while (topo.hasNext()) {
+            sorted.add(topo.next());
+        }
+        return sorted;
+    }
+
+    public static String getBundleClassName(String fullName) {
+        if (fullName == null || !fullName.contains(".")) {
+            return fullName;
+        }
+        return fullName.replace(".", "_");
+    }
 }

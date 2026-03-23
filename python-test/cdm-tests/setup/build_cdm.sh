@@ -98,8 +98,16 @@ python -m pip uninstall -y python-cdm 2>/dev/null
 
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH
-rm python_cdm-*.*.*-py3-none-any.whl
-python -m pip wheel --no-deps --only-binary :all: . || processError
+rm -f python_cdm-*.*.*-py3-none-any.whl
+python -m pip wheel --no-deps --only-binary :all: . || error
+
+echo "***** install CDM Python package"
+CDM_WHL=$(ls python_cdm-*.*.*-py3-none-any.whl 2>/dev/null | head -1)
+if [ -z "$CDM_WHL" ]; then
+    echo "ERROR: cdm wheel was not produced. Stopping."
+    error
+fi
+python -m pip install --no-deps "$CDM_WHL" --force-reinstall || error
 
 echo "***** cleanup"
 

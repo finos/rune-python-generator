@@ -33,13 +33,14 @@ public class PythonTypeAliasTest {
                     val MyNumber (1..1)
                 """);
 
-        String generatedPython = gf.get("src/test_alias/_bundle.py").toString();
-        
+        // Foo is acyclic — standalone file contains the class directly
+        String generatedPython = gf.get("src/test_alias/Foo.py").toString();
+
         // 1. Check field usage (uses the underlying basic type: Decimal)
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
                 "val: Decimal = Field(..., description='')");
-                
+
         // 2. Check that the alias assignment is NOT present
         Assertions.assertFalse(generatedPython.contains("test_alias_MyNumber = Decimal"),
             "Aliased types should be stripped to their underlying types (Java approach)");
@@ -61,15 +62,16 @@ public class PythonTypeAliasTest {
                     val AliasToOrigin (1..1)
                 """);
 
-        String generatedPython = gf.get("src/test_alias/_bundle.py").toString();
-        
-        // 1. Check field usage (uses the underlying object type: test_alias_Origin)
+        // Target is acyclic — standalone file contains the class directly
+        String generatedPython = gf.get("src/test_alias/Target.py").toString();
+
+        // 1. Check field usage (uses the underlying object type with short name: Origin)
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
-                "val: test_alias_Origin = Field(..., description='')");
-                
+                "val: Origin = Field(..., description='')");
+
         // 2. Check that the alias assignment is NOT present
-        Assertions.assertFalse(generatedPython.contains("test_alias_AliasToOrigin = test_alias_Origin"));
+        Assertions.assertFalse(generatedPython.contains("AliasToOrigin"));
     }
 
     @Test
@@ -88,13 +90,14 @@ public class PythonTypeAliasTest {
                         "1"
                 """);
 
-        String funcPython = gf.get("src/com/_bundle.py").toString();
-        
-        // 1. Check function signature (stripped to Decimal)
+        // MyTestFunc is acyclic — standalone function file
+        String funcPython = gf.get("src/com/rosetta/test/model/functions/MyTestFunc.py").toString();
+
+        // 1. Check function signature (stripped to Decimal; standalone function uses simple name)
         testUtils.assertGeneratedContainsExpectedString(
                 funcPython,
-                "def com_rosetta_test_model_functions_MyTestFunc(inParam: Decimal) -> str:");
-                
+                "def MyTestFunc(inParam: Decimal) -> str:");
+
         // 2. Check that it DOES NOT mention the alias name
         Assertions.assertFalse(funcPython.contains("AliasedNum"), "Function output should use stripped type");
     }

@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -41,27 +40,15 @@ public class PythonNameCollisionTest {
                     set result -> attr: inParam
                 """);
 
-        String generatedPython = gf.get("src/test/_bundle.py").toString();
+        // CollidingName type is standalone (self-ref via metadata reference is handled inline).
+        String classPython = gf.get("src/test/collision/CollidingName.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(classPython, "class CollidingName(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(classPython,
+                "other: Annotated[Optional[CollidingName | BaseReference], CollidingName.serializer(), CollidingName.validator(('@ref', '@ref:external'))] = Field(None, description='')");
 
-        // 1. Check class is defined
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "class test_collision_CollidingName(BaseDataClass):");
-
-        // 2. Check function is defined
-        testUtils.assertGeneratedContainsExpectedString(
-                generatedPython,
-                "def test_collision_functions_CollidingName(inParam: int) -> test_collision_CollidingName:");
-
-        // 3. Verify ordering: Class should be independent but function should follow it in the bundle (it doesn't strictly matter now but we keep the check)
-        int classIndex = generatedPython.indexOf("class test_collision_CollidingName");
-        int funcIndex = generatedPython.indexOf("def test_collision_functions_CollidingName");
-        
-        assertTrue(classIndex < funcIndex, "Class must be defined before function");
-        
-        // 4. Verify Phase 2 is between them (or at least after class)
-        int phase2Index = generatedPython.indexOf("# Phase 2: Delayed Annotation Updates");
-        assertTrue(classIndex < phase2Index, "Class must be defined before Phase 2");
-        assertTrue(phase2Index < funcIndex, "Phase 2 must be before function");
+        // CollidingName function is also standalone.
+        String funcPython = gf.get("src/test/collision/functions/CollidingName.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(funcPython,
+                "def CollidingName(inParam: int) -> CollidingName:");
     }
 }
