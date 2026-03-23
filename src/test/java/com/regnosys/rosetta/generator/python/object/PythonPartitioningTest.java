@@ -119,9 +119,9 @@ public class PythonPartitioningTest {
         String bundlePython = gf.get("src/com/_bundle.py").toString();
 
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "class com_rosetta_test_model_CycleA(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(bundlePython, "_FQRTN = 'com.rosetta.test.model.CycleA'");
+        testUtils.assertGeneratedContainsExpectedString(bundlePython, "_FQRTN: ClassVar[str] = 'com.rosetta.test.model.CycleA'");
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "class com_rosetta_test_model_CycleB(BaseDataClass):");
-        testUtils.assertGeneratedContainsExpectedString(bundlePython, "_FQRTN = 'com.rosetta.test.model.CycleB'");
+        testUtils.assertGeneratedContainsExpectedString(bundlePython, "_FQRTN: ClassVar[str] = 'com.rosetta.test.model.CycleB'");
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "# Phase 2: Delayed Annotation Updates");
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "com_rosetta_test_model_CycleA.model_rebuild(force=True)");
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "com_rosetta_test_model_CycleB.model_rebuild(force=True)");

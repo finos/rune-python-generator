@@ -94,11 +94,11 @@ public class PythonCircularDependencyTest {
                 """;
 
         testUtils.assertBundleContainsExpectedString(model, "class com_rosetta_test_model_CircularA(BaseDataClass):");
-        testUtils.assertBundleContainsExpectedString(model, "_FQRTN = 'com.rosetta.test.model.CircularA'");
+        testUtils.assertBundleContainsExpectedString(model, "_FQRTN: ClassVar[str] = 'com.rosetta.test.model.CircularA'");
         testUtils.assertBundleContainsExpectedString(model, "b: None = Field(..., description='')");
 
         testUtils.assertBundleContainsExpectedString(model, "class com_rosetta_test_model_CircularB(BaseDataClass):");
-        testUtils.assertBundleContainsExpectedString(model, "_FQRTN = 'com.rosetta.test.model.CircularB'");
+        testUtils.assertBundleContainsExpectedString(model, "_FQRTN: ClassVar[str] = 'com.rosetta.test.model.CircularB'");
         testUtils.assertBundleContainsExpectedString(model, "a: None = Field(..., description='')");
 
         testUtils.assertBundleContainsExpectedString(model, "# Phase 2: Delayed Annotation Updates");
