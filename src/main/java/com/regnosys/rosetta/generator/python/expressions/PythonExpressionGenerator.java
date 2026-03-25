@@ -27,6 +27,7 @@ import com.regnosys.rosetta.rosetta.expression.ListLiteral;
 import com.regnosys.rosetta.rosetta.expression.MapOperation;
 import com.regnosys.rosetta.rosetta.expression.MaxOperation;
 import com.regnosys.rosetta.rosetta.expression.MinOperation;
+import com.regnosys.rosetta.rosetta.expression.CardinalityModifier;
 import com.regnosys.rosetta.rosetta.expression.ModifiableBinaryOperation;
 import com.regnosys.rosetta.rosetta.expression.Necessity;
 import com.regnosys.rosetta.rosetta.expression.OneOfOperation;
@@ -538,7 +539,7 @@ public final class PythonExpressionGenerator {
                 throw new UnsupportedOperationException(
                         "ModifiableBinaryOperation with expressions with no cardinality");
             }
-            if ("<>".equals(mod.getOperator())) {
+            if (mod.getCardMod() == CardinalityModifier.ANY) {
                 return "rune_any_elements(" + generateExpression(mod.getLeft(), scope) + ", \""
                         + mod.getOperator() + "\", " + generateExpression(mod.getRight(), scope) + ")";
             } else {
