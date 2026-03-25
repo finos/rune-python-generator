@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.switch_operator : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.switch_operator : <"generate Python unit tests from Rosetta.">
 
 type SwitchTestLiteral:
     a int(1..1)

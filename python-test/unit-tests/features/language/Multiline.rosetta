@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.multiline : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.multiline : <"generate Python unit tests from Rosetta.">
 
 type Multiline:
     attr int (1..1) 

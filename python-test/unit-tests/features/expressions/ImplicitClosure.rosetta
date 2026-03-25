@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.implicit_closure
+namespace rosetta_dsl.test.expressions.implicit_closure
 
 type Item:
     val int (1..1)

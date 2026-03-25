@@ -1,6 +1,6 @@
 '''cardinality unit test'''
 import pytest
-from rosetta_dsl.test.semantic.cardinality.CardinalityTest import CardinalityTest
+from rosetta_dsl.test.cardinality.CardinalityTest import CardinalityTest
 from pydantic import ValidationError
 
 

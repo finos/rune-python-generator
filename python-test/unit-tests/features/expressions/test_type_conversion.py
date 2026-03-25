@@ -1,10 +1,10 @@
 """Type conversion unit tests"""
 
 import pytest
-from rosetta_dsl.test.semantic.expressions.type_conversion.functions.StringToInt import (
+from rosetta_dsl.test.expressions.type_conversion.functions.StringToInt import (
     StringToInt,
 )
-from rosetta_dsl.test.semantic.expressions.type_conversion.functions.IntToString import (
+from rosetta_dsl.test.expressions.type_conversion.functions.IntToString import (
     IntToString,
 )
 

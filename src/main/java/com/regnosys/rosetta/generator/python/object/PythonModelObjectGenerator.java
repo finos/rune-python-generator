@@ -85,7 +85,6 @@ public class PythonModelObjectGenerator {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         for (Data rc : rClasses) {
             String className = RuneToPythonMapper.getFullyQualifiedName(rc);
-            LOGGER.info("Processing class: {}", className);
             context.addClassName(className);
             dependencyDAG.addVertex(className);
             

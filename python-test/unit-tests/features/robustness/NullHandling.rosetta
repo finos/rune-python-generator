@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.robustness.null_handling : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.robustness.null_handling : <"generate Python unit tests from Rosetta.">
 
 func IsAbsent:
     inputs:

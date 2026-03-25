@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.model_structure.inheritance : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.model_structure.inheritance : <"generate Python unit tests from Rosetta.">
 
 type Super:
     superAttr string (1..1)

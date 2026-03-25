@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.arithmetic_op : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.arithmetic_op : <"generate Python unit tests from Rosetta.">
 
 type AddTest: <"Test add operation condition">
     aValue int (1..1)

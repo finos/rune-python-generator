@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.max_closure
+namespace rosetta_dsl.test.expressions.max_closure
 
 type MaxItem:
     val1 int (1..1)

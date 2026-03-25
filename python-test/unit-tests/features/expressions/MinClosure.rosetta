@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.min_closure
+namespace rosetta_dsl.test.expressions.min_closure
 
 type MinItem:
     val1 int (1..1)

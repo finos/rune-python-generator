@@ -87,7 +87,7 @@ The following table tracks support for Rosetta/Rune expressions within the Pytho
 | Feature | Handled | Description |
 | :--- | :---: | :--- |
 | **ArithmeticOperation** | ✅ | Binary arithmetic (+, -, *, /) over two expressions. |
-| **AsKeyOperation** | ⚠️ | Partial. Emits `Reference(arg)` (or a list comprehension for multi-valued arguments). `Reference` creation and basic key/ref round-tripping work. The remaining gap is **scoped cross-object reference resolution**: when a function assigns a value `as-key`, downstream functions that hold the resulting `Reference` must be able to resolve it back to the source object by scanning a model-graph scope (e.g. `TradeState`). This resolution lifecycle is not yet wired up in the runtime. |
+| **AsKeyOperation** | ✅ | Emits `Reference(arg)` (or a list comprehension for multi-valued arguments). The DSL restricts `as-key` to attributes annotated with `[metadata reference]`, and the operand is always a keyed complex type (`[metadata key]`) — never a bare primitive. `Reference(obj)` calls `get_or_create_key()` on the live object, which is the correct runtime behaviour. The previously noted "scoped cross-object reference resolution" concern was a misreading: `as-key` is purely assignment-side syntax (store by reference, not by value); the operand is always already in scope, so no graph-walking is needed. |
 | **ChoiceOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
 | **ComparisonOperation** | ✅ | Binary comparisons (e.g., <, <=, >, >=). |
 | **DefaultOperation** | ✅ | Binary fallback (use right when left is missing/empty). |

@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.conditional : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.expressions.conditional : <"generate Python unit tests from Rosetta.">
 
 func ConditionalValue:
     inputs:

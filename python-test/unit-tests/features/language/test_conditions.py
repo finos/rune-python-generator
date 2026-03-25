@@ -1,9 +1,9 @@
 '''cardinality unit test'''
 import pytest
 
-from rosetta_dsl.test.semantic.conditions.UnitType import UnitType
-from rosetta_dsl.test.semantic.conditions.Frequency import Frequency
-from rosetta_dsl.test.semantic.conditions.NonNegativeQuantity import NonNegativeQuantity
+from rosetta_dsl.test.conditions.UnitType import UnitType
+from rosetta_dsl.test.conditions.Frequency import Frequency
+from rosetta_dsl.test.conditions.NonNegativeQuantity import NonNegativeQuantity
 from pydantic import ValidationError
 from rune.runtime.conditions import ConditionViolationError
 

@@ -62,16 +62,26 @@ public class PythonObjectExpressionTest {
 
     /**
      * Test case for as-key operation.
+     * <p>
+     * The operand of {@code as-key} must be a complex type annotated with
+     * {@code [metadata key]} so that {@code Reference(obj)} can call
+     * {@code get_or_create_key()} on it at runtime.  Using a bare
+     * {@code string} input would reach the third branch of the
+     * {@code Reference} constructor and raise {@code ValueError} (no parent).
      */
     @Test
     public void testAsKeyOperation() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                type Source:
+                    [metadata key]
+                    value string (1..1)
+
                 type Bar:
-                    field string (0..1)
+                    field Source (0..1)
                         [metadata reference]
 
                 func TestAsKey:
-                    inputs: val string (1..1)
+                    inputs: val Source (1..1)
                     output: bar Bar (1..1)
                     set bar -> field:
                         val as-key

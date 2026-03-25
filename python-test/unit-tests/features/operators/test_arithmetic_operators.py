@@ -1,7 +1,7 @@
-from rosetta_dsl.test.semantic.arithmetic_op.AddTest import AddTest
-from rosetta_dsl.test.semantic.arithmetic_op.SubtractTest import SubtractTest
-from rosetta_dsl.test.semantic.arithmetic_op.MultiplyTest import MultiplyTest
-from rosetta_dsl.test.semantic.arithmetic_op.DivideTest import DivideTest
+from rosetta_dsl.test.arithmetic_op.AddTest import AddTest
+from rosetta_dsl.test.arithmetic_op.SubtractTest import SubtractTest
+from rosetta_dsl.test.arithmetic_op.MultiplyTest import MultiplyTest
+from rosetta_dsl.test.arithmetic_op.DivideTest import DivideTest
 
 
 def test_add():

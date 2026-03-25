@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.binary_op : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.binary_op : <"generate Python unit tests from Rosetta.">
 
 type EqualsTest: <"Test equals operation condition">
     aValue int (1..1)

@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.comparison_op : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.comparison_op : <"generate Python unit tests from Rosetta.">
 
 func LessThan:
     inputs:

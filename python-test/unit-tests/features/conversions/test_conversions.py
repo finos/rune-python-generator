@@ -5,13 +5,13 @@ from datetime import date
 from zoneinfo import ZoneInfo
 import pytest
 
-from rosetta_dsl.test.semantic.conversions.DateOperatorTest import DateOperatorTest
-from rosetta_dsl.test.semantic.conversions.DateTimeOperatorTest import (
+from rosetta_dsl.test.conversions.DateOperatorTest import DateOperatorTest
+from rosetta_dsl.test.conversions.DateTimeOperatorTest import (
     DateTimeOperatorTest,
 )
-from rosetta_dsl.test.semantic.conversions.IntOperatorTest import IntOperatorTest
-from rosetta_dsl.test.semantic.conversions.TimeOperatorTest import TimeOperatorTest
-from rosetta_dsl.test.semantic.conversions.ZonedDateTimeOperatorTest import (
+from rosetta_dsl.test.conversions.IntOperatorTest import IntOperatorTest
+from rosetta_dsl.test.conversions.TimeOperatorTest import TimeOperatorTest
+from rosetta_dsl.test.conversions.ZonedDateTimeOperatorTest import (
     ZonedDateTimeOperatorTest,
 )
 

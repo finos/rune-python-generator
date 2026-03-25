@@ -1,6 +1,6 @@
 # pylint: disable=missing-function-docstring
 from rune.runtime.utils import rune_resolve_attr
-from rosetta_dsl.test.semantic.PythonNameMangling import PythonNameMangling
+from rosetta_dsl.test.PythonNameMangling import PythonNameMangling
 
 
 def test_python_global_create():

@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.one_of_expression
+namespace rosetta_dsl.test.expressions.one_of_expression
 
 type Message:
     fieldA int (0..1)

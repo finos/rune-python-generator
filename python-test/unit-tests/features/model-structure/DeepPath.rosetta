@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.deep_path : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.deep_path : <"generate Python unit tests from Rosetta.">
 
 type Deep1:
     attr int (1..1)

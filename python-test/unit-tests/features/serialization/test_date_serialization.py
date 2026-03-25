@@ -2,7 +2,8 @@
 import datetime
 import pytest
 
-from rosetta_dsl.test.model.date_serialization.DateSerializatonTest import DateSerializatonTest
+
+from rosetta_dsl.test.date_serialization.DateSerializatonTest import DateSerializatonTest
 from rune.runtime.base_data_class import BaseDataClass
 from rune.runtime.metadata import DateTimeWithMeta
 

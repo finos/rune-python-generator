@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.collections
+namespace rosetta_dsl.test.expressions.collections
 
 type Item:
     val int (0..1)

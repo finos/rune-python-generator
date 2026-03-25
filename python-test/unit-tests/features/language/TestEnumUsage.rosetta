@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.test_enum_usage : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.test_enum_usage : <"generate Python unit tests from Rosetta.">
 
 enum TrafficLight:
     Red

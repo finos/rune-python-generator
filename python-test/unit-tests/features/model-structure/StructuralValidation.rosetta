@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.model_structure.structural_validation : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.model_structure.structural_validation : <"generate Python unit tests from Rosetta.">
 
 type OneOfTest:
     attr1 string (0..1)

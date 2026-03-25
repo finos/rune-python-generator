@@ -1,6 +1,6 @@
 import pytest
-from rosetta_dsl.test.semantic.logical_op.AndOperatorTest import AndOperatorTest
-from rosetta_dsl.test.semantic.logical_op.OrOperatorTest import OrOperatorTest
+from rosetta_dsl.test.logical_op.AndOperatorTest import AndOperatorTest
+from rosetta_dsl.test.logical_op.OrOperatorTest import OrOperatorTest
 
 def test_and_operator():
     logicalTest = AndOperatorTest(aValue=4, bValue=4, cValue=4)

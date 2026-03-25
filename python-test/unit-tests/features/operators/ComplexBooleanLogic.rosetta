@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.operators.complex_boolean_logic : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.operators.complex_boolean_logic : <"generate Python unit tests from Rosetta.">
 
 func NotOp: <"Tests negation by equality">
     inputs:

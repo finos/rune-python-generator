@@ -2,26 +2,26 @@
 
 import pytest
 
-from rosetta_dsl.test.semantic.collections.CountItem import CountItem
-from rosetta_dsl.test.semantic.collections.CountContainer import CountContainer
-from rosetta_dsl.test.semantic.collections.CountTest import CountTest
-from rosetta_dsl.test.semantic.collections.SumTest import SumTest
-from rosetta_dsl.test.semantic.collections.MinTest import MinTest
-from rosetta_dsl.test.semantic.collections.MaxTest import MaxTest
-from rosetta_dsl.test.semantic.collections.LastTest import LastTest
-from rosetta_dsl.test.semantic.collections.SortTest import SortTest
-from rosetta_dsl.test.semantic.collections.functions.JoinTestFunction import (
+from rosetta_dsl.test.collections.CountItem import CountItem
+from rosetta_dsl.test.collections.CountContainer import CountContainer
+from rosetta_dsl.test.collections.CountTest import CountTest
+from rosetta_dsl.test.collections.SumTest import SumTest
+from rosetta_dsl.test.collections.MinTest import MinTest
+from rosetta_dsl.test.collections.MaxTest import MaxTest
+from rosetta_dsl.test.collections.LastTest import LastTest
+from rosetta_dsl.test.collections.SortTest import SortTest
+from rosetta_dsl.test.collections.functions.JoinTestFunction import (
     JoinTestFunction,
 )
-from rosetta_dsl.test.semantic.collections.FlattenItem import FlattenItem
-from rosetta_dsl.test.semantic.collections.FlattenContainer import FlattenContainer
-from rosetta_dsl.test.semantic.collections.functions.FlattenTestFunction import (
+from rosetta_dsl.test.collections.FlattenItem import FlattenItem
+from rosetta_dsl.test.collections.FlattenContainer import FlattenContainer
+from rosetta_dsl.test.collections.functions.FlattenTestFunction import (
     FlattenTestFunction,
 )
-from rosetta_dsl.test.semantic.collections.FlattenBar import FlattenBar
-from rosetta_dsl.test.semantic.collections.FlattenFoo import FlattenFoo
-from rosetta_dsl.test.semantic.collections.FilterItem import FilterItem
-from rosetta_dsl.test.semantic.collections.FilterTest import FilterTest
+from rosetta_dsl.test.collections.FlattenBar import FlattenBar
+from rosetta_dsl.test.collections.FlattenFoo import FlattenFoo
+from rosetta_dsl.test.collections.FilterItem import FilterItem
+from rosetta_dsl.test.collections.FilterTest import FilterTest
 
 
 def test_count_passes():

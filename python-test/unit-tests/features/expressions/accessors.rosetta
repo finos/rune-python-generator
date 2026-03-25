@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.accessors
+namespace rosetta_dsl.test.expressions.accessors
 
 func TestFirst:
     inputs:

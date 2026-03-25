@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.collections.extensions : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.collections.extensions : <"generate Python unit tests from Rosetta.">
 
 func ListFirst:
     inputs:

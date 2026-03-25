@@ -5,8 +5,8 @@ Tests that enum values can be referenced via qualified path names in conditions
 '''
 import pytest
 
-from rosetta_dsl.test.semantic.enum_qualified_path_name.SimpleEnum import SimpleEnum
-from rosetta_dsl.test.semantic.enum_qualified_path_name.EnumTestType import EnumTestType
+from rosetta_dsl.test.enum_qualified_path_name.SimpleEnum import SimpleEnum
+from rosetta_dsl.test.enum_qualified_path_name.EnumTestType import EnumTestType
 from rune.runtime.conditions import ConditionViolationError
 
 

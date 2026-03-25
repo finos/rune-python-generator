@@ -1,29 +1,29 @@
 """Accessors expression unit tests"""
 
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestFirst import TestFirst
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestLast import TestLast
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestFirstFiltered import (
+from rosetta_dsl.test.expressions.accessors.functions.TestFirst import TestFirst
+from rosetta_dsl.test.expressions.accessors.functions.TestLast import TestLast
+from rosetta_dsl.test.expressions.accessors.functions.TestFirstFiltered import (
     TestFirstFiltered,
 )
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestLastFiltered import (
+from rosetta_dsl.test.expressions.accessors.functions.TestLastFiltered import (
     TestLastFiltered,
 )
-from rosetta_dsl.test.semantic.expressions.accessors.Item import Item
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestMin import TestMin
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestMax import TestMax
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestSum import TestSum
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestCount import TestCount
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestJoin import TestJoin
-from rosetta_dsl.test.semantic.expressions.accessors.NestedItem import NestedItem
-from rosetta_dsl.test.semantic.expressions.accessors.ItemList import ItemList
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestFlatten import TestFlatten
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestDistinct import TestDistinct
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestSort import TestSort
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestFilter import TestFilter
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestOnlyElement import (
+from rosetta_dsl.test.expressions.accessors.Item import Item
+from rosetta_dsl.test.expressions.accessors.functions.TestMin import TestMin
+from rosetta_dsl.test.expressions.accessors.functions.TestMax import TestMax
+from rosetta_dsl.test.expressions.accessors.functions.TestSum import TestSum
+from rosetta_dsl.test.expressions.accessors.functions.TestCount import TestCount
+from rosetta_dsl.test.expressions.accessors.functions.TestJoin import TestJoin
+from rosetta_dsl.test.expressions.accessors.NestedItem import NestedItem
+from rosetta_dsl.test.expressions.accessors.ItemList import ItemList
+from rosetta_dsl.test.expressions.accessors.functions.TestFlatten import TestFlatten
+from rosetta_dsl.test.expressions.accessors.functions.TestDistinct import TestDistinct
+from rosetta_dsl.test.expressions.accessors.functions.TestSort import TestSort
+from rosetta_dsl.test.expressions.accessors.functions.TestFilter import TestFilter
+from rosetta_dsl.test.expressions.accessors.functions.TestOnlyElement import (
     TestOnlyElement,
 )
-from rosetta_dsl.test.semantic.expressions.accessors.functions.TestExtractDeep import (
+from rosetta_dsl.test.expressions.accessors.functions.TestExtractDeep import (
     TestExtractDeep,
 )
 

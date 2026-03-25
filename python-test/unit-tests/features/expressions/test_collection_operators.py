@@ -1,18 +1,18 @@
 """Collection operators unit tests demonstrating current failures (null handling gaps)"""
 
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestSum import TestSum
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestDistinct import TestDistinct
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestReverse import TestReverse
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestFlatten import TestFlatten
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestMax import TestMax
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestMin import TestMin
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestSort import TestSort
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestCount import TestCount
-from rosetta_dsl.test.semantic.expressions.collections.functions.TestOnlyElement import (
+from rosetta_dsl.test.expressions.collections.functions.TestSum import TestSum
+from rosetta_dsl.test.expressions.collections.functions.TestDistinct import TestDistinct
+from rosetta_dsl.test.expressions.collections.functions.TestReverse import TestReverse
+from rosetta_dsl.test.expressions.collections.functions.TestFlatten import TestFlatten
+from rosetta_dsl.test.expressions.collections.functions.TestMax import TestMax
+from rosetta_dsl.test.expressions.collections.functions.TestMin import TestMin
+from rosetta_dsl.test.expressions.collections.functions.TestSort import TestSort
+from rosetta_dsl.test.expressions.collections.functions.TestCount import TestCount
+from rosetta_dsl.test.expressions.collections.functions.TestOnlyElement import (
     TestOnlyElement,
 )
-from rosetta_dsl.test.semantic.expressions.collections.Item import Item
-from rosetta_dsl.test.semantic.expressions.collections.Nested import Nested
+from rosetta_dsl.test.expressions.collections.Item import Item
+from rosetta_dsl.test.expressions.collections.Nested import Nested
 
 
 def test_sum_with_nulls():

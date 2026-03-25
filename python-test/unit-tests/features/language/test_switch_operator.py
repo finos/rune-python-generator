@@ -6,12 +6,12 @@ expression inside a function, see expressions/test_switch_op.py.
 '''
 import pytest
 
-from rosetta_dsl.test.semantic.switch_operator.SwitchTestLiteral import SwitchTestLiteral
-from rosetta_dsl.test.semantic.switch_operator.SwitchTestChoice import SwitchTestChoice
-from rosetta_dsl.test.semantic.switch_operator.CollateralCriteria import CollateralCriteria
-from rosetta_dsl.test.semantic.switch_operator.AllCriteria import AllCriteria
-from rosetta_dsl.test.semantic.switch_operator.SwitchTestEnum import SwitchTestEnum
-from rosetta_dsl.test.semantic.switch_operator.DayCountFractionEnum import DayCountFractionEnum
+from rosetta_dsl.test.switch_operator.SwitchTestLiteral import SwitchTestLiteral
+from rosetta_dsl.test.switch_operator.SwitchTestChoice import SwitchTestChoice
+from rosetta_dsl.test.switch_operator.CollateralCriteria import CollateralCriteria
+from rosetta_dsl.test.switch_operator.AllCriteria import AllCriteria
+from rosetta_dsl.test.switch_operator.SwitchTestEnum import SwitchTestEnum
+from rosetta_dsl.test.switch_operator.DayCountFractionEnum import DayCountFractionEnum
 
 def test_switch_passes():
     switch_test= SwitchTestLiteral(a=2)

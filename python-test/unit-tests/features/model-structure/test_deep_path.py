@@ -1,12 +1,12 @@
 '''deep path unit tests'''
 import pytest
 
-from rosetta_dsl.test.semantic.deep_path.Deep1 import Deep1
-from rosetta_dsl.test.semantic.deep_path.Bar1 import Bar1
-from rosetta_dsl.test.semantic.deep_path.Bar2 import Bar2
-from rosetta_dsl.test.semantic.deep_path.Bar3 import Bar3
-from rosetta_dsl.test.semantic.deep_path.Bar4 import Bar4
-from rosetta_dsl.test.semantic.deep_path.Foo import Foo
+from rosetta_dsl.test.deep_path.Deep1 import Deep1
+from rosetta_dsl.test.deep_path.Bar1 import Bar1
+from rosetta_dsl.test.deep_path.Bar2 import Bar2
+from rosetta_dsl.test.deep_path.Bar3 import Bar3
+from rosetta_dsl.test.deep_path.Bar4 import Bar4
+from rosetta_dsl.test.deep_path.Foo import Foo
 
 def create_foo_from_bar1 (attr: int):
     deep1 = Deep1(attr = attr)

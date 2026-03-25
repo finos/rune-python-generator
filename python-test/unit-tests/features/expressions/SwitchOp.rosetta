@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.switch_op
+namespace rosetta_dsl.test.expressions.switch_op
 
 func SwitchTest: <"Test switch operation">
     inputs:

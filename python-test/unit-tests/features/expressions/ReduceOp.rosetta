@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.expressions.reduce_op
+namespace rosetta_dsl.test.expressions.reduce_op
 
 func SumList:
     inputs:

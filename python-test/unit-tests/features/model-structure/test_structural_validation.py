@@ -2,13 +2,13 @@
 
 import pytest
 from rune.runtime.conditions import ConditionViolationError
-from rosetta_dsl.test.semantic.model_structure.structural_validation.OneOfTest import (
+from rosetta_dsl.test.model_structure.structural_validation.OneOfTest import (
     OneOfTest,
 )
-from rosetta_dsl.test.semantic.model_structure.structural_validation.RequiredChoiceTest import (
+from rosetta_dsl.test.model_structure.structural_validation.RequiredChoiceTest import (
     RequiredChoiceTest,
 )
-from rosetta_dsl.test.semantic.model_structure.structural_validation.OptionalChoiceTest import (
+from rosetta_dsl.test.model_structure.structural_validation.OptionalChoiceTest import (
     OptionalChoiceTest,
 )
 

@@ -1,7 +1,7 @@
-from rosetta_dsl.test.semantic.binary_op.ContainsTest import ContainsTest
-from rosetta_dsl.test.semantic.binary_op.DisjointTest import DisjointTest
-from rosetta_dsl.test.semantic.binary_op.EqualsTest import EqualsTest
-from rosetta_dsl.test.semantic.binary_op.NotEqualsTest import NotEqualsTest
+from rosetta_dsl.test.binary_op.ContainsTest import ContainsTest
+from rosetta_dsl.test.binary_op.DisjointTest import DisjointTest
+from rosetta_dsl.test.binary_op.EqualsTest import EqualsTest
+from rosetta_dsl.test.binary_op.NotEqualsTest import NotEqualsTest
 
 
 def test_equals():

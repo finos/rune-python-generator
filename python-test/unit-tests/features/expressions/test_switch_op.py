@@ -5,7 +5,7 @@ on the input.  For switch used as a condition guard inside a type definition,
 see language/test_switch_operator.py.
 """
 
-from rosetta_dsl.test.semantic.expressions.switch_op.functions.SwitchTest import (
+from rosetta_dsl.test.expressions.switch_op.functions.SwitchTest import (
     SwitchTest,
 )
 

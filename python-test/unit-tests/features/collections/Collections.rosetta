@@ -1,4 +1,4 @@
-namespace rosetta_dsl.test.semantic.collections : <"generate Python unit tests from Rosetta.">
+namespace rosetta_dsl.test.collections : <"generate Python unit tests from Rosetta.">
 
 type CountItem:
     name string (0..1)
