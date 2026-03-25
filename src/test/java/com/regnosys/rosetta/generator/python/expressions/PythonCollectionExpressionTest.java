@@ -463,32 +463,92 @@ public class PythonCollectionExpressionTest {
                         then ["B", "C", "D"] any = field2
                 """,
                 """
-                        class Test(BaseDataClass):
-                            \"""
-                            Test any operation condition
-                            \"""
-                            field1: str = Field(..., description='Test string field1')
-                            \"""
-                            Test string field1
-                            \"""
-                            field2: str = Field(..., description='Test boolean field2')
-                            \"""
-                            Test boolean field2
-                            \"""
+                class Test(BaseDataClass):
+                    \"""
+                    Test any operation condition
+                    \"""
+                    field1: str = Field(..., description='Test string field1')
+                    \"""
+                    Test string field1
+                    \"""
+                    field2: str = Field(..., description='Test boolean field2')
+                    \"""
+                    Test boolean field2
+                    \"""
 
-                            @rune_condition
-                            def condition_0_TestCond(self):
-                                \"""
-                                Test condition
-                                \"""
-                                item = self
-                                def _then_fn0():
-                                    return rune_all_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2"))
+                    @rune_condition
+                    def condition_0_TestCond(self):
+                        \"""
+                        Test condition
+                        \"""
+                        item = self
+                        def _then_fn0():
+                            return rune_any_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2"))
 
-                                def _else_fn0():
-                                    return True
+                        def _else_fn0():
+                            return True
 
-                                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field1"), "=", "A"), _then_fn0, _else_fn0)""");
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field1"), "=", "A"), _then_fn0, _else_fn0)""");
+    }
+
+    /**
+     * Test case for any <> condition.
+     */
+    @Test
+    public void testGenerateAnyNotEqualsCondition() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Test: <"Test any <> condition">
+                    field1 string (1..1) <"Test string field1">
+                    field2 string (1..1) <"Test string field2">
+                    condition TestCond: <"Test condition">
+                        if field1="A"
+                        then ["B", "C", "D"] any <> field2
+                """,
+                """
+                    @rune_condition
+                    def condition_0_TestCond(self):
+                        \"""
+                        Test condition
+                        \"""
+                        item = self
+                        def _then_fn0():
+                            return rune_any_elements(["B", "C", "D"], "<>", rune_resolve_attr(self, "field2"))
+
+                        def _else_fn0():
+                            return True
+
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field1"), "=", "A"), _then_fn0, _else_fn0)
+                """);
+    }
+
+    /**
+     * Test case for all <> condition.
+     */
+    @Test
+    public void testGenerateAllNotEqualsCondition() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Test: <"Test all <> condition">
+                    field1 string (1..1) <"Test string field1">
+                    field2 string (1..1) <"Test string field2">
+                    condition TestCond: <"Test condition">
+                        if field1="A"
+                        then ["B", "C", "D"] all <> field2
+                """,
+                """
+                    @rune_condition
+                    def condition_0_TestCond(self):
+                        \"""
+                        Test condition
+                        \"""
+                        item = self
+                        def _then_fn0():
+                            return (not rune_any_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2")))
+
+                        def _else_fn0():
+                            return True
+
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field1"), "=", "A"), _then_fn0, _else_fn0)
+                """);
     }
 
     // -------------------------------------------------------------------------
@@ -648,7 +708,7 @@ public class PythonCollectionExpressionTest {
                                     return True
 
                                 def _then_fn0():
-                                    return if_cond_fn((rune_all_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2")) and rune_disjoint(["A"], rune_resolve_attr(self, "field1"))), _then_fn1, _else_fn1)
+                                    return if_cond_fn((rune_any_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2")) and rune_disjoint(["A"], rune_resolve_attr(self, "field1"))), _then_fn1, _else_fn1)
 
                                 def _else_fn0():
                                     return True

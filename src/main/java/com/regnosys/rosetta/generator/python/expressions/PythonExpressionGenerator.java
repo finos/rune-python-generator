@@ -539,12 +539,18 @@ public final class PythonExpressionGenerator {
                 throw new UnsupportedOperationException(
                         "ModifiableBinaryOperation with expressions with no cardinality");
             }
+            String left = generateExpression(mod.getLeft(), scope);
+            String right = generateExpression(mod.getRight(), scope);
+            String op = mod.getOperator();
             if (mod.getCardMod() == CardinalityModifier.ANY) {
-                return "rune_any_elements(" + generateExpression(mod.getLeft(), scope) + ", \""
-                        + mod.getOperator() + "\", " + generateExpression(mod.getRight(), scope) + ")";
+                // any <> y  ≡  any(el != y for el in x)  — pass <> directly, cross-product handles scalar rhs
+                return "rune_any_elements(" + left + ", \"" + op + "\", " + right + ")";
             } else {
-                return "rune_all_elements(" + generateExpression(mod.getLeft(), scope) + ", \""
-                        + mod.getOperator() + "\", " + generateExpression(mod.getRight(), scope) + ")";
+                // all <> y  ≡  not any(el == y for el in x)  — avoid rune_all_elements which uses pairwise zip
+                if ("<>".equals(op)) {
+                    return "(not rune_any_elements(" + left + ", \"=\", " + right + "))";
+                }
+                return "rune_all_elements(" + left + ", \"" + op + "\", " + right + ")";
             }
         } else {
             return switch (expr.getOperator()) {

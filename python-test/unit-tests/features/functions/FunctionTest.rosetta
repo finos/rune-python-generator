@@ -265,5 +265,32 @@ func TestAddAttributeOnObject:
         vals int (1..*)
     output:
         result ListAttributeObject (1..1)
-    
+
     add result -> values: vals
+
+func TestAnyEquals:
+    inputs:
+        items string (0..*)
+        value string (1..1)
+    output:
+        result boolean (1..1)
+    set result:
+        items any = value
+
+func TestAnyNotEquals:
+    inputs:
+        items string (0..*)
+        value string (1..1)
+    output:
+        result boolean (1..1)
+    set result:
+        items any <> value
+
+func TestAllNotEquals:
+    inputs:
+        items string (0..*)
+        value string (1..1)
+    output:
+        result boolean (1..1)
+    set result:
+        items all <> value
