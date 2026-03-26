@@ -1,0 +1,28 @@
+namespace rosetta_dsl.test.expressions.cardinalitynotequals
+
+func TestAnyNotEqualsList:
+    inputs:
+        x string (0..*)
+        y string (0..*)
+    output:
+        result boolean (1..1)
+    set result:
+        x any <> y
+
+func TestAllNotEqualsList:
+    inputs:
+        x string (0..*)
+        y string (0..*)
+    output:
+        result boolean (1..1)
+    set result:
+        x all <> y
+
+func TestNotEqualsList:
+    inputs:
+        x string (0..*)
+        y string (0..*)
+    output:
+        result boolean (1..1)
+    set result:
+        x <> y

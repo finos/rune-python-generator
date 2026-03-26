@@ -535,21 +535,27 @@ public final class PythonExpressionGenerator {
     private String generateBinaryExpression(RosettaBinaryOperation expr, PythonExpressionScope scope) {
 
         if (expr instanceof ModifiableBinaryOperation mod) {
-            if (mod.getCardMod() == null) {
-                throw new UnsupportedOperationException(
-                        "ModifiableBinaryOperation with expressions with no cardinality");
-            }
             String left = generateExpression(mod.getLeft(), scope);
             String right = generateExpression(mod.getRight(), scope);
             String op = mod.getOperator();
             if (mod.getCardMod() == CardinalityModifier.ANY) {
-                // any <> y  ≡  any(el != y for el in x)  — pass <> directly, cross-product handles scalar rhs
+                // any <op> y  — cross-product, handles scalar or list rhs
                 return "rune_any_elements(" + left + ", \"" + op + "\", " + right + ")";
-            } else {
-                // all <> y  ≡  not any(el == y for el in x)  — avoid rune_all_elements which uses pairwise zip
-                if ("<>".equals(op)) {
+            } else if (mod.getCardMod() == CardinalityModifier.ALL) {
+                if ("<>".equals(op) && !cardinalityProvider.isMulti(mod.getRight())) {
+                    // all <> scalar  ≡  not any(el == y for el in x)
+                    // De Morgan avoids rune_all_elements pairwise zip which fails when len(x) != len([y])
                     return "(not rune_any_elements(" + left + ", \"=\", " + right + "))";
                 }
+                // all <op> list  — rune_all_elements pairwise is correct when both sides are lists
+                return "rune_all_elements(" + left + ", \"" + op + "\", " + right + ")";
+            } else {
+                // no cardinality modifier — plain list equality/inequality
+                if ("<>".equals(op)) {
+                    // x <> y  ≡  not (x and y are pairwise equal)
+                    return "(not rune_all_elements(" + left + ", \"=\", " + right + "))";
+                }
+                // x = y  — pairwise equality
                 return "rune_all_elements(" + left + ", \"" + op + "\", " + right + ")";
             }
         } else {

@@ -551,6 +551,76 @@ public class PythonCollectionExpressionTest {
                 """);
     }
 
+    /**
+     * Test case for any <> with list rhs — cross-product, rune_any_elements used directly.
+     */
+    @Test
+    public void testGenerateAnyNotEqualsListRhsCondition() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Test: <"Test any <> list rhs condition">
+                    field1 string (1..*) <"Test string list field1">
+                    field2 string (1..*) <"Test string list field2">
+                    condition TestCond: <"Test condition">
+                        field1 any <> field2
+                """,
+                """
+                    @rune_condition
+                    def condition_0_TestCond(self):
+                        \"""
+                        Test condition
+                        \"""
+                        item = self
+                        return rune_any_elements(rune_resolve_attr(self, "field1"), "<>", rune_resolve_attr(self, "field2"))
+                """);
+    }
+
+    /**
+     * Test case for all <> with list rhs — pairwise rune_all_elements, no De Morgan needed.
+     */
+    @Test
+    public void testGenerateAllNotEqualsListRhsCondition() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Test: <"Test all <> list rhs condition">
+                    field1 string (1..*) <"Test string list field1">
+                    field2 string (1..*) <"Test string list field2">
+                    condition TestCond: <"Test condition">
+                        field1 all <> field2
+                """,
+                """
+                    @rune_condition
+                    def condition_0_TestCond(self):
+                        \"""
+                        Test condition
+                        \"""
+                        item = self
+                        return rune_all_elements(rune_resolve_attr(self, "field1"), "<>", rune_resolve_attr(self, "field2"))
+                """);
+    }
+
+    /**
+     * Test case for plain <> (no cardinality modifier) with two list operands.
+     * Must emit (not rune_all_elements(..., "=", ...)) — true when lengths differ or any element differs.
+     */
+    @Test
+    public void testGeneratePlainNotEqualsListRhsCondition() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Test: <"Test plain <> list rhs condition">
+                    field1 string (1..*) <"Test string list field1">
+                    field2 string (1..*) <"Test string list field2">
+                    condition TestCond: <"Test condition">
+                        field1 <> field2
+                """,
+                """
+                    @rune_condition
+                    def condition_0_TestCond(self):
+                        \"""
+                        Test condition
+                        \"""
+                        item = self
+                        return (not rune_all_elements(rune_resolve_attr(self, "field1"), "=", rune_resolve_attr(self, "field2")))
+                """);
+    }
+
     // -------------------------------------------------------------------------
     // From RosettaContainsOperationTest
     // -------------------------------------------------------------------------

@@ -80,61 +80,6 @@ The following section tracks implementation status and requirements for regulato
 - The generator must emit a function that takes the input object and returns a `Boolean` value.
 - It must translate the declarative conditional logic into standard boolean execution flows. The output is ultimately called by the `report` orchestrator to determine if the reporting pipeline should proceed.
 
-## Rosetta Expression Support
-
-The following table tracks support for Rosetta/Rune expressions within the Python code generator.
-
-| Feature | Handled | Description |
-| :--- | :---: | :--- |
-| **ArithmeticOperation** | ✅ | Binary arithmetic (+, -, *, /) over two expressions. |
-| **AsKeyOperation** | ✅ | Emits `Reference(arg)` (or a list comprehension for multi-valued arguments). The DSL restricts `as-key` to attributes annotated with `[metadata reference]`, and the operand is always a keyed complex type (`[metadata key]`) — never a bare primitive. `Reference(obj)` calls `get_or_create_key()` on the live object, which is the correct runtime behaviour. The previously noted "scoped cross-object reference resolution" concern was a misreading: `as-key` is purely assignment-side syntax (store by reference, not by value); the operand is always already in scope, so no graph-walking is needed. |
-| **ChoiceOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
-| **ComparisonOperation** | ✅ | Binary comparisons (e.g., <, <=, >, >=). |
-| **DefaultOperation** | ✅ | Binary fallback (use right when left is missing/empty). |
-| **DistinctOperation** | ✅ | Unary list operation removing duplicates. Filters nulls and propagates `None`. |
-| **EqualityOperation** | ✅ | Binary equality/inequality (==, !=). |
-| **FilterOperation** | ✅ | Filter elements from a list. Supported for both explicit and implicit closure parameters. |
-| **FirstOperation** | ✅ | Returns the first non-null element. Returns `None` for empty or null inputs. |
-| **FlattenOperation** | ✅ | Unary list operation flattening nested collections. Filters nulls and handles `COWList`. |
-| **JoinOperation** | ✅ | Binary operation joining strings (via `str.join`). |
-| **LastOperation** | ✅ | Returns the last non-null element. Returns `None` for empty or null inputs. |
-| **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). |
-| **LogicalOperation** | ✅ | Binary logical operations (`and`, `or`). |
-| **MapOperation** | ✅ | Projection or mapping of values (via `extract` keyword). Supported for both explicit and implicit parameters. |
-| **MaxOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
-| **MinOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
-| **OneOfOperation** | ✅ | Supported both in type conditions and as a general expression in functions (Dynamic attribute detection). |
-| **ReverseOperation** | ✅ | Unary list operation reversing element order. Filters nulls and propagates `None`. |
-| **SortOperation** | ✅ | Unary list operation sorting elements. Filters nulls and propagates `None`. |
-| **SumOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
-| **SwitchOperation** | ✅ | Conditional selection among cases (via helper functions). |
-| **ThenOperation** | ✅ | Unary functional pipeline step (via lambda). |
-| **ToDateOperation** | ✅ | Conversion/Parse to date. |
-| **ToDateTimeOperation** | ✅ | Conversion/Parse to date-time. |
-| **ToEnumOperation** | ✅ | Conversion/Parse to an enum. |
-| **ToIntOperation** | ✅ | Conversion to integer. |
-| **ToNumberOperation** | ✅ | Conversion to number (Decimal). Emits `Decimal(...)`. `Decimal` is already in the standard file header so no extra import is required. |
-| **ToStringOperation** | ✅ | Conversion to string (via `rune_str`). |
-| **ToTimeOperation** | ✅ | Conversion/Parse to time. |
-| **ToZonedDateTimeOperation** | ✅ | Conversion/Parse to zoned date-time. |
-| **AbsentOperation** | ✅ | Unary "is absent" assertion (via `not rune_attr_exists`). |
-| **ConditionalExpression** | ✅ | If-then-else logic (via `if_cond_fn` and helper functions). |
-| **ConstructorExpression** | ✅ | Constructs an object or dict from key-value pairs. |
-| **ContainsExpression** | ✅ | Binary "contains" assertion (via `rune_contains`). |
-| **CountExpression** | ✅ | Counts list size (via `rune_count`). |
-| **DeepFeatureCall** | ✅ | Nested attribute access (via `rune_resolve_deep_attr`). |
-| **DisjointOperation** | ✅ | Binary "no common elements" assertion (via `rune_disjoint`). |
-| **EnumValueReference** | ✅ | Reference to an enumeration value. |
-| **ExistsExpression** | ✅ | Unary "exists" assertion (supports `single`/`multiple` modifiers). |
-| **FeatureCall** | ✅ | Attribute access (via `rune_resolve_attr`). |
-| **ImplicitVariable** | ✅ | Reference to the implicit variable `item`. |
-| **LiteralValues** | ✅ | Support for Boolean, Int, Number, String literals. |
-| **OnlyElement** | ✅ | Unary list operation (via `rune_get_only_element`). |
-| **OnlyExistsExpression** | ✅ | Checks that only the listed expressions exist. |
-| **SymbolReference** | ✅ | References to Data types, Enums, Attributes, and shortcuts. |
-| **WithMetaOperation** | ✅ | Wraps a value with metadata (via `rune_with_meta`). |
-| **ReduceOperation** | ✅ | List reduction. Supported for both explicit and implicit closure parameters (with fallback naming). |
-
 ## Known Validation and Runtime Gaps
 
 The following are known gaps in validation and runtime behaviour that require work in both the generator and the [rune-python-runtime](https://github.com/finos/rune-python-runtime).
@@ -186,13 +131,57 @@ type CashTransfer:
 
 ---
 
-### Outstanding Expression Gaps
+## Rosetta Expression Support
 
-1. **`as-key` — Scoped Reference Resolution**: The generator correctly emits `Reference(arg)` and basic key/ref round-tripping works (see `test_key_ref.py`). The remaining gap is in the runtime: when a function produces a new object via `as-key` and stores a `Reference` to it, downstream functions that hold that `Reference` must be able to resolve it back to the live object by walking a model-graph scope (in CDM, `TradeState` is the root scope). This in-memory cross-scope resolution is not yet wired up — `UnresolvedReference` handles the deserialization case only.
+All Rosetta/Rune expression types are fully supported by the Python code generator. The table below is provided as a reference for contributors.
 
-2. **List Comparison Semantics**:
-   Several implementation details in `rune-python-runtime` violate the formal comparison rules:
-   - **The `_ntoz` (None to Zero) Violation**: The runtime converts `None` to `0` for comparisons.
-      - **Rune Expectation (Heading: [`Comparison Operator and Null`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L990))**: `null = any value` must be `false` (including `null = null`). Python currently returns `true` for `None == None` and `None == 0`.
-   - **Pairwise Inequality (`<>`)**: The generator currently calls `rune_any_elements` for list inequality, which performs a **segment-wise Cartesian product** check (`any(x != y for ...)`).
-      - **Rune Expectation (Heading: [`List Comparison`](https://github.com/finos/rune-dsl/blob/master/docs/rune-modelling-component.md#L1382))**: `<>` must return `true` if lists have different lengths OR if any pairwise items differ. `rune_any_elements` ignores list length and relative order entirely.
+| Feature | Handled | Description |
+| :--- | :---: | :--- |
+| **ArithmeticOperation** | ✅ | Binary arithmetic (+, -, *, /) over two expressions. |
+| **AsKeyOperation** | ✅ | Emits `Reference(arg)` (or a list comprehension for multi-valued arguments). The DSL restricts `as-key` to attributes annotated with `[metadata reference]`, and the operand is always a keyed complex type (`[metadata key]`) — never a bare primitive. `Reference(obj)` calls `get_or_create_key()` on the live object, which is the correct runtime behaviour. `as-key` is purely assignment-side syntax (store by reference, not by value); the operand is always already in scope, so no graph-walking is needed. |
+| **ChoiceOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
+| **ComparisonOperation** | ✅ | Binary comparisons (e.g., <, <=, >, >=). |
+| **DefaultOperation** | ✅ | Binary fallback (use right when left is missing/empty). |
+| **DistinctOperation** | ✅ | Unary list operation removing duplicates. Filters nulls and propagates `None`. |
+| **EqualityOperation** | ✅ | Binary equality/inequality (==, !=). Supports `any` and `all` cardinality modifiers for list operands. |
+| **FilterOperation** | ✅ | Filter elements from a list. Supported for both explicit and implicit closure parameters. |
+| **FirstOperation** | ✅ | Returns the first non-null element. Returns `None` for empty or null inputs. |
+| **FlattenOperation** | ✅ | Unary list operation flattening nested collections. Filters nulls and handles `COWList`. |
+| **JoinOperation** | ✅ | Binary operation joining strings (via `str.join`). |
+| **LastOperation** | ✅ | Returns the last non-null element. Returns `None` for empty or null inputs. |
+| **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). |
+| **LogicalOperation** | ✅ | Binary logical operations (`and`, `or`). |
+| **MapOperation** | ✅ | Projection or mapping of values (via `extract` keyword). Supported for both explicit and implicit parameters. |
+| **MaxOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
+| **MinOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
+| **OneOfOperation** | ✅ | Supported both in type conditions and as a general expression in functions (Dynamic attribute detection). |
+| **ReverseOperation** | ✅ | Unary list operation reversing element order. Filters nulls and propagates `None`. |
+| **SortOperation** | ✅ | Unary list operation sorting elements. Filters nulls and propagates `None`. |
+| **SumOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
+| **SwitchOperation** | ✅ | Conditional selection among cases (via helper functions). |
+| **ThenOperation** | ✅ | Unary functional pipeline step (via lambda). |
+| **ToDateOperation** | ✅ | Conversion/Parse to date. |
+| **ToDateTimeOperation** | ✅ | Conversion/Parse to date-time. |
+| **ToEnumOperation** | ✅ | Conversion/Parse to an enum. |
+| **ToIntOperation** | ✅ | Conversion to integer. |
+| **ToNumberOperation** | ✅ | Conversion to number (Decimal). Emits `Decimal(...)`. `Decimal` is already in the standard file header so no extra import is required. |
+| **ToStringOperation** | ✅ | Conversion to string (via `rune_str`). |
+| **ToTimeOperation** | ✅ | Conversion/Parse to time. |
+| **ToZonedDateTimeOperation** | ✅ | Conversion/Parse to zoned date-time. |
+| **AbsentOperation** | ✅ | Unary "is absent" assertion (via `not rune_attr_exists`). |
+| **ConditionalExpression** | ✅ | If-then-else logic (via `if_cond_fn` and helper functions). |
+| **ConstructorExpression** | ✅ | Constructs an object or dict from key-value pairs. |
+| **ContainsExpression** | ✅ | Binary "contains" assertion (via `rune_contains`). |
+| **CountExpression** | ✅ | Counts list size (via `rune_count`). |
+| **DeepFeatureCall** | ✅ | Nested attribute access (via `rune_resolve_deep_attr`). |
+| **DisjointOperation** | ✅ | Binary "no common elements" assertion (via `rune_disjoint`). |
+| **EnumValueReference** | ✅ | Reference to an enumeration value. |
+| **ExistsExpression** | ✅ | Unary "exists" assertion (supports `single`/`multiple` modifiers). |
+| **FeatureCall** | ✅ | Attribute access (via `rune_resolve_attr`). |
+| **ImplicitVariable** | ✅ | Reference to the implicit variable `item`. |
+| **LiteralValues** | ✅ | Support for Boolean, Int, Number, String literals. |
+| **OnlyElement** | ✅ | Unary list operation (via `rune_get_only_element`). |
+| **OnlyExistsExpression** | ✅ | Checks that only the listed expressions exist. |
+| **SymbolReference** | ✅ | References to Data types, Enums, Attributes, and shortcuts. |
+| **WithMetaOperation** | ✅ | Wraps a value with metadata (via `rune_with_meta`). |
+| **ReduceOperation** | ✅ | List reduction. Supported for both explicit and implicit closure parameters (with fallback naming). |
