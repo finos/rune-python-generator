@@ -134,35 +134,70 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             Collection<? extends RosettaModel> models,
             String version) {
         this.contexts.clear();
-        return super.beforeAllGenerate(set, models, version);
+
+        // Phase 1: Accumulate all elements from all models into per-namespace contexts.
+        for (RosettaModel model : models) {
+            String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
+            PythonCodeGeneratorContext context = contexts.computeIfAbsent(nameSpace, k -> new PythonCodeGeneratorContext());
+
+            boolean hasContent = model.getElements().stream()
+                    .anyMatch(e -> e instanceof Data
+                            || (e instanceof Function && !(e instanceof FunctionDispatch))
+                            || e instanceof RosettaEnumeration);
+            if (hasContent) {
+                context.addSubfolder(model.getName());
+            }
+            model.getElements().stream()
+                    .filter(Data.class::isInstance)
+                    .map(Data.class::cast)
+                    .forEach(context.getAllData()::add);
+            model.getElements().stream()
+                    .filter(e -> e instanceof Function && !(e instanceof FunctionDispatch))
+                    .map(e -> (Function) e)
+                    .forEach(context.getAllFunctions()::add);
+            model.getElements().stream()
+                    .filter(RosettaEnumeration.class::isInstance)
+                    .map(RosettaEnumeration.class::cast)
+                    .forEach(context.getAllEnums()::add);
+        }
+
+        // Phase 2: Scan and analyse — requires the full element set for each namespace.
+        for (PythonCodeGeneratorContext context : contexts.values()) {
+            pojoGenerator.scan(context.getAllData(), context);
+            functionGenerator.scan(context.getAllFunctions(), context);
+            partitionClasses(context);
+        }
+
+        return Collections.emptyMap();
     }
 
     @Override
     public Map<String, ? extends CharSequence> generate(Resource resource, RosettaModel model, String version) {
+        Map<String, CharSequence> result = new HashMap<>();
         String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
-        PythonCodeGeneratorContext context = contexts.computeIfAbsent(nameSpace, k -> new PythonCodeGeneratorContext());
-
-        boolean hasContent = model.getElements().stream()
-                .anyMatch(e -> e instanceof Data
-                        || (e instanceof Function && !(e instanceof FunctionDispatch))
-                        || e instanceof RosettaEnumeration);
-        if (hasContent) {
-            context.addSubfolder(model.getName());
+        PythonCodeGeneratorContext context = contexts.get(nameSpace);
+        if (context == null) {
+            return result;
         }
-        model.getElements().stream()
+
+        List<Data> modelData = model.getElements().stream()
                 .filter(Data.class::isInstance)
                 .map(Data.class::cast)
-                .forEach(context.getAllData()::add);
-        model.getElements().stream()
+                .collect(Collectors.toList());
+        List<Function> modelFunctions = model.getElements().stream()
                 .filter(e -> e instanceof Function && !(e instanceof FunctionDispatch))
                 .map(e -> (Function) e)
-                .forEach(rc -> context.getAllFunctions().add(rc));
-        model.getElements().stream()
+                .collect(Collectors.toList());
+        List<RosettaEnumeration> modelEnums = model.getElements().stream()
                 .filter(RosettaEnumeration.class::isInstance)
                 .map(RosettaEnumeration.class::cast)
-                .forEach(context.getAllEnums()::add);
+                .collect(Collectors.toList());
 
-        return new HashMap<>();
+        context.getClassObjects().putAll(pojoGenerator.generate(modelData, context));
+        context.getFunctionObjects().putAll(functionGenerator.generate(modelFunctions, context));
+        result.putAll(enumGenerator.generate(modelEnums));
+
+        return result;
     }
 
     @Override
@@ -172,25 +207,16 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             String version) {
         Map<String, CharSequence> result = new HashMap<>();
         String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
-        for (String nameSpace : contexts.keySet()) {
-            PythonCodeGeneratorContext context = contexts.get(nameSpace);
-            
-            // Phase 1: Scan
-            pojoGenerator.scan(context.getAllData(), context);
-            functionGenerator.scan(context.getAllFunctions(), context);
 
-            // Phase 2: Partitioned Analysis
-            partitionClasses(context);
-
-            // Phase 3: Emit
-            context.getClassObjects().putAll(pojoGenerator.generate(context.getAllData(), context));
-            context.getFunctionObjects().putAll(functionGenerator.generate(context.getAllFunctions(), context));
+        for (Map.Entry<String, PythonCodeGeneratorContext> entry : contexts.entrySet()) {
+            String nameSpace = entry.getKey();
+            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
+            PythonCodeGeneratorContext context = entry.getValue();
 
             List<String> subfolders = context.getSubfolders();
             result.putAll(generateWorkspaces(getWorkspaces(subfolders), cleanVersion));
             result.putAll(generateInits(subfolders));
             result.putAll(processDAG(nameSpace, context, cleanVersion));
-            result.putAll(enumGenerator.generate(context.getAllEnums()));
         }
         return result;
     }
@@ -230,7 +256,6 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             PythonCodeGeneratorContext context,
             String cleanVersion) {
         Map<String, CharSequence> result = new HashMap<>();
-        result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
 
         PythonCodeWriter bundleWriter = new PythonCodeWriter();
         PythonCodeWriter dataObjectsWriter = new PythonCodeWriter();
