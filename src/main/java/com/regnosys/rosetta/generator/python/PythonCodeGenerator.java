@@ -121,6 +121,22 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     private Map<String, PythonCodeGeneratorContext> contexts = null;
 
     /**
+     * Optional override for the pyproject.toml project name.
+     * When null, the name is derived from the namespace as "python-&lt;first-segment&gt;".
+     */
+    private String projectName = null;
+
+    /**
+     * Overrides the pyproject.toml project name. When not set (or set to null),
+     * the name is derived from the namespace as "python-&lt;first-segment&gt;".
+     *
+     * @param projectName the project name, or null for default behaviour
+     */
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    /**
      * The PythonCodeGenerator constructor.
      */
     public PythonCodeGenerator() {
@@ -210,7 +226,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         for (Map.Entry<String, PythonCodeGeneratorContext> entry : contexts.entrySet()) {
             String nameSpace = entry.getKey();
-            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
+            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion, projectName));
             PythonCodeGeneratorContext context = entry.getValue();
 
             List<String> subfolders = context.getSubfolders();

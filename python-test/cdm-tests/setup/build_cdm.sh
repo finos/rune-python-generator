@@ -46,13 +46,15 @@ CDM_SOURCE_PATH="$MY_PATH/../rosetta"
 PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
 PYTHON_SETUP_PATH="$MY_PATH/../../env-setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
+CDM_PACKAGE_PREFIX="finos_cdm"
 cd ${MY_PATH} || error
 
 
 source "$MY_PATH/../../common.sh" || { echo "Failed to source common.sh"; exit 1; }
 
 # Parse command-line arguments
-CDM_VERSION="master"
+# CDM_VERSION="master"
+CDM_VERSION="6.x.x"
 SKIP_CDM=0
 for arg in "$@"; do
   case "$arg" in
@@ -78,7 +80,7 @@ fi
 ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"
 
 echo "***** build CDM"
-java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH
+java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -n $CDM_PACKAGE_PREFIX || error "Failed to generate CDM Python code"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
@@ -98,11 +100,11 @@ python -m pip uninstall -y python-cdm 2>/dev/null
 
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH
-rm -f python_cdm-*.*.*-py3-none-any.whl
+rm -f $CDM_PACKAGE_PREFIX-*.*.*-py3-none-any.whl
 python -m pip wheel --no-deps --only-binary :all: . || error
 
 echo "***** install CDM Python package"
-CDM_WHL=$(ls python_cdm-*.*.*-py3-none-any.whl 2>/dev/null | head -1)
+CDM_WHL=$(ls $CDM_PACKAGE_PREFIX-*.*.*-py3-none-any.whl 2>/dev/null | head -1)
 if [ -z "$CDM_WHL" ]; then
     echo "ERROR: cdm wheel was not produced. Stopping."
     error

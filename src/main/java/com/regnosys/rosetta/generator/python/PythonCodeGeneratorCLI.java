@@ -125,6 +125,9 @@ public class PythonCodeGeneratorCLI {
                 .desc("Target Python directory (default: ./python)").hasArg().build();
         Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors").desc("Continue even if there are validation errors").build();
         Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings").desc("Fail if there are validation warnings").build();
+        Option projectNameOpt = Option.builder("n").longOpt("project-name").argName("projectName")
+                .desc("Override the pyproject.toml project name (default: python-<first-namespace-segment>)")
+                .hasArg().build();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
@@ -132,6 +135,7 @@ public class PythonCodeGeneratorCLI {
         options.addOption(tgtDirOpt);
         options.addOption(allowErrorsOpt);
         options.addOption(failOnWarningsOpt);
+        options.addOption(projectNameOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -143,13 +147,14 @@ public class PythonCodeGeneratorCLI {
             String tgtDir = cmd.getOptionValue("t", "./python");
             boolean allowErrors = cmd.hasOption("e");
             boolean failOnWarnings = cmd.hasOption("w");
+            String projectName = cmd.getOptionValue("n");
 
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
-                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings);
+                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings, projectName);
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
-                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings);
+                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings, projectName);
             } else {
                 LOGGER.error("Either a source directory (-s) or source file (-f) must be specified.");
                 printUsage(options);
@@ -167,7 +172,8 @@ public class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    private int translateFromSourceDir(String srcDir, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
+    private int translateFromSourceDir(String srcDir, String tgtDir, boolean allowErrors, boolean failOnWarnings,
+            String projectName) {
         // Find all .rosetta files in a directory
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
@@ -183,14 +189,15 @@ public class PythonCodeGeneratorCLI {
                     .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
                     .collect(Collectors.toList());
-            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
+            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName);
         } catch (IOException e) {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
             return 1;
         }
     }
 
-    private int translateFromSourceFile(String srcFile, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
+    private int translateFromSourceFile(String srcFile, String tgtDir, boolean allowErrors, boolean failOnWarnings,
+            String projectName) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
             LOGGER.error("Source file does not exist: {}", srcFile);
@@ -205,11 +212,12 @@ public class PythonCodeGeneratorCLI {
             return 1;
         }
         List<Path> rosettaFiles = List.of(srcFilePath);
-        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings);
+        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName);
     }
 
     // Common processing function
-    private int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
+    private int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, boolean allowErrors, boolean failOnWarnings,
+            String projectName) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
         if (rosettaFiles.isEmpty()) {
@@ -228,6 +236,7 @@ public class PythonCodeGeneratorCLI {
                 .forEach(resources::add);
 
         PythonCodeGenerator pythonCodeGenerator = injector.getInstance(PythonCodeGenerator.class);
+        pythonCodeGenerator.setProjectName(projectName);
         PythonModelLoader modelLoader = injector.getInstance(PythonModelLoader.class);
 
         List<RosettaModel> models = modelLoader.getRosettaModels(resources);
