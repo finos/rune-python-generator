@@ -95,13 +95,20 @@ public class PythonCodeGeneratorUtil {
     }
 
     public static String createPYProjectTomlFile(String namespace, String version) {
+        return createPYProjectTomlFile(namespace, version, null);
+    }
+
+    public static String createPYProjectTomlFile(String namespace, String version, String projectName) {
+        String name = (projectName != null && !projectName.isBlank())
+                ? projectName
+                : "python-" + namespace.split("\\.")[0];
         return """
                 [build-system]
                 requires = ["setuptools>=62.0"]
                 build-backend = "setuptools.build_meta"
 
                 [project]
-                name = "python-%s"
+                name = "%s"
                 version = "%s"
                 requires-python = ">= 3.11"
                 dependencies = [
@@ -109,7 +116,7 @@ public class PythonCodeGeneratorUtil {
                    "rune.runtime>=1.0.0,<2.0.0"
                 ]
                 [tool.setuptools.packages.find]
-                where = ["src"]""".formatted(namespace, version).stripIndent();
+                where = ["src"]""".formatted(name, version).stripIndent();
     }
 
     public static String cleanVersion(String version) {
