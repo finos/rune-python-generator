@@ -97,9 +97,25 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
 
     private Map<String, PythonCodeGeneratorContext> contexts = null;
 
+    /**
+     * Optional override for the pyproject.toml project name.
+     * When null, the name is derived from the namespace as "python-&lt;first-segment&gt;".
+     */
+    private String projectName = null;
+
     public PythonCodeGenerator() {
         super(PYTHON);
         contexts = new HashMap<>();
+    }
+
+    /**
+     * Overrides the pyproject.toml project name. When not set (or set to null),
+     * the name is derived from the namespace as "python-&lt;first-segment&gt;".
+     *
+     * @param projectName the project name, or null for default behaviour
+     */
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 
     @Override
@@ -180,7 +196,7 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         Set<String> enumImports = context.getEnumImports();
 
         if (nameSpaceObjects != null && !nameSpaceObjects.isEmpty() && dependencyDAG != null && enumImports != null) {
-            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion));
+            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion, projectName));
             PythonCodeWriter bundleWriter = new PythonCodeWriter();
             TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
                     dependencyDAG);

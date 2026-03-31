@@ -61,25 +61,6 @@ if [ -n "$RUNE_RUNTIME_FILE" ]; then
         echo "Error: Local file $RUNE_RUNTIME_FILE not found."
         error
     fi
-else
-    # --- Remote Repository Logic ---
-    echo "No local source provided. Pulling from repo..."
-    RUNTIMEURL="https://api.github.com/repos/finos/rune-python-runtime/releases/latest"
-    
-    release_data=$(curl -s $RUNTIMEURL)
-    download_url=$(echo "$release_data" | grep '"browser_download_url":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
-
-    if command -v wget &>/dev/null; then
-        wget "$download_url"
-    elif command -v curl &>/dev/null; then
-        curl -LO "$download_url"
-    else
-        echo "Neither wget nor curl is installed."
-        error
-    fi
-
-    ${PYEXE} -m pip install rune_runtime*-py3-*.whl --force-reinstall || error
-    rm rune_runtime*-py3-*.whl
 fi
 
 deactivate
