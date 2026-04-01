@@ -59,3 +59,4 @@ __pycache__
 src/generated/
 *.todo
 /build/
+test/***
