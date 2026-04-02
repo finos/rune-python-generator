@@ -72,6 +72,7 @@ import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
 import com.regnosys.rosetta.types.CardinalityProvider;
 import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
+import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RMetaAnnotatedType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.RosettaTypeProvider;
@@ -739,22 +740,52 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateWithMetaOperation(WithMetaOperation expr, PythonExpressionScope scope) {
+        RType argType = typeProvider.getRMetaAnnotatedType(expr.getArgument()).getRType();
         String arg = generateExpression(expr.getArgument(), scope);
-        String entries = expr.getEntries().stream()
-                .map(entry -> {
-                    String key = entry.getKey().getName();
-                    String mappedKey = switch (key) {
-                        case "scheme" -> "@scheme";
-                        case "id", "key" -> "@key";
-                        case "reference" -> "@ref";
-                        case "location" -> "@key:scoped";
-                        case "address" -> "@ref:scoped";
-                        default -> key;
-                    };
-                    return "'" + mappedKey + "': " + generateExpression(entry.getValue(), scope);
-                })
+
+        // Build metadata as plain Python kwargs (key=value).
+        // set_meta / *WithMeta constructors convert plain names to @-prefixed keys internally.
+        String kwargs = expr.getEntries().stream()
+                .map(entry -> entry.getKey().getName() + "=" + generateExpression(entry.getValue(), scope))
                 .collect(Collectors.joining(", "));
-        return "rune_with_meta(" + arg + ", {" + entries + "})";
+
+        // Basic type: Python immutability requires constructing a new *WithMeta wrapper.
+        if (RuneToPythonMapper.isRosettaBasicType(argType)) {
+            String withMetaType = RuneToPythonMapper.getAttributeTypeWithMeta(
+                    RuneToPythonMapper.toPythonType(argType, false));
+            return withMetaType + "(" + arg + ", " + kwargs + ")";
+        }
+
+        // Enum type: use EnumWithMetaMixin.deserialize as the public factory.
+        // Keys must be @-prefixed in the dict since deserialize receives serialised form.
+        // The class reference uses the dotted module path consistent with how enum values
+        // are referenced elsewhere in function bodies (namespace.EnumName.EnumName).
+        if (argType instanceof REnumType) {
+            String enumName = argType.getName();
+            String enumType = argType.getNamespace().toString() + "." + enumName + "." + enumName;
+            List<String[]> mappedEntries = expr.getEntries().stream()
+                    .map(entry -> {
+                        String mappedKey = switch (entry.getKey().getName()) {
+                            case "scheme" -> "@scheme";
+                            case "id", "key" -> "@key";
+                            case "reference" -> "@ref";
+                            default -> "@" + entry.getKey().getName();
+                        };
+                        return new String[]{mappedKey, generateExpression(entry.getValue(), scope)};
+                    })
+                    .toList();
+            String dictEntries = mappedEntries.stream()
+                    .map(e -> "'" + e[0] + "': " + e[1])
+                    .collect(Collectors.joining(", "));
+            String allowedMeta = mappedEntries.stream()
+                    .map(e -> "'" + e[0] + "'")
+                    .collect(Collectors.joining(", "));
+            return enumType + ".deserialize({'@data': " + arg + ", " + dictEntries + "}, allowed_meta={" + allowedMeta + "})";
+        }
+
+        // Complex type (BaseDataClass subclass): mutate in-place via set_meta.
+        // Lambda assigns arg to _wm once to avoid double-evaluation, then returns it.
+        return "(lambda _wm: (_wm.set_meta(check_allowed=False, " + kwargs + "), _wm)[-1])(" + arg + ")";
     }
 
     private String generateMaxOperation(MaxOperation expr, PythonExpressionScope scope) {

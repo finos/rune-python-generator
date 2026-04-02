@@ -125,7 +125,7 @@ public class PythonFunctionExtensionsTest {
                 """);
         String generatedPython = gf.get("src/com/test/functions/TestWithMeta.py").toString();
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': \"myScheme\"})");
+                "res = (lambda _wm: (_wm.set_meta(check_allowed=False, scheme=\"myScheme\"), _wm)[-1])(rune_resolve_attr(self, \"f\"))");
     }
 
     /**
@@ -154,7 +154,7 @@ public class PythonFunctionExtensionsTest {
                 """);
         String funcPython = gf.get("src/com/test/functions/TestWithMetaEnum.py").toString();
         testUtils.assertGeneratedContainsExpectedString(funcPython,
-                "res = rune_with_meta(rune_resolve_attr(self, \"f\"), {'@scheme': rune_str(com.test.MyEnum.MyEnum.VALUE_1)})");
+                "res = (lambda _wm: (_wm.set_meta(check_allowed=False, scheme=rune_str(com.test.MyEnum.MyEnum.VALUE_1)), _wm)[-1])(rune_resolve_attr(self, \"f\"))");
         // Enum module imports are written to the standalone function file.
         testUtils.assertGeneratedContainsExpectedString(funcPython, "import com.test.MyEnum");
     }
