@@ -55,7 +55,7 @@ The generator partitions types into two categories:
 
 Type aliases (`typeAlias`) are now resolved to their underlying Python types at generation time. Where multiple aliases would otherwise produce the same Python type name, unique disambiguating names are generated to avoid conflicts.
 
-Note: `typeAlias` entries that carry a `condition` block have the condition silently discarded — see [RUNE_LANGUAGE_GAPS.md](docs/RUNE_LANGUAGE_GAPS.md) for details.
+Note: `typeAlias` entries that carry a `condition` block have the condition silently discarded — see [RUNE_LANGUAGE_GAPS.md](docs/RUNE_LANGUAGE_GAPS.md) for details.  This feature is not currently used in CDM.
 
 ---
 
