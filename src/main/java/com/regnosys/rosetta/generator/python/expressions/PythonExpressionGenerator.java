@@ -129,6 +129,8 @@ public class PythonExpressionGenerator {
                     .map(arg -> generateExpression(arg, ifLevel, isLambda))
                     .collect(Collectors.joining(", "));
             return "rune_check_one_of(self, " + args + ")";
+        } else if (expr instanceof WithMetaOperation withMeta) {
+            return generateWithMetaOperation(withMeta, ifLevel, isLambda);
         } else if (expr instanceof RosettaSymbolReference symbolRef) {
             return generateSymbolReference(symbolRef, ifLevel, isLambda);
         } else if (expr instanceof RosettaImplicitVariable implicit) {
@@ -137,6 +139,65 @@ public class PythonExpressionGenerator {
             throw new UnsupportedOperationException(
                     "Unsupported expression type of " + expr.getClass().getSimpleName());
         }
+    }
+
+    private String generateWithMetaOperation(WithMetaOperation expr, int ifLevel, boolean isLambda) {
+        String arg = generateExpression(expr.getArgument(), ifLevel, isLambda);
+
+        // Build metadata as plain Python kwargs (key=value).
+        // set_meta / *WithMeta constructors convert plain names to @-prefixed keys internally.
+        String kwargs = expr.getEntries().stream()
+                .map(entry -> entry.getKey().getName() + "=" + generateExpression(entry.getValue(), ifLevel, isLambda))
+                .collect(Collectors.joining(", "));
+
+        // Determine the argument type from the AST.
+        // RosettaExpression has no getTypeCall() — resolve via the symbol or feature it refers to.
+        RosettaNamed argType = null;
+        RosettaExpression argExpr = expr.getArgument();
+        if (argExpr instanceof RosettaSymbolReference symRef
+                && symRef.getSymbol() instanceof RosettaTyped typed
+                && typed.getTypeCall() != null) {
+            argType = typed.getTypeCall().getType();
+        } else if (argExpr instanceof RosettaFeatureCall featureCall
+                && featureCall.getFeature() instanceof RosettaTyped typed
+                && typed.getTypeCall() != null) {
+            argType = typed.getTypeCall().getType();
+        }
+
+        // Basic type: Python immutability requires constructing a new *WithMeta wrapper.
+        if (argType != null && RuneToPythonMapper.isRosettaBasicType(argType.getName())) {
+            String withMetaType = RuneToPythonMapper.getAttributeTypeWithMeta(
+                    RuneToPythonMapper.toPythonBasicType(argType.getName()));
+            return withMetaType + "(" + arg + ", " + kwargs + ")";
+        }
+
+        // Enum type: use EnumWithMetaMixin.deserialize as the public factory.
+        // Keys must be @-prefixed in the dict since deserialize receives serialised form.
+        if (argType instanceof RosettaEnumeration) {
+            String enumType = RuneToPythonMapper.getFullyQualifiedObjectName(argType);
+            List<String[]> mappedEntries = expr.getEntries().stream()
+                    .map(entry -> {
+                        String mappedKey = switch (entry.getKey().getName()) {
+                            case "scheme" -> "@scheme";
+                            case "id", "key" -> "@key";
+                            case "reference" -> "@ref";
+                            default -> "@" + entry.getKey().getName();
+                        };
+                        return new String[]{mappedKey, generateExpression(entry.getValue(), ifLevel, isLambda)};
+                    })
+                    .toList();
+            String dictEntries = mappedEntries.stream()
+                    .map(e -> "'" + e[0] + "': " + e[1])
+                    .collect(Collectors.joining(", "));
+            String allowedMeta = mappedEntries.stream()
+                    .map(e -> "'" + e[0] + "'")
+                    .collect(Collectors.joining(", "));
+            return enumType + ".deserialize({'@data': " + arg + ", " + dictEntries + "}, allowed_meta={" + allowedMeta + "})";
+        }
+
+        // Complex type (BaseDataClass subclass): mutate in-place via set_meta.
+        // Lambda assigns arg to _wm once to avoid double-evaluation, then returns it.
+        return "(lambda _wm: (_wm.set_meta(check_allowed=False, " + kwargs + "), _wm)[-1])(" + arg + ")";
     }
 
     private String generateConditionalExpression(RosettaConditionalExpression expr, int ifLevel, boolean isLambda) {
