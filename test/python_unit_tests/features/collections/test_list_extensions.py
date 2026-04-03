@@ -15,6 +15,12 @@ from rosetta_dsl.test.semantic.collections.extensions.ListOnlyElementTest import
 from rosetta_dsl.test.semantic.collections.extensions.ListReverseTest import (
     ListReverseTest,
 )
+from rosetta_dsl.test.semantic.collections.extensions.ListReduceSumTest import (
+    ListReduceSumTest,
+)
+from rosetta_dsl.test.semantic.collections.extensions.ListReduceSubtractTest import (
+    ListReduceSubtractTest,
+)
 
 
 def test_list_first():
@@ -59,3 +65,19 @@ def test_list_reverse():
     """Test 'reverse' list operator."""
     ListReverseTest(items=[1, 2, 3], target=[3, 2, 1]).validate_model()
     ListReverseTest(items=[], target=[]).validate_model()
+
+
+def test_list_reduce_sum():
+    """Test 'reduce' list operator with addition."""
+    ListReduceSumTest(items=[1, 2, 3], target=6).validate_model()
+    with pytest.raises(Exception):
+        ListReduceSumTest(items=[1, 2, 3], target=7).validate_model()
+
+
+def test_list_reduce_subtract():
+    """Test 'reduce' list operator with left-fold subtraction."""
+    # (10 - 3) = 7
+    ListReduceSubtractTest(items=[10, 3], target=7).validate_model()
+    # (10 - 3) != 8
+    with pytest.raises(Exception):
+        ListReduceSubtractTest(items=[10, 3], target=8).validate_model()

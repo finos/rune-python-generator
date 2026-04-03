@@ -76,6 +76,8 @@ public class PythonExpressionGenerator {
             return generateThenOperation(then, ifLevel, isLambda);
         } else if (expr instanceof SumOperation sum) {
             return "sum(" + generateExpression(sum.getArgument(), ifLevel, isLambda) + ")";
+        } else if (expr instanceof ReduceOperation reduce) {
+            return generateReduceOperation(reduce, ifLevel, isLambda);
         } else if (expr instanceof ReverseOperation reverse) {
             return "list(reversed(" + generateExpression(reverse.getArgument(), ifLevel, isLambda) + "))";
         } else if (expr instanceof SwitchOperation switchOp) {
@@ -238,6 +240,18 @@ public class PythonExpressionGenerator {
         String lambdaFunction = (funcParams.isEmpty()) ? "(lambda item: " + body + ")"
                 : "(lambda " + funcParams + ": " + body + ")";
         return lambdaFunction + "(" + argExpr + ")";
+    }
+
+    private String generateReduceOperation(ReduceOperation reduce, int ifLevel, boolean isLambda) {
+        InlineFunction func = reduce.getFunction();
+        List<String> params = func.getParameters().stream()
+                .map(ClosureParameter::getName)
+                .collect(Collectors.toList());
+        String param1 = params.size() > 0 ? params.get(0) : "acc";
+        String param2 = params.size() > 1 ? params.get(1) : "item";
+        String body = generateExpression(func.getBody(), ifLevel, true);
+        String argument = generateExpression(reduce.getArgument(), ifLevel, isLambda);
+        return "functools.reduce(lambda " + param1 + ", " + param2 + ": " + body + ", " + argument + ")";
     }
 
     private String generateFilterOperation(FilterOperation expr, int ifLevel, boolean isLambda) {

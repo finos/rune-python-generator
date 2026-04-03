@@ -35,3 +35,15 @@ type ListReverseTest:
     target int (0..*)
     condition TestCond:
         (items reverse) all = target
+
+type ListReduceSumTest:
+    items int (0..*)
+    target int (1..1)
+    condition TestCond:
+        (items reduce a, b [ a + b ]) = target
+
+type ListReduceSubtractTest:
+    items int (0..*)
+    target int (1..1)
+    condition TestCond:
+        (items reduce a, b [ a - b ]) = target
