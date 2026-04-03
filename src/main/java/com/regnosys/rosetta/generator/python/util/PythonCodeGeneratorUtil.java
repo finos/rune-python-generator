@@ -51,6 +51,7 @@ public class PythonCodeGeneratorUtil {
                 # pylint: disable=missing-module-docstring
                 from __future__ import annotations
                 import datetime
+                import functools
                 import inspect
                 import sys
                 from decimal import Decimal
