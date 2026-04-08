@@ -93,6 +93,67 @@ class PythonCodeGeneratorCLITest {
         assertEquals(1, exitCode, "Should return 1 (fail) when warnings occur and --fail-on-warnings is set");
     }
 
+    @Test
+    void testInvalidVersionFormatTooFewSegmentsReturnsError() {
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.execute(new String[] { "-s", ".", "-v", "1.2" });
+        assertEquals(1, exitCode, "Should return 1 when version has fewer than three segments");
+    }
+
+    @Test
+    void testInvalidVersionFormatNonNumericReturnsError() {
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.execute(new String[] { "-s", ".", "-v", "abc.def.ghi" });
+        assertEquals(1, exitCode, "Should return 1 when version segments are not numeric");
+    }
+
+    @Test
+    void testInvalidVersionFormatWithSnapshotSuffixReturnsError() {
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.execute(new String[] { "-s", ".", "-v", "1.2.3-SNAPSHOT" });
+        assertEquals(1, exitCode, "Should return 1 when version has a non-numeric suffix");
+    }
+
+    @Test
+    void testValidVersionAppearsInToml() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path outputDir = tempDir.resolve("python");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.execute(new String[] {
+                "-f", validFile.toString(),
+                "-t", outputDir.toString(),
+                "-v", "2.5.1"
+        });
+
+        assertEquals(0, exitCode, "Should return 0 when a valid version is provided");
+        Path toml = outputDir.resolve("pyproject.toml");
+        assertTrue(Files.exists(toml), "pyproject.toml should be written to the output directory");
+        String tomlContent = Files.readString(toml);
+        assertTrue(tomlContent.contains("version = \"2.5.1\""),
+                "pyproject.toml should contain the version specified via -v");
+    }
+
+    @Test
+    void testProjectNameOptionSetsTomlName() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path outputDir = tempDir.resolve("python");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.execute(new String[] {
+                "-f", validFile.toString(),
+                "-t", outputDir.toString(),
+                "-p", "my-custom-project"
+        });
+
+        assertEquals(0, exitCode, "Should return 0 when -p option is provided");
+        Path toml = outputDir.resolve("pyproject.toml");
+        assertTrue(Files.exists(toml), "pyproject.toml should be written to the output directory");
+        String tomlContent = Files.readString(toml);
+        assertTrue(tomlContent.contains("name = \"my-custom-project\""),
+                "pyproject.toml should contain the project name specified via -p");
+    }
+
     private Path createValidRosettaFile(Path dir) throws IOException {
         Path file = dir.resolve("valid.rosetta");
         String content = "namespace test.model\nversion \"1.0.0\"\ntype Foo:\n    attr string (1..1)\n";

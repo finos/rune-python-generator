@@ -103,6 +103,8 @@ MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "${MY_PATH}" || error
 PROJECT_ROOT_PATH="$MY_PATH/../.."
 PYTHON_SETUP_PATH="$MY_PATH/../python_setup"
+PROJECT_NAME="python_rosetta_dsl"
+PROJECT_VERSION="0.0.0"
 
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 
@@ -141,7 +143,9 @@ echo "***** generating Python for unit tests"
 mkdir -p "$PYTHON_TESTS_TARGET_PATH"
 java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI \
   -s "$INPUT_ROSETTA_PATH" \
-  -t "$PYTHON_TESTS_TARGET_PATH"
+  -t "$PYTHON_TESTS_TARGET_PATH" \
+  -p "$PROJECT_NAME" \
+  -v "$PROJECT_VERSION"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -ne 0 ]]; then
   echo "Java program returned exit code $JAVA_EXIT_CODE. Stopping script."
@@ -157,7 +161,7 @@ if [[ $REUSE_ENV -eq 1 && -d "$VENV_PATH" ]]; then
   # shellcheck disable=SC1090
   source "$VENV_PATH/${PY_SCRIPTS}/activate" || error
   echo "***** removing existing python_rosetta_dsl package"
-  python -m pip uninstall -y python_rosetta_dsl || true
+  python -m pip uninstall -y $PROJECT_NAME || true
 else
   echo "***** setting up common environment"
   # shellcheck disable=SC1090
@@ -171,7 +175,7 @@ fi
 # package and install generated Python
 cd "$PYTHON_TESTS_TARGET_PATH" || error
 python -m pip wheel --no-deps --only-binary :all: . || error
-python -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
+python -m pip install $PROJECT_NAME-$PROJECT_VERSION-py3-none-any.whl
 
 # run tests
 echo "***** run unit tests"

@@ -118,6 +118,23 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         this.projectName = projectName;
     }
 
+    /**
+     * Optional prefix prepended to every namespace during generation.
+     * When set, a Rosetta namespace "cdm.x.y" becomes "finos.cdm.x.y" in all
+     * generated Python paths, bundle names, and import statements.
+     */
+    private String namespacePrefix = null;
+
+    /**
+     * Sets the namespace prefix. When not set (or set to null), namespaces are
+     * used as-is from the Rosetta model.
+     *
+     * @param namespacePrefix the prefix to prepend, or null for default behaviour
+     */
+    public void setNamespacePrefix(String namespacePrefix) {
+        this.namespacePrefix = namespacePrefix;
+    }
+
     @Override
     public Map<String, ? extends CharSequence> beforeAllGenerate(ResourceSet set,
             Collection<? extends RosettaModel> models, String version) {
@@ -131,14 +148,15 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         }
         LOGGER.debug("Processing module: {}", model.getName());
 
-        String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
+        String effectiveModelName = (namespacePrefix != null && !namespacePrefix.isBlank())
+                ? namespacePrefix + "." + model.getName()
+                : model.getName();
+        String nameSpace = effectiveModelName.split("\\.")[0];
         PythonCodeGeneratorContext context = contexts.get(nameSpace);
         if (context == null) {
             context = new PythonCodeGeneratorContext();
             contexts.put(nameSpace, context);
         }
-
-        String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
 
         Map<String, CharSequence> result = new HashMap<>();
 
@@ -153,21 +171,22 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
                 .map(Function.class::cast).collect(Collectors.toList());
 
         if (!rosettaClasses.isEmpty() || !rosettaEnums.isEmpty() || !rosettaFunctions.isEmpty()) {
-            context.addSubfolder(model.getName());
+            context.addSubfolder(effectiveModelName);
             if (!rosettaFunctions.isEmpty()) {
-                context.addSubfolder(model.getName() + ".functions");
+                context.addSubfolder(effectiveModelName + ".functions");
             }
         }
 
         Map<String, CharSequence> currentObjects = context.getObjects();
-        currentObjects.putAll(pojoGenerator.generate(rosettaClasses, cleanVersion, context));
-        result.putAll(enumGenerator.generate(rosettaEnums, cleanVersion));
-        Map<String, String> currentFunctions = funcGenerator.generate(rosettaFunctions, cleanVersion, context);
+        currentObjects.putAll(pojoGenerator.generate(rosettaClasses, context, namespacePrefix));
+        result.putAll(enumGenerator.generate(rosettaEnums, namespacePrefix));
+        Map<String, String> currentFunctions = funcGenerator.generate(rosettaFunctions, context, namespacePrefix);
         currentObjects.putAll(currentFunctions);
 
         return result;
     }
 
+    //todo: manage defining project name when there are multiple namespaces - currently it will just use the first one it encounters, but this may not be ideal
     @Override
     public Map<String, ? extends CharSequence> afterAllGenerate(
             ResourceSet set,
@@ -182,6 +201,10 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
             result.putAll(generateInits(subfolders));
             result.putAll(processDAG(nameSpace, context, cleanVersion));
         }
+        String resolvedProjectName = (projectName != null && !projectName.isBlank())
+                ? projectName
+                : "python-" + contexts.keySet().stream().findFirst().map(ns -> ns.split("\\.")[0]).orElse("unknown");
+        result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createToml(resolvedProjectName, cleanVersion));
         return result;
     }
 
@@ -196,7 +219,6 @@ public class PythonCodeGenerator extends AbstractExternalGenerator {
         Set<String> enumImports = context.getEnumImports();
 
         if (nameSpaceObjects != null && !nameSpaceObjects.isEmpty() && dependencyDAG != null && enumImports != null) {
-            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion, projectName));
             PythonCodeWriter bundleWriter = new PythonCodeWriter();
             TopologicalOrderIterator<String, DefaultEdge> topologicalOrderIterator = new TopologicalOrderIterator<>(
                     dependencyDAG);

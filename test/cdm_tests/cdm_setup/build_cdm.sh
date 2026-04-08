@@ -46,7 +46,7 @@ CDM_SOURCE_PATH="$MY_PATH/../rosetta"
 PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
 PYTHON_SETUP_PATH="$MY_PATH/../../python_setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
-CDM_PACKAGE_PREFIX="finos_cdm"
+CDM_PROJECT_NAME="finos_cdm"
 cd ${MY_PATH} || error
 
 # Parse command-line arguments for --skip-cdm
@@ -77,7 +77,7 @@ if [[ ! -f "$JAR_PATH" ]]; then
 fi
 
 echo "***** build CDM"
-java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -n $CDM_PACKAGE_PREFIX || error "Failed to generate CDM Python code"
+java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -p $CDM_PROJECT_NAME || error "Failed to generate CDM Python code"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
@@ -94,7 +94,7 @@ source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
 
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH
-rm $CDM_PACKAGE_PREFIX-*.*.*-py3-none-any.whl
+rm $CDM_PROJECT_NAME-*.*.*-py3-none-any.whl
 python -m pip wheel --no-deps --only-binary :all: . || processError
 
 echo "***** cleanup"
