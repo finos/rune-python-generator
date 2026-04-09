@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PythonCodeGeneratorCLITest {
 
@@ -94,6 +95,75 @@ class PythonCodeGeneratorCLITest {
         });
 
         assertEquals(1, exitCode, "Should return 1 (fail) when warnings occur and --fail-on-warnings is set");
+    }
+
+    // --- Version option tests ---
+
+    @Test
+    void testInvalidVersionFormatTooFewSegmentsReturnsError() {
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.run(new String[] {"-v", "1.0"});
+        assertEquals(1, exitCode, "Should return 1 for version with fewer than 3 segments");
+    }
+
+    @Test
+    void testInvalidVersionFormatNonNumericReturnsError() {
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.run(new String[] {"-v", "1.a.0"});
+        assertEquals(1, exitCode, "Should return 1 for version with non-numeric segment");
+    }
+
+    @Test
+    void testInvalidVersionFormatWithSnapshotSuffixReturnsError() {
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.run(new String[] {"-v", "1.0.0-SNAPSHOT"});
+        assertEquals(1, exitCode, "Should return 1 for version with SNAPSHOT suffix");
+    }
+
+    @Test
+    void testValidVersionAppearsInToml() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-v", "1.2.3"
+        });
+
+        assertEquals(0, exitCode, "Should return 0 when valid version is specified");
+        Path tomlPath = pythonDir.resolve("pyproject.toml");
+        assertTrue(Files.exists(tomlPath), "pyproject.toml should have been generated");
+        String toml = Files.readString(tomlPath);
+        assertTrue(toml.contains("version = \"1.2.3\""),
+                "pyproject.toml should contain the specified version, but was:\n" + toml);
+    }
+
+    /**
+     * When a namespace prefix is specified via the future {@code -x} option, the
+     * generated files should reflect the prefix in their namespace paths.
+     *
+     * <p>Disabled until the namespace-prefix feature is implemented in the CLI and
+     * generator.
+     */
+    @Test
+    void testNamespacePrefixAppearsInGeneratedNamespace() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-x", "finos"
+        });
+
+        assertEquals(0, exitCode, "Should return 0 when namespace prefix is specified");
+        assertTrue(Files.walk(pythonDir)
+                .filter(Files::isRegularFile)
+                .anyMatch(p -> p.toString().contains("finos")),
+                "Expected at least one generated file path to contain 'finos'");
     }
 
     private Path createValidRosettaFile(Path dir) throws IOException {

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
@@ -21,11 +22,11 @@ public class PythonEnumGenerator {
      * @param rosettaEnums the collection of Rosetta enumerations to generate
      * @return a Map of all the generated Python indexed by the file name
      */
-    public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums) {
+    public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums, PythonCodeGeneratorContext context) {
         Map<String, String> result = new HashMap<>();
         for (RosettaEnumeration enumeration : rosettaEnums) {
             RosettaModel tr = (RosettaModel) enumeration.eContainer();
-            String namespace = tr.getName();
+            String namespace = context.applyPrefix(tr.getName());
 
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# pylint: disable=missing-module-docstring, invalid-name, line-too-long");

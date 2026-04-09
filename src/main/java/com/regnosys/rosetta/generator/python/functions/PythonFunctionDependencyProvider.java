@@ -36,6 +36,8 @@ import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.TypeSystem;
 
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+
 import jakarta.inject.Inject;
 
 /**
@@ -51,20 +53,17 @@ public final class PythonFunctionDependencyProvider {
     @Inject
     private TypeSystem typeSystem;
 
-    /**
-     * @param object
-     * @param enumImports
-     */
-    public void addDependencies(RosettaNamed named, Set<String> enumImports, String sourceNamespace) {
+    public void addDependencies(RosettaNamed named, Set<String> enumImports, String sourceNamespace,
+            PythonCodeGeneratorContext context) {
         if (named instanceof RosettaEnumeration enumeration) {
             String name = enumeration.getName();
             RosettaModel model = (RosettaModel) enumeration.eContainer();
-            String prefix = model.getName();
+            String prefix = context.applyPrefix(model.getName());
             enumImports.add("import " + prefix + "." + name);
         } else if (named instanceof com.regnosys.rosetta.rosetta.simple.Data data) {
             String name = data.getName();
             RosettaModel model = (RosettaModel) data.eContainer();
-            String fullNamespace = model.getName();
+            String fullNamespace = context.applyPrefix(model.getName());
             String rootNamespace = fullNamespace.split("\\.")[0];
             String sourceRoot = sourceNamespace.split("\\.")[0];
 
@@ -74,102 +73,105 @@ public final class PythonFunctionDependencyProvider {
         } else if (named instanceof com.regnosys.rosetta.rosetta.RosettaTypeAlias alias) {
              // Recursive call with the referred type
              if (alias.getTypeCall() != null && alias.getTypeCall().getType() != null) {
-                 addDependencies(alias.getTypeCall().getType(), enumImports, sourceNamespace);
+                 addDependencies(alias.getTypeCall().getType(), enumImports, sourceNamespace, context);
              }
         }
     }
 
-    public void addDependencies(InlineFunction inline, Set<String> enumImports, String sourceNamespace) {
+    public void addDependencies(InlineFunction inline, Set<String> enumImports, String sourceNamespace,
+            PythonCodeGeneratorContext context) {
         if (inline != null) {
-            addDependencies(inline.getBody(), enumImports, sourceNamespace);
+            addDependencies(inline.getBody(), enumImports, sourceNamespace, context);
         }
     }
 
-    public void addDependencies(RosettaExpression expression, Set<String> enumImports, String sourceNamespace) {
+    public void addDependencies(RosettaExpression expression, Set<String> enumImports, String sourceNamespace,
+            PythonCodeGeneratorContext context) {
         if (expression == null) {
             return;
         }
         switch (expression) {
             case RosettaBinaryOperation binary -> {
-                addDependencies(binary.getLeft(), enumImports, sourceNamespace);
-                addDependencies(binary.getRight(), enumImports, sourceNamespace);
+                addDependencies(binary.getLeft(), enumImports, sourceNamespace, context);
+                addDependencies(binary.getRight(), enumImports, sourceNamespace, context);
             }
             case RosettaConditionalExpression cond -> {
-                addDependencies(cond.getIf(), enumImports, sourceNamespace);
-                addDependencies(cond.getIfthen(), enumImports, sourceNamespace);
-                addDependencies(cond.getElsethen(), enumImports, sourceNamespace);
+                addDependencies(cond.getIf(), enumImports, sourceNamespace, context);
+                addDependencies(cond.getIfthen(), enumImports, sourceNamespace, context);
+                addDependencies(cond.getElsethen(), enumImports, sourceNamespace, context);
             }
             case RosettaOnlyExistsExpression onlyExists -> {
-                onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports, sourceNamespace));
+                onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports, sourceNamespace, context));
             }
             case RosettaFunctionalOperation functional -> {
                 if (functional.getArgument() != null) {
-                    addDependencies(functional.getArgument(), enumImports, sourceNamespace);
+                    addDependencies(functional.getArgument(), enumImports, sourceNamespace, context);
                 }
                 if (functional instanceof FilterOperation filter) {
-                    addDependencies(filter.getFunction(), enumImports, sourceNamespace);
+                    addDependencies(filter.getFunction(), enumImports, sourceNamespace, context);
                 } else if (functional instanceof MapOperation map) {
-                    addDependencies(map.getFunction(), enumImports, sourceNamespace);
+                    addDependencies(map.getFunction(), enumImports, sourceNamespace, context);
                 }
             }
             case WithMetaOperation withMeta -> {
-                addDependencies(withMeta.getArgument(), enumImports, sourceNamespace);
-                withMeta.getEntries().forEach(entry -> addDependencies(entry.getValue(), enumImports, sourceNamespace));
+                addDependencies(withMeta.getArgument(), enumImports, sourceNamespace, context);
+                withMeta.getEntries().forEach(entry -> addDependencies(entry.getValue(), enumImports, sourceNamespace, context));
             }
             case RosettaUnaryOperation unary -> {
-                addDependencies(unary.getArgument(), enumImports, sourceNamespace);
+                addDependencies(unary.getArgument(), enumImports, sourceNamespace, context);
             }
             case RosettaFeatureCall featureCall -> {
-                addDependencies(featureCall.getReceiver(), enumImports, sourceNamespace);
+                addDependencies(featureCall.getReceiver(), enumImports, sourceNamespace, context);
             }
             case RosettaSymbolReference symbolRef -> {
                 if (symbolRef.getSymbol() instanceof RosettaNamed named) {
-                    addDependencies(named, enumImports, sourceNamespace);
+                    addDependencies(named, enumImports, sourceNamespace, context);
                 }
-                symbolRef.getArgs().forEach(arg -> addDependencies(arg, enumImports, sourceNamespace));
+                symbolRef.getArgs().forEach(arg -> addDependencies(arg, enumImports, sourceNamespace, context));
             }
             case RosettaEnumValueReference ref -> {
-                addDependencies(ref.getEnumeration(), enumImports, sourceNamespace);
+                addDependencies(ref.getEnumeration(), enumImports, sourceNamespace, context);
             }
             case InlineFunction inline -> {
-                addDependencies(inline, enumImports, sourceNamespace);
+                addDependencies(inline, enumImports, sourceNamespace, context);
             }
             case ListLiteral listLiteral -> {
-                listLiteral.getElements().forEach(el -> addDependencies(el, enumImports, sourceNamespace));
+                listLiteral.getElements().forEach(el -> addDependencies(el, enumImports, sourceNamespace, context));
             }
             case RosettaConstructorExpression constructor -> {
                 if (constructor.getTypeCall() != null && constructor.getTypeCall().getType() != null) {
-                    addDependencies(constructor.getTypeCall().getType(), enumImports, sourceNamespace);
+                    addDependencies(constructor.getTypeCall().getType(), enumImports, sourceNamespace, context);
                 }
                 constructor.getValues()
-                        .forEach(valuePair -> addDependencies(valuePair.getValue(), enumImports, sourceNamespace));
+                        .forEach(valuePair -> addDependencies(valuePair.getValue(), enumImports, sourceNamespace, context));
             }
             default -> {
                 // For unknown expressions, we can still use eContents()
                 expression.eContents().forEach(child -> {
                     if (child instanceof RosettaExpression expr) {
-                        addDependencies(expr, enumImports, sourceNamespace);
+                        addDependencies(expr, enumImports, sourceNamespace, context);
                     } else if (child instanceof RosettaNamed named) {
-                         addDependencies(named, enumImports, sourceNamespace);
+                         addDependencies(named, enumImports, sourceNamespace, context);
                     } else if (child instanceof InlineFunction inline) {
-                         addDependencies(inline, enumImports, sourceNamespace);
+                         addDependencies(inline, enumImports, sourceNamespace, context);
                     }
                 });
             }
         }
     }
 
-    public void addDependencies(RType type, Set<String> enumImports, String sourceNamespace) {
+    public void addDependencies(RType type, Set<String> enumImports, String sourceNamespace,
+            PythonCodeGeneratorContext context) {
         if (type instanceof RAliasType) {
             type = typeSystem.stripFromTypeAliases(type);
         }
         if (type instanceof REnumType enumType) {
             String name = enumType.getName();
-            String prefix = enumType.getNamespace().toString();
+            String prefix = context.applyPrefix(enumType.getNamespace().toString());
             enumImports.add("import " + prefix + "." + name);
         } else if (type instanceof RDataType dataType) {
             String name = dataType.getName();
-            String fullNamespace = dataType.getNamespace().toString();
+            String fullNamespace = context.applyPrefix(dataType.getNamespace().toString());
             String rootNamespace = fullNamespace.split("\\.")[0];
             String sourceRoot = sourceNamespace.split("\\.")[0];
 

@@ -46,15 +46,17 @@ CDM_SOURCE_PATH="$MY_PATH/../rosetta"
 PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
 PYTHON_SETUP_PATH="$MY_PATH/../../env-setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
-CDM_PACKAGE_PREFIX="finos_cdm"
+CDM_PROJECT_NAME="finos_cdm"
+CDM_PREFIX="finos"
+CDM_VERSION="1.2.3"
 cd ${MY_PATH} || error
 
 
 source "$MY_PATH/../../common.sh" || { echo "Failed to source common.sh"; exit 1; }
 
 # Parse command-line arguments
-# CDM_VERSION="master"
-CDM_VERSION="6.x.x"
+# CDM_BRANCH="master"
+CDM_BRANCH="6.x.x"
 SKIP_CDM=0
 for arg in "$@"; do
   case "$arg" in
@@ -66,13 +68,13 @@ for arg in "$@"; do
       ;;
     *)
       # default any other argument to the CDM version
-      CDM_VERSION="$arg"
+      CDM_BRANCH="$arg"
       ;;
   esac
 done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
-    source $MY_PATH/get_cdm.sh "$CDM_VERSION"
+    source $MY_PATH/get_cdm.sh "$CDM_BRANCH"
 else
     echo "Skipping get_cdm.sh as requested."
 fi
@@ -80,7 +82,8 @@ fi
 ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"
 
 echo "***** build CDM"
-java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -n $CDM_PACKAGE_PREFIX || error "Failed to generate CDM Python code"
+java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -n $CDM_PROJECT_NAME -v $CDM_VERSION -x $CDM_PREFIX|| error "Failed to generate CDM Python code"
+# java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH || error "Failed to generate CDM Python code"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
@@ -100,11 +103,11 @@ python -m pip uninstall -y python-cdm 2>/dev/null
 
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH
-rm -f $CDM_PACKAGE_PREFIX-*.*.*-py3-none-any.whl
+rm -f *-*.*.*-py3-none-any.whl
 python -m pip wheel --no-deps --only-binary :all: . || error
 
 echo "***** install CDM Python package"
-CDM_WHL=$(ls $CDM_PACKAGE_PREFIX-*.*.*-py3-none-any.whl 2>/dev/null | head -1)
+CDM_WHL=$(ls *-*.*.*-py3-none-any.whl 2>/dev/null | head -1)
 if [ -z "$CDM_WHL" ]; then
     echo "ERROR: cdm wheel was not produced. Stopping."
     error

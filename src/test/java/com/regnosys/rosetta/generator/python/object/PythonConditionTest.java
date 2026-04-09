@@ -191,7 +191,7 @@ public class PythonConditionTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "class Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "return rune_all_elements(rune_call_unchecked(com_rosetta_test_model_functions_Foo, rune_resolve_attr(self, \"price\")), \"=\", Decimal('5.0'))");
+            "return rune_all_elements(rune_call_unchecked(Foo, rune_resolve_attr(self, \"price\")), \"=\", Decimal('5.0'))");
     }
 
     /**

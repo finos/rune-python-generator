@@ -12,9 +12,12 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.types.RType;
 
 public final class PythonCodeGeneratorContext {
     /**
@@ -87,6 +90,10 @@ public final class PythonCodeGeneratorContext {
      * partitioning and reused during DAG processing.
      */
     private List<Set<String>> sccs = null;
+    /**
+     * The namespace prefix to prepend to all generated namespaces (e.g. "finos"), or null.
+     */
+    private String namespacePrefix = null;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new LinkedHashSet<>();
@@ -220,5 +227,33 @@ public final class PythonCodeGeneratorContext {
 
     public void setSccs(List<Set<String>> sccs) {
         this.sccs = sccs;
+    }
+
+    public String getNamespacePrefix() {
+        return namespacePrefix;
+    }
+
+    public void setNamespacePrefix(String namespacePrefix) {
+        this.namespacePrefix = namespacePrefix;
+    }
+
+    public String getFullyQualifiedName(RosettaNamed rn) {
+        return RuneToPythonMapper.getFullyQualifiedName(rn, namespacePrefix);
+    }
+
+    public String getBundleObjectName(RosettaNamed rn) {
+        return RuneToPythonMapper.getBundleObjectName(rn, namespacePrefix);
+    }
+
+    public String getBundleObjectName(RosettaNamed rn, boolean useQuotes) {
+        return RuneToPythonMapper.getBundleObjectName(rn, useQuotes, namespacePrefix);
+    }
+
+    public String applyPrefix(String name) {
+        return RuneToPythonMapper.applyPrefix(name, namespacePrefix);
+    }
+
+    public String toPythonType(RType rt) {
+        return RuneToPythonMapper.toPythonType(rt, namespacePrefix);
     }
 }

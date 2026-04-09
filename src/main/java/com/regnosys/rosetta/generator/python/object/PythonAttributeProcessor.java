@@ -75,16 +75,19 @@ public final class PythonAttributeProcessor {
         return new AttributeProcessingResult(writer.toString(), annotationUpdates);
     }
 
-    private AttributeResult generateAttribute(Data rc, RAttribute ra,
-            Map<String, List<String>> keyRefConstraints,
-            PythonCodeGeneratorContext context) {
+    private AttributeResult generateAttribute(
+        Data rc, 
+        RAttribute ra,
+        Map<String, List<String>> keyRefConstraints, 
+        PythonCodeGeneratorContext context
+    ) {
         MetaDataResult metaDataResult = processMetaDataAttributes(ra, keyRefConstraints);
         return createAttributeResult(rc, ra, metaDataResult, context);
     }
 
     private AttributeResult createAttributeResult(Data rc, RAttribute ra, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
         RosettaModel model = (RosettaModel) rc.eContainer();
-        String className = model.getName() + "." + rc.getName();
+        String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isStandalone = context.getStandaloneClasses().contains(className);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
 
@@ -117,14 +120,21 @@ public final class PythonAttributeProcessor {
         return new AttributeResult(fieldDecl, annotationUpdates);
     }
 
-    private PythonTypeHint deriveTypeHint(Data rc, RAttribute ra, RType rt, ValidationProperties validationProps,
-            boolean isDelayed, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
+    private PythonTypeHint deriveTypeHint(
+        Data rc, 
+        RAttribute ra, 
+        RType rt, 
+        ValidationProperties validationProps,
+        boolean isDelayed, 
+        MetaDataResult metaDataResult, 
+        PythonCodeGeneratorContext context
+    ) {
         RosettaModel model = (RosettaModel) rc.eContainer();
-        String className = model.getName() + "." + rc.getName();
+        String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isSourceStandalone = context.getStandaloneClasses().contains(className);
 
         String typeRefName;
-        String fqnAttributeNamespace = rt.getNamespace().toString();
+        String fqnAttributeNamespace = context.applyPrefix(rt.getNamespace().toString());
         String fqnAttributeName = fqnAttributeNamespace + "." + rt.getName();
         
         if (RuneToPythonMapper.isRosettaBasicType(rt)) {
@@ -371,12 +381,17 @@ public final class PythonAttributeProcessor {
      *                            because that would create a circular import back into
      *                            the bundle itself.
      */
-    public void getImportsFromAttributes(Data rc, Set<String> imports,
-            Set<String> standaloneClasses, boolean includeBundledTypes) {
+    public void getImportsFromAttributes(
+        Data rc, 
+        Set<String> imports,
+        PythonCodeGeneratorContext context, 
+        boolean includeBundledTypes
+    ) {
+        Set<String> standaloneClasses = context.getStandaloneClasses();
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
         RosettaModel rcModel = (RosettaModel) rc.eContainer();
-        String rcFqn = rcModel.getName() + "." + rc.getName();
+        String rcFqn = context.applyPrefix(rcModel.getName()) + "." + rc.getName();
 
         for (RAttribute attr : allAttributes) {
             if (!attr.getName().equals("reference")
@@ -397,9 +412,9 @@ public final class PythonAttributeProcessor {
                     rt = rChoiceType.asRDataType();
                 }
                 if (rt instanceof REnumType rEnumType) {
-                    imports.add(String.format("import %s", rEnumType.getQualifiedName()));
+                    imports.add(String.format("import %s", context.applyPrefix(rEnumType.getQualifiedName().toString())));
                 } else if (rt instanceof RDataType rDataType) {
-                    String fullNamespace = rDataType.getNamespace().toString();
+                    String fullNamespace = context.applyPrefix(rDataType.getNamespace().toString());
                     String fqn = fullNamespace + "." + rDataType.getName();
                     if (fqn.equals(rcFqn)) {
                         // Skip self-import: the type references itself (e.g. via [metadata reference]).

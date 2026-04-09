@@ -40,21 +40,25 @@ public final class PythonGeneratorTestUtils {
     }
 
     public Map<String, CharSequence> generatePythonFromString(String modelContent) {
-        // model.parseRosettaWithNoErrors in Xtend ->
-        // modelHelper.parseRosettaWithNoErrors(modelContent)
-        RosettaModel m = modelHelper.parseRosettaWithNoErrors(modelContent);
-        ResourceSet resourceSet = m.eResource().getResourceSet();
-        String version = m.getVersion();
+        return generatePythonFromString(modelContent, null, null);
+    }
 
-        Map<String, CharSequence> result = new HashMap<>();
-        result.putAll(generator.beforeAllGenerate(resourceSet, 
-            Collections.singletonList(m), version));
-        result.putAll(generator.beforeGenerate(m.eResource(), m, version));
-        result.putAll(generator.generate(m.eResource(), m, version));
-        result.putAll(generator.afterGenerate(m.eResource(), m, version));
-        result.putAll(generator.afterAllGenerate(resourceSet,
-            Collections.singletonList(m), version));
-        return result;
+    public Map<String, CharSequence> generatePythonFromString(String modelContent, String namespacePrefix, String version) {
+        generator.setNamespacePrefix(namespacePrefix);
+        try {
+            RosettaModel m = modelHelper.parseRosettaWithNoErrors(modelContent);
+            ResourceSet resourceSet = m.eResource().getResourceSet();
+            String resolvedVersion = (version != null) ? version : m.getVersion();
+            Map<String, CharSequence> result = new HashMap<>();
+            result.putAll(generator.beforeAllGenerate(resourceSet, Collections.singletonList(m), resolvedVersion));
+            result.putAll(generator.beforeGenerate(m.eResource(), m, resolvedVersion));
+            result.putAll(generator.generate(m.eResource(), m, resolvedVersion));
+            result.putAll(generator.afterGenerate(m.eResource(), m, resolvedVersion));
+            result.putAll(generator.afterAllGenerate(resourceSet, Collections.singletonList(m), resolvedVersion));
+            return result;
+        } finally {
+            generator.setNamespacePrefix(null);
+        }
     }
 
     /**

@@ -85,7 +85,7 @@ public final class PythonFunctionGenerator {
     public void scan(Iterable<Function> functions, PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         for (Function function : functions) {
-            String functionName = RuneToPythonMapper.getFullyQualifiedName(function);
+            String functionName = context.getFullyQualifiedName(function);
             dependencyDAG.addVertex(functionName);
             context.addFunctionName(functionName);
 
@@ -93,12 +93,11 @@ public final class PythonFunctionGenerator {
                 context.addNativeFunctionName(functionName);
             }
 
-            addFunctionDependencies(dependencyDAG, functionName, function);
+            addFunctionDependencies(dependencyDAG, functionName, function, context);
         }
     }
 
-    public Map<String, String> generate(Iterable<Function> functions,
-            PythonCodeGeneratorContext context) {
+    public Map<String, String> generate(Iterable<Function> functions, PythonCodeGeneratorContext context) {
         Map<String, String> result = new HashMap<>();
 
         for (Function function : functions) {
@@ -108,7 +107,7 @@ public final class PythonFunctionGenerator {
         return result;
     }
 
-    private void processFunction(Function function, PythonCodeGeneratorContext context, 
+    private void processFunction(Function function, PythonCodeGeneratorContext context,
             Map<String, String> result) {
         RosettaModel model = (RosettaModel) function.eContainer();
         if (model == null) {
@@ -118,7 +117,7 @@ public final class PythonFunctionGenerator {
 
         try {
             String pythonFunction = generateFunction(function, context);
-            String functionName = RuneToPythonMapper.getFullyQualifiedName(function);
+            String functionName = context.getFullyQualifiedName(function);
             result.put(functionName, pythonFunction);
         } catch (Exception ex) {
             LOGGER.error("Exception occurred generating function {}", function.getName(), ex);
@@ -156,8 +155,12 @@ public final class PythonFunctionGenerator {
         });
     }
 
-    private void addFunctionDependencies(Graph<String, DefaultEdge> dependencyDAG, String functionName,
-            Function function) {
+    private void addFunctionDependencies(
+        Graph<String, DefaultEdge> dependencyDAG,
+        String functionName,
+        Function function,
+        PythonCodeGeneratorContext context
+    ) {
         Set<RosettaNamed> dependencies = new HashSet<>();
 
         DependencySet dependencySet = collectDependencyRoots(function);
@@ -191,11 +194,9 @@ public final class PythonFunctionGenerator {
         for (RosettaNamed dep : dependencies) {
             String depName = "";
             switch (dep) {
-                case Data data -> depName = rObjectFactory
-                    .buildRDataType(data)
-                    .getQualifiedName()
-                    .toString();
-                case Function function1 -> depName = RuneToPythonMapper.getFullyQualifiedName(function1);
+                case Data data -> depName = context.applyPrefix(
+                    rObjectFactory.buildRDataType(data).getQualifiedName().toString());
+                case Function function1 -> depName = context.getFullyQualifiedName(function1);
                 case RosettaEnumeration rosettaEnumeration -> depName = rObjectFactory
                     .buildREnumType(rosettaEnumeration)
                     .getQualifiedName()
@@ -249,10 +250,10 @@ public final class PythonFunctionGenerator {
         if (function == null) {
             throw new RuntimeException("Function is null");
         }
-        String functionFQN = RuneToPythonMapper.getFullyQualifiedName(function);
+        String functionFQN = context.getFullyQualifiedName(function);
         String pythonName = context.getStandaloneClasses().contains(functionFQN)
                 ? function.getName()
-                : RuneToPythonMapper.getBundleObjectName(function);
+                : context.getBundleObjectName(function);
         return generateFunctionBody(function, pythonName, context);
     }
 
@@ -260,13 +261,13 @@ public final class PythonFunctionGenerator {
         if (context.getEnumImports() == null) {
             throw new RuntimeException("Enum imports is null");
         }
-        Set<String> funcDeps = collectFunctionDependencies(function);
+        Set<String> funcDeps = collectFunctionDependencies(function, context);
         context.getEnumImports().addAll(funcDeps);
-        String functionFQN = RuneToPythonMapper.getFullyQualifiedName(function);
+        String functionFQN = context.getFullyQualifiedName(function);
         context.getFunctionEnumImports().put(functionFQN, funcDeps);
 
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
-        expressionGenerator.setStandaloneClasses(context.getStandaloneClasses());
+        expressionGenerator.setContext(context);
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -277,7 +278,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("def " + pythonName + generateInputs(function, context) + ":");
         writer.indent();
 
-        writer.appendBlock(generateDescription(function));
+        writer.appendBlock(generateDescription(function, context));
 
         writer.appendLine("self = inspect.currentframe()");
         writer.appendLine("");
@@ -296,9 +297,9 @@ public final class PythonFunctionGenerator {
         boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
 
         if (isDispatcher) {
-            writer.appendBlock(generateDispatchLogic(function, pythonName, isCodeImplementation));
+            writer.appendBlock(generateDispatchLogic(function, pythonName, isCodeImplementation, context));
         } else if (isCodeImplementation) {
-            writer.appendLine(generateNativeFunctionCall(function));
+            writer.appendLine(generateNativeFunctionCall(function, context));
         } else {
             writer.appendBlock(generateOperations(function, context, expressionGenerator));
         }
@@ -315,7 +316,7 @@ public final class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateDispatchLogic(Function function, String pythonName, boolean isCodeImplementation) {
+    private String generateDispatchLogic(Function function, String pythonName, boolean isCodeImplementation, PythonCodeGeneratorContext context) {
         PythonCodeWriter writer = new PythonCodeWriter();
 
         Attribute enumInput = rosettaFunctionExtensions.getInputs(function).stream()
@@ -337,7 +338,7 @@ public final class PythonFunctionGenerator {
             String enumValue = EnumHelper.convertValue(spec.getValue().getValue());
             String specName = "_" + pythonName + "_" + enumValue;
             writer.appendLine("case "
-                + RuneToPythonMapper.getFullyQualifiedName(spec.getValue().getEnumeration())
+                + context.getFullyQualifiedName(spec.getValue().getEnumeration())
                 + "."
                 + enumValue
                 + ":");
@@ -349,7 +350,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("case _:");
         writer.indent();
         if (isCodeImplementation) {
-             writer.appendLine(generateNativeFunctionCall(function));
+             writer.appendLine(generateNativeFunctionCall(function, context));
              writer.appendLine("return " + function.getOutput().getName());
         } else {
              writer.appendLine("raise ValueError(f\"Enum value {" + enumParam + "} not implemented for " + function.getName() + "\")");
@@ -379,9 +380,9 @@ public final class PythonFunctionGenerator {
                 .collect(Collectors.toList());
     }
 
-    private String generateNativeFunctionCall(Function function) {
+    private String generateNativeFunctionCall(Function function, PythonCodeGeneratorContext context) {
         String outputName = function.getOutput().getName();
-        String qualifiedName = RuneToPythonMapper.getFullyQualifiedName(function);
+        String qualifiedName = context.getFullyQualifiedName(function);
         String arguments = function.getInputs().stream()
                 .map(RosettaNamed::getName)
                 .collect(Collectors.joining(", "));
@@ -423,13 +424,13 @@ public final class PythonFunctionGenerator {
 
     private String getTypeNameForContext(RosettaNamed type, PythonCodeGeneratorContext context) {
         if (type instanceof RosettaEnumeration || RuneToPythonMapper.isRosettaBasicType(type.getName())) {
-            return RuneToPythonMapper.getBundleObjectName(type);
+            return context.getBundleObjectName(type);
         }
-        String fqn = RuneToPythonMapper.getFullyQualifiedName(type);
+        String fqn = context.getFullyQualifiedName(type);
         if (context.getStandaloneClasses().contains(fqn)) {
             return type.getName();
         }
-        return RuneToPythonMapper.getBundleObjectName(type);
+        return context.getBundleObjectName(type);
     }
 
     private String generateOutput(Function function, boolean isCodeImplementation,
@@ -457,7 +458,7 @@ public final class PythonFunctionGenerator {
     }
 
 
-    private String generateDescription(Function function) {
+    private String generateDescription(Function function, PythonCodeGeneratorContext context) {
         List<Attribute> inputs = function.getInputs();
         Attribute output = function.getOutput();
         String description = function.getDefinition();
@@ -471,7 +472,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("Parameters");
         writer.appendLine("----------");
         for (Attribute input : inputs) {
-            String qName = RuneToPythonMapper.getFullyQualifiedName(input.getTypeCall().getType());
+            String qName = context.getFullyQualifiedName(input.getTypeCall().getType());
             String paramName = RuneToPythonMapper.formatCardinality(
                     qName,
                     1, // Force min=1 for docstrings
@@ -486,7 +487,7 @@ public final class PythonFunctionGenerator {
         writer.appendLine("Returns");
         writer.appendLine("-------");
         if (output != null) {
-            String qName = RuneToPythonMapper.getFullyQualifiedName(output.getTypeCall().getType());
+            String qName = context.getFullyQualifiedName(output.getTypeCall().getType());
             String paramName = RuneToPythonMapper.formatCardinality(
                     qName,
                     1, // Force min=1 for docstrings
@@ -502,16 +503,16 @@ public final class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private Set<String> collectFunctionDependencies(Function function) {
+    private Set<String> collectFunctionDependencies(Function function, PythonCodeGeneratorContext context) {
         Set<String> enumImports = new HashSet<>();
         DependencySet dependencySet = collectDependencyRoots(function);
 
-        String sourceNamespace = function.getModel().getName();
+        String sourceNamespace = context.applyPrefix(function.getModel().getName());
         for (RosettaNamed named : dependencySet.namedRoots()) {
-            functionDependencyProvider.addDependencies(named, enumImports, sourceNamespace);
+            functionDependencyProvider.addDependencies(named, enumImports, sourceNamespace, context);
         }
         for (RosettaExpression expression : dependencySet.expressionRoots()) {
-            functionDependencyProvider.addDependencies(expression, enumImports, sourceNamespace);
+            functionDependencyProvider.addDependencies(expression, enumImports, sourceNamespace, context);
         }
         return enumImports;
     }
@@ -639,8 +640,6 @@ public final class PythonFunctionGenerator {
                 // 1a. Root initialization on first sight
                 if (!seenRoots.contains(rootName)) {
                     seenRoots.add(rootName);
-                    // A root is a candidate for initialization if it's first touched by an 'add' or a nested path
-                    // A root is a candidate for initialization if it's first touched by an 'add' or a nested path
                     if (operation.isAdd() || operation.getPath() != null) {
                         if (root instanceof Attribute attribute) {
                             RosettaType type = attribute.getTypeCall().getType();
@@ -651,7 +650,7 @@ public final class PythonFunctionGenerator {
                             } else if (operation.getPath() != null) {
                                 String bundleName = (type instanceof RosettaNamed named)
                                         ? getTypeNameForContext(named, context)
-                                        : RuneToPythonMapper.getBundleObjectName(type);
+                                        : context.getBundleObjectName((RosettaNamed) type);
                                 scope.markAsObjectBuilder(rootName);
                                 writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
                             }
@@ -698,9 +697,13 @@ public final class PythonFunctionGenerator {
         return String.join(".", getSegmentNames(path));
     }
 
-    private String generateSetOperation(AssignPathRoot root, Operation operation,
-            String expression, PythonFunctionGenerationScope scope,
-            PythonCodeGeneratorContext context) {
+    private String generateSetOperation(
+        AssignPathRoot root, 
+        Operation operation,
+        String expression, 
+        PythonFunctionGenerationScope scope, 
+        PythonCodeGeneratorContext context
+    ) {
         PythonCodeWriter writer = new PythonCodeWriter();
         String rootName = root.getName();
         RosettaType rootType = (root instanceof Attribute attr) ? attr.getTypeCall().getType() : null;
@@ -713,7 +716,7 @@ public final class PythonFunctionGenerator {
                 if (rootType != null) {
                     String bundleName = (rootType instanceof RosettaNamed named)
                             ? getTypeNameForContext(named, context)
-                            : RuneToPythonMapper.getBundleObjectName(rootType);
+                            : context.getBundleObjectName((RosettaNamed) rootType);
                     scope.markAsObjectBuilder(rootName);
                     writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
                 }
@@ -731,9 +734,13 @@ public final class PythonFunctionGenerator {
         }
     }
 
-    private String generateAddOperation(AssignPathRoot root, Operation operation,
-            String expression, PythonFunctionGenerationScope scope,
-            PythonCodeGeneratorContext context) {
+    private String generateAddOperation(
+        AssignPathRoot root, 
+        Operation operation,
+        String expression, 
+        PythonFunctionGenerationScope scope, 
+        PythonCodeGeneratorContext context
+    ) {
         PythonCodeWriter writer = new PythonCodeWriter();
         Attribute attribute = root instanceof Attribute ? (Attribute) root : null;
         String rootName = root.getName();
@@ -752,7 +759,7 @@ public final class PythonFunctionGenerator {
                 if (operation.getPath() != null) {
                     String bundleName = (attributeType instanceof RosettaNamed named)
                             ? getTypeNameForContext(named, context)
-                            : RuneToPythonMapper.getBundleObjectName(attributeType);
+                            : context.getBundleObjectName((RosettaNamed) attributeType);
                     scope.markAsObjectBuilder(rootName);
                     writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
                     writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
@@ -782,9 +789,14 @@ public final class PythonFunctionGenerator {
         return current.getFeature() instanceof Attribute attr && attr.getCard().isIsMany();
     }
 
-    private void initializePathInPreamble(String rootName, Segment path, Function function,
-            PythonCodeWriter writer, PythonFunctionGenerationScope scope,
-            PythonCodeGeneratorContext context) {
+    private void initializePathInPreamble(
+        String rootName, 
+        Segment path, 
+        Function function,
+        PythonCodeWriter writer, 
+        PythonFunctionGenerationScope scope, 
+        PythonCodeGeneratorContext context
+    ) {
         Segment current = path;
         String currentPath = rootName;
 
@@ -815,7 +827,7 @@ public final class PythonFunctionGenerator {
                         RosettaType attrType = attribute.getTypeCall().getType();
                         String bundleName = (attrType instanceof RosettaNamed named)
                                 ? getTypeNameForContext(named, context)
-                                : RuneToPythonMapper.getBundleObjectName(attrType);
+                                : context.getBundleObjectName((RosettaNamed) attrType);
                         writer.appendLine(currentPath + " = ObjectBuilder(" + bundleName + ")");
                         scope.markInitialized(currentPath);
                     }

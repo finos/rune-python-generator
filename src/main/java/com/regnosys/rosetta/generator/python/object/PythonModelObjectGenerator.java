@@ -25,6 +25,7 @@ import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.TypeSystem;
+import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -84,12 +85,12 @@ public class PythonModelObjectGenerator {
     public void scan(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         for (Data rc : rClasses) {
-            String className = RuneToPythonMapper.getFullyQualifiedName(rc);
+            String className = context.getFullyQualifiedName(rc);
             context.addClassName(className);
             dependencyDAG.addVertex(className);
-            
+
             if (rc.getSuperType() != null) {
-                String superClassName = RuneToPythonMapper.getFullyQualifiedName(rc.getSuperType());
+                String superClassName = context.getFullyQualifiedName(rc.getSuperType());
                 addDependency(dependencyDAG, className, superClassName);
                 context.getSuperTypes().put(className, superClassName);
             }
@@ -110,55 +111,57 @@ public class PythonModelObjectGenerator {
                 }
                 if (rt instanceof RDataType rdt) {
                     if (!RuneToPythonMapper.isRosettaBasicType(rdt)) {
-                        String attrClassName = rdt.getNamespace().toString() + "." + rdt.getName();
+                        String attrClassName = context.applyPrefix(rdt.getNamespace().toString()) + "." + rdt.getName();
                         addDependency(dependencyDAG, className, attrClassName);
                     }
                 }
             }
-            
+
             // Add dependencies for conditions (Data Rules)
             for (com.regnosys.rosetta.rosetta.simple.Condition condition : rc.getConditions()) {
-                addExpressionDependencies(dependencyDAG, className, condition.getExpression());
+                addExpressionDependencies(dependencyDAG, className, condition.getExpression(), context);
             }
         }
     }
 
-    private void addExpressionDependencies(Graph<String, DefaultEdge> dependencyDAG, String className, 
-            com.regnosys.rosetta.rosetta.expression.RosettaExpression expression) {
+    private void addExpressionDependencies(
+        Graph<String, DefaultEdge> dependencyDAG,
+        String className,
+        RosettaExpression expression,
+        PythonCodeGeneratorContext context) {
         if (expression == null) {
             return;
         }
         if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference ref) {
-            if (ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Data || 
+            if (ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Data ||
                 ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Function ||
                 ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.RosettaEnumeration) {
-                
-                String depName = RuneToPythonMapper.getFullyQualifiedName((com.regnosys.rosetta.rosetta.RosettaNamed) ref.getSymbol());
+
+                String depName = context.getFullyQualifiedName((com.regnosys.rosetta.rosetta.RosettaNamed) ref.getSymbol());
                 addDependency(dependencyDAG, className, depName);
             }
-            ref.getArgs().forEach(arg -> addExpressionDependencies(dependencyDAG, className, arg));
+            ref.getArgs().forEach(arg -> addExpressionDependencies(dependencyDAG, className, arg, context));
         } else if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression cons) {
             if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
-                String depName = RuneToPythonMapper.getFullyQualifiedName(cons.getTypeCall().getType());
+                String depName = context.getFullyQualifiedName(cons.getTypeCall().getType());
                 addDependency(dependencyDAG, className, depName);
             }
-            cons.getValues().forEach(val -> addExpressionDependencies(dependencyDAG, className, val.getValue()));
+            cons.getValues().forEach(val -> addExpressionDependencies(dependencyDAG, className, val.getValue(), context));
         }
 
         expression.eContents().forEach(child -> {
             if (child instanceof com.regnosys.rosetta.rosetta.expression.RosettaExpression childExpr) {
-                addExpressionDependencies(dependencyDAG, className, childExpr);
+                addExpressionDependencies(dependencyDAG, className, childExpr, context);
             }
         });
     }
 
-    public Map<String, String> generate(Iterable<Data> rClasses,
-        PythonCodeGeneratorContext context) {
+    public Map<String, String> generate(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
         Set<String> enumImports = context.getEnumImports();
         Map<String, String> result = new HashMap<>();
 
         for (Data rc : rClasses) {
-            String className = RuneToPythonMapper.getFullyQualifiedName(rc);
+            String className = context.getFullyQualifiedName(rc);
             try {
                 String pythonClass = generateClass(rc, enumImports, context);
                 result.put(className, pythonClass);
@@ -180,14 +183,10 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private String generateClass(Data rc, Set<String> enumImports,
-            PythonCodeGeneratorContext context) {
+    private String generateClass(Data rc, Set<String> enumImports, PythonCodeGeneratorContext context) {
         RosettaModel model = (RosettaModel) rc.eContainer();
-        String className = model.getName() + "." + rc.getName();
+        String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isStandalone = context.getStandaloneClasses().contains(className);
-        if (rc == null) {
-            throw new RuntimeException("Rosetta class not initialized");
-        }
         if (rc.getSuperType() != null && rc.getSuperType().getName() == null) {
             throw new RuntimeException(
                     "The class superType for " + rc.getName() + " exists but its name is null");
@@ -197,7 +196,7 @@ public class PythonModelObjectGenerator {
         }
 
         if (!isStandalone) {
-            pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports, context.getStandaloneClasses(), false);
+            pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports, context, false);
         }
 
         return generateBody(rc, context, isStandalone);
@@ -265,6 +264,7 @@ public class PythonModelObjectGenerator {
 
     private String generateBody(Data rc, PythonCodeGeneratorContext context, boolean isStandalone) {
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
+        expressionGenerator.setContext(context);
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
@@ -272,13 +272,13 @@ public class PythonModelObjectGenerator {
 
         String superClassName;
         if (rc.getSuperType() != null) {
-            String superFQN = RuneToPythonMapper.getFullyQualifiedName(rc.getSuperType());
+            String superFQN = context.getFullyQualifiedName(rc.getSuperType());
             if (isStandalone || context.getStandaloneClasses().contains(superFQN)) {
                 // Modules use the class name directly (with an import)
                 superClassName = rc.getSuperType().getName();
             } else {
                 // Internal bundle uses flattened name
-                superClassName = RuneToPythonMapper.getBundleObjectName(rc.getSuperType());
+                superClassName = context.getBundleObjectName(rc.getSuperType());
             }
         } else {
             superClassName = "BaseDataClass";
@@ -287,20 +287,20 @@ public class PythonModelObjectGenerator {
         if (isStandalone) {
             // Standard imports come from createImports() in processDAG — only add type-specific imports here
             if (rc.getSuperType() != null) {
-                String superFQN = RuneToPythonMapper.getFullyQualifiedName(rc.getSuperType());
+                String superFQN = context.getFullyQualifiedName(rc.getSuperType());
                 String superClassName_InImport = rc.getSuperType().getName();
                 writer.appendLine(String.format("from %s import %s", superFQN, superClassName_InImport));
             }
             // Add attribute-level imports (all Data types safe for standalone files)
             Set<String> imports = new java.util.HashSet<>();
-            pythonAttributeProcessor.getImportsFromAttributes(rc, imports, context.getStandaloneClasses(), true);
+            pythonAttributeProcessor.getImportsFromAttributes(rc, imports, context, true);
             for (String imp : imports) {
                 writer.appendLine(imp);
             }
             writer.newLine();
         }
 
-        String classNameDefinition = isStandalone ? rc.getName() : RuneToPythonMapper.getBundleObjectName(rc);
+        String classNameDefinition = isStandalone ? rc.getName() : context.getBundleObjectName(rc);
         writer.appendLine("class " + classNameDefinition + "(" + superClassName + "):");
         writer.indent();
 
@@ -318,14 +318,14 @@ public class PythonModelObjectGenerator {
         }
 
         if (!isStandalone) {
-            writer.appendLine("_FQRTN: ClassVar[str] = '" + RuneToPythonMapper.getFullyQualifiedName(rc) + "'");
+            writer.appendLine("_FQRTN: ClassVar[str] = '" + context.getFullyQualifiedName(rc) + "'");
         }
 
         AttributeProcessingResult attrResult = pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints, context);
         writer.appendBlock(attrResult.getAttributeCode());
 
         if (!isStandalone) {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(rc);
+            String bundleName = context.getBundleObjectName(rc);
             List<String> updates = attrResult.getAnnotationUpdates().stream()
                     .map(update -> bundleName + "." + update)
                     .collect(Collectors.toList());

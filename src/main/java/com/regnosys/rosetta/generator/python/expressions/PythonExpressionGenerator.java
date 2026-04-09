@@ -76,6 +76,7 @@ import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RMetaAnnotatedType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.RosettaTypeProvider;
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 
 import jakarta.inject.Inject;
 
@@ -116,13 +117,10 @@ public final class PythonExpressionGenerator {
      */
     private int generatedFunctionCounter = 0;
 
-    /**
-     * The set of standalone class/function FQNs for context-aware name resolution.
-     */
-    private java.util.Set<String> standaloneClasses = java.util.Collections.emptySet();
+    private PythonCodeGeneratorContext context;
 
-    public void setStandaloneClasses(java.util.Set<String> standaloneClasses) {
-        this.standaloneClasses = standaloneClasses;
+    public void setContext(PythonCodeGeneratorContext context) {
+        this.context = context;
     }
 
     /**
@@ -430,8 +428,8 @@ public final class PythonExpressionGenerator {
         String type = null;
         if (expr.getTypeCall() != null && expr.getTypeCall().getType() != null) {
             com.regnosys.rosetta.rosetta.RosettaNamed typeNamed = expr.getTypeCall().getType();
-            String fqn = RuneToPythonMapper.getFullyQualifiedName(typeNamed);
-            type = standaloneClasses.contains(fqn) ? typeNamed.getName() : RuneToPythonMapper.getBundleObjectName(typeNamed);
+            String fqn = context.getFullyQualifiedName(typeNamed);
+            type = context.getStandaloneClasses().contains(fqn) ? typeNamed.getName() : context.getBundleObjectName(typeNamed);
         }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
@@ -512,7 +510,7 @@ public final class PythonExpressionGenerator {
         String value = EnumHelper.convertValue(rev);
         RosettaEnumeration parent = rev.getEnumeration();
         String parentName = parent.getName();
-        String modelName = parent.getModel().getName();
+        String modelName = context.applyPrefix(parent.getModel().getName());
         return modelName + "." + parentName + "." + parentName + "." + value;
     }
 
@@ -526,8 +524,8 @@ public final class PythonExpressionGenerator {
             case "Max" -> "max";
             case "Min" -> "min";
             case null, default -> {
-                String fqn = RuneToPythonMapper.getFullyQualifiedName(s);
-                yield standaloneClasses.contains(fqn) ? s.getName() : RuneToPythonMapper.getBundleObjectName(s);
+                String fqn = context.getFullyQualifiedName(s);
+                yield context.getStandaloneClasses().contains(fqn) ? s.getName() : context.getBundleObjectName(s);
             }
         };
         return "rune_call_unchecked(" + funcName + ", " + args + ")";
@@ -752,7 +750,7 @@ public final class PythonExpressionGenerator {
         // Basic type: Python immutability requires constructing a new *WithMeta wrapper.
         if (RuneToPythonMapper.isRosettaBasicType(argType)) {
             String withMetaType = RuneToPythonMapper.getAttributeTypeWithMeta(
-                    RuneToPythonMapper.toPythonType(argType, false));
+                    RuneToPythonMapper.toPythonType(argType));
             return withMetaType + "(" + arg + ", " + kwargs + ")";
         }
 

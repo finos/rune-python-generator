@@ -47,13 +47,12 @@ public class PythonObjectExpressionTest {
                         f = Foo { a: 1, b: 2 }
                 """).toString();
 
-        // TestConst.py uses short name for the field type but flattened name in condition expressions
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class TestConst(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "f: Foo = Field(..., description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "return rune_all_elements(rune_resolve_attr(self, \"f\"), \"=\", com_rosetta_test_model_Foo(a=1, b=2))");
+                "return rune_all_elements(rune_resolve_attr(self, \"f\"), \"=\", Foo(a=1, b=2))");
     }
 
     // -------------------------------------------------------------------------

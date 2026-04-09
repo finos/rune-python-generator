@@ -137,6 +137,30 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     }
 
     /**
+     * Optional namespace prefix prepended to every generated namespace.
+     * When set to "finos", "cdm.event.common" becomes "finos.cdm.event.common".
+     */
+    private String namespacePrefix = null;
+
+    /**
+     * Sets the namespace prefix applied to all generated namespaces.
+     *
+     * @param namespacePrefix the prefix (e.g. {@code "finos"}), or {@code null} for none
+     */
+    public void setNamespacePrefix(String namespacePrefix) {
+        this.namespacePrefix = namespacePrefix;
+    }
+
+    /**
+     * Returns the effective (prefix-aware) model name used as the context key
+     * and subfolder path.
+     */
+    private String effectiveModelName(RosettaModel model) {
+        return com.regnosys.rosetta.generator.python.util.RuneToPythonMapper.applyPrefix(
+                model.getName(), namespacePrefix);
+    }
+
+    /**
      * The PythonCodeGenerator constructor.
      */
     public PythonCodeGenerator() {
@@ -153,15 +177,25 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         // Phase 1: Accumulate all elements from all models into per-namespace contexts.
         for (RosettaModel model : models) {
-            String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
-            PythonCodeGeneratorContext context = contexts.computeIfAbsent(nameSpace, k -> new PythonCodeGeneratorContext());
+            String effectiveName = effectiveModelName(model);
+            String nameSpace = effectiveName.split("\\.")[0];
+            PythonCodeGeneratorContext context = contexts.computeIfAbsent(nameSpace, k -> {
+                PythonCodeGeneratorContext c = new PythonCodeGeneratorContext();
+                c.setNamespacePrefix(namespacePrefix);
+                return c;
+            });
 
             boolean hasContent = model.getElements().stream()
                     .anyMatch(e -> e instanceof Data
                             || (e instanceof Function && !(e instanceof FunctionDispatch))
                             || e instanceof RosettaEnumeration);
             if (hasContent) {
-                context.addSubfolder(model.getName());
+                context.addSubfolder(effectiveName);
+            }
+            boolean hasFunctions = model.getElements().stream()
+                    .anyMatch(e -> e instanceof Function && !(e instanceof FunctionDispatch));
+            if (hasFunctions) {
+                context.addSubfolder(effectiveName + ".functions");
             }
             model.getElements().stream()
                     .filter(Data.class::isInstance)
@@ -190,7 +224,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     @Override
     public Map<String, ? extends CharSequence> generate(Resource resource, RosettaModel model, String version) {
         Map<String, CharSequence> result = new HashMap<>();
-        String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
+        String nameSpace = effectiveModelName(model).split("\\.")[0];
         PythonCodeGeneratorContext context = contexts.get(nameSpace);
         if (context == null) {
             return result;
@@ -211,7 +245,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         context.getClassObjects().putAll(pojoGenerator.generate(modelData, context));
         context.getFunctionObjects().putAll(functionGenerator.generate(modelFunctions, context));
-        result.putAll(enumGenerator.generate(modelEnums));
+        result.putAll(enumGenerator.generate(modelEnums, context));
 
         return result;
     }

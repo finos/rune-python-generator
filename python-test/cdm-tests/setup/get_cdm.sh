@@ -26,9 +26,9 @@ echo "***** resetting the rosetta directory"
 rm -rf "${ROSETTA_DIR}"
 mkdir -p "${ROSETTA_DIR}/common-domain-model"
 
-CDM_VERSION=${1:-"master"}
+CDM_BRANCH=${1:-"master"}
 
-echo "***** pull CDM rosetta definitions ($CDM_VERSION)"
+echo "***** pull CDM rosetta definitions ($CDM_BRANCH)"
 TEMP_CDM="${MY_PATH}/../temp_cdm"
 rm -rf "${TEMP_CDM}"
 mkdir -p "${TEMP_CDM}"
@@ -43,7 +43,7 @@ rosetta-source/pom.xml
 EOF
 
 git remote add origin https://github.com/finos/common-domain-model.git
-git pull --depth 1 origin $CDM_VERSION || error "git pull for CDM failed"
+git pull --depth 1 origin $CDM_BRANCH || error "git pull for CDM failed"
 
 # Copy CDM files to the target 'common-domain-model' folder
 cp -r rosetta-source/src/main/rosetta/* "${ROSETTA_DIR}/common-domain-model/"
