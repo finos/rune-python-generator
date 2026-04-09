@@ -62,7 +62,6 @@
       ],
       "prCreation": "immediate",
       "prPriority": 100,
-      "stabilityDays": 0,
       "minimumReleaseAge": "0 days",
       "schedule": [
         "at any time"
