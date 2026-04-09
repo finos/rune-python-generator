@@ -24,6 +24,11 @@ public class PythonAttributeProcessor {
     private TypeSystem typeSystem;
 
     public String generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints) {
+        return generateAllAttributes(rc, keyRefConstraints, null);
+    }
+
+    public String generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints,
+            String namespacePrefix) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
@@ -33,20 +38,20 @@ public class PythonAttributeProcessor {
 
         PythonCodeWriter writer = new PythonCodeWriter();
         for (RAttribute ra : allAttributes) {
-            generateAttribute(writer, rc, ra, keyRefConstraints);
+            generateAttribute(writer, rc, ra, keyRefConstraints, namespacePrefix);
         }
         return writer.toString();
     }
 
     private void generateAttribute(PythonCodeWriter writer, Data rc, RAttribute ra,
-            Map<String, List<String>> keyRefConstraints) {
+            Map<String, List<String>> keyRefConstraints, String namespacePrefix) {
         RType rt = ra.getRMetaAnnotatedType().getRType();
 
         if (rt instanceof RAliasType) {
             rt = typeSystem.stripFromTypeAliases(rt);
         }
 
-        String attrTypeName = RuneToPythonMapper.toPythonType(rt);
+        String attrTypeName = RuneToPythonMapper.toPythonType(rt, namespacePrefix);
         if (rt instanceof RNumberType numberType && numberType.isInteger() && !"int".equals(attrTypeName)) {
             attrTypeName = "int";
         }
@@ -263,13 +268,10 @@ public class PythonAttributeProcessor {
     }
 
     public void getImportsFromAttributes(Data rc, Set<String> enumImports) {
-        /**
-         * Get ENUM imports from attributes (all other dependencies are handled by the
-         * bundle)
-         * 
-         * @param rc
-         * @param enumImports
-         */
+        getImportsFromAttributes(rc, enumImports, null);
+    }
+
+    public void getImportsFromAttributes(Data rc, Set<String> enumImports, String namespacePrefix) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
@@ -287,8 +289,11 @@ public class PythonAttributeProcessor {
                             "Attribute type is null for " + attr.getName() + " for class " + rc.getName());
                 }
 
-                if (rt instanceof REnumType) {
-                    enumImports.add("import " + ((REnumType) rt).getQualifiedName());
+                if (rt instanceof REnumType enumType) {
+                    String qualifiedName = (namespacePrefix != null && !namespacePrefix.isBlank())
+                            ? namespacePrefix + "." + enumType.getQualifiedName()
+                            : enumType.getQualifiedName().toString();
+                    enumImports.add("import " + qualifiedName);
                 }
             }
         }

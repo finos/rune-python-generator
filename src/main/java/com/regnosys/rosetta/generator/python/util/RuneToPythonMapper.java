@@ -147,6 +147,10 @@ public class RuneToPythonMapper {
     }
 
     public static String getFullyQualifiedObjectName(RosettaNamed rn) {
+        return getFullyQualifiedObjectName(rn, null);
+    }
+
+    public static String getFullyQualifiedObjectName(RosettaNamed rn, String namespacePrefix) {
         RosettaModel model = (RosettaModel) rn.eContainer();
         if (model == null) {
             throw new RuntimeException("Rosetta model not found for data " + rn.getName());
@@ -157,8 +161,9 @@ public class RuneToPythonMapper {
         }
         String typeName = toPythonBasicTypeInnerFunction(rn.getName());
         if (typeName == null) {
+            String effectiveModelName = applyPrefix(model.getName(), namespacePrefix);
             String function = (rn instanceof Function) ? ".functions" : "";
-            typeName = model.getName() + function + "." + rn.getName();
+            typeName = effectiveModelName + function + "." + rn.getName();
             if (rn instanceof RosettaEnumeration) {
                 typeName += "." + rn.getName();
             }
@@ -167,7 +172,11 @@ public class RuneToPythonMapper {
     }
 
     public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes) {
-        String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn);
+        return getBundleObjectName(rn, useQuotes, null);
+    }
+
+    public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes, String namespacePrefix) {
+        String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn, namespacePrefix);
         if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
             return fullyQualifiedObjectName;
         }
@@ -179,7 +188,17 @@ public class RuneToPythonMapper {
     }
 
     public static String getBundleObjectName(RosettaNamed rn) {
-        return getBundleObjectName(rn, false);
+        return getBundleObjectName(rn, false, null);
+    }
+
+    public static String getBundleObjectName(RosettaNamed rn, String namespacePrefix) {
+        return getBundleObjectName(rn, false, namespacePrefix);
+    }
+
+    private static String applyPrefix(String name, String namespacePrefix) {
+        return (namespacePrefix != null && !namespacePrefix.isBlank())
+                ? namespacePrefix + "." + name
+                : name;
     }
 
     /**
@@ -203,12 +222,17 @@ public class RuneToPythonMapper {
      * @return the Python type name string, or null if rt is null
      */
     public static String toPythonType(RType rt, boolean useQuotes) {
+        return toPythonType(rt, useQuotes, null);
+    }
+
+    public static String toPythonType(RType rt, boolean useQuotes, String namespacePrefix) {
         if (rt == null)
             return null;
         var pythonType = toPythonBasicTypeInnerFunction(rt.getName());
         if (pythonType == null) {
             String rtName = rt.getName();
-            pythonType = rt.getNamespace().toString() + "." + rtName;
+            String effectiveNamespace = applyPrefix(rt.getNamespace().toString(), namespacePrefix);
+            pythonType = effectiveNamespace + "." + rtName;
             pythonType = (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType;
 
             if (!isRosettaBasicType(rt) && !(rt instanceof REnumType)) {
@@ -228,7 +252,11 @@ public class RuneToPythonMapper {
      * @return the Python type name string, or null if rt is null
      */
     public static String toPythonType(RType rt) {
-        return toPythonType(rt, false);
+        return toPythonType(rt, false, null);
+    }
+
+    public static String toPythonType(RType rt, String namespacePrefix) {
+        return toPythonType(rt, false, namespacePrefix);
     }
 
     /**

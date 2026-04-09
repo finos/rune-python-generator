@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.regex.Pattern;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
@@ -41,11 +42,13 @@ import org.eclipse.xtext.util.CancelIndicator;
  * </p>
  *
  * <h2>Usage</h2>
- * 
+ *
  * <pre>
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s &lt;source-dir&gt; -t &lt;target-dir&gt;
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -f &lt;source-file&gt; -t &lt;target-dir&gt;
  * </pre>
+ *
+ * <h2>Options</h2>
  * <ul>
  * <li><b>-s, --dir &lt;source-dir&gt;</b>: Source directory containing Rosetta
  * files (all <code>.rosetta</code> files will be processed)</li>
@@ -53,13 +56,27 @@ import org.eclipse.xtext.util.CancelIndicator;
  * process</li>
  * <li><b>-t, --tgt &lt;target-dir&gt;</b>: Target directory for generated
  * Python code (defaults to <code>./python</code> if not specified)</li>
+ * <li><b>-p, --project-name &lt;projectName&gt;</b>: Override the
+ * <code>pyproject.toml</code> project name (default:
+ * <code>python-&lt;first-namespace-segment&gt;</code>)</li>
+ * <li><b>-x, --namespace-prefix &lt;prefix&gt;</b>: Prepend a prefix segment
+ * to every generated namespace (e.g. {@code finos} turns {@code cdm.x.y} into
+ * {@code finos.cdm.x.y})</li>
+ * <li><b>-v, --version &lt;version&gt;</b>: Version for the generated Python
+ * package, in <code>#.#.#</code> format (e.g. {@code 1.2.3}). Defaults to
+ * {@code 0.0.0} when omitted. An error is raised if the supplied value does not
+ * match the required format.</li>
+ * <li><b>-e, --allow-errors</b>: Continue generation even if Rosetta
+ * validation errors occur</li>
+ * <li><b>-w, --fail-on-warnings</b>: Treat Rosetta validation warnings as
+ * errors</li>
  * <li><b>-h</b>: Print usage/help</li>
  * </ul>
  *
  * <h2>Example</h2>
- * 
+ *
  * <pre>
- *   java -jar target/python-0.0.0.main-SNAPSHOT-shaded.jar -s src/main/rosetta -t build/python
+ *   java -jar target/python-0.0.0.main-SNAPSHOT-shaded.jar -s src/main/rosetta -t build/python -v 1.2.3 -p my-package
  * </pre>
  *
  * <h2>Notes</h2>
@@ -77,6 +94,8 @@ import org.eclipse.xtext.util.CancelIndicator;
 
 public class PythonCodeGeneratorCLI {
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
+    private static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+    static final String DEFAULT_VERSION = "0.0.0";
 
     public static void main(String[] args) {
         System.exit(new PythonCodeGeneratorCLI().execute(args));
@@ -96,8 +115,14 @@ public class PythonCodeGeneratorCLI {
                 .desc("Continue generation even if validation errors occur").build();
         Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings")
                 .desc("Treat validation warnings as errors").build();
-        Option projectNameOpt = Option.builder("n").longOpt("project-name").argName("projectName")
+        Option projectNameOpt = Option.builder("p").longOpt("project-name").argName("projectName")
                 .desc("Override the pyproject.toml project name (default: python-<first-namespace-segment>)")
+                .hasArg().build();
+        Option namespacePrefixOpt = Option.builder("x").longOpt("namespace-prefix").argName("namespacePrefix")
+                .desc("Prepend a prefix segment to every namespace (e.g. 'finos' turns 'cdm.x.y' into 'finos.cdm.x.y')")
+                .hasArg().build();
+        Option versionOpt = Option.builder("v").longOpt("version").argName("version")
+                .desc("Specify the version for the generated Python code")
                 .hasArg().build();
 
         options.addOption(help);
@@ -107,6 +132,8 @@ public class PythonCodeGeneratorCLI {
         options.addOption(allowErrorsOpt);
         options.addOption(failOnWarningsOpt);
         options.addOption(projectNameOpt);
+        options.addOption(namespacePrefixOpt);
+        options.addOption(versionOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -118,14 +145,37 @@ public class PythonCodeGeneratorCLI {
             String tgtDir = cmd.getOptionValue("t", "./python");
             boolean allowErrors = cmd.hasOption("e");
             boolean failOnWarnings = cmd.hasOption("w");
-            String projectName = cmd.getOptionValue("n");
+            String projectName = cmd.getOptionValue("p");
+            String namespacePrefix = cmd.getOptionValue("x");
+            String versionInput = cmd.getOptionValue("v");
+
+            if (versionInput != null && !VALID_VERSION_PATTERN.matcher(versionInput).matches()) {
+                System.err.println("Invalid version format '" + versionInput + "': must be #.#.# (e.g. 1.2.3)");
+                return 1;
+            }
 
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
-                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings, projectName);
+                return translateFromSourceDir(
+                    srcDir, 
+                    tgtDir, 
+                    allowErrors, 
+                    failOnWarnings, 
+                    projectName,
+                    namespacePrefix,
+                    versionInput
+                );
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
-                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings, projectName);
+                return translateFromSourceFile(
+                    srcFile, 
+                    tgtDir, 
+                    allowErrors, 
+                    failOnWarnings, 
+                    projectName,
+                    namespacePrefix,
+                    versionInput
+                );
             } else {
                 System.err.println("Either a source directory (-s) or source file (-f) must be specified.");
                 printUsage(options);
@@ -143,12 +193,15 @@ public class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    protected int translateFromSourceDir(String srcDir, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
-        return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings, null);
-    }
-
-    protected int translateFromSourceDir(String srcDir, String tgtDir, boolean allowErrors, boolean failOnWarnings,
-            String projectName) {
+    protected int translateFromSourceDir(
+        String srcDir, 
+        String tgtDir, 
+        boolean allowErrors, 
+        boolean failOnWarnings,
+        String projectName, 
+        String namespacePrefix,
+        String versionInput
+    ) {
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
             LOGGER.error("Source directory does not exist: {}", srcDir);
@@ -163,19 +216,29 @@ public class PythonCodeGeneratorCLI {
                     .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
                     .collect(Collectors.toList());
-            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName);
+            return processRosettaFiles(
+                rosettaFiles, 
+                tgtDir, 
+                allowErrors, 
+                failOnWarnings, 
+                projectName,
+                namespacePrefix,
+                versionInput);
         } catch (IOException e) {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
             return 1;
         }
     }
 
-    protected int translateFromSourceFile(String srcFile, String tgtDir, boolean allowErrors, boolean failOnWarnings) {
-        return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings, null);
-    }
-
-    protected int translateFromSourceFile(String srcFile, String tgtDir, boolean allowErrors, boolean failOnWarnings,
-            String projectName) {
+    protected int translateFromSourceFile(
+        String srcFile, 
+        String tgtDir, 
+        boolean allowErrors, 
+        boolean failOnWarnings,
+        String projectName, 
+        String namespacePrefix,
+        String versionInput
+    ) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
             LOGGER.error("Source file does not exist: {}", srcFile);
@@ -190,21 +253,30 @@ public class PythonCodeGeneratorCLI {
             return 1;
         }
         List<Path> rosettaFiles = List.of(srcFilePath);
-        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName);
+        return processRosettaFiles(
+            rosettaFiles, 
+            tgtDir, 
+            allowErrors, 
+            failOnWarnings, 
+            projectName, 
+            namespacePrefix, 
+            versionInput
+        );
     }
 
     protected IResourceValidator getValidator(Injector injector) {
         return injector.getInstance(IResourceValidator.class);
     }
 
-    // Common processing function
-    protected int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, boolean allowErrors,
-            boolean failOnWarnings) {
-        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, null);
-    }
-
-    protected int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, boolean allowErrors,
-            boolean failOnWarnings, String projectName) {
+    protected int processRosettaFiles(
+        List<Path> rosettaFiles, 
+        String tgtDir, 
+        boolean allowErrors,
+        boolean failOnWarnings, 
+        String projectName, 
+        String namespacePrefix,
+        String versionInput
+    ) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
         if (rosettaFiles.isEmpty()) {
@@ -224,6 +296,7 @@ public class PythonCodeGeneratorCLI {
 
         PythonCodeGenerator pythonCodeGenerator = injector.getInstance(PythonCodeGenerator.class);
         pythonCodeGenerator.setProjectName(projectName);
+        pythonCodeGenerator.setNamespacePrefix(namespacePrefix);
         PythonModelLoader modelLoader = injector.getInstance(PythonModelLoader.class);
 
         List<RosettaModel> models = modelLoader.getRosettaModels(resources);
@@ -231,7 +304,7 @@ public class PythonCodeGeneratorCLI {
             LOGGER.error("No valid Rosetta models found.");
             return 1;
         }
-        String version = models.getFirst().getVersion();
+        String version = (versionInput != null) ? versionInput : DEFAULT_VERSION;
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 

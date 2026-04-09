@@ -25,48 +25,52 @@ public class PythonFunctionDependencyProvider {
     private RObjectFactory rTypeBuilderFactory;
 
     public void addDependencies(EObject object, Set<String> enumImports) {
+        addDependencies(object, enumImports, null);
+    }
+
+    public void addDependencies(EObject object, Set<String> enumImports, String namespacePrefix) {
         if (object instanceof RosettaEnumeration enumeration) {
             String name = enumeration.getName();
             RosettaModel model = (RosettaModel) enumeration.eContainer();
-            String prefix = model.getName();
+            String prefix = applyPrefix(model.getName(), namespacePrefix);
             enumImports.add("import " + prefix + "." + name);
         } else if (object instanceof RosettaEnumValueReference ref) {
-            addDependencies(ref.getEnumeration(), enumImports);
+            addDependencies(ref.getEnumeration(), enumImports, namespacePrefix);
         } else if (object instanceof RosettaBinaryOperation binary) {
-            addDependencies(binary.getLeft(), enumImports);
-            addDependencies(binary.getRight(), enumImports);
+            addDependencies(binary.getLeft(), enumImports, namespacePrefix);
+            addDependencies(binary.getRight(), enumImports, namespacePrefix);
         } else if (object instanceof RosettaConditionalExpression cond) {
-            addDependencies(cond.getIf(), enumImports);
-            addDependencies(cond.getIfthen(), enumImports);
-            addDependencies(cond.getElsethen(), enumImports);
+            addDependencies(cond.getIf(), enumImports, namespacePrefix);
+            addDependencies(cond.getIfthen(), enumImports, namespacePrefix);
+            addDependencies(cond.getElsethen(), enumImports, namespacePrefix);
         } else if (object instanceof RosettaOnlyExistsExpression onlyExists) {
-            onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports));
+            onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports, namespacePrefix));
         } else if (object instanceof RosettaFunctionalOperation functional) {
             if (functional.getArgument() != null) {
-                addDependencies(functional.getArgument(), enumImports);
+                addDependencies(functional.getArgument(), enumImports, namespacePrefix);
             }
             if (functional instanceof FilterOperation filter) {
-                addDependencies(filter.getFunction(), enumImports);
+                addDependencies(filter.getFunction(), enumImports, namespacePrefix);
             } else if (functional instanceof MapOperation map) {
-                addDependencies(map.getFunction(), enumImports);
+                addDependencies(map.getFunction(), enumImports, namespacePrefix);
             }
         } else if (object instanceof RosettaUnaryOperation unary) {
-            addDependencies(unary.getArgument(), enumImports);
+            addDependencies(unary.getArgument(), enumImports, namespacePrefix);
         } else if (object instanceof RosettaFeatureCall featureCall) {
-            addDependencies(featureCall.getReceiver(), enumImports);
+            addDependencies(featureCall.getReceiver(), enumImports, namespacePrefix);
         } else if (object instanceof RosettaSymbolReference symbolRef) {
-            addDependencies(symbolRef.getSymbol(), enumImports);
-            symbolRef.getArgs().forEach(arg -> addDependencies(arg, enumImports));
+            addDependencies(symbolRef.getSymbol(), enumImports, namespacePrefix);
+            symbolRef.getArgs().forEach(arg -> addDependencies(arg, enumImports, namespacePrefix));
         } else if (object instanceof InlineFunction inline) {
-            addDependencies(inline.getBody(), enumImports);
+            addDependencies(inline.getBody(), enumImports, namespacePrefix);
         } else if (object instanceof ListLiteral listLiteral) {
-            listLiteral.getElements().forEach(el -> addDependencies(el, enumImports));
+            listLiteral.getElements().forEach(el -> addDependencies(el, enumImports, namespacePrefix));
         } else if (object instanceof RosettaConstructorExpression constructor) {
             if (constructor.getTypeCall() != null && constructor.getTypeCall().getType() != null) {
-                addDependencies(constructor.getTypeCall().getType(), enumImports);
+                addDependencies(constructor.getTypeCall().getType(), enumImports, namespacePrefix);
             }
             constructor.getValues()
-                    .forEach(valuePair -> addDependencies(valuePair.getValue(), enumImports));
+                    .forEach(valuePair -> addDependencies(valuePair.getValue(), enumImports, namespacePrefix));
         } else if (object instanceof Function ||
                 object instanceof Data ||
                 object instanceof RosettaExternalFunction ||
@@ -81,16 +85,26 @@ public class PythonFunctionDependencyProvider {
         } else if (object != null) {
             // Recurse into all children for unknown EObjects to ensure thorough dependency
             // collection
-            object.eContents().forEach(child -> addDependencies(child, enumImports));
+            object.eContents().forEach(child -> addDependencies(child, enumImports, namespacePrefix));
         }
     }
 
     public void addDependencies(RType type, Set<String> enumImports) {
+        addDependencies(type, enumImports, null);
+    }
+
+    public void addDependencies(RType type, Set<String> enumImports, String namespacePrefix) {
         if (type instanceof REnumType enumType) {
             String name = enumType.getName();
-            String prefix = enumType.getNamespace().toString();
+            String prefix = applyPrefix(enumType.getNamespace().toString(), namespacePrefix);
             enumImports.add("import " + prefix + "." + name);
         }
+    }
+
+    private static String applyPrefix(String name, String namespacePrefix) {
+        return (namespacePrefix != null && !namespacePrefix.isBlank())
+                ? namespacePrefix + "." + name
+                : name;
     }
 
     public Set<RFunction> rFunctionDependencies(RosettaExpression expression) {

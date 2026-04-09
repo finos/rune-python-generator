@@ -39,12 +39,11 @@ public class PythonFunctionGenerator {
      * Generate Python from the collection of Rosetta functions.
      * 
      * @param rFunctions the collection of Rosetta functions to generate
-     * @param version    the version for this collection of functions
      * @return a Map of all the generated Python indexed by the file name
      */
 
-    public Map<String, String> generate(Iterable<Function> rFunctions, String version,
-            PythonCodeGeneratorContext context) {
+    public Map<String, String> generate(Iterable<Function> rFunctions,
+            PythonCodeGeneratorContext context, String namespacePrefix) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
             throw new RuntimeException("Dependency DAG not initialized");
@@ -63,16 +62,15 @@ public class PythonFunctionGenerator {
                 LOGGER.warn("Function {} has no container, skipping", rf.getName());
                 continue;
             }
-            // String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
             try {
-                String pythonFunction = generateFunction(rf, version, enumImports);
+                String pythonFunction = generateFunction(rf, enumImports, namespacePrefix);
 
-                String functionName = RuneToPythonMapper.getFullyQualifiedObjectName(rf);
+                String functionName = RuneToPythonMapper.getFullyQualifiedObjectName(rf, namespacePrefix);
                 result.put(functionName, pythonFunction);
                 dependencyDAG.addVertex(functionName);
                 context.addFunctionName(functionName);
 
-                addFunctionDependencies(dependencyDAG, functionName, rf);
+                addFunctionDependencies(dependencyDAG, functionName, rf, namespacePrefix);
             } catch (Exception ex) {
                 LOGGER.error("Exception occurred generating rf {}", rf.getName(), ex);
                 throw new RuntimeException("Error generating Python for function " + rf.getName(), ex);
@@ -81,7 +79,8 @@ public class PythonFunctionGenerator {
         return result;
     }
 
-    private void addFunctionDependencies(Graph<String, DefaultEdge> dependencyDAG, String functionName, Function rf) {
+    private void addFunctionDependencies(Graph<String, DefaultEdge> dependencyDAG, String functionName, Function rf,
+            String namespacePrefix) {
         Set<RosettaNamed> dependencies = new HashSet<>();
 
         rf.getInputs().forEach(input -> {
@@ -112,17 +111,26 @@ public class PythonFunctionGenerator {
         for (RosettaNamed dep : dependencies) {
             String depName = "";
             if (dep instanceof Data) {
-                depName = rObjectFactory.buildRDataType((Data) dep).getQualifiedName().toString();
+                depName = applyPrefix(rObjectFactory.buildRDataType((Data) dep).getQualifiedName().toString(),
+                        namespacePrefix);
             } else if (dep instanceof Function) {
-                depName = RuneToPythonMapper.getFullyQualifiedObjectName((Function) dep);
+                depName = RuneToPythonMapper.getFullyQualifiedObjectName((Function) dep, namespacePrefix);
             } else if (dep instanceof RosettaEnumeration) {
-                depName = rObjectFactory.buildREnumType((RosettaEnumeration) dep).getQualifiedName().toString();
+                depName = applyPrefix(
+                        rObjectFactory.buildREnumType((RosettaEnumeration) dep).getQualifiedName().toString(),
+                        namespacePrefix);
             }
 
             if (!depName.isEmpty() && !functionName.equals(depName)) {
                 addDependency(dependencyDAG, functionName, depName);
             }
         }
+    }
+
+    private static String applyPrefix(String name, String namespacePrefix) {
+        return (namespacePrefix != null && !namespacePrefix.isBlank())
+                ? namespacePrefix + "." + name
+                : name;
     }
 
     private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
@@ -136,14 +144,14 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private String generateFunction(Function rf, String version, Set<String> enumImports) {
+    private String generateFunction(Function rf, Set<String> enumImports, String namespacePrefix) {
         if (rf == null) {
             throw new RuntimeException("Function is null");
         }
         if (enumImports == null) {
             throw new RuntimeException("Enum imports is null");
         }
-        enumImports.addAll(collectFunctionDependencies(rf));
+        enumImports.addAll(collectFunctionDependencies(rf, namespacePrefix));
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -151,10 +159,11 @@ public class PythonFunctionGenerator {
 
         writer.appendLine("@replaceable");
         writer.appendLine("@validate_call");
-        writer.appendLine("def " + RuneToPythonMapper.getBundleObjectName(rf) + generateInputs(rf) + ":");
+        writer.appendLine("def " + RuneToPythonMapper.getBundleObjectName(rf, namespacePrefix)
+                + generateInputs(rf, namespacePrefix) + ":");
         writer.indent();
 
-        writer.appendBlock(generateDescription(rf));
+        writer.appendBlock(generateDescription(rf, namespacePrefix));
 
         if (!rf.getConditions().isEmpty()) {
             writer.appendLine("_pre_registry = {}");
@@ -172,7 +181,7 @@ public class PythonFunctionGenerator {
 
         int[] level = { 0 };
         generateAlias(writer, rf, level);
-        generateOperations(writer, rf, level);
+        generateOperations(writer, rf, level, namespacePrefix);
         generateOutput(writer, rf);
 
         writer.unindent();
@@ -181,12 +190,13 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private String generateInputs(Function function) {
+    private String generateInputs(Function function, String namespacePrefix) {
         StringBuilder result = new StringBuilder("(");
         List<Attribute> inputs = function.getInputs();
         for (int i = 0; i < inputs.size(); i++) {
             Attribute input = inputs.get(i);
-            String inputBundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType());
+            String inputBundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType(),
+                    namespacePrefix);
             String inputType = RuneToPythonMapper.formatPythonType(
                     inputBundleName,
                     input.getCard().getInf(),
@@ -201,7 +211,8 @@ public class PythonFunctionGenerator {
         result.append(") -> ");
         Attribute output = function.getOutput();
         if (output != null) {
-            String outputBundleName = RuneToPythonMapper.getBundleObjectName(output.getTypeCall().getType());
+            String outputBundleName = RuneToPythonMapper.getBundleObjectName(output.getTypeCall().getType(),
+                    namespacePrefix);
             String outputType = RuneToPythonMapper.formatPythonType(
                     outputBundleName,
                     1, // Force min=1 to suppress Optional/| None for return types
@@ -234,7 +245,7 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private String generateDescription(Function function) {
+    private String generateDescription(Function function, String namespacePrefix) {
         List<Attribute> inputs = function.getInputs();
         Attribute output = function.getOutput();
         String description = function.getDefinition();
@@ -249,7 +260,7 @@ public class PythonFunctionGenerator {
         writer.appendLine("----------");
         for (Attribute input : inputs) {
             String paramName = RuneToPythonMapper.formatPythonType(
-                    RuneToPythonMapper.getFullyQualifiedObjectName(input.getTypeCall().getType()),
+                    RuneToPythonMapper.getFullyQualifiedObjectName(input.getTypeCall().getType(), namespacePrefix),
                     1, // Force min=1 to match legacy docstring format (no Optional)
                     input.getCard().getSup(),
                     true);
@@ -263,7 +274,7 @@ public class PythonFunctionGenerator {
         writer.appendLine("-------");
         if (output != null) {
             String paramName = RuneToPythonMapper.formatPythonType(
-                    RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType()),
+                    RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType(), namespacePrefix),
                     1, // Force min=1 to match legacy docstring format (no Optional)
                     output.getCard().getSup(),
                     true);
@@ -277,27 +288,31 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private Set<String> collectFunctionDependencies(Function rf) {
+    private Set<String> collectFunctionDependencies(Function rf, String namespacePrefix) {
         Set<String> enumImports = new HashSet<>();
         rf.getShortcuts().forEach(
-                shortcut -> functionDependencyProvider.addDependencies(shortcut.getExpression(), enumImports));
+                shortcut -> functionDependencyProvider.addDependencies(shortcut.getExpression(), enumImports,
+                        namespacePrefix));
         rf.getOperations().forEach(
-                operation -> functionDependencyProvider.addDependencies(operation.getExpression(), enumImports));
+                operation -> functionDependencyProvider.addDependencies(operation.getExpression(), enumImports,
+                        namespacePrefix));
 
         List<Condition> allConditions = new ArrayList<>(rf.getConditions());
         allConditions.addAll(rf.getPostConditions());
         allConditions.forEach(
-                condition -> functionDependencyProvider.addDependencies(condition.getExpression(), enumImports));
+                condition -> functionDependencyProvider.addDependencies(condition.getExpression(), enumImports,
+                        namespacePrefix));
 
         rf.getInputs().forEach(input -> {
             if (input.getTypeCall() != null && input.getTypeCall().getType() != null) {
-                functionDependencyProvider.addDependencies(input.getTypeCall().getType(), enumImports);
+                functionDependencyProvider.addDependencies(input.getTypeCall().getType(), enumImports, namespacePrefix);
             }
         });
 
         if (rf.getOutput() != null && rf.getOutput().getTypeCall() != null
                 && rf.getOutput().getTypeCall().getType() != null) {
-            functionDependencyProvider.addDependencies(rf.getOutput().getTypeCall().getType(), enumImports);
+            functionDependencyProvider.addDependencies(rf.getOutput().getTypeCall().getType(), enumImports,
+                    namespacePrefix);
         }
         return enumImports;
     }
@@ -345,7 +360,7 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private void generateOperations(PythonCodeWriter writer, Function function, int[] level) {
+    private void generateOperations(PythonCodeWriter writer, Function function, int[] level, String namespacePrefix) {
         if (function.getOutput() != null) {
             List<String> setNames = new ArrayList<>();
             for (Operation operation : function.getOperations()) {
@@ -363,7 +378,7 @@ public class PythonFunctionGenerator {
                 if (operation.isAdd()) {
                     generateAddOperation(writer, root, operation, function, expression, setNames);
                 } else {
-                    generateSetOperation(writer, root, operation, function, expression, setNames);
+                    generateSetOperation(writer, root, operation, function, expression, setNames, namespacePrefix);
                 }
             }
         }
@@ -402,19 +417,20 @@ public class PythonFunctionGenerator {
     }
 
     private void generateSetOperation(PythonCodeWriter writer, AssignPathRoot root, Operation operation,
-            Function function, String expression, List<String> setNames) {
+            Function function, String expression, List<String> setNames, String namespacePrefix) {
         Attribute attributeRoot = (Attribute) root;
         String equalsSign = " = ";
         if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
             writer.appendLine(attributeRoot.getName() + equalsSign + expression);
         } else {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType());
+            String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType(),
+                    namespacePrefix);
             if (!setNames.contains(attributeRoot.getName())) {
                 setNames.add(attributeRoot.getName());
                 writer.appendLine(attributeRoot.getName() + equalsSign + "_get_rune_object('"
                         + bundleName + "', " +
                         getNextPathElementName(operation.getPath()) + ", "
-                        + buildObject(expression, operation.getPath()) + ")");
+                        + buildObject(expression, operation.getPath(), namespacePrefix) + ")");
             } else {
                 writer.appendLine(attributeRoot.getName() + equalsSign + "set_rune_attr(rune_resolve_attr(self, '"
                         + attributeRoot.getName()
@@ -442,21 +458,21 @@ public class PythonFunctionGenerator {
         return (path == null) ? null : "'" + path.getFeature().getName() + "'";
     }
 
-    private String buildObject(String expression, Segment path) {
+    private String buildObject(String expression, Segment path, String namespacePrefix) {
         if (path == null || path.getNext() == null) {
             return expression;
         }
 
         RosettaFeature feature = path.getFeature();
         if (feature instanceof RosettaTyped typed) {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(typed.getTypeCall().getType());
+            String bundleName = RuneToPythonMapper.getBundleObjectName(typed.getTypeCall().getType(), namespacePrefix);
             Segment nextPath = path.getNext();
             return "_get_rune_object('"
                     + bundleName
                     + "', "
                     + getNextPathElementName(nextPath)
                     + ", "
-                    + buildObject(expression, nextPath)
+                    + buildObject(expression, nextPath, namespacePrefix)
                     + ")";
         }
         throw new IllegalArgumentException("Cannot build object for feature " + feature.getName() + " of type "

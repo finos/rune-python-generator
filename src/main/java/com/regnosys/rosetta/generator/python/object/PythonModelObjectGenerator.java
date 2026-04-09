@@ -3,7 +3,6 @@ package com.regnosys.rosetta.generator.python.object;
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
-import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.rosetta.RosettaModel;
@@ -41,12 +40,12 @@ public class PythonModelObjectGenerator {
     /**
      * Generate Python from the collection of Rosetta classes (of type Data).
      * 
-     * @param rClasses the collection of Rosetta Classes for this model
-     * @param version  the version for this collection of classes
+     * @param rClasses        the collection of Rosetta Classes for this model
+     * @param namespacePrefix optional prefix to prepend to every namespace
      * @return a Map of all the generated Python indexed by the class name
      */
-    public Map<String, String> generate(Iterable<Data> rClasses, String version,
-            PythonCodeGeneratorContext context) {
+    public Map<String, String> generate(Iterable<Data> rClasses,
+            PythonCodeGeneratorContext context, String namespacePrefix) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         if (dependencyDAG == null) {
             throw new RuntimeException("Dependency DAG not initialized");
@@ -60,26 +59,27 @@ public class PythonModelObjectGenerator {
 
         for (Data rc : rClasses) {
             RosettaModel model = (RosettaModel) rc.eContainer();
-            String nameSpace = PythonCodeGeneratorUtil.getNamespace(model);
+            String effectiveModelName = applyPrefix(model.getName(), namespacePrefix);
 
             // Generate Python for the class
             try {
-                String pythonClass = generateClass(rc, nameSpace, version, enumImports);
+                String pythonClass = generateClass(rc, enumImports, namespacePrefix);
 
                 // construct the class name using "." as a delimiter
-                String className = model.getName() + "." + rc.getName();
+                String className = effectiveModelName + "." + rc.getName();
                 result.put(className, pythonClass);
 
                 dependencyDAG.addVertex(className);
                 if (rc.getSuperType() != null) {
                     Data superClass = rc.getSuperType();
                     RosettaModel superModel = (RosettaModel) superClass.eContainer();
-                    String superClassName = superModel.getName() + "." + superClass.getName();
+                    String superClassName = applyPrefix(superModel.getName(), namespacePrefix)
+                            + "." + superClass.getName();
 
                     addDependency(dependencyDAG, className, superClassName);
                 }
 
-                addAttributeDependencies(dependencyDAG, className, rc);
+                addAttributeDependencies(dependencyDAG, className, rc, namespacePrefix);
             } catch (Exception e) {
                 throw new RuntimeException("Error generating Python for class " + rc.getName(), e);
             }
@@ -87,22 +87,29 @@ public class PythonModelObjectGenerator {
         return result;
     }
 
-    private void addAttributeDependencies(Graph<String, DefaultEdge> dependencyDAG, String className, Data rc) {
+    private void addAttributeDependencies(Graph<String, DefaultEdge> dependencyDAG, String className, Data rc,
+            String namespacePrefix) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         for (RAttribute attr : buildRDataType.getOwnAttributes()) {
             RType rt = attr.getRMetaAnnotatedType().getRType();
             if (rt instanceof RDataType || rt instanceof REnumType) {
                 String dependencyName = "";
                 if (rt instanceof RDataType) {
-                    dependencyName = ((RDataType) rt).getQualifiedName().toString();
+                    dependencyName = applyPrefix(((RDataType) rt).getQualifiedName().toString(), namespacePrefix);
                 } else {
-                    dependencyName = ((REnumType) rt).getQualifiedName().toString();
+                    dependencyName = applyPrefix(((REnumType) rt).getQualifiedName().toString(), namespacePrefix);
                 }
                 if (!dependencyName.isEmpty() && !className.equals(dependencyName)) {
                     addDependency(dependencyDAG, className, dependencyName);
                 }
             }
         }
+    }
+
+    private static String applyPrefix(String name, String namespacePrefix) {
+        return (namespacePrefix != null && !namespacePrefix.isBlank())
+                ? namespacePrefix + "." + name
+                : name;
     }
 
     private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
@@ -116,7 +123,7 @@ public class PythonModelObjectGenerator {
         }
     }
 
-    private String generateClass(Data rc, String nameSpace, String version, Set<String> enumImports) {
+    private String generateClass(Data rc, Set<String> enumImports, String namespacePrefix) {
         if (rc == null) {
             throw new RuntimeException("Rosetta class not initialized");
         }
@@ -128,9 +135,9 @@ public class PythonModelObjectGenerator {
             throw new RuntimeException("Enum imports not initialized");
         }
 
-        pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports);
+        pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports, namespacePrefix);
 
-        return generateBody(rc);
+        return generateBody(rc, namespacePrefix);
     }
 
     private String getClassMetaDataString(Data rc) {
@@ -186,17 +193,18 @@ public class PythonModelObjectGenerator {
         return writer.toString();
     }
 
-    private String generateBody(Data rc) {
+    private String generateBody(Data rc, String namespacePrefix) {
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
         PythonCodeWriter writer = new PythonCodeWriter();
 
         String superClassName = (rc.getSuperType() != null)
-                ? RuneToPythonMapper.getBundleObjectName(rc.getSuperType())
+                ? RuneToPythonMapper.getBundleObjectName(rc.getSuperType(), namespacePrefix)
                 : "BaseDataClass";
 
-        writer.appendLine("class " + RuneToPythonMapper.getBundleObjectName(rc) + "(" + superClassName + "):");
+        writer.appendLine("class " + RuneToPythonMapper.getBundleObjectName(rc, namespacePrefix)
+                + "(" + superClassName + "):");
         writer.indent();
 
         String metaData = getClassMetaDataString(rc);
@@ -212,9 +220,10 @@ public class PythonModelObjectGenerator {
             writer.appendLine("\"\"\"");
         }
 
+        // _FQRTN uses the unmodified Rune type identity (not prefixed) for serialization compatibility
         writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedObjectName(rc) + "'");
 
-        writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints));
+        writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints, namespacePrefix));
 
         String constraints = keyRefConstraintsToString(keyRefConstraints);
         if (!constraints.isEmpty()) {

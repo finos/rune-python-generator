@@ -14,15 +14,17 @@ public class PythonEnumGenerator {
     /**
      * Generate Python from the collection of Rosetta enumerations.
      * 
-     * @param rosettaEnums the collection of Rosetta enumerations to generate
-     * @param version      the version for this collection of enumerations
+     * @param rosettaEnums    the collection of Rosetta enumerations to generate
+     * @param namespacePrefix optional prefix to prepend to the namespace
      * @return a Map of all the generated Python indexed by the file name
      */
-    public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums, String version) {
+    public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums, String namespacePrefix) {
         Map<String, String> result = new HashMap<>();
         for (RosettaEnumeration enumeration : rosettaEnums) {
             RosettaModel tr = (RosettaModel) enumeration.eContainer();
-            String namespace = tr.getName();
+            String namespace = (namespacePrefix != null && !namespacePrefix.isBlank())
+                    ? namespacePrefix + "." + tr.getName()
+                    : tr.getName();
 
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# pylint: disable=missing-module-docstring, invalid-name, line-too-long");
