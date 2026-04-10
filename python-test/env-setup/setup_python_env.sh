@@ -87,41 +87,22 @@ ${PYEXE} -m pip install -r requirements.txt || error
 
 echo "***** Get and Install Runtime"
 
-
 # Set RUNE_RUNTIME_DIR to the local repository root for an editable install.
-# Example: RUNE_RUNTIME_DIR="[PATH_TO_RUNE]/rune-python-runtime/FINOS/rune-python-runtime"
-# If RUNE_RUNTIME_DIR is not specified or the directory does not exist, it will pull from the GitHub repo.
-# TODO: remove this line when finished
-RUNE_RUNTIME_DIR="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime"
+# Example: export RUNE_RUNTIME_DIR="[PATH_TO_RUNE]/rune-python-runtime/FINOS/rune-python-runtime"
+# If RUNE_RUNTIME_DIR is not specified or the directory does not exist, it will install from GitHub.
+# Set RUNE_RUNTIME_REF to control which branch/tag/commit is used (default: main).
+# Example: export RUNE_RUNTIME_REF="feature/function_support"
+# RUNE_RUNTIME_DIR="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime"
+RUNE_RUNTIME_REF="feature/function_support"
 
 if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then
     echo "Installing runtime as editable from: $RUNE_RUNTIME_DIR"
     ${PYEXE} -m pip install -e "$RUNE_RUNTIME_DIR" || error
 else
-    # --- Remote Repository Logic ---
-    echo "RUNE_RUNTIME_DIR not specified or not found. Pulling from GitHub repo..."
-    RUNTIMEURL="https://api.github.com/repos/finos/rune-python-runtime/releases/latest"
-    
-    release_data=$(curl -s $RUNTIMEURL)
-    download_url=$(echo "$release_data" | grep '"browser_download_url":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
-
-    if [ -z "$download_url" ] || [ "$download_url" == "null" ]; then
-        echo "Error: Could not determine download URL for the latest runtime release."
-        error
-    fi
-
-    echo "Downloading latest runtime from: $download_url"
-    if command -v wget &>/dev/null; then
-        wget -q "$download_url"
-    elif command -v curl &>/dev/null; then
-        curl -sLO "$download_url"
-    else
-        echo "Neither wget nor curl is installed."
-        error
-    fi
-
-    ${PYEXE} -m pip install rune_runtime*-py3-*.whl --force-reinstall || error
-    rm rune_runtime*-py3-*.whl
+    RUNE_RUNTIME_REF="${RUNE_RUNTIME_REF:-main}"
+    echo "Installing runtime from GitHub ref: $RUNE_RUNTIME_REF"
+    ${PYEXE} -m pip install \
+      "git+https://github.com/finos/rune-python-runtime.git@${RUNE_RUNTIME_REF}" || error
 fi
 
 deactivate
