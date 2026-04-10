@@ -72,7 +72,7 @@ import com.regnosys.rosetta.rosetta.RosettaNamed;
  * <li><b>-v, --version &lt;version&gt;</b>: Version number for the generated
  * package, in <code>#.#.#</code> format (defaults to
  * <code>0.0.0</code>)</li>
- * <li><b>-n, --project-name &lt;projectName&gt;</b>: Override the
+ * <li><b>-p, --project-name &lt;projectName&gt;</b>: Override the
  * <code>pyproject.toml</code> project name (defaults to
  * <code>python-&lt;first-namespace-segment&gt;</code>)</li>
  * <li><b>-e, --allow-errors</b>: Continue generation even if validation
@@ -146,7 +146,7 @@ public class PythonCodeGeneratorCLI {
                 .desc("Target Python directory (default: ./python)").hasArg().build();
         Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors").desc("Continue even if there are validation errors").build();
         Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings").desc("Fail if there are validation warnings").build();
-        Option projectNameOpt = Option.builder("n").longOpt("project-name").argName("projectName")
+        Option projectNameOpt = Option.builder("p").longOpt("project-name").argName("projectName")
                 .desc("Override the pyproject.toml project name (default: python-<first-namespace-segment>)")
                 .hasArg().build();
         Option versionOpt = Option.builder("v").longOpt("version").argName("version")
