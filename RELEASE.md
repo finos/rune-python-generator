@@ -67,7 +67,7 @@ Three new flags added to the existing CLI. (Issue [#142](https://github.com/fino
 | :--- | :--- | :--- |
 | `-e` | `--allow-errors` | Continue generating even when validation errors are present |
 | `-w` | `--fail-on-warnings` | Treat validation warnings as errors |
-| `-n <name>` | `--project-name` | Override the `pyproject.toml` project name (e.g. `finos_cdm`) |
+| `-n <name>` | `--project-name` | Override the `pyproject.toml` project name (e.g. `finos-cdm`) |
 
 The `--allow-errors` flag is useful when generating from sources that contain unresolvable cross-namespace references. Models with errors are skipped; all valid models are still generated.
 

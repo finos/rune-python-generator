@@ -46,7 +46,7 @@ CDM_SOURCE_PATH="$MY_PATH/../rosetta"
 PYTHON_TARGET_PATH=$PROJECT_ROOT_PATH/target/python-cdm
 PYTHON_SETUP_PATH="$MY_PATH/../../env-setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
-CDM_PROJECT_NAME="finos_cdm"
+CDM_PROJECT_NAME="finos-cdm"
 CDM_PREFIX="finos"
 CDM_VERSION="1.2.3"
 cd ${MY_PATH} || error

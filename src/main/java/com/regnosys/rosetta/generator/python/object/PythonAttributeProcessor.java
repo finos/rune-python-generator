@@ -370,16 +370,16 @@ public final class PythonAttributeProcessor {
     /**
      * Collects import statements for the attributes of a Data type.
      *
-     * @param rc                  The Data type whose attributes are inspected.
-     * @param imports             The set to add import statements to.
-     * @param standaloneClasses   The set of fully-qualified names that are standalone.
-     * @param includeBundledTypes When {@code true} (standalone file context), imports
-     *                            are emitted for all Data types including bundled ones.
-     *                            When {@code false} (bundle header context), imports are
-     *                            only emitted for enums and standalone Data types —
-     *                            bundled types must not be imported via their proxy stub
-     *                            because that would create a circular import back into
-     *                            the bundle itself.
+     * @param rc                    The Data type whose attributes are inspected.
+     * @param imports               The set to add import statements to.
+     * @param context               The context containing information about standalone classes and namespace prefixes.
+     * @param includeBundledTypes   When {@code true} (standalone file context), imports
+     *                              are emitted for all Data types including bundled ones.
+     *                              When {@code false} (bundle header context), imports are
+     *                              only emitted for enums and standalone Data types —
+     *                              bundled types must not be imported via their proxy stub
+     *                              because that would create a circular import back into
+     *                              the bundle itself.
      */
     public void getImportsFromAttributes(
         Data rc, 
