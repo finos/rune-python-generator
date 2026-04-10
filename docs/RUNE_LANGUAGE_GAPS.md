@@ -43,7 +43,7 @@ The following table tracks implementation status for core Rosetta language featu
 | Syntax Feature | Needs Generator Support? | Status | CDM Usage | DRR Usage | Implementation Details |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **`typeAlias`** (basic) | **N** | ⚠️ | Extensive | Extensive | The alias is expanded to its underlying base type at generation time (e.g., `typeAlias ISIN: string` → field typed as `str`). The domain name is not preserved in the output. See [ARCHITECTURE.md](ARCHITECTURE.md#6-design-decision-typealias-generation) for the rationale and the planned Rune Path approach. |
-| **`typeAlias`** (with `condition`) | **Y** | ❌ | Unknown | Unknown | When a `typeAlias` carries a `condition` block, the alias is stripped to its base type and the condition is silently discarded. No validation is generated. See Known Validation and Runtime Gaps below. |
+| **`typeAlias`** (with `condition`) | **Y** | ⚠️ | 1 (`FpMLCodingScheme`) | 0 | Basic type constraints (pattern, min/max length, numeric ranges) on a `typeAlias` **are** propagated — the alias is stripped to its underlying base type and `processProperties` extracts those constraints. However, named `condition` blocks are silently discarded. In CDM, the only `typeAlias` with a named condition is `FpMLCodingScheme`, used exclusively for FpML codelist domain validation (calls native `ValidateFpMLCodingSchemeDomain`). See Known Validation and Runtime Gaps below. |
 | **`extends`** (Functions) | **Y** | ❌ | 0 | 0 | Inherits shortcuts, logic, and structure from a base function. Defined in Rune grammar (`func ... extends ...`). Not currently used in CDM or DRR, but must be handled when encountered. |
 | **`super`** (Calls) | **Y** | ❌ | 0 | 0 | Invokes logic from a parent function within the current scope (`RosettaSuperCall` in Rune grammar). Not currently used in CDM or DRR. |
 
@@ -84,20 +84,28 @@ The following section tracks implementation status and requirements for regulato
 
 The following are known gaps in validation and runtime behaviour that require work in both the generator and the [rune-python-runtime](https://github.com/finos/rune-python-runtime).
 
-### `typeAlias` Conditions on Basic Types
+### `typeAlias` Named Condition Blocks
 
-Rune allows conditions to be attached directly to basic type aliases:
+Rune allows two kinds of constraints on a `typeAlias`:
+
+1. **Basic type constraints** — pattern, min/max length, numeric ranges — declared on the underlying primitive (e.g., `RStringType`, `RNumberType`). These **are** supported: the generator strips the alias to its base type via `stripFromTypeAliases` and `processProperties` extracts the constraints into the generated Pydantic field.
+
+2. **Named `condition` blocks** — explicit business-logic conditions attached to the alias body:
 
 ```rosetta
-typeAlias Currency:
+typeAlias FpMLCodingScheme(domain string):
     string
-    condition C:
-        item count = 3
+
+    condition IsValidCodingScheme:
+        if item exists
+        then ValidateFpMLCodingSchemeDomain(item, domain)
 ```
 
-The generator expands every `typeAlias` to its underlying base type at generation time (the Java Path — see [ARCHITECTURE.md](ARCHITECTURE.md#6-design-decision-typealias-generation)). Because the alias definition is discarded at the generation step, any `condition` block attached to it is never reached. A field typed as `Currency` is emitted as a plain `str` field with no validation.
+Named condition blocks are silently discarded. The alias is stripped to its base type and no validation is generated for the condition.
 
-**Impact**: Any `typeAlias` that adds a condition to a primitive type silently skips that validation in generated Python. Addressing this requires either generating a constrained wrapper type (analogous to Pydantic's `Annotated[str, ...]` with a custom validator) or implementing the Rune Path so that the alias and its conditions are preserved in the output.
+**CDM usage**: The only `typeAlias` in CDM that carries a named condition is `FpMLCodingScheme`, a parameterized alias used exclusively for FpML codelist domain validation. All leaf aliases (`BusinessCenter`, `FloatingRateIndex`, etc.) are simple instantiations of `FpMLCodingScheme` with a specific domain string and do not carry their own conditions. The condition delegates to the native function `ValidateFpMLCodingSchemeDomain`, so addressing this gap is blocked on native function support as well as the broader Codelist / External Scheme Validation gap described below.
+
+**Impact**: Any `typeAlias` with a named condition silently skips that validation in the generated Python. Addressing this requires either generating a constrained wrapper type (analogous to Pydantic's `Annotated[str, ...]` with a custom validator) or implementing the Rune Path so that the alias and its conditions are preserved in the output.
 
 ### Codelist / External Scheme Validation
 

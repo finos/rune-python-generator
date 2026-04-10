@@ -26,12 +26,7 @@ This PR delivers comprehensive function and expression generation support
 
 5. **Completion of support for Type Aliases** — type aliases are resolved with flattened naming conventions and collision handling.
 
-6. **CLI improvements**
-   - `--project-name` flag enables CDM builds with a custom package prefix (e.g. `finos-cdm`)
-   - Added flags to control the response to Rune parsing errors (`--allow-errors`) and warnings (`--fail-on-warnings`)
-   - Execution emits exit codes (`0`/`1`)
-
-7. **Refactored object, attribute, and expression generation** — introduced `PythonExpressionScope` and companion blocks to simplify code and support reuse across the generator.
+6. **Refactored object, attribute, and expression generation** — introduced `PythonExpressionScope` and companion blocks to simplify code and support reuse across the generator.
 
 ## Test suite
 

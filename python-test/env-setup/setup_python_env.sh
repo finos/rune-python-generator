@@ -11,6 +11,8 @@ function error {
     exit 1
 }
 
+# todo: pull RuneRuntime from PyPI
+
 # Determine the Python executable
 # IMPORTANT: Find a python that is NOT currently inside a virtual environment we might be destroying
 if command -v python3 &>/dev/null && ! command -v python3 | grep -q ".pyenv"; then

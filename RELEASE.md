@@ -55,25 +55,11 @@ The generator partitions types into two categories:
 
 Type aliases (`typeAlias`) are now resolved to their underlying Python types at generation time. Where multiple aliases would otherwise produce the same Python type name, unique disambiguating names are generated to avoid conflicts.
 
-Note: `typeAlias` entries that carry a `condition` block have the condition silently discarded — see [RUNE_LANGUAGE_GAPS.md](docs/RUNE_LANGUAGE_GAPS.md) for details.  This feature is not currently used in CDM.
+Note: Basic type constraints on a `typeAlias` (pattern, min/max length, numeric ranges) are propagated to the generated Python field. However, named `condition` blocks on a `typeAlias` are silently discarded — see [RUNE_LANGUAGE_GAPS.md](docs/RUNE_LANGUAGE_GAPS.md) for details. In CDM, the only `typeAlias` carrying a named condition is `FpMLCodingScheme`, which is used exclusively for FpML codelist domain validation and delegates to the native function `ValidateFpMLCodingSchemeDomain`.
 
 ---
 
-### 6. CLI Improvements
-
-Three new flags added to the existing CLI. (Issue [#142](https://github.com/finos/rune-python-generator/issues/142))
-
-| Option | Long form | Description |
-| :--- | :--- | :--- |
-| `-e` | `--allow-errors` | Continue generating even when validation errors are present |
-| `-w` | `--fail-on-warnings` | Treat validation warnings as errors |
-| `-n <name>` | `--project-name` | Override the `pyproject.toml` project name (e.g. `finos-cdm`) |
-
-The `--allow-errors` flag is useful when generating from sources that contain unresolvable cross-namespace references. Models with errors are skipped; all valid models are still generated.
-
----
-
-### 7. Refactored Object, Attribute, and Expression Generation
+### 6. Refactored Object, Attribute, and Expression Generation
 
 Internal generator refactoring to simplify code and support reuse:
 
