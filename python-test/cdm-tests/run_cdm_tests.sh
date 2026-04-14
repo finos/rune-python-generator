@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 type -P python > /dev/null && PYEXE=python || PYEXE=python3
 if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1; then
         echo "Found $($PYEXE -V)"

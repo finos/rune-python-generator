@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Switch expression unit tests — switch as a value-returning expression.
 
 Tests the switch keyword used inside a function body to return a value based

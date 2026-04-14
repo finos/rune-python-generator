@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 '''cardinality unit test'''
 import pytest
 from rosetta_dsl.test.cardinality.CardinalityTest import CardinalityTest

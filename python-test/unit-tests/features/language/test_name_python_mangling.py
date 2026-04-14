@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 # pylint: disable=missing-function-docstring
 from rune.runtime.utils import rune_resolve_attr
 from rosetta_dsl.test.PythonNameMangling import PythonNameMangling

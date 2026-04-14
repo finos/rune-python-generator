@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 from rune.runtime.metadata import Reference
 from rosetta_dsl.test.functions.KeyEntity import KeyEntity
 from rosetta_dsl.test.functions.RefEntity import RefEntity

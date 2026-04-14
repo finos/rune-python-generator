@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Comparison operator unit tests"""
 
 from rosetta_dsl.test.comparison_op.functions.LessThan import LessThan

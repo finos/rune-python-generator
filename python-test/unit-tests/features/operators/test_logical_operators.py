@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 import pytest
 from rosetta_dsl.test.logical_op.AndOperatorTest import AndOperatorTest
 from rosetta_dsl.test.logical_op.OrOperatorTest import OrOperatorTest

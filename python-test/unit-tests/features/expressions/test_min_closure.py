@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Min Closure expression unit tests"""
 
 from rosetta_dsl.test.expressions.min_closure.MinItem import MinItem

@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 '''Enum qualified path name unit tests.
 
 Tests that enum values can be referenced via qualified path names in conditions

@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Implicit closure parameters tests."""
 
 from rosetta_dsl.test.expressions.implicit_closure.functions.MapImplicit import (

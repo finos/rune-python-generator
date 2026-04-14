@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 from rosetta_dsl.test.binary_op.ContainsTest import ContainsTest
 from rosetta_dsl.test.binary_op.DisjointTest import DisjointTest
 from rosetta_dsl.test.binary_op.EqualsTest import EqualsTest

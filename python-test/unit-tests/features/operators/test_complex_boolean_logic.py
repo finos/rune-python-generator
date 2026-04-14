@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Complex boolean logic unit tests"""
 
 from rosetta_dsl.test.operators.complex_boolean_logic.functions.NotOp import (

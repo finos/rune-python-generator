@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Collection operators unit tests demonstrating current failures (null handling gaps)"""
 
 from rosetta_dsl.test.expressions.collections.functions.TestSum import TestSum

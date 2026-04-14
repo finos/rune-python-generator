@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 from rosetta_dsl.test.arithmetic_op.AddTest import AddTest
 from rosetta_dsl.test.arithmetic_op.SubtractTest import SubtractTest
 from rosetta_dsl.test.arithmetic_op.MultiplyTest import MultiplyTest

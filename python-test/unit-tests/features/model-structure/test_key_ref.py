@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """key ref unit tests — verifies that references resolve to the correct object and data."""
 
 from rune.runtime.metadata import IntWithMeta, Reference
