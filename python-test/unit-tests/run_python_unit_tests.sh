@@ -116,6 +116,7 @@ JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 
 # Always generate from the root of the test suite to ensure the "overall model" is complete
 INPUT_ROSETTA_PATH="$MY_PATH"
+PTYHON_PROJECT_NAME="python-test"
 
 if [[ $RUN_ALL -eq 1 ]]; then
   TEST_TARGET="$MY_PATH"
@@ -143,7 +144,8 @@ echo "***** generating Python for unit tests"
 mkdir -p "$PYTHON_TESTS_TARGET_PATH"
 java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI \
   -s "$INPUT_ROSETTA_PATH" \
-  -t "$PYTHON_TESTS_TARGET_PATH"
+  -t "$PYTHON_TESTS_TARGET_PATH" \
+  -p "$PTYHON_PROJECT_NAME"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -ne 0 ]]; then
   echo "Java program returned exit code $JAVA_EXIT_CODE. Stopping script."
@@ -173,7 +175,7 @@ fi
 # package and install generated Python
 cd "$PYTHON_TESTS_TARGET_PATH" || error
 python -m pip wheel --no-deps --only-binary :all: . || error
-python -m pip install python_rosetta_dsl-0.0.0-py3-none-any.whl
+python -m pip install *-0.0.0-py3-none-any.whl
 
 # Find and run all build_and_install.sh scripts to ensure the environment matches the "overall model"
 echo "***** installing all native implementations"

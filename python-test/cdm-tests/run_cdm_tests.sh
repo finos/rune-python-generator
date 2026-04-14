@@ -65,7 +65,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 CDM_WHEEL_DIR="$MY_PATH/../../target/python-cdm"
-CDM_WHEEL_COUNT=$(find "$CDM_WHEEL_DIR" -name "python_cdm-*-py3-none-any.whl" 2>/dev/null | wc -l)
+CDM_WHEEL_COUNT=$(find "$CDM_WHEEL_DIR" -name "*-py3-none-any.whl" 2>/dev/null | wc -l)
 
 if [[ $CDM_WHEEL_COUNT -eq 0 && $UPDATE_CDM -eq 0 && $REBUILD_CDM -eq 0 ]]; then
     echo "CDM Python wheel not found in $CDM_WHEEL_DIR. Triggering build (fetch + build)..."
@@ -85,12 +85,11 @@ echo "***** setting up common environment"
 source $MY_PATH/setup_cdm_test_env.sh || error
 
 
-# run tests
-
-# Validating test execution
+# run tests — venv is active at this point; use bare 'python' so the venv's
+# interpreter is used, not the system python path cached in $PYEXE
 echo "***** run tests"
-$PYEXE -m pip install pytest
-$PYEXE -m pytest -p no:cacheprovider $MY_PATH
+python -m pip install pytest
+python -m pytest -p no:cacheprovider $MY_PATH
 TEST_EXIT_CODE=$?
 rm -rf .pytest
 

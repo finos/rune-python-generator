@@ -82,46 +82,24 @@ fi
 ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"
 
 echo "***** build CDM"
-java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -n $CDM_PROJECT_NAME -v $CDM_VERSION -x $CDM_PREFIX|| error "Failed to generate CDM Python code"
-# java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH || error "Failed to generate CDM Python code"
+java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -p $CDM_PROJECT_NAME -v $CDM_VERSION -x $CDM_PREFIX || error "Failed to generate CDM Python code"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
     exit 1
 fi
 
-echo "***** setting up common environment"
-source $PYTHON_SETUP_PATH/setup_python_env.sh
-
-echo "***** activating virtual environment"
-VENV_NAME=".pyenv"
-if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
-source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error
-
-echo "***** removing prior instance of cdm"
-python -m pip uninstall -y python-cdm 2>/dev/null
-
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH
-rm -f *-*.*.*-py3-none-any.whl
-python -m pip wheel --no-deps --only-binary :all: . || error
+rm -f *-py3-none-any.whl
+$PYEXE -m pip wheel --no-deps --only-binary :all: . || error
 
-echo "***** install CDM Python package"
-CDM_WHL=$(ls *-*.*.*-py3-none-any.whl 2>/dev/null | head -1)
+CDM_WHL=$(ls *-py3-none-any.whl 2>/dev/null | head -1)
 if [ -z "$CDM_WHL" ]; then
-    echo "ERROR: cdm wheel was not produced. Stopping."
+    echo "ERROR: CDM wheel was not produced. Stopping."
     error
 fi
-python -m pip install --no-deps "$CDM_WHL" --force-reinstall || error
-
-echo "***** cleanup"
-
-deactivate
-if [[ "${REUSE_ENV}" != "1" && "${REUSE_ENV}" != "true" ]]; then
-    source $PYTHON_SETUP_PATH/cleanup_python_env.sh
-else
-    echo "Skipping cleanup (REUSE_ENV set)"
-fi
+echo "***** CDM wheel produced: $CDM_WHL"
 
 echo ""
 echo ""

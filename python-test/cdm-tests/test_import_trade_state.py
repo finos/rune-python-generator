@@ -5,6 +5,6 @@ import pytest
 def test_import_tradestate():
     '''confirm that tradestate can be imported'''
     try:
-        from cdm.event.common.TradeState import TradeState
+        from finos.cdm.event.common.TradeState import TradeState
     except ImportError:
         pytest.fail("Importing cdm.event.common.TradeState failed")

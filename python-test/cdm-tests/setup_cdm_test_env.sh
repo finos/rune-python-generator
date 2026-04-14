@@ -37,7 +37,7 @@ cd ${MY_PATH} || error
 
 echo "***** setting up common environment"
 PYTHONSETUPPATH="../env-setup"
-source $MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh
+source $MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh -r
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
@@ -50,7 +50,7 @@ source "$MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/${PY_SCRIPTS}/activate" || error
 PYTHONCDMDIR="../../target/python-cdm"
 
 # Construct pip install command
-PIP_ARGS=( "$MY_PATH/$PYTHONCDMDIR"/python_cdm-*-py3-none-any.whl "--force-reinstall" "--pre" )
+PIP_ARGS=( "$MY_PATH/$PYTHONCDMDIR"/*-*-py3-none-any.whl "--force-reinstall" "--pre" )
 
 if [[ -n "$RUNE_RUNTIME_DIR" && -d "$RUNE_RUNTIME_DIR" ]]; then
     PIP_ARGS+=( "--find-links" "$RUNE_RUNTIME_DIR" )
@@ -58,3 +58,12 @@ fi
 
 echo "**** Install CDM package ****"
 python -m pip install "${PIP_ARGS[@]}"
+
+# The CDM wheel install (--force-reinstall) may have replaced the local editable
+# runtime with a PyPI release. Re-source setup_python_env.sh with REUSE_ENV=1 so
+# it reinstalls the runtime without recreating the venv, then re-activate.
+_reuse_env_saved="${REUSE_ENV:-}"
+export REUSE_ENV=1
+source "$MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh"
+export REUSE_ENV="$_reuse_env_saved"
+source "$MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/${PY_SCRIPTS}/activate" || error
