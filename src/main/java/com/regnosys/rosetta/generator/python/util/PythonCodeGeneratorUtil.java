@@ -94,6 +94,23 @@ public final class PythonCodeGeneratorUtil {
         return "from .version import __version__";
     }
 
+    public static String createTopLevelInitFile(String version, java.util.Set<String> nativeFunctionNames) {
+        if (nativeFunctionNames == null || nativeFunctionNames.isEmpty()) {
+            return createTopLevelInitFile(version);
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("from .version import __version__\n");
+        sb.append("from rune.runtime.native_registry import rune_attempt_register_native_functions\n");
+        sb.append("rune_attempt_register_native_functions(\n");
+        sb.append("    function_names=[\n");
+        for (String name : nativeFunctionNames) {
+            sb.append("        '").append(name).append("',\n");
+        }
+        sb.append("    ]\n");
+        sb.append(")\n");
+        return sb.toString();
+    }
+
     public static String createVersionFile(String version) {
         String versionComma = version.replace('.', ',');
         return "version = ("
@@ -139,6 +156,11 @@ public final class PythonCodeGeneratorUtil {
     public static String cleanVersion(String version) {
         if (version == null || version.equals("${project.version}")) {
             return "0.0.0";
+        }
+
+        // Preserve PEP 440 dev versions already converted by the CLI (e.g. "1.2.3.dev4")
+        if (version.matches("\\d+\\.\\d+\\.\\d+\\.dev\\d+")) {
+            return version;
         }
 
         String[] versionParts = version.split("\\.");

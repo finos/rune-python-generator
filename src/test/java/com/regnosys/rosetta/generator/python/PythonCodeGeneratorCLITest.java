@@ -54,6 +54,17 @@ class PythonCodeGeneratorCLITest {
     }
 
     @Test
+    void testMissingProjectNameReturnsError() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", tempDir.resolve("python").toString()
+        });
+        assertEquals(1, exitCode, "Should return 1 when -p is not provided");
+    }
+
+    @Test
     void testValidationErrorsFailByDefault() throws IOException {
         Path validFile = createValidRosettaFile(tempDir); // Use valid file, let MockValidator inject error
         TestCLI cli = new TestCLI();
@@ -61,7 +72,8 @@ class PythonCodeGeneratorCLITest {
 
         int exitCode = cli.run(new String[] {
                 "-f", validFile.toString(),
-                "-t", tempDir.resolve("python").toString()
+                "-t", tempDir.resolve("python").toString(),
+                "-p", "test-project"
         });
 
         assertEquals(1, exitCode, "Should return 1 (fail) when validation errors occur by default");
@@ -76,6 +88,7 @@ class PythonCodeGeneratorCLITest {
         int exitCode = cli.run(new String[] {
                 "-f", validFile.toString(),
                 "-t", tempDir.resolve("python").toString(),
+                "-p", "test-project",
                 "-e"
         });
 
@@ -91,6 +104,7 @@ class PythonCodeGeneratorCLITest {
         int exitCode = cli.run(new String[] {
                 "-f", validFile.toString(),
                 "-t", tempDir.resolve("python").toString(),
+                "-p", "test-project",
                 "-w" // --fail-on-warnings
         });
 
@@ -121,6 +135,32 @@ class PythonCodeGeneratorCLITest {
     }
 
     @Test
+    void testDevVersionFormatIsAcceptedAndConverted() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-p", "test-project",
+                "-v", "1.2.3-dev.4"
+        });
+
+        assertEquals(0, exitCode, "Should return 0 when version is in #.#.#-dev.# format");
+        String toml = Files.readString(pythonDir.resolve("pyproject.toml"));
+        assertTrue(toml.contains("version = \"1.2.3.dev4\""),
+                "pyproject.toml should contain the PEP 440 dev version, but was:\n" + toml);
+    }
+
+    @Test
+    void testDevVersionWithNonNumericDevCounterReturnsError() {
+        PythonCodeGeneratorCLI cli = new PythonCodeGeneratorCLI();
+        int exitCode = cli.run(new String[] {"-v", "1.2.3-dev.abc"});
+        assertEquals(1, exitCode, "Should return 1 when dev counter is not numeric");
+    }
+
+    @Test
     void testValidVersionAppearsInToml() throws IOException {
         Path validFile = createValidRosettaFile(tempDir);
         Path pythonDir = tempDir.resolve("python");
@@ -129,6 +169,7 @@ class PythonCodeGeneratorCLITest {
         int exitCode = cli.run(new String[] {
                 "-f", validFile.toString(),
                 "-t", pythonDir.toString(),
+                "-p", "test-project",
                 "-v", "1.2.3"
         });
 
@@ -156,6 +197,7 @@ class PythonCodeGeneratorCLITest {
         int exitCode = cli.run(new String[] {
                 "-f", validFile.toString(),
                 "-t", pythonDir.toString(),
+                "-p", "test-project",
                 "-x", "finos"
         });
 

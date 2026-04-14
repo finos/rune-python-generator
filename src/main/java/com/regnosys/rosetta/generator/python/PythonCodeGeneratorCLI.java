@@ -116,6 +116,7 @@ public class PythonCodeGeneratorCLI {
      * Regex that a version string must fully match: three dot-separated integers.
      */
     private static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+    private static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
 
     /**
      * Public constructor for the CLI tool.
@@ -176,17 +177,27 @@ public class PythonCodeGeneratorCLI {
             String tgtDir = cmd.getOptionValue("t", "./python");
             boolean allowErrors = cmd.hasOption("e");
             boolean failOnWarnings = cmd.hasOption("w");
-            String projectName = cmd.getOptionValue("n");
+            String projectName = cmd.getOptionValue("p");
             String namespacePrefix = cmd.getOptionValue("x");
 
             String version = DEFAULT_VERSION;
             if (cmd.hasOption("v")) {
                 String rawVersion = cmd.getOptionValue("v");
-                if (!VALID_VERSION_PATTERN.matcher(rawVersion).matches()) {
-                    LOGGER.error("Invalid version format '{}'. Expected #.#.# (e.g. 1.2.3).", rawVersion);
+                java.util.regex.Matcher devMatcher = DEV_VERSION_PATTERN.matcher(rawVersion);
+                if (devMatcher.matches()) {
+                    version = devMatcher.group(1) + ".dev" + devMatcher.group(2);
+                } else if (VALID_VERSION_PATTERN.matcher(rawVersion).matches()) {
+                    version = rawVersion;
+                } else {
+                    LOGGER.error("Invalid version format '{}'. Expected #.#.# (e.g. 1.2.3) or #.#.#-dev.# (e.g. 1.2.3-dev.4).", rawVersion);
                     return 1;
                 }
-                version = rawVersion;
+            }
+
+            if (projectName == null || projectName.isBlank()) {
+                LOGGER.error("Project name (-p / --project-name) is required.");
+                printUsage(options);
+                return 1;
             }
 
             if (cmd.hasOption("s")) {

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -260,14 +261,35 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         for (Map.Entry<String, PythonCodeGeneratorContext> entry : contexts.entrySet()) {
             String nameSpace = entry.getKey();
-            result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(nameSpace, cleanVersion, projectName));
             PythonCodeGeneratorContext context = entry.getValue();
 
             List<String> subfolders = context.getSubfolders();
             result.putAll(generateWorkspaces(getWorkspaces(subfolders), cleanVersion));
             result.putAll(generateInits(subfolders));
             result.putAll(processDAG(nameSpace, context, cleanVersion));
+            if (context.hasNativeFunctions()) {
+                result.put(PythonCodeGeneratorUtil.toPyFileName(nameSpace, INIT),
+                        PythonCodeGeneratorUtil.createTopLevelInitFile(cleanVersion, context.getNativeFunctionNames()));
+            }
         }
+
+        String resolvedProjectName;
+        if (projectName != null && !projectName.isBlank()) {
+            resolvedProjectName = projectName;
+        } else {
+            String derivedNamespace = contexts.entrySet().stream()
+                    .max(Comparator.comparingInt(e -> e.getValue().getSubfolders().size()))
+                    .map(Map.Entry::getKey)
+                    .orElse("unknown");
+            resolvedProjectName = "python-" + derivedNamespace;
+            if (contexts.size() > 1) {
+                LOGGER.warn(
+                        "Multiple top-level namespaces found: {}. Defaulting pyproject.toml project name to '{}' "
+                                + "(largest namespace by file count). Set an explicit project name via setProjectName() to suppress this warning.",
+                        contexts.keySet(), resolvedProjectName);
+            }
+        }
+        result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(null, cleanVersion, resolvedProjectName));
         return result;
     }
 
@@ -685,22 +707,6 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         bundleWriter.appendBlock(functionsWriter.toString());
 
-        if (context.hasNativeFunctions()) {
-            bundleWriter.newLine();
-            bundleWriter.newLine();
-            bundleWriter.appendLine("rune_attempt_register_native_functions(");
-            bundleWriter.indent();
-            bundleWriter.appendLine("function_names=[");
-            bundleWriter.indent();
-            for (String nativeFunctionName : context.getNativeFunctionNames()) {
-                bundleWriter.appendLine("'" + nativeFunctionName + "',");
-            }
-            bundleWriter.unindent();
-            bundleWriter.appendLine("]");
-            bundleWriter.unindent();
-            bundleWriter.appendLine(")");
-        }
-
         if (context.hasFunctions()) {
             bundleWriter.newLine();
             bundleWriter.newLine();
@@ -709,8 +715,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         }
 
         boolean hasBundledContent = !dataObjectsWriter.isEmpty()
-                || !functionsWriter.isEmpty()
-                || context.hasNativeFunctions();
+                || !functionsWriter.isEmpty();
 
         if (hasBundledContent) {
             bundleWriter.newLine();

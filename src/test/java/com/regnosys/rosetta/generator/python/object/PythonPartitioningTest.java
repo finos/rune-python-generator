@@ -193,10 +193,10 @@ public class PythonPartitioningTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 8 — native_registry import appears exactly once in the bundle
+    // Test 8 — native registration moves to __init__.py when there are no bundled types
     // -----------------------------------------------------------------------
     @Test
-    public void testNativeRegistryImportAppearsExactlyOnce() {
+    public void testNativeRegistryRegistrationInInitWhenNoBundledTypes() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
                 namespace rosetta_dsl.test.functions
 
@@ -214,11 +214,17 @@ public class PythonPartitioningTest {
                         roundedValue number (1..1)
                 """);
 
-        String bundlePython = gf.get("src/rosetta_dsl/_bundle.py").toString();
+        // No bundled classes or functions — bundle should not be generated.
+        org.junit.jupiter.api.Assertions.assertFalse(
+                gf.containsKey("src/rosetta_dsl/_bundle.py"),
+                "No _bundle.py should be generated when there are no bundled classes or functions");
 
-        // The combined import from createImports() is the only occurrence allowed
-        testUtils.assertImportAppearsExactlyOnce(bundlePython,
-                "from rune.runtime.native_registry import");
+        // Registration lives in __init__.py instead.
+        String initPython = gf.get("src/rosetta_dsl/__init__.py").toString();
+        testUtils.assertImportAppearsExactlyOnce(initPython,
+                "from rune.runtime.native_registry import rune_attempt_register_native_functions");
+        testUtils.assertGeneratedContainsExpectedString(initPython,
+                "'rosetta_dsl.test.functions.functions.RoundToNearest',");
     }
 
     // -----------------------------------------------------------------------
@@ -401,6 +407,6 @@ public class PythonPartitioningTest {
 
         org.junit.jupiter.api.Assertions.assertFalse(
                 gf.containsKey("src/com/_bundle.py"),
-                "No _bundle.py should be generated when there are no bundled classes or native functions");
+                "No _bundle.py should be generated when there are no bundled classes or functions");
     }
 }

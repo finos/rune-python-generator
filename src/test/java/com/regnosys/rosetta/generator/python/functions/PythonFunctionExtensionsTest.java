@@ -83,11 +83,8 @@ public class PythonFunctionExtensionsTest {
             """;
         testUtils.assertGeneratedContainsExpectedString(funcPython, expected);
 
-        // Native registry imports and registration block live in the bundle.
-        String bundlePython = gf.get("src/rosetta_dsl/_bundle.py").toString();
-
-        testUtils.assertGeneratedContainsExpectedString(bundlePython, "from rune.runtime.native_registry import rune_attempt_register_native_functions, rune_execute_native");
-
+        // Registration block lives in __init__.py (no bundle is generated for standalone-only native functions).
+        String initPython = gf.get("src/rosetta_dsl/__init__.py").toString();
         String registrationExpected = """
             rune_attempt_register_native_functions(
                 function_names=[
@@ -95,7 +92,7 @@ public class PythonFunctionExtensionsTest {
                 ]
             )
             """;
-        testUtils.assertGeneratedContainsExpectedString(bundlePython, registrationExpected);
+        testUtils.assertGeneratedContainsExpectedString(initPython, registrationExpected);
     }
 
     // -------------------------------------------------------------------------
