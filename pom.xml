@@ -362,11 +362,13 @@
                                 <include>src/test/java/**/*.java</include>
                                 <include>python-test/**/*.py</include>
                                 <include>python-test/**/*.sh</include>
-                                <include>**/*.xml</include>
+                                <include>pom.xml</include>
+                                <include>settings.xml</include>
+                                <include>allow-list.xml</include>
+                                <include>checkstyle/checkstyle.xml</include>
                             </includes>
                             <excludes>
                                 <exclude>src/generated/**</exclude>
-                                <exclude>target/**</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
