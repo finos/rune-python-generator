@@ -366,6 +366,7 @@
                             </includes>
                             <excludes>
                                 <exclude>src/generated/**</exclude>
+                                <exclude>target/**</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
