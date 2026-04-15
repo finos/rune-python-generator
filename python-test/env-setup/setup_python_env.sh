@@ -99,7 +99,7 @@ echo "***** Get and Install Runtime"
 # If RUNE_RUNTIME_DIR is not specified or the directory does not exist, it will install from GitHub.
 # Set RUNE_RUNTIME_REF to control which branch/tag/commit is used (default: main).
 # Example: export RUNE_RUNTIME_REF="feature/function_support"
-RUNE_RUNTIME_DIR="/Users/dls/projects/rune/rune-python-runtime/FINOS/rune-python-runtime"
+RUNE_RUNTIME_DIR="../../../../../rune/rune-python-runtime/FINOS/rune-python-runtime"
 RUNE_RUNTIME_REF="feature/function_support"
 
 if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then

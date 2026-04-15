@@ -115,7 +115,7 @@ cd "${MY_PATH}" || error
 PROJECT_ROOT_PATH="$MY_PATH/../.."
 PYTHON_SETUP_PATH="$MY_PATH/../env-setup"
 
-source "$MY_PATH/../common.sh" || { echo "Failed to source common.sh"; exit 1; }
+source "$MY_PATH/../ensure_jar_exists.sh" || { echo "Failed to source ensure_jar_exists.sh"; exit 1; }
 
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 

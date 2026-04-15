@@ -57,7 +57,7 @@ CDM_VERSION="1.2.3"
 cd ${MY_PATH} || error
 
 
-source "$MY_PATH/../../common.sh" || { echo "Failed to source common.sh"; exit 1; }
+source "$MY_PATH/../../ensure_jar_exists.sh" || { echo "Failed to source ensure_jar_exists.sh"; exit 1; }
 
 # Parse command-line arguments
 # CDM_BRANCH="master"

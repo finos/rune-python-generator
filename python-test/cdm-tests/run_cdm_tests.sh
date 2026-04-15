@@ -18,8 +18,7 @@ cd ${MY_PATH} || error
 PROJECT_ROOT_PATH="$MY_PATH/../.."
 PYTHON_SETUP_PATH="$MY_PATH/../env-setup"
 
-
-source "$MY_PATH/../common.sh" || { echo "Failed to source common.sh"; exit 1; }
+source "$MY_PATH/../ensure_jar_exists.sh" || { echo "Failed to source ensure_jar_exists.sh"; exit 1; }
 
 
 usage() {
@@ -87,12 +86,16 @@ fi
 
 echo "***** setting up common environment"
 # source $PYTHON_SETUP_PATH/setup_python_env.sh # Called by setup_cdm_test_env.sh
-source $MY_PATH/setup_cdm_test_env.sh || error
+_SAVED_MY_PATH="$MY_PATH"
+source $MY_PATH/setup/setup_cdm_test_env.sh || error
+MY_PATH="$_SAVED_MY_PATH"
+unset _SAVED_MY_PATH
 
 
 # run tests — venv is active at this point; use bare 'python' so the venv's
 # interpreter is used, not the system python path cached in $PYEXE
 echo "***** run tests"
+echo $MY_PATH
 python -m pip install pytest
 python -m pytest -p no:cacheprovider $MY_PATH
 TEST_EXIT_CODE=$?

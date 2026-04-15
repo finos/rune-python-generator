@@ -21,7 +21,7 @@ This PR delivers comprehensive function and expression generation support
    - Closed gaps and resolved issues in the handling of inheritance and attributes.
    
 4. **Significant load performance improvement**
-   - Load time reduced by approximately 85% (~120 s → ~15 s).
+   - Load time reduced by approximately 98% (~120 s → ~2 s).
    - Mutually recursive elements partitioned into a small cyclic bundle (~6% of CDM types) with the remainder emitted as standalone files
 
 5. **Completion of support for Type Aliases** — type aliases are resolved with flattened naming conventions and collision handling.

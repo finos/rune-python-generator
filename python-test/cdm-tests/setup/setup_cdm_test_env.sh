@@ -40,8 +40,18 @@ fi
 MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error
 
+# Parse arguments (only meaningful when run directly, not sourced)
+KEEP_ENV=0
+for arg in "$@"; do
+  case "$arg" in
+    -k|--keep-env)
+      KEEP_ENV=1
+      ;;
+  esac
+done
+
 echo "***** setting up common environment"
-PYTHONSETUPPATH="../env-setup"
+PYTHONSETUPPATH="../../env-setup"
 source $MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh -r
 
 echo "***** activating virtual environment"
@@ -52,7 +62,7 @@ source "$MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/${PY_SCRIPTS}/activate" || error
 
 
 # install cdm package
-PYTHONCDMDIR="../../target/python-cdm"
+PYTHONCDMDIR="../../../target/python-cdm"
 
 # Construct pip install command
 PIP_ARGS=( "$MY_PATH/$PYTHONCDMDIR"/*-*-py3-none-any.whl "--force-reinstall" "--pre" )
@@ -72,3 +82,14 @@ export REUSE_ENV=1
 source "$MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh"
 export REUSE_ENV="$_reuse_env_saved"
 source "$MY_PATH/$PYTHONSETUPPATH/$VENV_PATH/${PY_SCRIPTS}/activate" || error
+
+# When run directly (not sourced), clean up unless -k was given
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    if [[ $KEEP_ENV -eq 1 ]]; then
+        echo "***** -k specified: virtual environment kept at $MY_PATH/$PYTHONSETUPPATH/$VENV_PATH"
+    else
+        echo "***** cleaning up virtual environment"
+        deactivate
+        source "$MY_PATH/$PYTHONSETUPPATH/cleanup_python_env.sh"
+    fi
+fi
