@@ -47,6 +47,7 @@ import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
 import com.regnosys.rosetta.generator.external.ExternalGenerator;
 import com.regnosys.rosetta.generator.external.ExternalGenerators;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 
@@ -460,7 +461,11 @@ public class PythonCodeGeneratorCLI {
             Path outputPath = Paths.get(tgtDir, filePath);
             try {
                 Files.createDirectories(outputPath.getParent());
-                Files.writeString(outputPath, content.toString());
+                String body = content.toString();
+                if (filePath.endsWith(".py") || filePath.endsWith(".toml")) {
+                    body = PythonCodeGeneratorConstants.LICENSE_HEADER + body;
+                }
+                Files.writeString(outputPath, body);
                 LOGGER.info("Wrote file: {}", outputPath);
             } catch (IOException e) {
                 System.err.println("Failed to write file: " + outputPath + " - " + e.getMessage());

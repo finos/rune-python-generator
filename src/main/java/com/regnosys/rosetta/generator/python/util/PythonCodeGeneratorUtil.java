@@ -16,7 +16,7 @@ public final class PythonCodeGeneratorUtil {
     private PythonCodeGeneratorUtil() {
     }
 
-    public static String fileComment(String version) {
+public static String fileComment(String version) {
         return """
                 # This file is auto-generated from the Rune Python Generator, do not edit.
                 # Version: %s
