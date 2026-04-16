@@ -257,9 +257,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
     @Override
     public Map<String, ? extends CharSequence> afterAllGenerate(
-            ResourceSet set,
-            Collection<? extends RosettaModel> models,
-            String version) {
+        ResourceSet set,
+        Collection<? extends RosettaModel> models,
+        String version
+    ) {
         Map<String, CharSequence> result = new HashMap<>();
         String cleanVersion = PythonCodeGeneratorUtil.cleanVersion(version);
 
@@ -268,13 +269,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             PythonCodeGeneratorContext context = entry.getValue();
 
             List<String> subfolders = context.getSubfolders();
-            result.putAll(generateWorkspaces(getWorkspaces(subfolders), cleanVersion));
+            result.putAll(generateWorkspaces(context, cleanVersion));
             result.putAll(generateInits(subfolders));
             result.putAll(processDAG(nameSpace, context, cleanVersion));
-            if (context.hasNativeFunctions()) {
-                result.put(PythonCodeGeneratorUtil.toPyFileName(nameSpace, INIT),
-                        PythonCodeGeneratorUtil.createTopLevelInitFile(cleanVersion, context.getNativeFunctionNames()));
-            }
         }
 
         String resolvedProjectName;
@@ -328,9 +325,11 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         }
     }
 
-    private Map<String, CharSequence> processDAG(String nameSpace,
-            PythonCodeGeneratorContext context,
-            String cleanVersion) {
+    private Map<String, CharSequence> processDAG(
+        String nameSpace,
+        PythonCodeGeneratorContext context,
+        String cleanVersion
+    ) {
         Map<String, CharSequence> result = new HashMap<>();
 
         PythonCodeWriter bundleWriter = new PythonCodeWriter();
@@ -428,8 +427,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param sccs          The strongly-connected components, indexed by id (list position).
      * @return The SCC ids in topological order.
      */
-    private List<Integer> buildCondensationGraph(Graph<String, DefaultEdge> dependencyDAG,
-            List<Set<String>> sccs) {
+    private List<Integer> buildCondensationGraph(
+        Graph<String, DefaultEdge> dependencyDAG,
+        List<Set<String>> sccs
+    ) {
         DefaultDirectedGraph<Integer, DefaultEdge> condensationGraph =
             new DefaultDirectedGraph<>(DefaultEdge.class);
         Map<String, Integer> typeToSccId = new HashMap<>();
@@ -474,12 +475,18 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param rebuildWriter               Accumulates Phase 3 model_rebuild calls.
      * @param result                      Map to receive proxy stub and standalone file entries.
      */
-    private void emitSortedClasses(List<Integer> sccOrder, List<Set<String>> sccs,
-            PythonCodeGeneratorContext context, String nameSpace,
-            Set<String> standaloneSupertypesOfBundled,
-            PythonCodeWriter dataObjectsWriter, PythonCodeWriter functionsWriter,
-            PythonCodeWriter annotationUpdateWriter, PythonCodeWriter rebuildWriter,
-            Map<String, CharSequence> result) {
+    private void emitSortedClasses(
+        List<Integer> sccOrder, 
+        List<Set<String>> sccs,
+        PythonCodeGeneratorContext context, 
+        String nameSpace,
+        Set<String> standaloneSupertypesOfBundled,
+        PythonCodeWriter dataObjectsWriter, 
+        PythonCodeWriter functionsWriter,
+        PythonCodeWriter annotationUpdateWriter, 
+        PythonCodeWriter rebuildWriter,
+        Map<String, CharSequence> result
+    ) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
         Set<String> standaloneClasses = context.getStandaloneClasses();
         // Track standalone supertype imports already emitted inline to avoid duplicates.
@@ -515,14 +522,22 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * Emits a single bundled class or function body into the appropriate writers and creates
      * a lazy proxy stub file for it.
      */
-    private void emitBundledClass(String name, String bundleClassName,
-            CharSequence classObject, CharSequence functionObject,
-            String nameSpace, PythonCodeGeneratorContext context,
-            Set<String> standaloneClasses, Set<String> standaloneSupertypesOfBundled,
-            Set<String> emittedInlineSupertypeImports,
-            PythonCodeWriter dataObjectsWriter, PythonCodeWriter functionsWriter,
-            PythonCodeWriter annotationUpdateWriter, PythonCodeWriter rebuildWriter,
-            Map<String, CharSequence> result) {
+    private void emitBundledClass(
+        String name, 
+        String bundleClassName,
+        CharSequence classObject, 
+        CharSequence functionObject,
+        String nameSpace, 
+        PythonCodeGeneratorContext context,
+        Set<String> standaloneClasses, 
+        Set<String> standaloneSupertypesOfBundled,
+        Set<String> emittedInlineSupertypeImports,
+        PythonCodeWriter dataObjectsWriter, 
+        PythonCodeWriter functionsWriter,
+        PythonCodeWriter annotationUpdateWriter, 
+        PythonCodeWriter rebuildWriter,
+        Map<String, CharSequence> result
+    ) {
         if (classObject != null) {
             // If this bundled class extends a standalone type, emit that import
             // inline here — after all bundled types the standalone depends on have
@@ -570,11 +585,15 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     /**
      * Emits a standalone class or function file (not part of the bundle).
      */
-    private void emitStandaloneFile(String name,
-            CharSequence classObject, CharSequence functionObject,
-            String nameSpace, PythonCodeGeneratorContext context,
-            Graph<String, DefaultEdge> dependencyDAG,
-            Map<String, CharSequence> result) {
+    private void emitStandaloneFile(
+        String name,
+        CharSequence classObject, 
+        CharSequence functionObject,
+        String nameSpace, 
+        PythonCodeGeneratorContext context,
+        Graph<String, DefaultEdge> dependencyDAG,
+        Map<String, CharSequence> result
+    ) {
         String fileName = SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py";
         PythonCodeWriter standAloneWriter = new PythonCodeWriter();
         standAloneWriter.appendBlock(PythonCodeGeneratorUtil.createImports());
@@ -634,8 +653,12 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param hasFunction     Whether the type has an associated function object in the bundle.
      * @return The stub file content as a string.
      */
-    private String generateProxyStub(String name, String nameSpace,
-            String bundleClassName, boolean hasFunction) {
+    private String generateProxyStub(
+        String name, 
+        String nameSpace,
+        String bundleClassName, 
+        boolean hasFunction
+    ) {
         String[] parsedName = name.split("\\.");
         String shortName = parsedName[parsedName.length - 1];
         PythonCodeWriter stubWriter = new PythonCodeWriter();
@@ -675,12 +698,17 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param deferredImports        Standalone-class imports to emit after class definitions.
      * @param result                 Map to receive the assembled bundle file entry.
      */
-    private void assembleBundleFile(String nameSpace, PythonCodeGeneratorContext context,
-            PythonCodeWriter bundleWriter,
-            PythonCodeWriter dataObjectsWriter, PythonCodeWriter functionsWriter,
-            PythonCodeWriter annotationUpdateWriter, PythonCodeWriter rebuildWriter,
-            List<String> deferredImports,
-            Map<String, CharSequence> result) {
+    private void assembleBundleFile(
+        String nameSpace, 
+        PythonCodeGeneratorContext context,
+        PythonCodeWriter bundleWriter,
+        PythonCodeWriter dataObjectsWriter, 
+        PythonCodeWriter functionsWriter,
+        PythonCodeWriter annotationUpdateWriter, 
+        PythonCodeWriter rebuildWriter,
+        List<String> deferredImports,
+        Map<String, CharSequence> result
+    ) {
         bundleWriter.appendBlock(dataObjectsWriter.toString());
 
         // Deferred standalone-class imports: emitted after all bundled class definitions so
@@ -744,14 +772,19 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             .collect(Collectors.toList());
     }
 
-    private Map<String, String> generateWorkspaces(List<String> workspaces, String version) {
+    private Map<String, String> generateWorkspaces(PythonCodeGeneratorContext context, String version) {
         Map<String, String> result = new HashMap<>();
-
+        List<String> workspaces = getWorkspaces(context.getSubfolders());
         for (String workspace : workspaces) {
-            result.put(PythonCodeGeneratorUtil.toPyFileName(workspace, INIT),
-                    PythonCodeGeneratorUtil.createTopLevelInitFile(version));
-            result.put(PythonCodeGeneratorUtil.toPyFileName(workspace, "version"),
-                    PythonCodeGeneratorUtil.createVersionFile(version));
+            Set<String> nativeFunctionNames = (context.hasNativeFunctions()) ? context.getNativeFunctionNames() : null;
+            result.put(
+                PythonCodeGeneratorUtil.toPyFileName(workspace, INIT),
+                PythonCodeGeneratorUtil.createTopLevelInitFile(version, namespacePrefix, nativeFunctionNames)
+            );
+            result.put(
+                PythonCodeGeneratorUtil.toPyFileName(workspace, "version"),
+                PythonCodeGeneratorUtil.createVersionFile(version)
+            );
             result.put(PythonCodeGeneratorUtil.toFileName(workspace, "py.typed"), "");
         }
 

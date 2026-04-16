@@ -245,6 +245,117 @@ public class PythonNamespacePrefixTest {
     }
 
     // -------------------------------------------------------------------------
+    // Top-level __init__.py content
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testInitFileContainsNamespacePrefixWithPrefix() {
+        String init = withPrefix().get("src/finos/__init__.py").toString();
+        assertTrue(init.contains("rune_namespace_prefix='finos'"),
+                "Top-level __init__.py must set rune_namespace_prefix to the configured prefix value");
+        assertFalse(init.contains("rune_namespace_prefix=None"),
+                "rune_namespace_prefix must not be None when a prefix is set");
+    }
+
+    @Test
+    void testInitFileContainsNamespacePrefixNoneWithoutPrefix() {
+        String init = withoutPrefix().get("src/cdm/__init__.py").toString();
+        assertTrue(init.contains("rune_namespace_prefix=None"),
+                "Top-level __init__.py must set rune_namespace_prefix=None when no prefix is configured");
+        assertFalse(init.contains("rune_namespace_prefix='"),
+                "rune_namespace_prefix must not have a string value when no prefix is set");
+    }
+
+    @Test
+    void testInitFileContainsRuneDeserializeWithPrefix() {
+        String init = withPrefix().get("src/finos/__init__.py").toString();
+        assertTrue(init.contains("from rune.runtime.base_data_class import BaseDataClass"),
+                "Top-level __init__.py must import BaseDataClass");
+        assertTrue(init.contains("def rune_deserialize("),
+                "Top-level __init__.py must define the rune_deserialize helper function");
+    }
+
+    @Test
+    void testInitFileContainsRuneDeserializeWithoutPrefix() {
+        String init = withoutPrefix().get("src/cdm/__init__.py").toString();
+        assertTrue(init.contains("from rune.runtime.base_data_class import BaseDataClass"),
+                "Top-level __init__.py must import BaseDataClass when no prefix");
+        assertTrue(init.contains("def rune_deserialize("),
+                "Top-level __init__.py must define the rune_deserialize helper function when no prefix");
+    }
+
+    // -------------------------------------------------------------------------
+    // Top-level __init__.py — native function registration with prefix
+    // -------------------------------------------------------------------------
+
+    private static final String NATIVE_FUNC_MODEL = """
+            namespace cdm.event.common
+
+            func NativeFunc:
+                [codeImplementation]
+                inputs:
+                    n number (1..1)
+                output:
+                    result number (1..1)
+            """;
+
+    @Test
+    void testInitFileNativeFunctionRegistrationWithPrefix() {
+        Map<String, CharSequence> gen = testUtils.generatePythonFromString(NATIVE_FUNC_MODEL, PREFIX, null);
+        String init = gen.get("src/finos/__init__.py").toString();
+        assertTrue(init.contains("from rune.runtime.native_registry import rune_register_native as _rune_register_native"),
+                "Top-level __init__.py must import rune_register_native when native functions are present");
+        assertTrue(init.contains("from finos.cdm.event.common.rune.native.NativeFunc import NativeFunc"),
+                "Native function must be imported from the prefixed rune/native path");
+        assertTrue(init.contains("_rune_register_native('finos.cdm.event.common.functions.NativeFunc',"),
+                "Native function must be registered under the prefixed FQN");
+    }
+
+    @Test
+    void testInitFileNativeFunctionRegistrationWithoutPrefix() {
+        Map<String, CharSequence> gen = testUtils.generatePythonFromString(NATIVE_FUNC_MODEL);
+        String init = gen.get("src/cdm/__init__.py").toString();
+        assertTrue(init.contains("from rune.runtime.native_registry import rune_register_native as _rune_register_native"),
+                "Top-level __init__.py must import rune_register_native when no prefix");
+        assertTrue(init.contains("from cdm.event.common.rune.native.NativeFunc import NativeFunc"),
+                "Native function must be imported from the unprefixed rune/native path");
+        assertTrue(init.contains("_rune_register_native('cdm.event.common.functions.NativeFunc',"),
+                "Native function must be registered under the unprefixed FQN");
+    }
+
+    // -------------------------------------------------------------------------
+    // _FQRTN value in bundled classes — prefix must NOT appear
+    // -------------------------------------------------------------------------
+
+    private static final String CYCLIC_MODEL = """
+            namespace cdm.event.common
+
+            type CycleA:
+                b CycleB (0..1)
+
+            type CycleB:
+                a CycleA (0..1)
+            """;
+
+    @Test
+    void testFQRTNExcludesPrefixInBundledClass() {
+        Map<String, CharSequence> gen = testUtils.generatePythonFromString(CYCLIC_MODEL, PREFIX, null);
+        String bundle = gen.get("src/finos/_bundle.py").toString();
+        assertTrue(bundle.contains("_FQRTN: ClassVar[str] = 'cdm.event.common.CycleA'"),
+                "_FQRTN must use the unprefixed FQN even when a namespace prefix is set");
+        assertFalse(bundle.contains("'finos.cdm.event.common.CycleA'"),
+                "_FQRTN must not include the namespace prefix");
+    }
+
+    @Test
+    void testFQRTNWithoutPrefixInBundledClass() {
+        Map<String, CharSequence> gen = testUtils.generatePythonFromString(CYCLIC_MODEL);
+        String bundle = gen.get("src/cdm/_bundle.py").toString();
+        assertTrue(bundle.contains("_FQRTN: ClassVar[str] = 'cdm.event.common.CycleA'"),
+                "_FQRTN must contain the full FQN when no prefix is set");
+    }
+
+    // -------------------------------------------------------------------------
     // Function stub file path
     // -------------------------------------------------------------------------
 

@@ -6,6 +6,7 @@ package com.regnosys.rosetta.generator.python.util;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Set;
 
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.types.RAttribute;
@@ -94,24 +95,60 @@ public final class PythonCodeGeneratorUtil {
         return toFileName(namespace, fileName) + ".py";
     }
 
-    public static String createTopLevelInitFile(String version) {
-        return "from .version import __version__";
-    }
-
-    public static String createTopLevelInitFile(String version, java.util.Set<String> nativeFunctionNames) {
-        if (nativeFunctionNames == null || nativeFunctionNames.isEmpty()) {
-            return createTopLevelInitFile(version);
-        }
+    public static String createTopLevelInitFile(String version, String namespacePrefix, Set<String> nativeFunctionNames) {
         StringBuilder sb = new StringBuilder();
         sb.append("from .version import __version__\n");
-        sb.append("from rune.runtime.native_registry import rune_attempt_register_native_functions\n");
-        sb.append("rune_attempt_register_native_functions(\n");
-        sb.append("    function_names=[\n");
-        for (String name : nativeFunctionNames) {
-            sb.append("        '").append(name).append("',\n");
+        if (nativeFunctionNames != null && !nativeFunctionNames.isEmpty()) {
+            sb.append("from rune.runtime.native_registry import rune_register_native as _rune_register_native\n");
         }
-        sb.append("    ]\n");
-        sb.append(")\n");
+        String namespacePrefixOrNone = (namespacePrefix == null) ? "None" : "'" + namespacePrefix + "'";
+        sb.append("rune_namespace_prefix=" + namespacePrefixOrNone + "\n");
+        sb.append(
+            """
+            from rune.runtime.base_data_class import BaseDataClass
+            def rune_deserialize(
+                rune_data,
+                validate_model=True,
+                check_rune_constraints=True,
+                strict=False,
+                raise_validation_errors=True,
+            ):
+                return BaseDataClass.rune_deserialize(
+                    rune_data,
+                    validate_model=validate_model,
+                    check_rune_constraints=check_rune_constraints,
+                    strict=strict,
+                    raise_validation_errors=raise_validation_errors,
+                    namespace_prefix=rune_namespace_prefix,
+                )
+            """);
+        if (nativeFunctionNames != null && !nativeFunctionNames.isEmpty()) {
+            sb.append("# TODO: replace with rune_attempt_register_native_functions once runtime supports rune/native path convention:\n");
+            sb.append("# rune_attempt_register_native_functions(\n");
+            sb.append("#     function_names=[\n");
+            for (String fqn : nativeFunctionNames) {
+                sb.append("#         '").append(fqn).append("',\n");
+            }
+            sb.append("#     ]\n");
+            sb.append("# )\n");
+            int i = 0;
+            for (String fqn : nativeFunctionNames) {
+                String[] parts = fqn.split("\\.");
+                String functionName = parts[parts.length - 1];
+                // Strip .functions.<FunctionName> (last 2 parts) to derive the rune namespace,
+                // then append .rune.native to get the native implementation module path.
+                // The native file is at <namespace>/rune/native/<FunctionName>.py,
+                // so import the function from that specific module file.
+                String nativeModule = String.join(".", java.util.Arrays.copyOfRange(parts, 0, parts.length - 2)) + ".rune.native." + functionName;
+                sb.append("try:\n");
+                sb.append("    from ").append(nativeModule).append(" import ").append(functionName)
+                  .append(" as _native_impl_").append(i).append("\n");
+                sb.append("    _rune_register_native('").append(fqn).append("', _native_impl_").append(i).append(")\n");
+                sb.append("except ImportError:\n");
+                sb.append("    pass\n");
+                i++;
+            }
+        }
         return sb.toString();
     }
 

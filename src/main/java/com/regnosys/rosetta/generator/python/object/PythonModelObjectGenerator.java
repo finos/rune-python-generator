@@ -322,7 +322,7 @@ public class PythonModelObjectGenerator {
         }
 
         if (!isStandalone) {
-            writer.appendLine("_FQRTN: ClassVar[str] = '" + context.getFullyQualifiedName(rc) + "'");
+            writer.appendLine("_FQRTN: ClassVar[str] = '" + RuneToPythonMapper.getFullyQualifiedName(rc) + "'");
         }
 
         AttributeProcessingResult attrResult = pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints, context);

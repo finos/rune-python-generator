@@ -226,9 +226,11 @@ public class PythonPartitioningTest {
         // Registration lives in __init__.py instead.
         String initPython = gf.get("src/rosetta_dsl/__init__.py").toString();
         testUtils.assertImportAppearsExactlyOnce(initPython,
-                "from rune.runtime.native_registry import rune_attempt_register_native_functions");
+                "from rune.runtime.native_registry import rune_register_native as _rune_register_native");
         testUtils.assertGeneratedContainsExpectedString(initPython,
-                "'rosetta_dsl.test.functions.functions.RoundToNearest',");
+                "from rosetta_dsl.test.functions.rune.native.RoundToNearest import RoundToNearest as _native_impl_");
+        testUtils.assertGeneratedContainsExpectedString(initPython,
+                "_rune_register_native('rosetta_dsl.test.functions.functions.RoundToNearest',");
     }
 
     // -----------------------------------------------------------------------

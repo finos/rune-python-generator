@@ -480,13 +480,13 @@ public class PythonCodeGeneratorCLI {
             return;
         }
 
-        // Native implementations must live at rune/native/<prefix>/<namespace>/...
-        // because rune_attempt_register_native_functions prepends "rune.native." to the
-        // function's module path before importing.
+        // Native implementations must live at <namespace>/rune/native/ within the source tree.
+        // Only files under a rune/native/ directory are copied; other content is left behind.
+        // They are deployed to src/<prefix>/<namespace>/rune/native/ preserving the full path.
         String prefixSegment = (namespacePrefix != null && !namespacePrefix.isBlank())
                 ? namespacePrefix.replace(".", "/") + "/"
                 : "";
-        String targetBase = "src/rune/native/" + prefixSegment;
+        String targetBase = "src/" + prefixSegment;
 
         int[] copied = {0};
         int[] skipped = {0};
@@ -495,6 +495,10 @@ public class PythonCodeGeneratorCLI {
             Files.walk(nativeDirPath)
                     .filter(Files::isRegularFile)
                     .filter(p -> p.getFileName().toString().endsWith(".py"))
+                    .filter(p -> {
+                        String rel = nativeDirPath.relativize(p).toString().replace(File.separator, "/");
+                        return rel.contains("/rune/native/") || rel.startsWith("rune/native/");
+                    })
                     .forEach(sourcePath -> {
                         String relative = nativeDirPath.relativize(sourcePath).toString().replace(File.separator, "/");
                         String targetRelative = targetBase + relative;
