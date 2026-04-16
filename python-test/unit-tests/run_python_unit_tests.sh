@@ -136,7 +136,7 @@ else
 fi
 
 PYTHON_TESTS_TARGET_PATH="$PROJECT_ROOT_PATH/target/python-tests/unit_tests"
-NATIVE_FUNCTIONS_PATH="$MY_PATH/native-function/native-src"
+NATIVE_FUNCTIONS_PATH="$MY_PATH/native-function/src"
 
 # Validate inputs/existence
 ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"

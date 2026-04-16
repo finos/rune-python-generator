@@ -285,7 +285,7 @@ public class PythonNamespacePrefixTest {
     }
 
     // -------------------------------------------------------------------------
-    // Top-level __init__.py — native function registration with prefix
+    // Top-level __init__.py — native function registration must NOT appear
     // -------------------------------------------------------------------------
 
     private static final String NATIVE_FUNC_MODEL = """
@@ -300,27 +300,23 @@ public class PythonNamespacePrefixTest {
             """;
 
     @Test
-    void testInitFileNativeFunctionRegistrationWithPrefix() {
+    void testInitFileHasNoNativeFunctionRegistrationWithPrefix() {
         Map<String, CharSequence> gen = testUtils.generatePythonFromString(NATIVE_FUNC_MODEL, PREFIX, null);
         String init = gen.get("src/finos/__init__.py").toString();
-        assertTrue(init.contains("from rune.runtime.native_registry import rune_register_native as _rune_register_native"),
-                "Top-level __init__.py must import rune_register_native when native functions are present");
-        assertTrue(init.contains("from finos.cdm.event.common.rune.native.NativeFunc import NativeFunc"),
-                "Native function must be imported from the prefixed rune/native path");
-        assertTrue(init.contains("_rune_register_native('finos.cdm.event.common.functions.NativeFunc',"),
-                "Native function must be registered under the prefixed FQN");
+        assertFalse(init.contains("rune_register_native"),
+                "Top-level __init__.py must not contain native function registration");
+        assertFalse(init.contains("rune/native"),
+                "Top-level __init__.py must not reference the rune/native path");
     }
 
     @Test
-    void testInitFileNativeFunctionRegistrationWithoutPrefix() {
+    void testInitFileHasNoNativeFunctionRegistrationWithoutPrefix() {
         Map<String, CharSequence> gen = testUtils.generatePythonFromString(NATIVE_FUNC_MODEL);
         String init = gen.get("src/cdm/__init__.py").toString();
-        assertTrue(init.contains("from rune.runtime.native_registry import rune_register_native as _rune_register_native"),
-                "Top-level __init__.py must import rune_register_native when no prefix");
-        assertTrue(init.contains("from cdm.event.common.rune.native.NativeFunc import NativeFunc"),
-                "Native function must be imported from the unprefixed rune/native path");
-        assertTrue(init.contains("_rune_register_native('cdm.event.common.functions.NativeFunc',"),
-                "Native function must be registered under the unprefixed FQN");
+        assertFalse(init.contains("rune_register_native"),
+                "Top-level __init__.py must not contain native function registration when no prefix");
+        assertFalse(init.contains("rune/native"),
+                "Top-level __init__.py must not reference the rune/native path when no prefix");
     }
 
     // -------------------------------------------------------------------------

@@ -423,7 +423,7 @@ public class PythonCodeGeneratorCLI {
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
         writePythonFiles(generatedPython, tgtDir);
-        copyNativeFunctions(nativeDir, tgtDir, namespacePrefix, generatedPython.keySet());
+        copyNativeFunctions(nativeDir, tgtDir, generatedPython.keySet());
         return 0;
     }
 
@@ -474,7 +474,7 @@ public class PythonCodeGeneratorCLI {
         LOGGER.info("Wrote {} files to {}", generatedPython.size(), tgtDir);
     }
 
-    private static void copyNativeFunctions(String nativeDir, String tgtDir, String namespacePrefix, Set<String> generatedPaths) {
+    private static void copyNativeFunctions(String nativeDir, String tgtDir, Set<String> generatedPaths) {
         if (nativeDir == null || nativeDir.isBlank()) {
             return;
         }
@@ -485,28 +485,26 @@ public class PythonCodeGeneratorCLI {
             return;
         }
 
-        // Native implementations must live at <namespace>/rune/native/ within the source tree.
-        // Only files under a rune/native/ directory are copied; other content is left behind.
-        // They are deployed to src/<prefix>/<namespace>/rune/native/ preserving the full path.
-        String prefixSegment = (namespacePrefix != null && !namespacePrefix.isBlank())
-                ? namespacePrefix.replace(".", "/") + "/"
-                : "";
-        String targetBase = "src/" + prefixSegment;
+        // Native implementations are sourced from <nativeDir>/rune/native/ and deployed
+        // to src/rune/native/ in the output, preserving the full sub-path underneath.
+        // Example: <nativeDir>/rune/native/rosetta_dsl/test/functions/RoundToNearest.py
+        //       -> src/rune/native/rosetta_dsl/test/functions/RoundToNearest.py
+        Path runeNativePath = nativeDirPath.resolve("rune/native");
+        if (!Files.exists(runeNativePath) || !Files.isDirectory(runeNativePath)) {
+            LOGGER.warn("Expected rune/native sub-directory not found under native dir: {}", runeNativePath);
+            return;
+        }
 
         int[] copied = {0};
         int[] skipped = {0};
 
         try {
-            Files.walk(nativeDirPath)
+            Files.walk(runeNativePath)
                     .filter(Files::isRegularFile)
                     .filter(p -> p.getFileName().toString().endsWith(".py"))
-                    .filter(p -> {
-                        String rel = nativeDirPath.relativize(p).toString().replace(File.separator, "/");
-                        return rel.contains("/rune/native/") || rel.startsWith("rune/native/");
-                    })
                     .forEach(sourcePath -> {
-                        String relative = nativeDirPath.relativize(sourcePath).toString().replace(File.separator, "/");
-                        String targetRelative = targetBase + relative;
+                        String relative = runeNativePath.relativize(sourcePath).toString().replace(File.separator, "/");
+                        String targetRelative = "src/rune/native/" + relative;
                         Path targetPath = Paths.get(tgtDir, targetRelative);
 
                         if (generatedPaths.contains(targetRelative)) {

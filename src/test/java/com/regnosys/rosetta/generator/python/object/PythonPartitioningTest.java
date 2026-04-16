@@ -197,10 +197,10 @@ public class PythonPartitioningTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 8 — native registration moves to __init__.py when there are no bundled types
+    // Test 8 — native function: no bundle generated, no registration in __init__.py
     // -----------------------------------------------------------------------
     @Test
-    public void testNativeRegistryRegistrationInInitWhenNoBundledTypes() {
+    public void testNativeFunctionNoBundleAndNoRegistrationInInit() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
                 namespace rosetta_dsl.test.functions
 
@@ -223,14 +223,10 @@ public class PythonPartitioningTest {
                 gf.containsKey("src/rosetta_dsl/_bundle.py"),
                 "No _bundle.py should be generated when there are no bundled classes or functions");
 
-        // Registration lives in __init__.py instead.
+        // Registration must not appear in __init__.py.
         String initPython = gf.get("src/rosetta_dsl/__init__.py").toString();
-        testUtils.assertImportAppearsExactlyOnce(initPython,
-                "from rune.runtime.native_registry import rune_register_native as _rune_register_native");
-        testUtils.assertGeneratedContainsExpectedString(initPython,
-                "from rosetta_dsl.test.functions.rune.native.RoundToNearest import RoundToNearest as _native_impl_");
-        testUtils.assertGeneratedContainsExpectedString(initPython,
-                "_rune_register_native('rosetta_dsl.test.functions.functions.RoundToNearest',");
+        testUtils.assertGeneratedDoesNotContain(initPython, "rune_register_native");
+        testUtils.assertGeneratedDoesNotContain(initPython, "rune/native");
     }
 
     // -----------------------------------------------------------------------

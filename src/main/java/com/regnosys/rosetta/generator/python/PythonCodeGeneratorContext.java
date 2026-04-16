@@ -237,6 +237,10 @@ public final class PythonCodeGeneratorContext {
         return namespacePrefix;
     }
 
+    public String getnamespacePrefixOrNone() {
+        return (namespacePrefix == null) ? "None" : "'" + namespacePrefix + "'";
+    }
+    
     public void setNamespacePrefix(String namespacePrefix) {
         this.namespacePrefix = namespacePrefix;
     }

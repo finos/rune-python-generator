@@ -636,7 +636,8 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 standAloneWriter.newLine();
                 standAloneWriter.appendLine("rune_attempt_register_native_functions(");
                 standAloneWriter.indent();
-                standAloneWriter.appendLine("function_names=['" + name + "']");
+                standAloneWriter.append("function_names=['" + name + "'], ");
+                standAloneWriter.appendLine("rune_namespace_prefix=" + context.getnamespacePrefixOrNone());
                 standAloneWriter.unindent();
                 standAloneWriter.appendLine(")");
             }
@@ -776,10 +777,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         Map<String, String> result = new HashMap<>();
         List<String> workspaces = getWorkspaces(context.getSubfolders());
         for (String workspace : workspaces) {
-            Set<String> nativeFunctionNames = (context.hasNativeFunctions()) ? context.getNativeFunctionNames() : null;
             result.put(
                 PythonCodeGeneratorUtil.toPyFileName(workspace, INIT),
-                PythonCodeGeneratorUtil.createTopLevelInitFile(version, namespacePrefix, nativeFunctionNames)
+                PythonCodeGeneratorUtil.createTopLevelInitFile(version, namespacePrefix)
             );
             result.put(
                 PythonCodeGeneratorUtil.toPyFileName(workspace, "version"),
