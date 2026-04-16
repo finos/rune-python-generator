@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -160,6 +161,9 @@ public class PythonCodeGeneratorCLI {
         Option namespacePrefixOpt = Option.builder("x").longOpt("namespace-prefix").argName("namespacePrefix")
                 .desc("Prefix to prepend to every generated namespace (e.g. finos)")
                 .hasArg().build();
+        Option nativeDirOpt = Option.builder("n").longOpt("native-dir").argName("nativeDir")
+                .desc("Source directory containing native function implementations to copy into the generated package")
+                .hasArg().build();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
@@ -170,6 +174,7 @@ public class PythonCodeGeneratorCLI {
         options.addOption(projectNameOpt);
         options.addOption(versionOpt);
         options.addOption(namespacePrefixOpt);
+        options.addOption(nativeDirOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -183,6 +188,7 @@ public class PythonCodeGeneratorCLI {
             boolean failOnWarnings = cmd.hasOption("w");
             String projectName = cmd.getOptionValue("p");
             String namespacePrefix = cmd.getOptionValue("x");
+            String nativeDir = cmd.getOptionValue("n");
 
             String version = DEFAULT_VERSION;
             if (cmd.hasOption("v")) {
@@ -206,10 +212,10 @@ public class PythonCodeGeneratorCLI {
 
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
-                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix);
+                return translateFromSourceDir(srcDir, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix, nativeDir);
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
-                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix);
+                return translateFromSourceFile(srcFile, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix, nativeDir);
             } else {
                 LOGGER.error("Either a source directory (-s) or source file (-f) must be specified.");
                 printUsage(options);
@@ -228,13 +234,14 @@ public class PythonCodeGeneratorCLI {
     }
 
     private int translateFromSourceDir(
-        String srcDir, 
-        String tgtDir, 
-        boolean allowErrors, 
+        String srcDir,
+        String tgtDir,
+        boolean allowErrors,
         boolean failOnWarnings,
-        String projectName, 
-        String version, 
-        String namespacePrefix
+        String projectName,
+        String version,
+        String namespacePrefix,
+        String nativeDir
     ) {
         // Find all .rosetta files in a directory
         Path srcDirPath = Paths.get(srcDir);
@@ -251,7 +258,7 @@ public class PythonCodeGeneratorCLI {
                     .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
                     .collect(Collectors.toList());
-            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix);
+            return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix, nativeDir);
         } catch (IOException e) {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
             return 1;
@@ -259,13 +266,14 @@ public class PythonCodeGeneratorCLI {
     }
 
     private int translateFromSourceFile(
-        String srcFile, 
-        String tgtDir, 
-        boolean allowErrors, 
+        String srcFile,
+        String tgtDir,
+        boolean allowErrors,
         boolean failOnWarnings,
-        String projectName, 
-        String version, 
-        String namespacePrefix
+        String projectName,
+        String version,
+        String namespacePrefix,
+        String nativeDir
     ) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
@@ -281,18 +289,19 @@ public class PythonCodeGeneratorCLI {
             return 1;
         }
         List<Path> rosettaFiles = List.of(srcFilePath);
-        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix);
+        return processRosettaFiles(rosettaFiles, tgtDir, allowErrors, failOnWarnings, projectName, version, namespacePrefix, nativeDir);
     }
 
     // Common processing function
     private int processRosettaFiles(
-        List<Path> rosettaFiles, 
-        String tgtDir, 
-        boolean allowErrors, 
+        List<Path> rosettaFiles,
+        String tgtDir,
+        boolean allowErrors,
         boolean failOnWarnings,
-        String projectName, 
-        String version, 
-        String namespacePrefix
+        String projectName,
+        String version,
+        String namespacePrefix,
+        String nativeDir
     ) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
@@ -413,6 +422,7 @@ public class PythonCodeGeneratorCLI {
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
         writePythonFiles(generatedPython, tgtDir);
+        copyNativeFunctions(nativeDir, tgtDir, namespacePrefix, generatedPython.keySet());
         return 0;
     }
 
@@ -458,6 +468,60 @@ public class PythonCodeGeneratorCLI {
         }
         LOGGER.info("Wrote {} files to {}", generatedPython.size(), tgtDir);
     }
+
+    private static void copyNativeFunctions(String nativeDir, String tgtDir, String namespacePrefix, Set<String> generatedPaths) {
+        if (nativeDir == null || nativeDir.isBlank()) {
+            return;
+        }
+
+        Path nativeDirPath = Paths.get(nativeDir);
+        if (!Files.exists(nativeDirPath) || !Files.isDirectory(nativeDirPath)) {
+            LOGGER.warn("Native function directory does not exist or is not a directory: {}", nativeDir);
+            return;
+        }
+
+        // Native implementations must live at rune/native/<prefix>/<namespace>/...
+        // because rune_attempt_register_native_functions prepends "rune.native." to the
+        // function's module path before importing.
+        String prefixSegment = (namespacePrefix != null && !namespacePrefix.isBlank())
+                ? namespacePrefix.replace(".", "/") + "/"
+                : "";
+        String targetBase = "src/rune/native/" + prefixSegment;
+
+        int[] copied = {0};
+        int[] skipped = {0};
+
+        try {
+            Files.walk(nativeDirPath)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".py"))
+                    .forEach(sourcePath -> {
+                        String relative = nativeDirPath.relativize(sourcePath).toString().replace(File.separator, "/");
+                        String targetRelative = targetBase + relative;
+                        Path targetPath = Paths.get(tgtDir, targetRelative);
+
+                        if (generatedPaths.contains(targetRelative)) {
+                            LOGGER.warn("Native function file '{}' conflicts with generated file '{}'; skipping.", sourcePath, targetRelative);
+                            skipped[0]++;
+                        } else {
+                            try {
+                                Files.createDirectories(targetPath.getParent());
+                                Files.copy(sourcePath, targetPath);
+                                LOGGER.info("Copied native function: {}", targetRelative);
+                                copied[0]++;
+                            } catch (IOException e) {
+                                LOGGER.error("Failed to copy native function file '{}': {}", sourcePath, e.getMessage(), e);
+                            }
+                        }
+                    });
+        } catch (IOException e) {
+            LOGGER.error("Failed to walk native function directory '{}': {}", nativeDir, e.getMessage(), e);
+            return;
+        }
+
+        LOGGER.info("Native functions: copied {} file(s), skipped {} collision(s).", copied[0], skipped[0]);
+    }
+
     // --- Helper classes for model loading and Guice setup ---
 
     static class PythonModelLoader {

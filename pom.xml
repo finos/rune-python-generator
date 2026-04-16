@@ -479,7 +479,8 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF.versions.9.module-info</exclude>
+                                        <exclude>META-INF/versions/**</exclude>
+                                        <exclude>log4j.properties</exclude>
                                         <exclude>META-INF/services/com.fasterxml.jackson.databind.Module</exclude>
                                         <exclude>about_files/LICENSE-2.0.txt</exclude>
                                         <exclude>about.html</exclude>

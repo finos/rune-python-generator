@@ -121,7 +121,7 @@ JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 
 # Always generate from the root of the test suite to ensure the "overall model" is complete
 INPUT_ROSETTA_PATH="$MY_PATH"
-PTYHON_PROJECT_NAME="python-test"
+PYTHON_PROJECT_NAME="python-test"
 
 if [[ $RUN_ALL -eq 1 ]]; then
   TEST_TARGET="$MY_PATH"
@@ -136,6 +136,7 @@ else
 fi
 
 PYTHON_TESTS_TARGET_PATH="$PROJECT_ROOT_PATH/target/python-tests/unit_tests"
+NATIVE_FUNCTIONS_PATH="$MY_PATH/native-function/native-src"
 
 # Validate inputs/existence
 ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"
@@ -150,7 +151,8 @@ mkdir -p "$PYTHON_TESTS_TARGET_PATH"
 java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI \
   -s "$INPUT_ROSETTA_PATH" \
   -t "$PYTHON_TESTS_TARGET_PATH" \
-  -p "$PTYHON_PROJECT_NAME"
+  -p "$PYTHON_PROJECT_NAME" \
+  -n "$NATIVE_FUNCTIONS_PATH"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -ne 0 ]]; then
   echo "Java program returned exit code $JAVA_EXIT_CODE. Stopping script."
@@ -165,8 +167,6 @@ if [[ $REUSE_ENV -eq 1 && -d "$VENV_PATH" ]]; then
   if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
   # shellcheck disable=SC1090
   source "$VENV_PATH/${PY_SCRIPTS}/activate" || error
-  echo "***** removing existing python_rosetta_dsl package"
-  python -m pip uninstall -y python_rosetta_dsl || true
 else
   echo "***** setting up common environment"
   # shellcheck disable=SC1090
@@ -177,17 +177,10 @@ else
   source "$VENV_PATH/${PY_SCRIPTS}/activate" || error
 fi
 
-# package and install generated Python
+# package and install generated Python (native functions are already embedded by the CLI)
 cd "$PYTHON_TESTS_TARGET_PATH" || error
 python -m pip wheel --no-deps --only-binary :all: . || error
-python -m pip install *-0.0.0-py3-none-any.whl
-
-# Find and run all build_and_install.sh scripts to ensure the environment matches the "overall model"
-echo "***** installing all native implementations"
-find "$MY_PATH" -name "build_and_install.sh" | while read -r script; do
-    echo "Running native setup: $script"
-    (cd "$(dirname "$script")" && bash "$(basename "$script")") || error
-done
+python -m pip install --force-reinstall --no-deps *-0.0.0-py3-none-any.whl
 
 # run tests
 echo "***** run unit tests"
