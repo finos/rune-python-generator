@@ -497,6 +497,7 @@ public class PythonCodeGeneratorCLI {
 
         int[] copied = {0};
         int[] skipped = {0};
+        Set<Path> initDirs = new java.util.LinkedHashSet<>();
 
         try {
             Files.walk(runeNativePath)
@@ -516,6 +517,15 @@ public class PythonCodeGeneratorCLI {
                                 Files.copy(sourcePath, targetPath);
                                 LOGGER.info("Copied native function: {}", targetRelative);
                                 copied[0]++;
+                                // Collect every directory from src/rune/ down to the file's parent
+                                // so we can place an __init__.py in each one.
+                                Path runeRoot = Paths.get(tgtDir, "src/rune");
+                                Path dir = targetPath.getParent();
+                                while (dir != null && (dir.equals(runeRoot) || dir.startsWith(runeRoot))) {
+                                    initDirs.add(dir);
+                                    if (dir.equals(runeRoot)) break;
+                                    dir = dir.getParent();
+                                }
                             } catch (IOException e) {
                                 LOGGER.error("Failed to copy native function file '{}': {}", sourcePath, e.getMessage(), e);
                             }
@@ -524,6 +534,19 @@ public class PythonCodeGeneratorCLI {
         } catch (IOException e) {
             LOGGER.error("Failed to walk native function directory '{}': {}", nativeDir, e.getMessage(), e);
             return;
+        }
+
+        // Write an empty __init__.py into every collected directory.
+        for (Path dir : initDirs) {
+            Path initFile = dir.resolve("__init__.py");
+            if (!Files.exists(initFile)) {
+                try {
+                    Files.writeString(initFile, "");
+                    LOGGER.info("Created __init__.py: {}", initFile);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to write __init__.py in '{}': {}", dir, e.getMessage(), e);
+                }
+            }
         }
 
         LOGGER.info("Native functions: copied {} file(s), skipped {} collision(s).", copied[0], skipped[0]);
