@@ -24,37 +24,36 @@ source "$MY_PATH/../ensure_jar_exists.sh" || { echo "Failed to source ensure_jar
 usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  -r, --reuse-env      Reuse the existing virtual environment"
-    echo "  -k, --keep-venv      Skip cleanup of the virtual environment"
-    echo "  --update-cdm         Fetch latest CDM source and rebuild package"
-    echo "  --rebuild-cdm        Rebuild CDM package from local source (skip fetch)"
-    echo "  -h, --help           Show this help"
+    echo "  -r, --reuse-env           Reuse the existing virtual environment"
+    echo "  -k, --keep-venv           Skip cleanup of the virtual environment"
+    echo "  -s, --skip-cdm            Skip CDM fetch and build (use existing wheel)"
+    echo "  -v <version>              CDM branch/tag to fetch (default: master)"
+    echo "  -h, --help                Show this help"
 }
 
 REUSE_ENV=0
-UPDATE_CDM=0
-REBUILD_CDM=0
+SKIP_CDM=0
 CLEANUP=1
+CDM_VERSION="master"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -r|--reuse-env)
             export REUSE_ENV=1
             CLEANUP=0
-            REBUILD_CDM=1
             shift
             ;;
         -k|--keep-venv|--no-clean)
             CLEANUP=0
             shift
             ;;
-        --update-cdm)
-            UPDATE_CDM=1
+        -s|--skip-cdm)
+            SKIP_CDM=1
             shift
             ;;
-        --rebuild-cdm)
-            REBUILD_CDM=1
-            shift
+        -v)
+            CDM_VERSION="$2"
+            shift 2
             ;;
         -h|--help)
             usage
@@ -68,20 +67,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-CDM_WHEEL_DIR="$MY_PATH/../../target/python-cdm"
-CDM_WHEEL_COUNT=$(find "$CDM_WHEEL_DIR" -name "*-py3-none-any.whl" 2>/dev/null | wc -l)
-
-if [[ $CDM_WHEEL_COUNT -eq 0 && $UPDATE_CDM -eq 0 && $REBUILD_CDM -eq 0 ]]; then
-    echo "CDM Python wheel not found in $CDM_WHEEL_DIR. Triggering build (fetch + build)..."
-    UPDATE_CDM=1
-fi
-
-if [[ $UPDATE_CDM -eq 1 ]]; then
-    echo "***** Updating CDM (fetch + build)..."
-    "$MY_PATH/setup/build_cdm.sh" || exit 1
-elif [[ $REBUILD_CDM -eq 1 ]]; then
-    echo "***** Rebuilding CDM (build only)..."
-    "$MY_PATH/setup/build_cdm.sh" --skip-cdm || exit 1
+if [[ $SKIP_CDM -eq 0 ]]; then
+    echo "***** Fetching and building CDM version: $CDM_VERSION..."
+    "$MY_PATH/setup/build_cdm.sh" "$CDM_VERSION" || exit 1
+else
+    echo "***** Skipping CDM fetch and build (using existing wheel)"
 fi
 
 echo "***** setting up common environment"

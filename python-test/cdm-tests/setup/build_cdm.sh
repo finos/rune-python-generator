@@ -79,6 +79,7 @@ for arg in "$@"; do
 done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
+    echo "***** Fetching CDM version: $CDM_BRANCH"
     source $MY_PATH/get_cdm.sh "$CDM_BRANCH"
 else
     echo "Skipping get_cdm.sh as requested."
@@ -86,7 +87,7 @@ fi
 
 ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"
 
-echo "***** build CDM"
+echo "***** build CDM version: $CDM_BRANCH"
 java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -p $CDM_PROJECT_NAME -v $CDM_VERSION -x $CDM_PREFIX || error "Failed to generate CDM Python code"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
