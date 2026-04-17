@@ -180,7 +180,11 @@ fi
 # package and install generated Python (native functions are already embedded by the CLI)
 cd "$PYTHON_TESTS_TARGET_PATH" || error
 python -m pip wheel --no-deps --only-binary :all: . || error
-python -m pip install --force-reinstall --no-deps *-0.0.0-py3-none-any.whl
+if [ -n "$RUNE_RUNTIME_DIR" ] || [ -n "$RUNE_RUNTIME_REF" ]; then
+  python -m pip install --force-reinstall --no-deps *-0.0.0-py3-none-any.whl
+else
+  python -m pip install --force-reinstall *-0.0.0-py3-none-any.whl
+fi
 
 # run tests
 echo "***** run unit tests"

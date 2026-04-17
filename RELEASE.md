@@ -2,7 +2,7 @@
 
 ## Current Release
 
-> **Runtime Dependency**: this release requires the next major release of [rune-python-runtime](https://github.com/finos/rune-python-runtime). The generated `pyproject.toml` declares `rune.runtime>=2.0.0,<3.0.0`. Both PRs must be merged and the runtime published to PyPI before this generator release is usable.
+> **Runtime Dependency**: this release requires [rune-python-runtime](https://github.com/finos/rune-python-runtime) v2.0.0, which is available on PyPI. The generated `pyproject.toml` declares `rune.runtime>=2.0.0,<3.0.0`.
 
 ### 1. Function Support
 
@@ -42,7 +42,7 @@ Mutually recursive types (circular inheritance and attribute references) are now
 
 ### 4. Significant Load Performance Improvement
 
-Load time reduced by approximately 85% (~120 s → ~15 s for CDM 6.0). (Issue [#148](https://github.com/finos/rune-python-generator/issues/148))
+Load time reduced by approximately 98% (~120 s → ~2 s for CDM 6.0). (Issue [#148](https://github.com/finos/rune-python-generator/issues/148))
 
 The generator partitions types into two categories:
 
@@ -66,6 +66,14 @@ Internal generator refactoring to simplify code and support reuse:
 - Introduced `PythonExpressionScope` to manage receiver context and lambda symbol shadowing during expression generation.
 - Multi-statement expressions that require intermediate values are now emitted as inline immediately-invoked lambdas rather than requiring function-level statement hoisting.
 - Consolidated object, attribute, and expression generation to remove duplication and improve maintainability.
+
+---
+
+### 7. Test Suite
+
+- Improved testing rigor and coverage.
+- JUnit suite reorganized from 54 to 22 classes with consistent `Python*` naming and less fragile assertions.
+- Python unit tests restructured so Rune filename, namespace, and pytest filename correspond without exception.
 
 ---
 

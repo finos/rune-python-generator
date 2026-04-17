@@ -90,16 +90,14 @@ fi
 ${PYEXE} -m pip install --upgrade pip || error
 ${PYEXE} -m pip install -r requirements.txt || error
 
-echo "***** Get and Install Runtime"
-
 # Runtime source selection (evaluated in order):
 #   1. RUNE_RUNTIME_DIR — editable install from the local sibling checkout (default, if it exists)
 #   2. RUNE_RUNTIME_REF — override: install from a specific GitHub branch/tag/commit
 #      Example: RUNE_RUNTIME_REF="feature/function_support"
 #   3. (default) — no explicit install; rune.runtime is a declared dependency of the generated
 #      wheel and will be pulled from PyPI automatically when that wheel is installed.
-RUNE_RUNTIME_DIR="../../../../../rune-python-runtime/FINOS/rune-python-runtime"
-RUNE_RUNTIME_REF="feature/function_support"
+# RUNE_RUNTIME_DIR="../../../../../rune-python-runtime/FINOS/rune-python-runtime"
+# RUNE_RUNTIME_REF="feature/function_support"
 
 if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then
     echo "Installing runtime as editable from: $RUNE_RUNTIME_DIR"

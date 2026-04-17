@@ -157,7 +157,7 @@ public static String fileComment(String version) {
                 requires-python = ">= 3.11"
                 dependencies = [
                    "pydantic>=2.10.3",
-                   "rune.runtime>=1.0.0,<2.0.0"
+                   "rune.runtime>=2.0.0,<3.0.0"
                 ]
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(name, version).stripIndent();

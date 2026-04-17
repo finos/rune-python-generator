@@ -1,3 +1,2 @@
 setuptools>=62.0
-tzdata>=2023.3
 pytest
