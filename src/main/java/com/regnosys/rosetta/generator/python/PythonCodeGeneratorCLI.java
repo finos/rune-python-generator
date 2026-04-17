@@ -423,7 +423,7 @@ public class PythonCodeGeneratorCLI {
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
         writePythonFiles(generatedPython, tgtDir);
-        copyNativeFunctions(nativeDir, tgtDir, generatedPython.keySet());
+        copyNativeFunctions(nativeDir, tgtDir, generatedPython.keySet(), namespacePrefix);
         return 0;
     }
 
@@ -474,7 +474,7 @@ public class PythonCodeGeneratorCLI {
         LOGGER.info("Wrote {} files to {}", generatedPython.size(), tgtDir);
     }
 
-    private static void copyNativeFunctions(String nativeDir, String tgtDir, Set<String> generatedPaths) {
+    private static void copyNativeFunctions(String nativeDir, String tgtDir, Set<String> generatedPaths, String namespacePrefix) {
         if (nativeDir == null || nativeDir.isBlank()) {
             return;
         }
@@ -517,13 +517,12 @@ public class PythonCodeGeneratorCLI {
                                 Files.copy(sourcePath, targetPath);
                                 LOGGER.info("Copied native function: {}", targetRelative);
                                 copied[0]++;
-                                // Collect every directory from src/rune/ down to the file's parent
-                                // so we can place an __init__.py in each one.
+                                // Collect every directory from src/rune/native/ down to the file's parent
+                                // so we can place an __init__.py in each one (but not src/rune/ itself).
                                 Path runeRoot = Paths.get(tgtDir, "src/rune");
                                 Path dir = targetPath.getParent();
-                                while (dir != null && (dir.equals(runeRoot) || dir.startsWith(runeRoot))) {
+                                while (dir != null && dir.startsWith(runeRoot) && !dir.equals(runeRoot)) {
                                     initDirs.add(dir);
-                                    if (dir.equals(runeRoot)) break;
                                     dir = dir.getParent();
                                 }
                             } catch (IOException e) {
@@ -536,15 +535,44 @@ public class PythonCodeGeneratorCLI {
             return;
         }
 
-        // Write an empty __init__.py into every collected directory.
+        // Write __init__.py into every collected directory (but not src/rune/ itself).
+        // If the native source has a corresponding __init__.py, copy it; otherwise write empty.
+        // Never overwrite an existing __init__.py.
+        Path nativeTargetRoot = Paths.get(tgtDir, "src/rune/native");
         for (Path dir : initDirs) {
             Path initFile = dir.resolve("__init__.py");
             if (!Files.exists(initFile)) {
                 try {
-                    Files.writeString(initFile, "");
-                    LOGGER.info("Created __init__.py: {}", initFile);
+                    Path relToNative = nativeTargetRoot.relativize(dir);
+                    Path sourceInit = runeNativePath.resolve(relToNative).resolve("__init__.py");
+                    if (Files.exists(sourceInit)) {
+                        Files.copy(sourceInit, initFile);
+                        LOGGER.info("Copied __init__.py: {}", initFile);
+                    } else {
+                        Files.writeString(initFile, "");
+                        LOGGER.info("Created __init__.py: {}", initFile);
+                    }
                 } catch (IOException e) {
                     LOGGER.error("Failed to write __init__.py in '{}': {}", dir, e.getMessage(), e);
+                }
+            }
+        }
+
+        // When a namespace prefix is in use, src/rune/ is a package that needs __init__.py.
+        if (namespacePrefix != null && !namespacePrefix.isBlank()) {
+            Path runeInitFile = Paths.get(tgtDir, "src/rune/__init__.py");
+            if (!Files.exists(runeInitFile)) {
+                try {
+                    Path sourceRuneInit = nativeDirPath.resolve("rune/__init__.py");
+                    if (Files.exists(sourceRuneInit)) {
+                        Files.copy(sourceRuneInit, runeInitFile);
+                        LOGGER.info("Copied __init__.py: {}", runeInitFile);
+                    } else {
+                        Files.writeString(runeInitFile, "");
+                        LOGGER.info("Created __init__.py: {}", runeInitFile);
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("Failed to write __init__.py in src/rune/: {}", e.getMessage(), e);
                 }
             }
         }

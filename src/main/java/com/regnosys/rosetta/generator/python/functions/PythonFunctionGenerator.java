@@ -559,7 +559,9 @@ public final class PythonFunctionGenerator {
         return new DependencySet(namedRoots, expressionRoots);
     }
 
-    private record DependencySet(List<RosettaNamed> namedRoots, List<RosettaExpression> expressionRoots) {}
+    private record DependencySet(List<RosettaNamed> namedRoots, List<RosettaExpression> expressionRoots) {
+        
+    }
 
     private String generateConditions(Function function, PythonExpressionGenerator expressionGenerator) {
         PythonCodeWriter writer = new PythonCodeWriter();

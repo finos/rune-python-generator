@@ -82,15 +82,15 @@ public class PartitioningMetricsCLI {
 
         PythonCodeGenerator pythonCodeGenerator = injector.getInstance(PythonCodeGenerator.class);
         pythonCodeGenerator.beforeAllGenerate(resourceSet, models, "0.0.0");
-        
+
         for (RosettaModel model : models) {
             // This populates the internal 'contexts' map in PythonCodeGenerator
             pythonCodeGenerator.generate(model.eResource(), model, "0.0.0");
         }
-        
+
         // This runs the partitioning logic (SCC analysis)
         pythonCodeGenerator.afterAllGenerate(resourceSet, models, "0.0.0");
-        
+
         java.lang.reflect.Field contextsField;
         Map<String, PythonCodeGeneratorContext> contexts;
         try {
@@ -202,7 +202,9 @@ public class PartitioningMetricsCLI {
                     break;
                 }
             }
-            if (rootNode != null) break;
+            if (rootNode != null) {
+                break;
+            }
         }
 
         if (rootNode == null || rootGraph == null) {

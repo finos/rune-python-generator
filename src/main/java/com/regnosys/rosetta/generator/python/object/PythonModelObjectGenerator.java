@@ -137,9 +137,9 @@ public class PythonModelObjectGenerator {
             return;
         }
         if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference ref) {
-            if (ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Data ||
-                ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Function ||
-                ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.RosettaEnumeration) {
+            if (ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Data
+                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Function
+                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.RosettaEnumeration) {
 
                 String depName = context.getFullyQualifiedName((com.regnosys.rosetta.rosetta.RosettaNamed) ref.getSymbol());
                 addDependency(dependencyDAG, className, depName);
@@ -292,8 +292,8 @@ public class PythonModelObjectGenerator {
             // Standard imports come from createImports() in processDAG — only add type-specific imports here
             if (rc.getSuperType() != null) {
                 String superFQN = context.getFullyQualifiedName(rc.getSuperType());
-                String superClassName_InImport = rc.getSuperType().getName();
-                writer.appendLine(String.format("from %s import %s", superFQN, superClassName_InImport));
+                String superClassNameInImport = rc.getSuperType().getName();
+                writer.appendLine(String.format("from %s import %s", superFQN, superClassNameInImport));
             }
             // Add attribute-level imports (all Data types safe for standalone files)
             Set<String> imports = new java.util.HashSet<>();

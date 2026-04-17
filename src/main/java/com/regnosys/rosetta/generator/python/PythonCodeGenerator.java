@@ -476,14 +476,14 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param result                      Map to receive proxy stub and standalone file entries.
      */
     private void emitSortedClasses(
-        List<Integer> sccOrder, 
+        List<Integer> sccOrder,
         List<Set<String>> sccs,
-        PythonCodeGeneratorContext context, 
+        PythonCodeGeneratorContext context,
         String nameSpace,
         Set<String> standaloneSupertypesOfBundled,
-        PythonCodeWriter dataObjectsWriter, 
+        PythonCodeWriter dataObjectsWriter,
         PythonCodeWriter functionsWriter,
-        PythonCodeWriter annotationUpdateWriter, 
+        PythonCodeWriter annotationUpdateWriter,
         PythonCodeWriter rebuildWriter,
         Map<String, CharSequence> result
     ) {
@@ -523,18 +523,18 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * a lazy proxy stub file for it.
      */
     private void emitBundledClass(
-        String name, 
+        String name,
         String bundleClassName,
-        CharSequence classObject, 
+        CharSequence classObject,
         CharSequence functionObject,
-        String nameSpace, 
+        String nameSpace,
         PythonCodeGeneratorContext context,
-        Set<String> standaloneClasses, 
+        Set<String> standaloneClasses,
         Set<String> standaloneSupertypesOfBundled,
         Set<String> emittedInlineSupertypeImports,
-        PythonCodeWriter dataObjectsWriter, 
+        PythonCodeWriter dataObjectsWriter,
         PythonCodeWriter functionsWriter,
-        PythonCodeWriter annotationUpdateWriter, 
+        PythonCodeWriter annotationUpdateWriter,
         PythonCodeWriter rebuildWriter,
         Map<String, CharSequence> result
     ) {
@@ -587,9 +587,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      */
     private void emitStandaloneFile(
         String name,
-        CharSequence classObject, 
+        CharSequence classObject,
         CharSequence functionObject,
-        String nameSpace, 
+        String nameSpace,
         PythonCodeGeneratorContext context,
         Graph<String, DefaultEdge> dependencyDAG,
         Map<String, CharSequence> result
@@ -700,12 +700,12 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param result                 Map to receive the assembled bundle file entry.
      */
     private void assembleBundleFile(
-        String nameSpace, 
+        String nameSpace,
         PythonCodeGeneratorContext context,
         PythonCodeWriter bundleWriter,
-        PythonCodeWriter dataObjectsWriter, 
+        PythonCodeWriter dataObjectsWriter,
         PythonCodeWriter functionsWriter,
-        PythonCodeWriter annotationUpdateWriter, 
+        PythonCodeWriter annotationUpdateWriter,
         PythonCodeWriter rebuildWriter,
         List<String> deferredImports,
         Map<String, CharSequence> result

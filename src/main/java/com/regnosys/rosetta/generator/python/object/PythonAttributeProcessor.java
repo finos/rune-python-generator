@@ -82,7 +82,7 @@ public final class PythonAttributeProcessor {
     private AttributeResult generateAttribute(
         Data rc, 
         RAttribute ra,
-        Map<String, List<String>> keyRefConstraints, 
+        Map<String, List<String>> keyRefConstraints,
         PythonCodeGeneratorContext context
     ) {
         MetaDataResult metaDataResult = processMetaDataAttributes(ra, keyRefConstraints);
@@ -125,12 +125,12 @@ public final class PythonAttributeProcessor {
     }
 
     private PythonTypeHint deriveTypeHint(
-        Data rc, 
-        RAttribute ra, 
-        RType rt, 
+        Data rc,
+        RAttribute ra,
+        RType rt,
         ValidationProperties validationProps,
-        boolean isDelayed, 
-        MetaDataResult metaDataResult, 
+        boolean isDelayed,
+        MetaDataResult metaDataResult,
         PythonCodeGeneratorContext context
     ) {
         RosettaModel model = (RosettaModel) rc.eContainer();

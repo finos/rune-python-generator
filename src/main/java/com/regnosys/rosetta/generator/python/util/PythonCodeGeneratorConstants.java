@@ -30,8 +30,8 @@ public final class PythonCodeGeneratorConstants {
      * License header prepended to every emitted .py and .toml file.
      */
     public static final String LICENSE_HEADER =
-            "#\n" +
-            "# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC\n" +
-            "# SPDX-License-Identifier: Apache-2.0\n" +
-            "#\n";
+            "#\n"
+            + "# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC\n"
+            + "# SPDX-License-Identifier: Apache-2.0\n"
+            + "#\n";
 }
