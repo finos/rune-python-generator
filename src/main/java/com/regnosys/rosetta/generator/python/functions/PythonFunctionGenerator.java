@@ -386,7 +386,7 @@ public final class PythonFunctionGenerator {
 
     private String generateNativeFunctionCall(Function function, PythonCodeGeneratorContext context) {
         String outputName = function.getOutput().getName();
-        String qualifiedName = context.getFullyQualifiedName(function);
+        String qualifiedName = context.getRuneQualifiedName(function);
         String arguments = function.getInputs().stream()
                 .map(RosettaNamed::getName)
                 .collect(Collectors.joining(", "));

@@ -320,6 +320,23 @@ public class PythonNamespacePrefixTest {
                 "Top-level __init__.py must not reference the rune/native path when no prefix");
     }
 
+    @Test
+    void testNativeFunctionUsesUnprefixedRuneNameWithPrefix() {
+        Map<String, CharSequence> gen = testUtils.generatePythonFromString(NATIVE_FUNC_MODEL, PREFIX, null);
+        String file = gen.get("src/finos/cdm/event/common/functions/NativeFunc.py").toString();
+
+        assertTrue(file.contains("result = rune_execute_native('cdm.event.common.functions.NativeFunc', n)"),
+                "Native invocation must use the unprefixed Rune function name even when the Python namespace is prefixed");
+        assertTrue(file.contains("function_names=['cdm.event.common.functions.NativeFunc']"),
+                "Native registration must use the unprefixed Rune function name even when the Python namespace is prefixed");
+        assertTrue(file.contains("rune_namespace_prefix='finos'"),
+                "Native registration must still forward the configured namespace prefix for module import resolution");
+        assertFalse(file.contains("rune_execute_native('finos.cdm.event.common.functions.NativeFunc'"),
+                "Native invocation must not include the namespace prefix in the registry key");
+        assertFalse(file.contains("function_names=['finos.cdm.event.common.functions.NativeFunc']"),
+                "Native registration must not include the namespace prefix in the registry key");
+    }
+
     // -------------------------------------------------------------------------
     // _FQRTN value in bundled classes — prefix must NOT appear
     // -------------------------------------------------------------------------

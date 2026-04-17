@@ -9,7 +9,10 @@ Native Python implementation of the RoundToNearest function.
 
 from decimal import Decimal
 
-from .....RoundingModeEnum import RoundingModeEnum
+try:  # The case we share a prefix
+    from ........rosetta_dsl.test.functions.native.RoundingModeEnum import RoundingModeEnum
+except ImportError:  # no prefix, can't use relative, need the absolute path
+    from rosetta_dsl.test.functions.native.RoundingModeEnum import RoundingModeEnum
 
 
 def RoundToNearest(

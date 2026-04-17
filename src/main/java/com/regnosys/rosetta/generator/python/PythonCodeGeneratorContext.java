@@ -249,6 +249,20 @@ public final class PythonCodeGeneratorContext {
         return RuneToPythonMapper.getFullyQualifiedName(rn, namespacePrefix);
     }
 
+    public String getRuneQualifiedName(RosettaNamed rn) {
+        return RuneToPythonMapper.getFullyQualifiedName(rn);
+    }
+
+    public String stripNamespacePrefix(String qualifiedName) {
+        if (namespacePrefix != null && !namespacePrefix.isBlank()) {
+            String prefixedQualifiedName = namespacePrefix + ".";
+            if (qualifiedName.startsWith(prefixedQualifiedName)) {
+                return qualifiedName.substring(prefixedQualifiedName.length());
+            }
+        }
+        return qualifiedName;
+    }
+
     public String getBundleObjectName(RosettaNamed rn) {
         return RuneToPythonMapper.getBundleObjectName(rn, namespacePrefix);
     }

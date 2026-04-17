@@ -636,7 +636,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 standAloneWriter.newLine();
                 standAloneWriter.appendLine("rune_attempt_register_native_functions(");
                 standAloneWriter.indent();
-                standAloneWriter.append("function_names=['" + name + "'], ");
+                standAloneWriter.append("function_names=['" + context.stripNamespacePrefix(name) + "'], ");
                 standAloneWriter.appendLine("rune_namespace_prefix=" + context.getnamespacePrefixOrNone());
                 standAloneWriter.unindent();
                 standAloneWriter.appendLine(")");
