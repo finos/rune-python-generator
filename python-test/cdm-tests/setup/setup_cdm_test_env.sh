@@ -52,7 +52,7 @@ done
 
 echo "***** setting up common environment"
 PYTHONSETUPPATH="../../env-setup"
-source $MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh -r
+source $MY_PATH/$PYTHONSETUPPATH/setup_python_env.sh
 
 echo "***** activating virtual environment"
 VENV_NAME=".pyenv"
