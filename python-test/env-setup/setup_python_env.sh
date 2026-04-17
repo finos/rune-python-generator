@@ -16,8 +16,6 @@ function error {
     exit 1
 }
 
-# todo: pull RuneRuntime from PyPI
-
 # Determine the Python executable
 # IMPORTANT: Find a python that is NOT currently inside a virtual environment we might be destroying
 if command -v python3 &>/dev/null && ! command -v python3 | grep -q ".pyenv"; then
@@ -94,19 +92,18 @@ ${PYEXE} -m pip install -r requirements.txt || error
 
 echo "***** Get and Install Runtime"
 
-# Set RUNE_RUNTIME_DIR to the local repository root for an editable install.
-# Example: export RUNE_RUNTIME_DIR="[PATH_TO_RUNE]/rune-python-runtime/FINOS/rune-python-runtime"
-# If RUNE_RUNTIME_DIR is not specified or the directory does not exist, it will install from GitHub.
-# Set RUNE_RUNTIME_REF to control which branch/tag/commit is used (default: main).
-# Example: export RUNE_RUNTIME_REF="feature/function_support"
-RUNE_RUNTIME_DIR="../../../../../rune/rune-python-runtime/FINOS/rune-python-runtime"
-RUNE_RUNTIME_REF="feature/function_support"
+# Runtime source selection (evaluated in order):
+#   1. RUNE_RUNTIME_DIR — editable install from a local checkout
+#      Example: export RUNE_RUNTIME_DIR="[PATH_TO_RUNE]/rune-python-runtime/FINOS/rune-python-runtime"
+#   2. RUNE_RUNTIME_REF — install from a specific GitHub branch/tag/commit
+#      Example: export RUNE_RUNTIME_REF="feature/function_support"
+#   3. (default) — no explicit install; rune.runtime is a declared dependency of the generated
+#      CDM wheel and will be pulled from PyPI automatically when that wheel is installed.
 
 if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then
     echo "Installing runtime as editable from: $RUNE_RUNTIME_DIR"
     ${PYEXE} -m pip install -e "$RUNE_RUNTIME_DIR" || error
-else
-    RUNE_RUNTIME_REF="${RUNE_RUNTIME_REF:-main}"
+elif [ -n "$RUNE_RUNTIME_REF" ]; then
     echo "Installing runtime from GitHub ref: $RUNE_RUNTIME_REF"
     ${PYEXE} -m pip install \
       "git+https://github.com/finos/rune-python-runtime.git@${RUNE_RUNTIME_REF}" || error
