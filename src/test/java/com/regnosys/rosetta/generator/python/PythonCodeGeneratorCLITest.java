@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PythonCodeGeneratorCLITest {
@@ -212,11 +213,74 @@ class PythonCodeGeneratorCLITest {
                 "Expected at least one generated file path to contain 'finos'");
     }
 
+    @Test
+    void testNativeFunctionsAreCopiedUnderNamespacePrefix() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        Path nativeDir = createNativeDir(tempDir);
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-p", "test-project",
+                "-x", "finos",
+                "-n", nativeDir.toString()
+        });
+
+        assertEquals(0, exitCode, "Should return 0 when native functions are copied with a namespace prefix");
+        assertTrue(Files.exists(pythonDir.resolve("src/finos/rune/native/test/model/functions/NativeFunc.py")),
+                "Native functions should be copied under src/finos/rune/native when a namespace prefix is set");
+        assertTrue(Files.exists(pythonDir.resolve("src/finos/rune/__init__.py")),
+                "The prefixed rune package should receive an __init__.py when a namespace prefix is set");
+        assertTrue(Files.readString(pythonDir.resolve("src/finos/rune/__init__.py")).contains("# native root"),
+                "The source rune/__init__.py should be copied into the prefixed rune package");
+        assertFalse(Files.exists(pythonDir.resolve("src/rune/__init__.py")),
+                "The top-level src/rune/__init__.py must not be created when the rune package is copied under a namespace prefix");
+        assertFalse(Files.exists(pythonDir.resolve("src/rune/native/test/model/functions/NativeFunc.py")),
+                "Native functions must not be copied into the top-level src/rune/native path when a namespace prefix is set");
+    }
+
+    @Test
+    void testNativeFunctionsDoNotCreateTopLevelRuneInitWithoutNamespacePrefix() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        Path nativeDir = createNativeDir(tempDir);
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-p", "test-project",
+                "-n", nativeDir.toString()
+        });
+
+        assertEquals(0, exitCode, "Should return 0 when native functions are copied without a namespace prefix");
+        assertTrue(Files.exists(pythonDir.resolve("src/rune/native/test/model/functions/NativeFunc.py")),
+                "Native functions should be copied under src/rune/native when no namespace prefix is set");
+        assertFalse(Files.exists(pythonDir.resolve("src/rune/__init__.py")),
+                "The top-level src/rune/__init__.py must not be created when rune is copied as a top-level package");
+        assertTrue(Files.exists(pythonDir.resolve("src/rune/native/__init__.py")),
+                "The native package subtree should still receive __init__.py files under src/rune/native");
+    }
+
     private Path createValidRosettaFile(Path dir) throws IOException {
         Path file = dir.resolve("valid.rosetta");
         String content = "namespace test.model\nversion \"1.0.0\"\ntype Foo:\n    attr string (1..1)\n";
         Files.writeString(file, content);
         return file;
+    }
+
+    private Path createNativeDir(Path dir) throws IOException {
+        Path nativeDir = dir.resolve("native");
+        Path nativeFile = nativeDir.resolve("rune/native/test/model/functions/NativeFunc.py");
+        Files.createDirectories(nativeFile.getParent());
+        Files.writeString(nativeFile, "def NativeFunc():\n    return 1\n");
+
+        Path runeInit = nativeDir.resolve("rune/__init__.py");
+        Files.createDirectories(runeInit.getParent());
+        Files.writeString(runeInit, "# native root\n");
+        return nativeDir;
     }
 
     // --- Mocks ---

@@ -48,6 +48,7 @@ import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
 import com.regnosys.rosetta.generator.external.ExternalGenerator;
 import com.regnosys.rosetta.generator.external.ExternalGenerators;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 
@@ -486,9 +487,10 @@ public class PythonCodeGeneratorCLI {
         }
 
         // Native implementations are sourced from <nativeDir>/rune/native/ and deployed
-        // to src/rune/native/ in the output, preserving the full sub-path underneath.
+        // to src/rune/native/ in the output, or src/<namespacePrefix>/rune/native/
+        // when a namespace prefix is configured, preserving the full sub-path underneath.
         // Example: <nativeDir>/rune/native/rosetta_dsl/test/functions/RoundToNearest.py
-        //       -> src/rune/native/rosetta_dsl/test/functions/RoundToNearest.py
+        //       -> src/finos/rune/native/rosetta_dsl/test/functions/RoundToNearest.py
         Path runeNativePath = nativeDirPath.resolve("rune/native");
         if (!Files.exists(runeNativePath) || !Files.isDirectory(runeNativePath)) {
             LOGGER.warn("Expected rune/native sub-directory not found under native dir: {}", runeNativePath);
@@ -498,6 +500,11 @@ public class PythonCodeGeneratorCLI {
         int[] copied = {0};
         int[] skipped = {0};
         Set<Path> initDirs = new java.util.LinkedHashSet<>();
+        String prefixedRoot = (namespacePrefix == null || namespacePrefix.isBlank())
+                ? "src/rune/native"
+                : "src/" + PythonCodeGeneratorUtil.toFileSystemPath(namespacePrefix) + "/rune/native";
+        Path nativeTargetRoot = Paths.get(tgtDir, prefixedRoot);
+        Path runeRoot = nativeTargetRoot.getParent();
 
         try {
             Files.walk(runeNativePath)
@@ -505,7 +512,7 @@ public class PythonCodeGeneratorCLI {
                     .filter(p -> p.getFileName().toString().endsWith(".py"))
                     .forEach(sourcePath -> {
                         String relative = runeNativePath.relativize(sourcePath).toString().replace(File.separator, "/");
-                        String targetRelative = "src/rune/native/" + relative;
+                        String targetRelative = prefixedRoot + "/" + relative;
                         Path targetPath = Paths.get(tgtDir, targetRelative);
 
                         if (generatedPaths.contains(targetRelative)) {
@@ -517,9 +524,9 @@ public class PythonCodeGeneratorCLI {
                                 Files.copy(sourcePath, targetPath);
                                 LOGGER.info("Copied native function: {}", targetRelative);
                                 copied[0]++;
-                                // Collect every directory from src/rune/native/ down to the file's parent
-                                // so we can place an __init__.py in each one (but not src/rune/ itself).
-                                Path runeRoot = Paths.get(tgtDir, "src/rune");
+                                // Collect every directory from the native root down to the file's
+                                // parent so we can place an __init__.py in each one (but not the
+                                // top-level rune package itself).
                                 Path dir = targetPath.getParent();
                                 while (dir != null && dir.startsWith(runeRoot) && !dir.equals(runeRoot)) {
                                     initDirs.add(dir);
@@ -538,7 +545,6 @@ public class PythonCodeGeneratorCLI {
         // Write __init__.py into every collected directory (but not src/rune/ itself).
         // If the native source has a corresponding __init__.py, copy it; otherwise write empty.
         // Never overwrite an existing __init__.py.
-        Path nativeTargetRoot = Paths.get(tgtDir, "src/rune/native");
         for (Path dir : initDirs) {
             Path initFile = dir.resolve("__init__.py");
             if (!Files.exists(initFile)) {
@@ -558,9 +564,10 @@ public class PythonCodeGeneratorCLI {
             }
         }
 
-        // When a namespace prefix is in use, src/rune/ is a package that needs __init__.py.
+        // When a namespace prefix is in use, src/<namespacePrefix>/rune/ is a concrete
+        // package that needs an __init__.py.
         if (namespacePrefix != null && !namespacePrefix.isBlank()) {
-            Path runeInitFile = Paths.get(tgtDir, "src/rune/__init__.py");
+            Path runeInitFile = runeRoot.resolve("__init__.py");
             if (!Files.exists(runeInitFile)) {
                 try {
                     Path sourceRuneInit = nativeDirPath.resolve("rune/__init__.py");
@@ -572,7 +579,7 @@ public class PythonCodeGeneratorCLI {
                         LOGGER.info("Created __init__.py: {}", runeInitFile);
                     }
                 } catch (IOException e) {
-                    LOGGER.error("Failed to write __init__.py in src/rune/: {}", e.getMessage(), e);
+                    LOGGER.error("Failed to write __init__.py in {}: {}", runeInitFile.getParent(), e.getMessage(), e);
                 }
             }
         }
