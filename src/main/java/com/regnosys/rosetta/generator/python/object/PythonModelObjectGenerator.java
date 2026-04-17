@@ -77,14 +77,10 @@ public class PythonModelObjectGenerator {
     private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
 
     /**
-     * Generate Python from the collection of Rosetta classes (of type Data).
-     * 
+     * Scan Rosetta classes to build dependency graph and record super types.
+     *
      * @param rClasses the collection of Rosetta Classes for this model
      * @param context  the Python code generator context
-     * @return a Map of all the generated Python indexed by the class name
-     */
-    /**
-     * Scan Rosetta classes to build dependency graph and record super types.
      */
     public void scan(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
@@ -160,7 +156,14 @@ public class PythonModelObjectGenerator {
         });
     }
 
-    public Map<String, String> generate(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
+    /**
+     * Generate Python from the collection of Rosetta classes (of type Data).
+     *
+     * @param rClasses the collection of Rosetta Classes for this model
+     * @param context  the Python code generator context
+     * @return a Map of all the generated Python indexed by the class name
+     */
+    public final Map<String, String> generate(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
         Set<String> enumImports = context.getEnumImports();
         Map<String, String> result = new HashMap<>();
 

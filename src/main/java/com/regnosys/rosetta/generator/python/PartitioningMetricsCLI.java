@@ -36,7 +36,9 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 /**
  * Utility tool to run partitioning analysis on Rosetta models and export metrics.
  */
-public class PartitioningMetricsCLI {
+public final class PartitioningMetricsCLI {
+
+    private PartitioningMetricsCLI() { }
 
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
@@ -176,8 +178,9 @@ public class PartitioningMetricsCLI {
 
         System.out.println("\n--- Partitioning Metrics ---");
         System.out.println("Total Rosetta Types: " + totalTypes);
-        System.out.println("Bundled Types: " + bundledTypes + " (" + String.format("%.1f", (bundledTypes * 100.0 / Math.max(1, totalTypes))) + "%)");
-        System.out.println("Standalone Types: " + standaloneTypes + " (" + String.format("%.1f", (standaloneTypes * 100.0 / Math.max(1, totalTypes))) + "%)");
+        final double percentScale = 100.0;
+        System.out.println("Bundled Types: " + bundledTypes + " (" + String.format("%.1f", (bundledTypes * percentScale / Math.max(1, totalTypes))) + "%)");
+        System.out.println("Standalone Types: " + standaloneTypes + " (" + String.format("%.1f", (standaloneTypes * percentScale / Math.max(1, totalTypes))) + "%)");
         System.out.println("Total SCCs: " + totalSccs);
         System.out.println("Max SCC Size: " + maxSccSize);
         System.out.println("Max SCC Elements: " + maxSccElements.stream().map(f -> f.substring(f.lastIndexOf('.') + 1)).collect(Collectors.toList()));

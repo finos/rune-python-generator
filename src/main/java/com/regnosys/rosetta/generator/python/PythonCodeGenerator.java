@@ -41,6 +41,7 @@ import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
 import com.regnosys.rosetta.rosetta.simple.FunctionDispatch;
 // todo: review migrating choice alias processor to PythonModelObjectGenerator
+// todo: refactor to create a BundleAssembler See ARCHITECTURE.md §7 for the full recommendation.
 
 import jakarta.inject.Inject;
 
@@ -655,9 +656,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @return The stub file content as a string.
      */
     private String generateProxyStub(
-        String name, 
+        String name,
         String nameSpace,
-        String bundleClassName, 
+        String bundleClassName,
         boolean hasFunction
     ) {
         String[] parsedName = name.split("\\.");
@@ -759,7 +760,12 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         }
     }
 
-    /** Carries the result of {@link #buildBundleHeader}. */
+    /**
+     * Carries the result of {@link #buildBundleHeader}.
+     *
+     * @param deferredStandaloneImports    imports that must be written after the bundle
+     * @param standaloneSupertypesOfBundled super-types of bundled classes that are standalone
+     */
     private record BundleHeaderResult(
             List<String> deferredStandaloneImports,
             Set<String> standaloneSupertypesOfBundled) {

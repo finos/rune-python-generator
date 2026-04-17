@@ -38,6 +38,7 @@ import jakarta.inject.Inject;
 @SuppressWarnings("LineLength")
 public class PythonPartitioningTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

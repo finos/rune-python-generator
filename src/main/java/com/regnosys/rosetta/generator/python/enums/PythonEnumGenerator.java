@@ -24,6 +24,7 @@ public class PythonEnumGenerator {
      * Generate Python from the collection of Rosetta enumerations.
      * 
      * @param rosettaEnums the collection of Rosetta enumerations to generate
+     * @param context      the Python code generator context
      * @return a Map of all the generated Python indexed by the file name
      */
     public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums, PythonCodeGeneratorContext context) {

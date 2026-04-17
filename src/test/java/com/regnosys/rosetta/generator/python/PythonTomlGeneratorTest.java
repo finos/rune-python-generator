@@ -19,11 +19,14 @@ import jakarta.inject.Inject;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("checkstyle:LineLength")
 class PythonTomlGeneratorTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /** Rosetta model used across tests in this class. */
     private static final String MODEL = """
             namespace test.model
             version "${project.version}"

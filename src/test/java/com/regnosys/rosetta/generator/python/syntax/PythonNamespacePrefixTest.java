@@ -39,11 +39,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("checkstyle:LineLength")
 public class PythonNamespacePrefixTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
+    /** Namespace prefix applied to all generated artefacts in this test class. */
     private static final String PREFIX = "finos";
 
     /**
@@ -289,6 +292,7 @@ public class PythonNamespacePrefixTest {
     // Top-level __init__.py — native function registration must NOT appear
     // -------------------------------------------------------------------------
 
+    /** Rosetta model containing a native function used to test __init__.py generation. */
     private static final String NATIVE_FUNC_MODEL = """
             namespace cdm.event.common
 
@@ -341,6 +345,7 @@ public class PythonNamespacePrefixTest {
     // _FQRTN value in bundled classes — prefix must NOT appear
     // -------------------------------------------------------------------------
 
+    /** Rosetta model with mutually-referencing types used to test cyclic bundle generation. */
     private static final String CYCLIC_MODEL = """
             namespace cdm.event.common
 

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @SuppressWarnings("checkstyle:LineLength")
 public class PythonScalarTypeTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

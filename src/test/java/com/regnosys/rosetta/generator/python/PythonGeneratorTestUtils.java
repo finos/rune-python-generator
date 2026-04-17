@@ -23,6 +23,7 @@ import jakarta.inject.Inject;
 /**
  * Utility class for testing Python code generation.
  */
+@SuppressWarnings("checkstyle:LineLength")
 public final class PythonGeneratorTestUtils {
 
     /** Helper for parsing Rosetta models in tests. */
@@ -67,6 +68,9 @@ public final class PythonGeneratorTestUtils {
 
     /**
      * Legacy helper - will now search globally for the class if it's not in the bundle.
+     *
+     * @param model the Rosetta model source string to generate Python from
+     * @return all generated files concatenated with {@code --- filename ---} separators
      */
     public String generatePythonAndExtractBundle(String model) {
         Map<String, CharSequence> python = generatePythonFromString(model);
@@ -116,6 +120,10 @@ public final class PythonGeneratorTestUtils {
     /**
      * Asserts that {@code first} appears before {@code second} in {@code generated}.
      * Both strings must be present.
+     *
+     * @param generated the generated Python source to search
+     * @param first     the string expected to appear first
+     * @param second    the string expected to appear after {@code first}
      */
     public void assertAppearsAfter(String generated, String first, String second) {
         int firstIdx = generated.indexOf(first);
@@ -131,6 +139,9 @@ public final class PythonGeneratorTestUtils {
 
     /**
      * Now searches across ALL generated files to find the expected string.
+     *
+     * @param model          the Rosetta model source string to generate Python from
+     * @param expectedString the string that must appear somewhere in the generated output
      */
     public void assertBundleContainsExpectedString(String model, String expectedString) {
         String allFiles = generatePythonAndExtractBundle(model);

@@ -72,19 +72,15 @@ public final class PythonFunctionGenerator {
     @Inject
     private RosettaFunctionExtensions rosettaFunctionExtensions;
 
+    /** Provider for expression generator instances. */
     @Inject
     private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
 
     /**
-     * Generates Python code for a collection of Rosetta functions.
-     * 
+     * Scan Rosetta functions to build dependency graph.
+     *
      * @param functions the collection of Rosetta functions to generate
      * @param context   the Python code generator context
-     * @return a Map of all the generated Python indexed by the file name
-     */
-
-    /**
-     * Scan Rosetta functions to build dependency graph.
      */
     public void scan(Iterable<Function> functions, PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
@@ -704,10 +700,10 @@ public final class PythonFunctionGenerator {
     }
 
     private String generateSetOperation(
-        AssignPathRoot root, 
+        AssignPathRoot root,
         Operation operation,
-        String expression, 
-        PythonFunctionGenerationScope scope, 
+        String expression,
+        PythonFunctionGenerationScope scope,
         PythonCodeGeneratorContext context
     ) {
         PythonCodeWriter writer = new PythonCodeWriter();
@@ -741,10 +737,10 @@ public final class PythonFunctionGenerator {
     }
 
     private String generateAddOperation(
-        AssignPathRoot root, 
+        AssignPathRoot root,
         Operation operation,
-        String expression, 
-        PythonFunctionGenerationScope scope, 
+        String expression,
+        PythonFunctionGenerationScope scope,
         PythonCodeGeneratorContext context
     ) {
         PythonCodeWriter writer = new PythonCodeWriter();
@@ -796,11 +792,11 @@ public final class PythonFunctionGenerator {
     }
 
     private void initializePathInPreamble(
-        String rootName, 
-        Segment path, 
+        String rootName,
+        Segment path,
         Function function,
-        PythonCodeWriter writer, 
-        PythonFunctionGenerationScope scope, 
+        PythonCodeWriter writer,
+        PythonFunctionGenerationScope scope,
         PythonCodeGeneratorContext context
     ) {
         Segment current = path;
@@ -812,18 +808,13 @@ public final class PythonFunctionGenerator {
 
             if (current.getFeature() instanceof Attribute attribute && !scope.isInitialized(currentPath)) {
                 // Determine if this path element is ever first-touched by an 'add'
-                boolean needsPreamble = false;
-                for (Operation op : function.getOperations()) {
-                    if (op.getAssignRoot().getName().equals(rootName) && op.getPath() != null) {
-                        // Compare the path segments up to this point
-                        if (isSamePath(path, op.getPath(), current)) {
-                            if (op.isAdd() || op.getPath().getNext() != null) {
-                                needsPreamble = true;
-                            }
-                            break; // Logic determined by first touch
-                        }
-                    }
-                }
+                final Segment capturedCurrent = current;
+                boolean needsPreamble = function.getOperations().stream()
+                    .filter(op -> op.getAssignRoot().getName().equals(rootName) && op.getPath() != null)
+                    .filter(op -> isSamePath(path, op.getPath(), capturedCurrent))
+                    .findFirst()
+                    .map(op -> op.isAdd() || op.getPath().getNext() != null)
+                    .orElse(false);
 
                 if (needsPreamble) {
                     if (attribute.getCard().isIsMany()) {

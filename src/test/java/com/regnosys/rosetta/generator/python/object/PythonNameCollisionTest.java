@@ -18,8 +18,10 @@ import jakarta.inject.Inject;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("checkstyle:LineLength")
 public class PythonNameCollisionTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
@@ -35,7 +37,7 @@ public class PythonNameCollisionTest {
                     attr int(1..1)
                     other CollidingName(0..1)
                         [metadata reference]
-                
+
                 func CollidingName:
                     inputs:
                         inParam int(1..1)

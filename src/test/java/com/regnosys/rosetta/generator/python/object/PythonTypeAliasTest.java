@@ -19,8 +19,10 @@ import jakarta.inject.Inject;
 
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
+@SuppressWarnings("checkstyle:LineLength")
 public class PythonTypeAliasTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
@@ -30,9 +32,9 @@ public class PythonTypeAliasTest {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                 namespace test_alias
-                
+
                 typeAlias MyNumber: number
-                
+
                 type Foo:
                     val MyNumber (1..1)
                 """);
@@ -56,12 +58,12 @@ public class PythonTypeAliasTest {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                 namespace test_alias
-                
+
                 type Origin:
                     attr int (1..1)
-                
+
                 typeAlias AliasToOrigin: Origin
-                
+
                 type Target:
                     val AliasToOrigin (1..1)
                 """);
@@ -84,7 +86,7 @@ public class PythonTypeAliasTest {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
                 """
                 typeAlias AliasedNum: number
-                
+
                 func MyTestFunc:
                     inputs:
                         inParam AliasedNum(1..1)

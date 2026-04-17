@@ -56,6 +56,7 @@ public final class PythonAttributeProcessor {
      * 
      * @param rc                The Data type to generate attributes for.
      * @param keyRefConstraints A map of key reference constraints.
+     * @param context           the Python code generator context
      * @return An AttributeProcessingResult containing the generated Python code and
      *         a list of annotation updates.
      */
@@ -140,7 +141,7 @@ public final class PythonAttributeProcessor {
         String typeRefName;
         String fqnAttributeNamespace = context.applyPrefix(rt.getNamespace().toString());
         String fqnAttributeName = fqnAttributeNamespace + "." + rt.getName();
-        
+
         if (RuneToPythonMapper.isRosettaBasicType(rt)) {
             typeRefName = RuneToPythonMapper.toPythonType(rt);
         } else if (rt instanceof REnumType) {
@@ -386,9 +387,9 @@ public final class PythonAttributeProcessor {
      *                              the bundle itself.
      */
     public void getImportsFromAttributes(
-        Data rc, 
+        Data rc,
         Set<String> imports,
-        PythonCodeGeneratorContext context, 
+        PythonCodeGeneratorContext context,
         boolean includeBundledTypes
     ) {
         Set<String> standaloneClasses = context.getStandaloneClasses();

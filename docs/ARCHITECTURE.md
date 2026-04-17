@@ -301,3 +301,56 @@ The Rune Path is the preferred long-term direction. Switching to it requires:
 3. **DAG ordering**: ensure the base type is topologically ordered before its alias in the emission sequence.
 4. **Cross-namespace imports**: when a function or type uses an alias from another namespace, emit the correct `from <namespace>.<Alias> import <Alias>` statement.
 5. **Update `PythonTypeAliasTest`**: the existing tests assert the Java Path behaviour and will need to be revised to assert the opposite.
+
+---
+
+## 7. Recommended Refactoring: `BundleAssembler`
+
+### Problem
+
+Three private methods in `PythonCodeGenerator` exceed the 7-parameter guideline:
+
+| Method | Parameters |
+| :--- | :--- |
+| `emitBundledClass` | 14 |
+| `emitSortedClasses` | 10 |
+| `assembleBundleFile` | 9 |
+
+The root cause is that four `PythonCodeWriter` instances (`dataObjectsWriter`, `functionsWriter`, `annotationUpdateWriter`, `rebuildWriter`) represent shared bundle assembly state that is created in one place and threaded through 2–3 levels of the call stack. The standalone-tracking sets (`standaloneClasses`, `standaloneSupertypesOfBundled`, `emittedInlineSupertypeImports`) are passed alongside them for the same reason.
+
+### Recommended Fix
+
+Extract a `BundleAssembler` class (not a record — it holds mutable state) that owns the four writers and the tracking sets, and exposes the assembly operations as methods:
+
+```java
+private class BundleAssembler {
+    private final PythonCodeWriter dataObjectsWriter = new PythonCodeWriter();
+    private final PythonCodeWriter functionsWriter   = new PythonCodeWriter();
+    private final PythonCodeWriter annotationUpdateWriter = new PythonCodeWriter();
+    private final PythonCodeWriter rebuildWriter     = new PythonCodeWriter();
+    private final Set<String> standaloneClasses;
+    private final Set<String> standaloneSupertypesOfBundled;
+    private final Set<String> emittedInlineSupertypeImports = new HashSet<>();
+
+    BundleAssembler(Set<String> standaloneClasses, Set<String> standaloneSupertypesOfBundled) { ... }
+
+    void emitSortedClasses(List<Integer> sccOrder, List<Set<String>> sccs,
+                           PythonCodeGeneratorContext context, String nameSpace,
+                           Map<String, CharSequence> result) { ... }
+
+    void emitBundledClass(String name, String bundleClassName,
+                          CharSequence classObject, CharSequence functionObject,
+                          String nameSpace, PythonCodeGeneratorContext context,
+                          Map<String, CharSequence> result) { ... }
+
+    void assembleBundleFile(String nameSpace, PythonCodeGeneratorContext context,
+                            PythonCodeWriter bundleWriter, List<String> deferredImports,
+                            Map<String, CharSequence> result) { ... }
+}
+```
+
+Each call site in `processDAG` constructs one `BundleAssembler` per namespace and calls its methods, reducing all three signatures to 3–5 parameters.
+
+### Tracking
+
+A TODO comment is present at in `PythonCodeGenerator.java`.

@@ -215,7 +215,7 @@ public class PythonMetadataTest {
      */
     @Test
     public void testIdReferenceLocationMetadata() {
-        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+        Map<String, CharSequence> generated = testUtils.generatePythonFromString(
             """
             namespace test.generated_syntax.meta_key_ref : <"generate Python unit tests from Rosetta.">
 
@@ -231,12 +231,12 @@ public class PythonMetadataTest {
             """);
 
         // Standalone files contain classes directly (not proxy stubs)
-        String keyRefPython = python.get("src/test/generated_syntax/meta_key_ref/KeyRef.py").toString();
+        String keyRefPython = generated.get("src/test/generated_syntax/meta_key_ref/KeyRef.py").toString();
         assertNotNull(keyRefPython, "KeyRef.py was not found");
         testUtils.assertGeneratedContainsExpectedString(keyRefPython,
             "class KeyRef(BaseDataClass):");
 
-        String scopedKeyRefPython = python.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py").toString();
+        String scopedKeyRefPython = generated.get("src/test/generated_syntax/meta_key_ref/ScopedKeyRef.py").toString();
         assertNotNull(scopedKeyRefPython, "ScopedKeyRef.py was not found");
         testUtils.assertGeneratedContainsExpectedString(scopedKeyRefPython,
             "class ScopedKeyRef(BaseDataClass):");

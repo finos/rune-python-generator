@@ -121,6 +121,7 @@ public final class PythonExpressionGenerator {
      */
     private int generatedFunctionCounter = 0;
 
+    /** The Python code generator context. */
     private PythonCodeGeneratorContext context;
 
     public void setContext(PythonCodeGeneratorContext context) {
@@ -180,11 +181,7 @@ public final class PythonExpressionGenerator {
                 return "\"" + s.getValue() + "\"";
             }
             case AsKeyOperation asKey -> {
-                String arg = generateExpression(asKey.getArgument(), scope);
-                if (cardinalityProvider.isMulti(asKey.getArgument())) {
-                    return "[Reference(x) for x in (" + arg + " or []) if x is not None]";
-                }
-                return "Reference(" + arg + ")";
+                return generateAsKeyOperation(asKey, scope);
             }
             case DistinctOperation distinct -> {
                 return generateDistinctOperation(distinct, scope);
@@ -312,6 +309,14 @@ public final class PythonExpressionGenerator {
             default -> throw new UnsupportedOperationException(
                     "Unsupported expression type of " + expr.getClass().getSimpleName());
         }
+    }
+
+    private String generateAsKeyOperation(AsKeyOperation asKey, PythonExpressionScope scope) {
+        String arg = generateExpression(asKey.getArgument(), scope);
+        if (cardinalityProvider.isMulti(asKey.getArgument())) {
+            return "[Reference(x) for x in (" + arg + " or []) if x is not None]";
+        }
+        return "Reference(" + arg + ")";
     }
 
     private String generateConditionalExpression(RosettaConditionalExpression expr, PythonExpressionScope scope) {
@@ -497,15 +502,8 @@ public final class PythonExpressionGenerator {
         if (scope.shadowedSymbols().containsKey(s)) {
             return scope.shadowedSymbols().get(s);
         }
-        boolean isInput = false;
-        if (s.eContainer() instanceof FunctionImpl c) {
-            for (Attribute inputAttr : c.getInputs()) {
-                if (inputAttr.getName().equals(s.getName())) {
-                    isInput = true;
-                    break;
-                }
-            }
-        }
+        boolean isInput = s.eContainer() instanceof FunctionImpl c
+            && c.getInputs().stream().anyMatch(attr -> attr.getName().equals(s.getName()));
         String receiver = isInput ? "self" : scope.receiver();
         return "rune_resolve_attr(" + receiver + ", \"" + s.getName() + "\")";
     }

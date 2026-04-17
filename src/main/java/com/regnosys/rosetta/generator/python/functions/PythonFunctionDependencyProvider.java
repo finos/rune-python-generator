@@ -54,6 +54,7 @@ public final class PythonFunctionDependencyProvider {
     @Inject
     private RObjectFactory rTypeBuilderFactory;
 
+    /** The Rosetta type system. */
     @Inject
     private TypeSystem typeSystem;
 
