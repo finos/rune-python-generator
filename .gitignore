@@ -52,10 +52,11 @@ __pycache__
 **/.checkstyle
 # project
 **/*.egg-info
+**/rune.runtime-*.*.*-py3-none-any.whl
 **/test_helper-0.0.0-py3-none-any.whl
-**/test/serialization_tests/rune-common
-**/test/cdm_tests/rosetta/
+**/python-test/serialization-tests/rune-common
+**/python-test/cdm-tests/rosetta/
 src/generated/
 *.todo
 /build/
-
+test/***

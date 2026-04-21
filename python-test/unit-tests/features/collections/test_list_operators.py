@@ -1,0 +1,114 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""list operator unit tests"""
+
+import pytest
+
+from rosetta_dsl.test.collections.CountItem import CountItem
+from rosetta_dsl.test.collections.CountContainer import CountContainer
+from rosetta_dsl.test.collections.CountTest import CountTest
+from rosetta_dsl.test.collections.SumTest import SumTest
+from rosetta_dsl.test.collections.MinTest import MinTest
+from rosetta_dsl.test.collections.MaxTest import MaxTest
+from rosetta_dsl.test.collections.LastTest import LastTest
+from rosetta_dsl.test.collections.SortTest import SortTest
+from rosetta_dsl.test.collections.functions.JoinTestFunction import (
+    JoinTestFunction,
+)
+from rosetta_dsl.test.collections.FlattenItem import FlattenItem
+from rosetta_dsl.test.collections.FlattenContainer import FlattenContainer
+from rosetta_dsl.test.collections.functions.FlattenTestFunction import (
+    FlattenTestFunction,
+)
+from rosetta_dsl.test.collections.FlattenBar import FlattenBar
+from rosetta_dsl.test.collections.FlattenFoo import FlattenFoo
+from rosetta_dsl.test.collections.FilterItem import FilterItem
+from rosetta_dsl.test.collections.FilterTest import FilterTest
+
+
+def test_count_passes():
+    """count tests"""
+    item1 = CountItem(name="item1", value=1)
+    container = CountContainer(field1=[1, 2], field2=[item1])
+    count_test = CountTest(bValue=[container])
+    count_test.validate_model()
+
+
+def test_sum_passes():
+    """sum tests"""
+    sum_test = SumTest(aValue=2, bValue=3, target=5)
+    sum_test.validate_model()
+
+
+def test_min_passes():
+    """min tests passes"""
+    min_test = MinTest(a=10)
+    min_test.validate_model()
+
+
+def test_min_fails():
+    """min tests fails"""
+    min_test = MinTest(a=-1)
+    with pytest.raises(Exception):
+        min_test.validate_model()
+
+
+def test_max_passes():
+    """max tests passes"""
+    max_test = MaxTest(a=1)
+    max_test.validate_model()
+
+
+def test_max_fails():
+    """max tests fails"""
+    max_test = MaxTest(a=100)
+    with pytest.raises(Exception):
+        max_test.validate_model()
+
+
+def test_last_passes():
+    """last tests passes"""
+    last_test = LastTest(aValue=1, bValue=2, cValue=3, target=3)
+    last_test.validate_model()
+
+
+def test_sort_passes():
+    """sort tests passes"""
+    sort_test = SortTest()
+    sort_test.validate_model()
+
+
+def test_join_passes():
+    """join tests passes"""
+    join_test = JoinTestFunction(field1="a", field2="b", delimiter="")
+    assert join_test == "ab"
+
+
+def test_flatten_passes():
+    """flatten tests passes"""
+    flatten_item = FlattenItem(items=[1, 2, 3])
+    flatten_container = FlattenContainer(
+        items=[flatten_item, flatten_item, flatten_item]
+    )
+    result = FlattenTestFunction(fc=[flatten_container])
+    assert result == [1, 2, 3, 1, 2, 3, 1, 2, 3]
+
+
+def test_flatten_foo_passes():
+    """flatten foo tests passes"""
+    bar1 = FlattenBar(numbers=[1, 2])
+    bar2 = FlattenBar(numbers=[3])
+    foo = FlattenFoo(bars=[bar1, bar2])
+    foo.validate_model()
+
+
+# filter tests
+def test_filter_passes():
+    """test filter passes"""
+    item1 = FilterItem(fi=1)
+    item2 = FilterItem(fi=2)
+    filter_test = FilterTest(fis=[item1, item2], target=1)
+    filter_test.validate_model()

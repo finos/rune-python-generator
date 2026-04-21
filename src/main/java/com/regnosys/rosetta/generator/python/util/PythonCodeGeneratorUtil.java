@@ -1,14 +1,21 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.util;
-
-import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.types.RAttribute;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class PythonCodeGeneratorUtil {
+import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.types.RAttribute;
 
-    public static String fileComment(String version) {
+public final class PythonCodeGeneratorUtil {
+
+    private PythonCodeGeneratorUtil() {
+    }
+
+public static String fileComment(String version) {
         return """
                 # This file is auto-generated from the Rune Python Generator, do not edit.
                 # Version: %s
@@ -60,62 +67,110 @@ public class PythonCodeGeneratorUtil {
                 from pydantic import Field, validate_call
 
                 from rune.runtime.base_data_class import BaseDataClass
+                from rune.runtime.cow import rune_cow
                 from rune.runtime.conditions import *
                 from rune.runtime.func_proxy import *
                 from rune.runtime.metadata import *
+                from rune.runtime.native_registry import rune_attempt_register_native_functions, rune_execute_native
+                from rune.runtime.object_builder import ObjectBuilder
                 from rune.runtime.utils import *
-                """.stripIndent();
+
+                """;
+    }
+
+    public static String toFileSystemPath(String namespace) {
+        return namespace.replace(".", "/");
+    }
+
+    public static String toFlattenedName(String name) {
+        return name.replace(".", "_");
     }
 
     public static String toFileName(String namespace, String fileName) {
-        return "src/" + namespace.replace(".", "/") + "/" + fileName;
+        return "src/" + toFileSystemPath(namespace) + "/" + fileName;
     }
 
     public static String toPyFileName(String namespace, String fileName) {
         return toFileName(namespace, fileName) + ".py";
     }
 
-    public static String toPyFunctionFileName(String namespace, String fileName) {
-        return "src/" + namespace.replace(".", "/") + "/functions/" + fileName + ".py";
-    }
-
-    public static String createTopLevelInitFile(String version) {
-        return "from .version import __version__";
+    public static String createTopLevelInitFile(String version, String namespacePrefix) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("from .version import __version__\n");
+        sb.append("from rune.runtime.base_data_class import BaseDataClass\n");
+        String namespacePrefixOrNone = (namespacePrefix == null) ? "None" : "'" + namespacePrefix + "'";
+        sb.append("rune_namespace_prefix=" + namespacePrefixOrNone + "\n\n");
+        sb.append(
+            """
+            def rune_deserialize(
+                rune_data,
+                validate_model=True,
+                check_rune_constraints=True,
+                strict=False,
+                raise_validation_errors=True,
+            ):
+                return BaseDataClass.rune_deserialize(
+                    rune_data,
+                    validate_model=validate_model,
+                    check_rune_constraints=check_rune_constraints,
+                    strict=strict,
+                    raise_validation_errors=raise_validation_errors,
+                    namespace_prefix=rune_namespace_prefix,
+                )
+            """);
+        return sb.toString();
     }
 
     public static String createVersionFile(String version) {
         String versionComma = version.replace('.', ',');
-        return "version = (" + versionComma + ",0)\n" +
-                "version_str = '" + version + "-0'\n" +
-                "__version__ = '" + version + "'\n" +
-                "__build_time__ = '" + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
+        return "version = ("
+                + versionComma + ",0)\n"
+                + "version_str = '" + version + "-0'\n"
+                + "__version__ = '" + version + "'\n"
+                + "__build_time__ = '"
+                + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
     }
 
     public static String getNamespace(RosettaModel rm) {
+        if (rm.getName() == null) {
+            return "com.rosetta.test.model".split("\\.")[0];
+        }
         return rm.getName().split("\\.")[0];
     }
 
-    public static String createToml(String projectName, String version) {
-        return """
-            [build-system]
-            requires = ["setuptools>=62.0"]
-            build-backend = "setuptools.build_meta"
+    public static String createPYProjectTomlFile(String namespace, String version) {
+        return createPYProjectTomlFile(namespace, version, null);
+    }
 
-            [project]
-            name = "%s"
-            version = "%s"
-            requires-python = ">= 3.11"
-            dependencies = [
-                "pydantic<3.0.0",
-                "rune.runtime>=1.0.0,<2.0.0"
-            ]
-            [tool.setuptools.packages.find]
-            where = ["src"]""".formatted(projectName, version).stripIndent();
+    public static String createPYProjectTomlFile(String namespace, String version, String projectName) {
+        String name = (projectName != null && !projectName.isBlank())
+                ? projectName
+                : "python-" + namespace;
+        return """
+                [build-system]
+                requires = ["setuptools>=62.0"]
+                build-backend = "setuptools.build_meta"
+
+                [project]
+                name = "%s"
+                version = "%s"
+                requires-python = ">= 3.11"
+                dependencies = [
+                   "pydantic>=2.10.3",
+                   "rune.runtime>=2.0.0,<3.0.0"
+                ]
+                [tool.setuptools.packages.find]
+                where = ["src"]""".formatted(name, version).stripIndent();
     }
 
     public static String cleanVersion(String version) {
         if (version == null || version.equals("${project.version}")) {
             return "0.0.0";
+        }
+
+        // Preserve PEP 440 dev versions already converted by the CLI (e.g. "1.2.3.dev4")
+        if (version.matches("\\d+\\.\\d+\\.\\d+\\.dev\\d+")) {
+            return version;
         }
 
         String[] versionParts = version.split("\\.");

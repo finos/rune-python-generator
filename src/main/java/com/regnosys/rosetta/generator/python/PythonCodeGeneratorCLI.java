@@ -1,4 +1,44 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FileUtils;
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.xtext.util.CancelIndicator;
+import org.eclipse.xtext.validation.CheckMode;
+import org.eclipse.xtext.validation.IResourceValidator;
+import org.eclipse.xtext.validation.Issue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -8,27 +48,10 @@ import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
 import com.regnosys.rosetta.generator.external.ExternalGenerator;
 import com.regnosys.rosetta.generator.external.ExternalGenerators;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.rosetta.RosettaModel;
-import org.apache.commons.cli.*;
-import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.resource.ResourceSet;
-import org.eclipse.emf.ecore.EObject;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
-import org.eclipse.emf.common.util.URI;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.regex.Pattern;
-import java.util.*;
-import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
-import org.eclipse.xtext.validation.CheckMode;
-import org.eclipse.xtext.validation.IResourceValidator;
-import org.eclipse.xtext.validation.Issue;
-import org.eclipse.xtext.util.CancelIndicator;
 
 /**
  * Command-line interface for generating Python code from Rosetta models.
@@ -42,13 +65,11 @@ import org.eclipse.xtext.util.CancelIndicator;
  * </p>
  *
  * <h2>Usage</h2>
- *
+ * 
  * <pre>
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s &lt;source-dir&gt; -t &lt;target-dir&gt;
  *   java -cp &lt;your-jar-or-classpath&gt; com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -f &lt;source-file&gt; -t &lt;target-dir&gt;
  * </pre>
- *
- * <h2>Options</h2>
  * <ul>
  * <li><b>-s, --dir &lt;source-dir&gt;</b>: Source directory containing Rosetta
  * files (all <code>.rosetta</code> files will be processed)</li>
@@ -56,27 +77,23 @@ import org.eclipse.xtext.util.CancelIndicator;
  * process</li>
  * <li><b>-t, --tgt &lt;target-dir&gt;</b>: Target directory for generated
  * Python code (defaults to <code>./python</code> if not specified)</li>
+ * <li><b>-v, --version &lt;version&gt;</b>: Version number for the generated
+ * package, in <code>#.#.#</code> format (defaults to
+ * <code>0.0.0</code>)</li>
  * <li><b>-p, --project-name &lt;projectName&gt;</b>: Override the
- * <code>pyproject.toml</code> project name (default:
+ * <code>pyproject.toml</code> project name (defaults to
  * <code>python-&lt;first-namespace-segment&gt;</code>)</li>
- * <li><b>-x, --namespace-prefix &lt;prefix&gt;</b>: Prepend a prefix segment
- * to every generated namespace (e.g. {@code finos} turns {@code cdm.x.y} into
- * {@code finos.cdm.x.y})</li>
- * <li><b>-v, --version &lt;version&gt;</b>: Version for the generated Python
- * package, in <code>#.#.#</code> format (e.g. {@code 1.2.3}). Defaults to
- * {@code 0.0.0} when omitted. An error is raised if the supplied value does not
- * match the required format.</li>
- * <li><b>-e, --allow-errors</b>: Continue generation even if Rosetta
- * validation errors occur</li>
- * <li><b>-w, --fail-on-warnings</b>: Treat Rosetta validation warnings as
+ * <li><b>-e, --allow-errors</b>: Continue generation even if validation
+ * errors are present</li>
+ * <li><b>-w, --fail-on-warnings</b>: Treat validation warnings as
  * errors</li>
  * <li><b>-h</b>: Print usage/help</li>
  * </ul>
  *
  * <h2>Example</h2>
- *
+ * 
  * <pre>
- *   java -jar target/python-0.0.0.main-SNAPSHOT-shaded.jar -s src/main/rosetta -t build/python -v 1.2.3 -p my-package
+ *   java -jar target/python-0.0.0.main-SNAPSHOT-shaded.jar -s src/main/rosetta -t build/python
  * </pre>
  *
  * <h2>Notes</h2>
@@ -93,16 +110,42 @@ import org.eclipse.xtext.util.CancelIndicator;
  */
 
 public class PythonCodeGeneratorCLI {
+    /**
+     * Logger for the PythonCodeGeneratorCLI class.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGeneratorCLI.class);
-    private static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+
+    /**
+     * Default version used when no {@code -v} option is provided.
+     */
     static final String DEFAULT_VERSION = "0.0.0";
 
-    public static void main(String[] args) {
-        System.exit(new PythonCodeGeneratorCLI().execute(args));
+    /**
+     * Regex that a version string must fully match: three dot-separated integers.
+     */
+    private static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+    /** Regex matching a dev version string such as {@code 1.2.3-dev.4}. */
+    private static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
+
+    /**
+     * Public constructor for the CLI tool.
+     */
+    public PythonCodeGeneratorCLI() {
     }
 
-    public int execute(String[] args) {
-        System.out.println("***** Running PythonCodeGeneratorCLI v2 *****");
+    public static void main(String[] args) {
+        int exitCode = new PythonCodeGeneratorCLI().run(args);
+        System.exit(exitCode);
+    }
+
+    /**
+     * Executes the CLI tool.
+     *
+     * @param args command line arguments
+     * @return exit code
+     */
+    public final int run(String[] args) {
+        LOGGER.info("***** Running PythonCodeGeneratorCLI v2 *****");
         Options options = new Options();
         Option help = new Option("h", "Print usage");
         Option srcDirOpt = Option.builder("s").longOpt("dir").argName("srcDir").desc("Source Rosetta directory")
@@ -111,18 +154,19 @@ public class PythonCodeGeneratorCLI {
                 .build();
         Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir")
                 .desc("Target Python directory (default: ./python)").hasArg().build();
-        Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors")
-                .desc("Continue generation even if validation errors occur").build();
-        Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings")
-                .desc("Treat validation warnings as errors").build();
+        Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors").desc("Continue even if there are validation errors").build();
+        Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings").desc("Fail if there are validation warnings").build();
         Option projectNameOpt = Option.builder("p").longOpt("project-name").argName("projectName")
                 .desc("Override the pyproject.toml project name (default: python-<first-namespace-segment>)")
                 .hasArg().build();
-        Option namespacePrefixOpt = Option.builder("x").longOpt("namespace-prefix").argName("namespacePrefix")
-                .desc("Prepend a prefix segment to every namespace (e.g. 'finos' turns 'cdm.x.y' into 'finos.cdm.x.y')")
-                .hasArg().build();
         Option versionOpt = Option.builder("v").longOpt("version").argName("version")
-                .desc("Specify the version for the generated Python code")
+                .desc("Package version in #.#.# format (default: " + DEFAULT_VERSION + ")")
+                .hasArg().build();
+        Option namespacePrefixOpt = Option.builder("x").longOpt("namespace-prefix").argName("namespacePrefix")
+                .desc("Prefix to prepend to every generated namespace (e.g. finos)")
+                .hasArg().build();
+        Option nativeDirOpt = Option.builder("n").longOpt("native-dir").argName("nativeDir")
+                .desc("Source directory containing native function implementations to copy into the generated package")
                 .hasArg().build();
 
         options.addOption(help);
@@ -132,8 +176,9 @@ public class PythonCodeGeneratorCLI {
         options.addOption(allowErrorsOpt);
         options.addOption(failOnWarningsOpt);
         options.addOption(projectNameOpt);
-        options.addOption(namespacePrefixOpt);
         options.addOption(versionOpt);
+        options.addOption(namespacePrefixOpt);
+        options.addOption(nativeDirOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -147,45 +192,66 @@ public class PythonCodeGeneratorCLI {
             boolean failOnWarnings = cmd.hasOption("w");
             String projectName = cmd.getOptionValue("p");
             String namespacePrefix = cmd.getOptionValue("x");
-            String versionInput = cmd.getOptionValue("v");
+            String nativeDir = cmd.getOptionValue("n");
 
-            if (versionInput != null && !VALID_VERSION_PATTERN.matcher(versionInput).matches()) {
-                System.err.println("Invalid version format '" + versionInput + "': must be #.#.# (e.g. 1.2.3)");
+            String version = DEFAULT_VERSION;
+            if (cmd.hasOption("v")) {
+                String rawVersion = cmd.getOptionValue("v");
+                java.util.regex.Matcher devMatcher = DEV_VERSION_PATTERN.matcher(rawVersion);
+                if (devMatcher.matches()) {
+                    version = devMatcher.group(1) + ".dev" + devMatcher.group(2);
+                } else if (VALID_VERSION_PATTERN.matcher(rawVersion).matches()) {
+                    version = rawVersion;
+                } else {
+                    LOGGER.error("Invalid version format '{}'. Expected #.#.# (e.g. 1.2.3) or #.#.#-dev.# (e.g. 1.2.3-dev.4).", rawVersion);
+                    return 1;
+                }
+            }
+
+            if (projectName == null || projectName.isBlank()) {
+                LOGGER.error("Project name (-p / --project-name) is required.");
+                printUsage(options);
                 return 1;
             }
 
+            GenerationOptions opts = new GenerationOptions(allowErrors, failOnWarnings, projectName, version, namespacePrefix, nativeDir);
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
-                return translateFromSourceDir(
-                    srcDir, 
-                    tgtDir, 
-                    allowErrors, 
-                    failOnWarnings, 
-                    projectName,
-                    namespacePrefix,
-                    versionInput
-                );
+                return translateFromSourceDir(srcDir, tgtDir, opts);
             } else if (cmd.hasOption("f")) {
                 String srcFile = cmd.getOptionValue("f");
-                return translateFromSourceFile(
-                    srcFile, 
-                    tgtDir, 
-                    allowErrors, 
-                    failOnWarnings, 
-                    projectName,
-                    namespacePrefix,
-                    versionInput
-                );
+                return translateFromSourceFile(srcFile, tgtDir, opts);
             } else {
-                System.err.println("Either a source directory (-s) or source file (-f) must be specified.");
+                LOGGER.error("Either a source directory (-s) or source file (-f) must be specified.");
                 printUsage(options);
                 return 1;
             }
         } catch (ParseException e) {
-            System.err.println("Failed to parse command line arguments: " + e.getMessage());
+            LOGGER.error("Failed to parse command line arguments: {}", e.getMessage());
             printUsage(options);
             return 1;
         }
+    }
+
+    /**
+     * Bundles generation options passed through the translate/process call chain.
+     *
+     * @param allowErrors     whether to continue generation when validation errors are present
+     * @param failOnWarnings  whether to treat validation warnings as errors
+     * @param projectName     the project name written into the generated package
+     * @param version         the version string written into the generated package
+     * @param namespacePrefix optional namespace prefix prepended to all generated paths
+     * @param nativeDir       optional directory containing native Python function implementations
+     */
+    private record GenerationOptions(
+        boolean allowErrors,
+        boolean failOnWarnings,
+        String projectName,
+        String version,
+        String namespacePrefix,
+        String nativeDir
+    ) {
+
     }
 
     private static void printUsage(Options options) {
@@ -193,15 +259,7 @@ public class PythonCodeGeneratorCLI {
         formatter.printHelp("PythonCodeGeneratorCLI", options, true);
     }
 
-    protected int translateFromSourceDir(
-        String srcDir, 
-        String tgtDir, 
-        boolean allowErrors, 
-        boolean failOnWarnings,
-        String projectName, 
-        String namespacePrefix,
-        String versionInput
-    ) {
+    private int translateFromSourceDir(String srcDir, String tgtDir, GenerationOptions opts) {
         Path srcDirPath = Paths.get(srcDir);
         if (!Files.exists(srcDirPath)) {
             LOGGER.error("Source directory does not exist: {}", srcDir);
@@ -216,29 +274,14 @@ public class PythonCodeGeneratorCLI {
                     .filter(Files::isRegularFile)
                     .filter(f -> f.getFileName().toString().endsWith(".rosetta"))
                     .collect(Collectors.toList());
-            return processRosettaFiles(
-                rosettaFiles, 
-                tgtDir, 
-                allowErrors, 
-                failOnWarnings, 
-                projectName,
-                namespacePrefix,
-                versionInput);
+            return processRosettaFiles(rosettaFiles, tgtDir, opts);
         } catch (IOException e) {
             LOGGER.error("Failed to process source directory: {}", srcDir, e);
             return 1;
         }
     }
 
-    protected int translateFromSourceFile(
-        String srcFile, 
-        String tgtDir, 
-        boolean allowErrors, 
-        boolean failOnWarnings,
-        String projectName, 
-        String namespacePrefix,
-        String versionInput
-    ) {
+    private int translateFromSourceFile(String srcFile, String tgtDir, GenerationOptions opts) {
         Path srcFilePath = Paths.get(srcFile);
         if (!Files.exists(srcFilePath)) {
             LOGGER.error("Source file does not exist: {}", srcFile);
@@ -252,35 +295,21 @@ public class PythonCodeGeneratorCLI {
             LOGGER.error("Source file does not end with .rosetta: {}", srcFile);
             return 1;
         }
-        List<Path> rosettaFiles = List.of(srcFilePath);
-        return processRosettaFiles(
-            rosettaFiles, 
-            tgtDir, 
-            allowErrors, 
-            failOnWarnings, 
-            projectName, 
-            namespacePrefix, 
-            versionInput
-        );
+        return processRosettaFiles(List.of(srcFilePath), tgtDir, opts);
     }
 
-    protected IResourceValidator getValidator(Injector injector) {
-        return injector.getInstance(IResourceValidator.class);
-    }
+    private int processRosettaFiles(List<Path> rosettaFiles, String tgtDir, GenerationOptions opts) {
+        boolean allowErrors = opts.allowErrors();
+        boolean failOnWarnings = opts.failOnWarnings();
+        String projectName = opts.projectName();
+        String version = opts.version();
+        String namespacePrefix = opts.namespacePrefix();
+        String nativeDir = opts.nativeDir();
 
-    protected int processRosettaFiles(
-        List<Path> rosettaFiles, 
-        String tgtDir, 
-        boolean allowErrors,
-        boolean failOnWarnings, 
-        String projectName, 
-        String namespacePrefix,
-        String versionInput
-    ) {
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
         if (rosettaFiles.isEmpty()) {
-            System.err.println("No .rosetta files found to process.");
+            LOGGER.error("No .rosetta files found to process.");
             return 1;
         }
 
@@ -304,7 +333,6 @@ public class PythonCodeGeneratorCLI {
             LOGGER.error("No valid Rosetta models found.");
             return 1;
         }
-        String version = (versionInput != null) ? versionInput : DEFAULT_VERSION;
 
         LOGGER.info("Processing {} models, version: {}", models.size(), version);
 
@@ -363,23 +391,28 @@ public class PythonCodeGeneratorCLI {
                 continue;
             }
 
-            if (hasErrors && !allowErrors) {
-                LOGGER.error("Skipping model {} due to validation errors (allowErrors=false).", model.getName());
+            if (hasErrors) {
+                LOGGER.error("Skipping model {} due to validation errors.", model.getName());
             } else {
-                if (hasErrors) {
-                    LOGGER.warn("Proceeding with model {} despite validation errors (allowErrors=true).",
-                            model.getName());
-                }
                 validModels.add(model);
             }
         }
 
         if (validModels.isEmpty()) {
-            LOGGER.error("No valid models found after validation. Exiting.");
-            return 1;
+            if (allowErrors) {
+                LOGGER.warn("No valid models found after validation, but --allow-errors is set. Continuing with potentially partial generation.");
+            } else {
+                LOGGER.error("No valid models found after validation. Exiting.");
+                return 1;
+            }
         }
 
         // Use validModels for generation
+        // Re-determine version based on valid models? Or keep original version?
+        // Assuming version is consistent across all loaded models or derived from the
+        // first one.
+        // The original code took version from models.getFirst().getVersion();
+
         LOGGER.info("Proceeding with generation for {} valid models.", validModels.size());
 
         pythonCodeGenerator.beforeAllGenerate(resourceSet, validModels, version);
@@ -392,7 +425,19 @@ public class PythonCodeGeneratorCLI {
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
         writePythonFiles(generatedPython, tgtDir);
+        copyNativeFunctions(nativeDir, tgtDir, generatedPython.keySet(), namespacePrefix);
         return 0;
+    }
+
+    /**
+     * Gets the resource validator from the injector.
+     * This method is designed for extension to allow mocking in unit tests.
+     *
+     * @param injector the Guice injector
+     * @return the resource validator
+     */
+    protected IResourceValidator getValidator(Injector injector) {
+        return injector.getInstance(IResourceValidator.class);
     }
 
     private static void writePythonFiles(Map<String, CharSequence> generatedPython, String tgtDir) {
@@ -418,7 +463,11 @@ public class PythonCodeGeneratorCLI {
             Path outputPath = Paths.get(tgtDir, filePath);
             try {
                 Files.createDirectories(outputPath.getParent());
-                Files.writeString(outputPath, content.toString());
+                String body = content.toString();
+                if (filePath.endsWith(".py") || filePath.endsWith(".toml")) {
+                    body = PythonCodeGeneratorConstants.LICENSE_HEADER + body;
+                }
+                Files.writeString(outputPath, body);
                 LOGGER.info("Wrote file: {}", outputPath);
             } catch (IOException e) {
                 System.err.println("Failed to write file: " + outputPath + " - " + e.getMessage());
@@ -426,6 +475,111 @@ public class PythonCodeGeneratorCLI {
         }
         LOGGER.info("Wrote {} files to {}", generatedPython.size(), tgtDir);
     }
+
+    private static void copyNativeFunctions(String nativeDir, String tgtDir, Set<String> generatedPaths, String namespacePrefix) {
+        if (nativeDir == null || nativeDir.isBlank()) {
+            return;
+        }
+
+        Path nativeDirPath = Paths.get(nativeDir);
+        if (!Files.exists(nativeDirPath) || !Files.isDirectory(nativeDirPath)) {
+            LOGGER.warn("Native function directory does not exist or is not a directory: {}", nativeDir);
+            return;
+        }
+
+        // Native implementations are sourced from <nativeDir>/rune/native/ and deployed
+        // to src/rune/native/ in the output, or src/<namespacePrefix>/rune/native/
+        // when a namespace prefix is configured, preserving the full sub-path underneath.
+        // Example: <nativeDir>/rune/native/rosetta_dsl/test/functions/RoundToNearest.py
+        //       -> src/finos/rune/native/rosetta_dsl/test/functions/RoundToNearest.py
+        Path runeNativePath = nativeDirPath.resolve("rune/native");
+        if (!Files.exists(runeNativePath) || !Files.isDirectory(runeNativePath)) {
+            LOGGER.warn("Expected rune/native sub-directory not found under native dir: {}", runeNativePath);
+            return;
+        }
+
+        AtomicInteger copied = new AtomicInteger();
+        AtomicInteger skipped = new AtomicInteger();
+        Set<Path> initDirs = new java.util.LinkedHashSet<>();
+        String prefixedRoot = (namespacePrefix == null || namespacePrefix.isBlank())
+                ? "src/rune/native"
+                : "src/" + PythonCodeGeneratorUtil.toFileSystemPath(namespacePrefix) + "/rune/native";
+        Path nativeTargetRoot = Paths.get(tgtDir, prefixedRoot);
+        Path runeRoot = nativeTargetRoot.getParent();
+
+        try {
+            Files.walk(runeNativePath)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".py"))
+                    .forEach(sourcePath -> {
+                        String relative = runeNativePath.relativize(sourcePath).toString().replace(File.separator, "/");
+                        String targetRelative = prefixedRoot + "/" + relative;
+                        Path targetPath = Paths.get(tgtDir, targetRelative);
+
+                        if (generatedPaths.contains(targetRelative)) {
+                            LOGGER.warn("Native function file '{}' conflicts with generated file '{}'; skipping.", sourcePath, targetRelative);
+                            skipped.incrementAndGet();
+                        } else {
+                            try {
+                                Files.createDirectories(targetPath.getParent());
+                                Files.copy(sourcePath, targetPath);
+                                LOGGER.info("Copied native function: {}", targetRelative);
+                                copied.incrementAndGet();
+                                // Collect every directory from the native root down to the file's
+                                // parent so we can place an __init__.py in each one (but not the
+                                // top-level rune package itself).
+                                Path dir = targetPath.getParent();
+                                while (dir != null && dir.startsWith(runeRoot) && !dir.equals(runeRoot)) {
+                                    initDirs.add(dir);
+                                    dir = dir.getParent();
+                                }
+                            } catch (IOException e) {
+                                LOGGER.error("Failed to copy native function file '{}': {}", sourcePath, e.getMessage(), e);
+                            }
+                        }
+                    });
+        } catch (IOException e) {
+            LOGGER.error("Failed to walk native function directory '{}': {}", nativeDir, e.getMessage(), e);
+            return;
+        }
+
+        // Write empty __init__.py into every collected directory that doesn't already have one.
+        // Source __init__.py files are already copied by the main walk above.
+        for (Path dir : initDirs) {
+            Path initFile = dir.resolve("__init__.py");
+            if (!Files.exists(initFile)) {
+                try {
+                    Files.writeString(initFile, "");
+                    LOGGER.info("Created __init__.py: {}", initFile);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to write __init__.py in '{}': {}", dir, e.getMessage(), e);
+                }
+            }
+        }
+
+        // When a namespace prefix is in use, src/<namespacePrefix>/rune/ is a concrete
+        // package that needs an __init__.py.
+        if (namespacePrefix != null && !namespacePrefix.isBlank()) {
+            Path runeInitFile = runeRoot.resolve("__init__.py");
+            if (!Files.exists(runeInitFile)) {
+                try {
+                    Path sourceRuneInit = nativeDirPath.resolve("rune/__init__.py");
+                    if (Files.exists(sourceRuneInit)) {
+                        Files.copy(sourceRuneInit, runeInitFile);
+                        LOGGER.info("Copied __init__.py: {}", runeInitFile);
+                    } else {
+                        Files.writeString(runeInitFile, "");
+                        LOGGER.info("Created __init__.py: {}", runeInitFile);
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("Failed to write __init__.py in {}: {}", runeInitFile.getParent(), e.getMessage(), e);
+                }
+            }
+        }
+
+        LOGGER.info("Native functions: copied {} file(s), skipped {} collision(s).", copied.get(), skipped.get());
+    }
+
     // --- Helper classes for model loading and Guice setup ---
 
     static class PythonModelLoader {
@@ -454,16 +608,13 @@ public class PythonCodeGeneratorCLI {
         }
     }
 
-    public static class PythonCodeGeneratorInstance implements Provider<ExternalGenerators> {
+    /**
+     * Provider for ExternalGenerators.
+     */
+    public static final class PythonCodeGeneratorInstance implements Provider<ExternalGenerators> {
         @Override
         public ExternalGenerators get() {
-            return new ExternalGenerators() {
-                @NotNull
-                @Override
-                public Iterator<ExternalGenerator> iterator() {
-                    return List.of((ExternalGenerator) new PythonCodeGenerator()).iterator();
-                }
-            };
+            return () -> List.of((ExternalGenerator) new PythonCodeGenerator()).iterator();
         }
     }
 
@@ -473,5 +624,4 @@ public class PythonCodeGeneratorCLI {
             return Guice.createInjector(new PythonRosettaRuntimeModule());
         }
     }
-
 }

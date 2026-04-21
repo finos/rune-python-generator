@@ -1,179 +1,265 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.object;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
-import com.regnosys.rosetta.types.*;
+import com.regnosys.rosetta.types.RAliasType;
+import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.RCardinality;
+import com.regnosys.rosetta.types.RChoiceType;
+import com.regnosys.rosetta.types.RDataType;
+import com.regnosys.rosetta.types.REnumType;
+import com.regnosys.rosetta.types.RMetaAnnotatedType;
+import com.regnosys.rosetta.types.RMetaAttribute;
+import com.regnosys.rosetta.types.RObjectFactory;
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.TypeSystem;
 import com.regnosys.rosetta.types.builtin.RNumberType;
 import com.regnosys.rosetta.types.builtin.RStringType;
-import com.regnosys.rosetta.types.REnumType;
-import jakarta.inject.Inject;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import jakarta.inject.Inject;
 
 /**
  * Generate Python for Rune Attributes
  */
-public class PythonAttributeProcessor {
+public final class PythonAttributeProcessor {
 
+    /**
+     * The R object factory.
+     */
     @Inject
     private RObjectFactory rObjectFactory;
 
+    /**
+     * The type system.
+     */
     @Inject
     private TypeSystem typeSystem;
 
-    public String generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints) {
-        return generateAllAttributes(rc, keyRefConstraints, null);
-    }
-
-    public String generateAllAttributes(Data rc, Map<String, List<String>> keyRefConstraints,
-            String namespacePrefix) {
+    /**
+     * Generate Python code for all attributes of a given Data type.
+     * 
+     * @param rc                The Data type to generate attributes for.
+     * @param keyRefConstraints A map of key reference constraints.
+     * @param context           the Python code generator context
+     * @return An AttributeProcessingResult containing the generated Python code and
+     *         a list of annotation updates.
+     */
+    public AttributeProcessingResult generateAllAttributes(Data rc,
+        Map<String, List<String>> keyRefConstraints,
+        PythonCodeGeneratorContext context) {
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
 
         if (allAttributes.isEmpty() && rc.getConditions().isEmpty()) {
-            return "pass";
+            return new AttributeProcessingResult("pass", Collections.emptyList());
         }
 
         PythonCodeWriter writer = new PythonCodeWriter();
+        List<String> annotationUpdates = new ArrayList<>();
         for (RAttribute ra : allAttributes) {
-            generateAttribute(writer, rc, ra, keyRefConstraints, namespacePrefix);
+            AttributeResult result = generateAttribute(rc, ra, keyRefConstraints, context);
+            writer.appendBlock(result.attributeCode());
+            annotationUpdates.addAll(result.annotationUpdates());
         }
-        return writer.toString();
+        return new AttributeProcessingResult(writer.toString(), annotationUpdates);
     }
 
-    private void generateAttribute(PythonCodeWriter writer, Data rc, RAttribute ra,
-            Map<String, List<String>> keyRefConstraints, String namespacePrefix) {
-        RType rt = ra.getRMetaAnnotatedType().getRType();
-
-        if (rt instanceof RAliasType) {
-            rt = typeSystem.stripFromTypeAliases(rt);
-        }
-
-        String attrTypeName = RuneToPythonMapper.toPythonType(rt, namespacePrefix);
-        if (rt instanceof RNumberType numberType && numberType.isInteger() && !"int".equals(attrTypeName)) {
-            attrTypeName = "int";
-        }
-
-        if (attrTypeName == null) {
-            throw new RuntimeException(
-                    "Attribute type is null for " + ra.getName() + " in class " + rc.getName());
-        }
-
-        Map<String, String> attrProp = processProperties(rt);
-        Map<String, String> cardinalityMap = processCardinality(ra);
-        ArrayList<String> validators = processMetaDataAttributes(ra, attrTypeName, keyRefConstraints);
-
-        createAttributeString(writer, ra, attrTypeName, rt, validators, attrProp, cardinalityMap);
+    private AttributeResult generateAttribute(
+        Data rc, 
+        RAttribute ra,
+        Map<String, List<String>> keyRefConstraints,
+        PythonCodeGeneratorContext context
+    ) {
+        MetaDataResult metaDataResult = processMetaDataAttributes(ra, keyRefConstraints);
+        return createAttributeResult(rc, ra, metaDataResult, context);
     }
 
-    private void createAttributeString(
-            PythonCodeWriter writer,
-            RAttribute ra,
-            String attrTypeNameIn,
-            RType rt,
-            ArrayList<String> validators,
-            Map<String, String> attrProp,
-            Map<String, String> cardinalityMap) {
-
-        String propString = createPropString(attrProp);
+    private AttributeResult createAttributeResult(Data rc, RAttribute ra, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
+        RosettaModel model = (RosettaModel) rc.eContainer();
+        String className = context.applyPrefix(model.getName()) + "." + rc.getName();
+        boolean isStandalone = context.getStandaloneClasses().contains(className);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
 
-        String attrTypeName = (!validators.isEmpty())
-                ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
-                : attrTypeNameIn;
+        // Resolve type aliases and compute validation properties once for all downstream use
+        RType rt = resolveType(ra);
+        ValidationProperties validationProps = processProperties(rt);
+        boolean isDelayed = !RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType);
 
-        String attrTypeNameOut = RuneToPythonMapper.getFlattenedTypeName(rt, attrTypeName);
+        PythonTypeHint hint = deriveTypeHint(rc, ra, rt, validationProps, isDelayed, metaDataResult, context);
 
-        String metaPrefix = "";
-        String metaSuffix = "";
-
-        if (!validators.isEmpty()) {
-            metaPrefix = getMetaDataPrefix(validators);
-            metaSuffix = getMetaDataSuffix(validators, attrTypeNameOut);
-        } else if (!RuneToPythonMapper.isRosettaBasicType(rt) && !(rt instanceof REnumType)) {
-            metaPrefix = "Annotated[";
-            metaSuffix = ", " + attrTypeNameOut + ".serializer(), " + attrTypeNameOut + ".validator()]";
+        String pythonType;
+        List<String> annotationUpdates = new ArrayList<>();
+        if (isDelayed && !isStandalone) {
+            // Phase 1 placeholder: use 'None' so pydantic does not attempt to resolve the type name
+            // at class-definition time. Pydantic adds vars(cls) to localns, so a field whose name
+            // matches its type name (e.g. CollateralIssuerType: Optional[CollateralIssuerType])
+            // would resolve the type to the FieldInfo default rather than the imported class,
+            // triggering ArbitraryTypeWarning.
+            // Phase 2 updates both __annotations__ (full Annotated type for pydantic schema) and
+            // model_fields[x].annotation (bare type, required so model_rebuild(force=True) picks up
+            // the real type rather than the NoneType placeholder stored in model_fields).
+            pythonType = "None";
+            annotationUpdates.add(String.format("model_fields[\"%s\"].annotation = %s", attrName, hint.build(false)));
+            annotationUpdates.add(String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true)));
+        } else {
+            pythonType = hint.build(true);
         }
 
-        String baseType = metaPrefix + attrTypeNameOut + metaSuffix;
+        String fieldDecl = generateFieldDeclaration(ra, validationProps, attrName, pythonType, hint.fieldProperties().isPresent());
+        return new AttributeResult(fieldDecl, annotationUpdates);
+    }
+
+    private PythonTypeHint deriveTypeHint(
+        Data rc,
+        RAttribute ra,
+        RType rt,
+        ValidationProperties validationProps,
+        boolean isDelayed,
+        MetaDataResult metaDataResult,
+        PythonCodeGeneratorContext context
+    ) {
+        RosettaModel model = (RosettaModel) rc.eContainer();
+        String className = context.applyPrefix(model.getName()) + "." + rc.getName();
+        boolean isSourceStandalone = context.getStandaloneClasses().contains(className);
+
+        String typeRefName;
+        String fqnAttributeNamespace = context.applyPrefix(rt.getNamespace().toString());
+        String fqnAttributeName = fqnAttributeNamespace + "." + rt.getName();
+
+        if (RuneToPythonMapper.isRosettaBasicType(rt)) {
+            typeRefName = RuneToPythonMapper.toPythonType(rt);
+        } else if (rt instanceof REnumType) {
+            typeRefName = fqnAttributeName + "." + rt.getName();
+        } else {
+            // Data Type
+            boolean isTargetStandalone = context.getStandaloneClasses().contains(fqnAttributeName);
+            if (isSourceStandalone || isTargetStandalone) {
+                // Use short name (imported via 'from module import Class').
+                // For standalone source classes, pydantic adds vars(cls) to localns when resolving
+                // annotations. If the field name equals the type name, the class attribute (FieldInfo)
+                // would shadow the imported class. Alias the import as '_TypeName' to avoid this.
+                // For bundled source classes, Phase 2 annotation updates run at module level where
+                // vars(cls) is not in scope, so no alias is needed.
+                if (isSourceStandalone) {
+                    String attrPythonName = RuneToPythonMapper.mangleName(ra.getName());
+                    boolean hasNamingConflict = attrPythonName.equals(rt.getName());
+                    typeRefName = hasNamingConflict ? ("_" + rt.getName()) : rt.getName();
+                } else {
+                    typeRefName = rt.getName();
+                }
+            } else {
+                // Internal bundle reference
+                typeRefName = com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil.toFlattenedName(fqnAttributeName);
+            }
+        }
+
+        String attrTypeNameIn = typeRefName;
+        if (attrTypeNameIn == null) {
+            throw new RuntimeException("Attribute type is null for " + ra.getName());
+        }
+
+        List<String> validators = metaDataResult.getValidators();
         RCardinality cardinality = ra.getCardinality();
-        int min = cardinality.getMin();
         int max = cardinality.getMax().orElse(-1);
         boolean isList = (cardinality.isMulti() || max > 1);
 
-        // If it is a list and we have properties (e.g. max_digits), these properties
-        // belong to the element, not the list.
-        // So we wrap the element type in Annotated[Type, Field(...properties...)].
-        boolean propertiesAppliedToInnerType = false;
-        if (isList && !attrProp.isEmpty()) {
-            baseType = "Annotated[" + baseType + ", Field(" + propString + ")]";
-            propertiesAppliedToInnerType = true;
-        }
+        String baseTypeName = (!validators.isEmpty())
+                ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
+                : attrTypeNameIn;
 
-        String pythonType = RuneToPythonMapper.formatPythonType(baseType, min, max, false);
+        String propString = validationProps.toFieldArgs();
+        Optional<String> fieldProps = (isList && !propString.isEmpty()) ? Optional.of(propString) : Optional.empty();
+
+        // STANDALONE strategy: omit Annotated wrapper unless there are validators
+        // BUNDLED strategy: always use Annotated for isDelayed to support Phase 2 updates
+        boolean needsRuneAnns = (isDelayed && !isSourceStandalone) || !validators.isEmpty();
+        Optional<String> runeAnns = needsRuneAnns ? Optional.of(getRuneAnnotationArgs(validators, baseTypeName))
+                : Optional.empty();
+
+        return new PythonTypeHint(
+                baseTypeName,
+                metaDataResult.hasReference(),
+                fieldProps,
+                isList,
+                cardinality.getMin() == 0,
+                runeAnns);
+    }
+
+    private String generateFieldDeclaration(RAttribute ra, ValidationProperties validationProps,
+            String attrName, String pythonType, boolean propertiesAppliedToInnerType) {
+        CardinalityInfo cardinalityInfo = processCardinality(ra);
+        String propString = validationProps.toFieldArgs();
 
         String attrDesc = (ra.getDefinition() == null)
                 ? ""
                 : ra.getDefinition().replaceAll("\\s+", " ").replace("'", "\\'");
 
-        StringBuilder lineBuilder = new StringBuilder();
-        lineBuilder.append(attrName).append(": ");
-        lineBuilder.append(pythonType);
-
-        lineBuilder.append(" = Field(");
-        lineBuilder.append(cardinalityMap.get("fieldDefault"));
-        lineBuilder.append(", description='");
-        lineBuilder.append(attrDesc);
-        lineBuilder.append("'");
-        lineBuilder.append(cardinalityMap.get("cardinalityString"));
-
-        // Only append propString to the outer Field if it hasn't been applied to the
-        // inner type
-        if (!propString.isEmpty() && !propertiesAppliedToInnerType) {
-            lineBuilder.append(", ");
-            lineBuilder.append(propString);
-        }
-
-        lineBuilder.append(")");
-        writer.appendLine(lineBuilder.toString());
+        String fieldProps = (!propString.isEmpty() && !propertiesAppliedToInnerType) ? ", " + propString : "";
+        String fieldDecl = String.format("%s: %s = Field(%s, description='%s'%s%s)",
+                attrName,
+                pythonType,
+                cardinalityInfo.fieldDefault(),
+                attrDesc,
+                cardinalityInfo.cardinalityString(),
+                fieldProps);
 
         if (ra.getDefinition() != null) {
-            writer.appendLine("\"\"\"");
-            writer.appendLine(ra.getDefinition());
-            writer.appendLine("\"\"\"");
+            fieldDecl += String.format("\n\"\"\"\n%s\n\"\"\"", ra.getDefinition());
         }
+        return fieldDecl;
     }
 
-    private String getMetaDataSuffix(ArrayList<String> validators, String attrTypeName) {
+    private String getRuneAnnotationArgs(List<String> validators, String typeName) {
+        String serializer = String.format("%s.serializer()", typeName);
+        String validator;
         if (validators.isEmpty()) {
-            return "";
+            validator = String.format("%s.validator()", typeName);
+        } else {
+            String joinedValidators = validators.stream()
+                    .map(v -> String.format("'%s'", v))
+                    .collect(Collectors.joining(", "));
+            if (validators.size() == 1) {
+                joinedValidators += ", ";
+            }
+            validator = String.format("%s.validator((%s))", typeName, joinedValidators);
         }
-        String joinedValidators = validators.stream()
-                .map(v -> "'" + v + "'")
-                .collect(Collectors.joining(", "));
-
-        String trailingComma = (validators.size() == 1) ? ", " : "";
-
-        return ", " + attrTypeName + ".serializer(), " + attrTypeName + ".validator((" + joinedValidators
-                + trailingComma + "))]";
+        return String.format("%s, %s", serializer, validator);
     }
 
-    private String getMetaDataPrefix(ArrayList<String> validators) {
-        return (validators.isEmpty()) ? "" : "Annotated[";
-    }
-
-    private ArrayList<String> processMetaDataAttributes(
+    /**
+     * Processes the meta-data attributes of a given attribute.
+     * 
+     * @param ra                The attribute to process.
+     * @param attrTypeName      The name of the attribute type.
+     * @param keyRefConstraints A map of key reference constraints.
+     * @return A MetaDataResult containing the validators and other meta-data.
+     */
+    private MetaDataResult processMetaDataAttributes(
             RAttribute ra,
-            String attrTypeName,
             Map<String, List<String>> keyRefConstraints) {
-        RMetaAnnotatedType attrRMAT = ra.getRMetaAnnotatedType();
-        ArrayList<String> validators = new ArrayList<>();
-        ArrayList<String> otherMeta = new ArrayList<>();
+        List<String> validators = new ArrayList<>();
+        List<String> otherMeta = new ArrayList<>();
 
+        RMetaAnnotatedType attrRMAT = ra.getRMetaAnnotatedType();
+        boolean hasReference = false;
         if (attrRMAT.hasAttributeMeta()) {
-            attrRMAT.getMetaAttributes().forEach(ma -> {
+            for (RMetaAttribute ma : attrRMAT.getMetaAttributes()) {
                 switch (ma.getName()) {
                     case "key", "id" -> {
                         validators.add("@key");
@@ -182,51 +268,68 @@ public class PythonAttributeProcessor {
                     case "reference" -> {
                         validators.add("@ref");
                         validators.add("@ref:external");
+                        hasReference = true;
                     }
                     case "scheme" -> otherMeta.add("@scheme");
                     case "location" -> validators.add("@key:scoped");
-                    case "address" -> validators.add("@ref:scoped");
+                    case "address" -> {
+                        validators.add("@ref:scoped");
+                        hasReference = true;
+                    }
                     default -> throw new IllegalStateException("Unsupported metadata attribute: " + ma.getName());
                 }
-            });
+            }
         }
         if (!validators.isEmpty()) {
             keyRefConstraints.put(ra.getName(), new ArrayList<>(validators));
         }
         validators.addAll(otherMeta);
-        return validators;
+        return new MetaDataResult(validators, hasReference);
     }
 
-    private Map<String, String> processProperties(RType rt) {
-        Map<String, String> attrProp = new HashMap<>();
-        if (rt instanceof RStringType stringType) {
-            stringType.getPattern().ifPresent(value -> attrProp.put("pattern", "r'^" + value + "*$'"));
-            stringType.getInterval().getMin().ifPresent(value -> {
-                if (value > 0)
-                    attrProp.put("min_length", value.toString());
-            });
-            stringType.getInterval().getMax().ifPresent(value -> attrProp.put("max_length", value.toString()));
-        } else if (rt instanceof RNumberType numberType) {
-            if (!numberType.isInteger()) {
-                numberType.getDigits().ifPresent(value -> attrProp.put("max_digits", value.toString()));
-                numberType.getFractionalDigits().ifPresent(value -> attrProp.put("decimal_places", value.toString()));
-                numberType.getInterval().getMin()
-                        .ifPresent(value -> attrProp.put("ge", "Decimal('" + value.toPlainString() + "')"));
-                numberType.getInterval().getMax()
-                        .ifPresent(value -> attrProp.put("le", "Decimal('" + value.toPlainString() + "')"));
+    private RType resolveType(RAttribute ra) {
+        RType rt = ra.getRMetaAnnotatedType().getRType();
+        return (rt instanceof RAliasType) ? typeSystem.stripFromTypeAliases(rt) : rt;
+    }
+
+    private ValidationProperties processProperties(RType rt) {
+        ValidationProperties.Builder builder = ValidationProperties.builder();
+        switch (rt) {
+            case RStringType stringType -> {
+                stringType
+                    .getPattern()
+                    .ifPresent(value -> builder.pattern(String.format("r'^%s*$'", value)));
+                stringType
+                    .getInterval()
+                    .getMin()
+                    .filter(v -> v > 0)
+                    .ifPresent(v -> builder.minLength(v));
+                stringType
+                    .getInterval()
+                    .getMax()
+                    .ifPresent(v -> builder.maxLength(v));
+            }
+            case RNumberType numberType -> {
+                if (!numberType.isInteger()) {
+                    numberType.getDigits().ifPresent(v -> builder.maxDigits(v));
+                    numberType.getFractionalDigits().ifPresent(v -> builder.decimalPlaces(v));
+                    numberType
+                        .getInterval()
+                        .getMin()
+                        .ifPresent(v -> builder.ge(String.format("Decimal('%s')", v.toPlainString())));
+                    numberType
+                        .getInterval()
+                        .getMax()
+                        .ifPresent(v -> builder.le(String.format("Decimal('%s')", v.toPlainString())));
+                }
+            }
+            default -> {
             }
         }
-        return attrProp;
+        return builder.build();
     }
 
-    private String createPropString(Map<String, String> attrProp) {
-        return attrProp.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining(", "));
-    }
-
-    private Map<String, String> processCardinality(RAttribute ra) {
-        Map<String, String> cardinalityMap = new HashMap<>();
+    private CardinalityInfo processCardinality(RAttribute ra) {
         RCardinality cardinality = ra.getCardinality();
         int lowerBound = cardinality.getMin();
         Optional<Integer> upperCardinality = cardinality.getMax();
@@ -236,65 +339,266 @@ public class PythonAttributeProcessor {
         String cardinalityString = "";
 
         // Default constraints
-        if (lowerBound == 0) {
-            fieldDefault = "None";
-            if (cardinality.isMulti() || upperBoundIsGTOne) {
-                if (upperBoundIsGTOne) {
-                    cardinalityString = ", max_length=" + upperCardinality.get().toString();
+        switch (lowerBound) {
+            case 0 -> {
+                fieldDefault = "None";
+                if (cardinality.isMulti() || upperBoundIsGTOne) {
+                    if (upperBoundIsGTOne) {
+                        cardinalityString = String.format(", max_length=%d", upperCardinality.get());
+                    }
                 }
             }
-        } else if (lowerBound == 1) {
-            fieldDefault = "...";
-            if (cardinality.isMulti() || upperBoundIsGTOne) {
-                cardinalityString = ", min_length=1";
-                if (upperBoundIsGTOne) {
-                    cardinalityString += ", max_length=" + upperCardinality.get().toString();
+            case 1 -> {
+                fieldDefault = "...";
+                if (cardinality.isMulti() || upperBoundIsGTOne) {
+                    cardinalityString = ", min_length=1";
+                    if (upperBoundIsGTOne) {
+                        cardinalityString += String.format(", max_length=%d", upperCardinality.get());
+                    }
                 }
             }
-        } else {
-            fieldDefault = "...";
-            cardinalityString = ", min_length=" + lowerBound;
-            if (upperCardinality.isPresent()) {
-                int upperBound = upperCardinality.get();
-                if (upperBound > 1) {
-                    cardinalityString += ", max_length=" + upperBound;
+            default -> {
+                fieldDefault = "...";
+                cardinalityString = String.format(", min_length=%d", lowerBound);
+                if (upperCardinality.isPresent()) {
+                    int upperBound = upperCardinality.get();
+                    if (upperBound > 1) {
+                        cardinalityString += String.format(", max_length=%d", upperBound);
+                    }
                 }
             }
         }
 
-        cardinalityMap.put("cardinalityString", cardinalityString);
-        cardinalityMap.put("fieldDefault", fieldDefault);
-        return cardinalityMap;
+        return new CardinalityInfo(fieldDefault, cardinalityString);
     }
 
-    public void getImportsFromAttributes(Data rc, Set<String> enumImports) {
-        getImportsFromAttributes(rc, enumImports, null);
-    }
-
-    public void getImportsFromAttributes(Data rc, Set<String> enumImports, String namespacePrefix) {
+    /**
+     * Collects import statements for the attributes of a Data type.
+     *
+     * @param rc                    The Data type whose attributes are inspected.
+     * @param imports               The set to add import statements to.
+     * @param context               The context containing information about standalone classes and namespace prefixes.
+     * @param includeBundledTypes   When {@code true} (standalone file context), imports
+     *                              are emitted for all Data types including bundled ones.
+     *                              When {@code false} (bundle header context), imports are
+     *                              only emitted for enums and standalone Data types —
+     *                              bundled types must not be imported via their proxy stub
+     *                              because that would create a circular import back into
+     *                              the bundle itself.
+     */
+    public void getImportsFromAttributes(
+        Data rc,
+        Set<String> imports,
+        PythonCodeGeneratorContext context,
+        boolean includeBundledTypes
+    ) {
+        Set<String> standaloneClasses = context.getStandaloneClasses();
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
+        RosettaModel rcModel = (RosettaModel) rc.eContainer();
+        String rcFqn = context.applyPrefix(rcModel.getName()) + "." + rc.getName();
 
         for (RAttribute attr : allAttributes) {
-            if (!attr.getName().equals("reference") &&
-                    !attr.getName().equals("meta") &&
-                    !attr.getName().equals("scheme") &&
-                    !RuneToPythonMapper.isRosettaBasicType(attr)) {
-                RType rt = attr.getRMetaAnnotatedType().getRType();
-                if (rt instanceof RAliasType) {
-                    rt = typeSystem.stripFromTypeAliases(rt);
-                }
+            if (!attr.getName().equals("reference")
+                    && !attr.getName().equals("meta")
+                    && !attr.getName().equals("scheme")
+                    && !RuneToPythonMapper.isRosettaBasicType(attr)) {
+                RType rt = resolveType(attr);
                 if (rt == null) {
                     throw new RuntimeException(
-                            "Attribute type is null for " + attr.getName() + " for class " + rc.getName());
+                            "Attribute type is null for "
+                            + attr.getName()
+                            + " for class "
+                            + rc.getName());
                 }
 
-                if (rt instanceof REnumType enumType) {
-                    String qualifiedName = (namespacePrefix != null && !namespacePrefix.isBlank())
-                            ? namespacePrefix + "." + enumType.getQualifiedName()
-                            : enumType.getQualifiedName().toString();
-                    enumImports.add("import " + qualifiedName);
+                // Normalize RChoiceType to RDataType for import generation
+                if (rt instanceof RChoiceType rChoiceType) {
+                    rt = rChoiceType.asRDataType();
                 }
+                if (rt instanceof REnumType rEnumType) {
+                    imports.add(String.format("import %s", context.applyPrefix(rEnumType.getQualifiedName().toString())));
+                } else if (rt instanceof RDataType rDataType) {
+                    String fullNamespace = context.applyPrefix(rDataType.getNamespace().toString());
+                    String fqn = fullNamespace + "." + rDataType.getName();
+                    if (fqn.equals(rcFqn)) {
+                        // Skip self-import: the type references itself (e.g. via [metadata reference]).
+                        // Emitting 'from <module> import <Class>' in the file that defines <Class>
+                        // causes a circular import error during Python's partial module initialization.
+                        continue;
+                    }
+                    if (includeBundledTypes || standaloneClasses.contains(fqn)) {
+                        if (includeBundledTypes) {
+                            // Standalone file context: pydantic adds vars(cls) to localns, so a field
+                            // whose name matches its type name would shadow the import. Alias as '_TypeName'.
+                            String attrPythonName = RuneToPythonMapper.mangleName(attr.getName());
+                            boolean hasNamingConflict = attrPythonName.equals(rDataType.getName());
+                            if (hasNamingConflict) {
+                                imports.add(String.format("from %s.%s import %s as _%s",
+                                        fullNamespace, rDataType.getName(), rDataType.getName(), rDataType.getName()));
+                            } else {
+                                imports.add(String.format("from %s.%s import %s",
+                                        fullNamespace, rDataType.getName(), rDataType.getName()));
+                            }
+                        } else {
+                            // Bundle header context: Phase 2 annotation updates run at module level,
+                            // vars(cls) is not in scope — no alias needed.
+                            imports.add(String.format("from %s.%s import %s",
+                                    fullNamespace, rDataType.getName(), rDataType.getName()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static class MetaDataResult {
+        /**
+         * The validators for the attribute.
+         */
+        private final List<String> validators;
+        /**
+         * Whether the attribute has a reference.
+         */
+        private final boolean hasReference;
+
+        /**
+         * Creates a new MetaDataResult.
+         * 
+         * @param validators   The validators for the attribute.
+         * @param hasReference Whether the attribute has a reference.
+         */
+        MetaDataResult(List<String> validators, boolean hasReference) {
+            this.validators = validators;
+            this.hasReference = hasReference;
+        }
+
+        public List<String> getValidators() {
+            return validators;
+        }
+
+        public boolean hasReference() {
+            return hasReference;
+        }
+    }
+    private record CardinalityInfo(String fieldDefault, String cardinalityString) {
+    }
+
+    private record AttributeResult(String attributeCode, List<String> annotationUpdates) {
+    }
+    private record PythonTypeHint(
+            String baseType,
+            boolean hasReference,
+            Optional<String> fieldProperties,
+            boolean isList,
+            boolean isOptional,
+            Optional<String> runeAnnotations) {
+
+        public String build(boolean includeRuneAnnotations) {
+            String type = baseType;
+            if (hasReference) {
+                type += " | BaseReference";
+            }
+            if (fieldProperties.isPresent()) {
+                type = String.format("Annotated[%s, Field(%s)]", type, fieldProperties.get());
+            }
+            if (isList) {
+                type = String.format("list[%s | None]", type);
+            }
+            if (isOptional) {
+                type = String.format("Optional[%s]", type);
+            }
+            if (includeRuneAnnotations && runeAnnotations.isPresent()) {
+                type = String.format("Annotated[%s, %s]", type, runeAnnotations.get());
+            }
+            return type;
+        }
+    }
+
+    private record ValidationProperties(
+            Optional<String> pattern,
+            Optional<Integer> minLength,
+            Optional<Integer> maxLength,
+            Optional<Integer> maxDigits,
+            Optional<Integer> decimalPlaces,
+            Optional<String> ge,
+            Optional<String> le) {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public String toFieldArgs() {
+            List<String> args = new ArrayList<>();
+            minLength.ifPresent(v -> args.add(String.format("min_length=%d", v)));
+            pattern.ifPresent(v -> args.add(String.format("pattern=%s", v)));
+            maxLength.ifPresent(v -> args.add(String.format("max_length=%d", v)));
+            maxDigits.ifPresent(v -> args.add(String.format("max_digits=%d", v)));
+            decimalPlaces.ifPresent(v -> args.add(String.format("decimal_places=%d", v)));
+            ge.ifPresent(v -> args.add(String.format("ge=%s", v)));
+            le.ifPresent(v -> args.add(String.format("le=%s", v)));
+            return String.join(", ", args);
+        }
+
+        public static class Builder {
+            /** The regex pattern for validation. */
+            private Optional<String> pattern = Optional.empty();
+            /** The minimum length for validation. */
+            private Optional<Integer> minLength = Optional.empty();
+            /** The maximum length for validation. */
+            private Optional<Integer> maxLength = Optional.empty();
+            /** The maximum number of digits for validation. */
+            private Optional<Integer> maxDigits = Optional.empty();
+            /** The number of decimal places for validation. */
+            private Optional<Integer> decimalPlaces = Optional.empty();
+            /** The greater-than-or-equal value for validation. */
+            private Optional<String> ge = Optional.empty();
+            /** The less-than-or-equal value for validation. */
+            private Optional<String> le = Optional.empty();
+
+            public Builder pattern(String patternIn) {
+                this.pattern = Optional.of(patternIn);
+                return this;
+            }
+
+            public Builder minLength(int minLengthIn) {
+                this.minLength = Optional.of(minLengthIn);
+                return this;
+            }
+
+            public Builder maxLength(int maxLengthIn) {
+                this.maxLength = Optional.of(maxLengthIn);
+                return this;
+            }
+
+            public Builder maxDigits(int maxDigitsIn) {
+                this.maxDigits = Optional.of(maxDigitsIn);
+                return this;
+            }
+
+            public Builder decimalPlaces(int decimalPlacesIn) {
+                this.decimalPlaces = Optional.of(decimalPlacesIn);
+                return this;
+            }
+
+            public Builder ge(String geIn) {
+                this.ge = Optional.of(geIn);
+                return this;
+            }
+
+            public Builder le(String leIn) {
+                this.le = Optional.of(leIn);
+                return this;
+            }
+
+            public ValidationProperties build() {
+                return new ValidationProperties(pattern,
+                    minLength,
+                    maxLength,
+                    maxDigits,
+                    decimalPlaces,
+                    ge,
+                    le);
             }
         }
     }

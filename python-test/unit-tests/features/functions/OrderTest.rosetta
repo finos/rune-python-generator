@@ -1,0 +1,25 @@
+namespace rosetta_dsl.test.functions.order
+
+type ClassB:
+    attr ClassA (1..1)
+
+func MyFunc:
+    inputs:
+        arg ClassB (1..1)
+    output:
+        out ClassA (1..1)
+    set out:
+        arg->attr
+
+type ClassA:
+    val string (1..1)
+
+func TestListFunction:
+    inputs:
+        list1 number (1..*)
+        multiplier number (1..1)
+    output:
+        result number (1..*)
+    set result:
+        list1 extract item * multiplier
+

@@ -1,0 +1,65 @@
+namespace rosetta_dsl.test.model.with_meta_operation : <"Tests for with-meta operation on basic, enum and complex types">
+
+// -------------------------------------------------------------------------
+// Basic type: string with scheme
+// -------------------------------------------------------------------------
+
+func AddSchemeToString:
+    inputs:
+        val string (0..1)
+        schemeVal string (0..1)
+    output:
+        result string (0..1)
+            [metadata scheme]
+    set result:
+        val with-meta { scheme: schemeVal }
+
+// -------------------------------------------------------------------------
+// Basic type: string with id (key)
+// -------------------------------------------------------------------------
+
+func AddIdToString:
+    inputs:
+        val string (0..1)
+        idVal string (0..1)
+    output:
+        result string (0..1)
+            [metadata id]
+    set result:
+        val with-meta { id: idVal }
+
+// -------------------------------------------------------------------------
+// Enum type: enum with scheme
+// -------------------------------------------------------------------------
+
+enum CurrencyEnum:
+    USD
+    EUR
+    GBP
+
+func AddSchemeToEnum:
+    inputs:
+        val CurrencyEnum (0..1)
+        schemeVal string (0..1)
+    output:
+        result CurrencyEnum (0..1)
+            [metadata scheme]
+    set result:
+        val with-meta { scheme: schemeVal }
+
+// -------------------------------------------------------------------------
+// Complex type: object with location (scoped key)
+// -------------------------------------------------------------------------
+
+type Quantity:
+    value number (1..1)
+
+func AddLocationToQuantity:
+    inputs:
+        val Quantity (0..1)
+        keyVal string (0..1)
+    output:
+        result Quantity (0..1)
+            [metadata location]
+    set result:
+        val with-meta { location: keyVal }

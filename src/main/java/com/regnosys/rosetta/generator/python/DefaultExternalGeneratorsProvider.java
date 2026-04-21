@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python;
 
 import java.util.Arrays;
@@ -11,6 +15,9 @@ import com.regnosys.rosetta.generator.external.ExternalGenerators;
 
 public final class DefaultExternalGeneratorsProvider implements Provider<ExternalGenerators> {
 
+	/**
+	 * The DefaultExternalGeneratorsProvider.
+	 */
 	@Inject
 	private PythonCodeGenerator pythonGenerator;
 
@@ -19,8 +26,14 @@ public final class DefaultExternalGeneratorsProvider implements Provider<Externa
 		return new DefaultGenerators();
 	}
 
+	/**
+	 * The DefaultGenerators class.
+	 */
 	private final class DefaultGenerators implements ExternalGenerators {
 
+		/**
+		 * The list of generators.
+		 */
 		private List<ExternalGenerator> gens = Arrays.asList(pythonGenerator);
 
 		@Override

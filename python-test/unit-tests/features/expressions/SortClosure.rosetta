@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.expressions.sort_closure
+
+type SortItem:
+    val1 int (1..1)
+    val2 int (1..1)
+
+func SortItems:
+    inputs: items SortItem (0..*)
+    output: result SortItem (0..*)
+    set result:
+        items sort [ item -> val1 ]

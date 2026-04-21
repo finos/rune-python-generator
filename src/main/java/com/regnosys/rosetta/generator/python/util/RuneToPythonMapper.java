@@ -1,23 +1,30 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.util;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import com.regnosys.rosetta.types.RAttribute;
-import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
-
-import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
-import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.rosetta.RosettaTypeAlias;
+import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.REnumType;
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.builtin.RNumberType;
 
 /**
  * A utility class for mapping Rune (Rosetta) types and attributes to their
  * corresponding Python types.
  * This class also handles name mangling for Python keywords and reserved words.
  */
-public class RuneToPythonMapper {
+public final class RuneToPythonMapper {
+    /**
+     * The set of Python keywords and soft keywords.
+     */
     private static final Set<String> PYTHON_KEYWORDS = new HashSet<>();
 
     /**
@@ -93,29 +100,17 @@ public class RuneToPythonMapper {
      * Inner private function to convert from Rosetta type to Python type.
      * Returns null if no matching type.
      */
-    private static String toPythonBasicTypeInnerFunction(String rosettaType) {
-        switch (rosettaType) {
-            case "string":
-            case "eventType":
-            case "calculation":
-            case "productType":
-                return "str";
-            case "time":
-                return "datetime.time";
-            case "date":
-                return "datetime.date";
-            case "dateTime":
-            case "zonedDateTime":
-                return "datetime.datetime";
-            case "number":
-                return "Decimal";
-            case "boolean":
-                return "bool";
-            case "int":
-                return "int";
-            default:
-                return null;
-        }
+    private static String toPythonBasicTypeInnerFunction(String typeName) {
+        return switch (typeName) {
+            case "string", "eventType", "calculation", "productType" -> "str";
+            case "time" -> "datetime.time";
+            case "date" -> "datetime.date";
+            case "dateTime", "zonedDateTime" -> "datetime.datetime";
+            case "number" -> "Decimal";
+            case "boolean" -> "bool";
+            case "int" -> "int";
+            default -> null;
+        };
     }
 
     /**
@@ -126,31 +121,30 @@ public class RuneToPythonMapper {
      * @return the Python type with meta, or the original attribute type if no match
      */
     public static String getAttributeTypeWithMeta(String attributeType) {
-        switch (attributeType) {
-            case "str":
-                return "StrWithMeta";
-            case "datetime.time":
-                return "TimeWithMeta";
-            case "datetime.date":
-                return "DateWithMeta";
-            case "datetime.datetime":
-                return "DateTimeWithMeta";
-            case "Decimal":
-                return "NumberWithMeta";
-            case "bool":
-                return "BoolWithMeta";
-            case "int":
-                return "IntWithMeta";
-            default:
-                return attributeType;
+        return switch (attributeType) {
+            case "str" -> "StrWithMeta";
+            case "datetime.time" -> "TimeWithMeta";
+            case "datetime.date" -> "DateWithMeta";
+            case "datetime.datetime" -> "DateTimeWithMeta";
+            case "Decimal" -> "NumberWithMeta";
+            case "bool" -> "BoolWithMeta";
+            case "int" -> "IntWithMeta";
+            default -> attributeType;
+        };
+    }
+
+    public static String getFullyQualifiedName(RosettaNamed rn) {
+        return getFullyQualifiedName(rn, null);
+    }
+
+    public static String getFullyQualifiedName(RosettaNamed rn, String namespacePrefix) {
+        while (rn instanceof RosettaTypeAlias alias && !isRosettaBasicType(alias.getName())) {
+             if (alias.getTypeCall() != null && alias.getTypeCall().getType() != null) {
+                 rn = alias.getTypeCall().getType();
+             } else {
+                 break;
+             }
         }
-    }
-
-    public static String getFullyQualifiedObjectName(RosettaNamed rn) {
-        return getFullyQualifiedObjectName(rn, null);
-    }
-
-    public static String getFullyQualifiedObjectName(RosettaNamed rn, String namespacePrefix) {
         RosettaModel model = (RosettaModel) rn.eContainer();
         if (model == null) {
             throw new RuntimeException("Rosetta model not found for data " + rn.getName());
@@ -161,30 +155,17 @@ public class RuneToPythonMapper {
         }
         String typeName = toPythonBasicTypeInnerFunction(rn.getName());
         if (typeName == null) {
-            String effectiveModelName = applyPrefix(model.getName(), namespacePrefix);
-            String function = (rn instanceof Function) ? ".functions" : "";
-            typeName = effectiveModelName + function + "." + rn.getName();
+            typeName = applyPrefix(model.getName(), namespacePrefix);
+            if (rn instanceof com.regnosys.rosetta.rosetta.simple.Function
+                 || rn instanceof com.regnosys.rosetta.rosetta.simple.FunctionDispatch) {
+                typeName += ".functions";
+            }
+            typeName += "." + rn.getName();
             if (rn instanceof RosettaEnumeration) {
                 typeName += "." + rn.getName();
             }
         }
         return typeName;
-    }
-
-    public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes) {
-        return getBundleObjectName(rn, useQuotes, null);
-    }
-
-    public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes, String namespacePrefix) {
-        String fullyQualifiedObjectName = getFullyQualifiedObjectName(rn, namespacePrefix);
-        if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
-            return fullyQualifiedObjectName;
-        }
-        String bundleName = fullyQualifiedObjectName.replace(".", "_");
-        if (useQuotes) {
-            return "\"" + bundleName + "\"";
-        }
-        return bundleName;
     }
 
     public static String getBundleObjectName(RosettaNamed rn) {
@@ -195,7 +176,31 @@ public class RuneToPythonMapper {
         return getBundleObjectName(rn, false, namespacePrefix);
     }
 
-    private static String applyPrefix(String name, String namespacePrefix) {
+    public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes) {
+        return getBundleObjectName(rn, useQuotes, null);
+    }
+
+    public static String getBundleObjectName(RosettaNamed rn, boolean useQuotes, String namespacePrefix) {
+        String fullyQualifiedObjectName = getFullyQualifiedName(rn, namespacePrefix);
+        if (rn instanceof RosettaEnumeration || isRosettaBasicType(rn.getName())) {
+            return fullyQualifiedObjectName;
+        }
+        String bundleName = PythonCodeGeneratorUtil.toFlattenedName(fullyQualifiedObjectName);
+        if (useQuotes) {
+            return "\"" + bundleName + "\"";
+        }
+        return bundleName;
+    }
+
+    /**
+     * Prepends {@code namespacePrefix} to {@code name} when the prefix is non-blank,
+     * otherwise returns {@code name} unchanged.
+     *
+     * @param name            the base name (e.g. {@code "cdm.event.common"})
+     * @param namespacePrefix the prefix to prepend (e.g. {@code "finos"}), or {@code null}
+     * @return the effective name, with prefix applied when set
+     */
+    public static String applyPrefix(String name, String namespacePrefix) {
         return (namespacePrefix != null && !namespacePrefix.isBlank())
                 ? namespacePrefix + "." + name
                 : name;
@@ -213,22 +218,35 @@ public class RuneToPythonMapper {
     }
 
     /**
-     * Convert from Rune RType to Python type with optional quoting for forward
-     * references.
+     * Convert from Rune RType to Python type.
      *
-     * @param rt        the Rune RType object
-     * @param useQuotes whether to wrap the type name in quotes for forward
-     *                  references
+     * @param rt the Rune RType object
      * @return the Python type name string, or null if rt is null
      */
-    public static String toPythonType(RType rt, boolean useQuotes) {
-        return toPythonType(rt, useQuotes, null);
+    public static String toPythonType(RType rt) {
+        return toPythonType(rt, null);
     }
 
-    public static String toPythonType(RType rt, boolean useQuotes, String namespacePrefix) {
-        if (rt == null)
+    /**
+     * Convert from Rune RType to Python type, applying an optional namespace prefix.
+     *
+     * @param rt              the Rune RType object
+     * @param namespacePrefix the prefix to prepend to the type's namespace, or {@code null}
+     * @return the Python type name string, or null if rt is null
+     */
+    public static String toPythonType(RType rt, String namespacePrefix) {
+        if (rt == null) {
             return null;
-        var pythonType = toPythonBasicTypeInnerFunction(rt.getName());
+        }
+        while (rt instanceof com.regnosys.rosetta.types.RAliasType alias && !isRosettaBasicType(alias.getName())) {
+            rt = alias.getRefersTo();
+        }
+        String typeName = rt.getName();
+        // if it is a number type and it is an integer, then it is an int
+        if (rt instanceof RNumberType numberType && numberType.isInteger()) {
+            typeName = "int";
+        }
+        var pythonType = toPythonBasicTypeInnerFunction(typeName);
         if (pythonType == null) {
             String rtName = rt.getName();
             String effectiveNamespace = applyPrefix(rt.getNamespace().toString(), namespacePrefix);
@@ -236,27 +254,10 @@ public class RuneToPythonMapper {
             pythonType = (rt instanceof REnumType) ? pythonType + "." + rtName : pythonType;
 
             if (!isRosettaBasicType(rt) && !(rt instanceof REnumType)) {
-                pythonType = getFlattenedTypeName(rt, pythonType);
-                if (useQuotes) {
-                    pythonType = "\"" + pythonType + "\"";
-                }
+                pythonType = PythonCodeGeneratorUtil.toFlattenedName(pythonType);
             }
         }
         return pythonType;
-    }
-
-    /**
-     * Convert from Rune RType to Python type.
-     *
-     * @param rt the Rune RType object
-     * @return the Python type name string, or null if rt is null
-     */
-    public static String toPythonType(RType rt) {
-        return toPythonType(rt, false, null);
-    }
-
-    public static String toPythonType(RType rt, String namespacePrefix) {
-        return toPythonType(rt, false, namespacePrefix);
     }
 
     /**
@@ -304,29 +305,20 @@ public class RuneToPythonMapper {
      *                        "Optional[...]").
      * @return the formatted Python type string
      */
-    public static String formatPythonType(String baseType, int min, int max, boolean isInputArgument) {
+    public static String formatCardinality(String baseType,
+        int min,
+        int max,
+        boolean isInputArgument) {
         String type = baseType;
-        boolean isList = (max > 1 || max == -1 || max == 0);
 
-        if (isList) {
-            type = "list[" + type + "]";
+        if (max > 1 || max == -1 || max == 0) {
+            type = "list[" + type + " | None]";
         }
 
         if (min == 0) {
-            if (isInputArgument) {
-                type = type + " | None";
-            } else {
-                type = "Optional[" + type + "]";
-            }
+            type = (isInputArgument) ? type + " | None" : "Optional[" + type + "]";
         }
         return type;
-    }
-
-    public static String getFlattenedTypeName(RType type, String typeName) {
-        if (isRosettaBasicType(type) || type instanceof REnumType) {
-            return typeName;
-        }
-        return typeName.replace('.', '_');
     }
 
     /**

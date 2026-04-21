@@ -1,0 +1,10 @@
+namespace rosetta_dsl.test.enum_qualified_path_name : <"generate Python unit tests from Rosetta.">
+
+enum SimpleEnum:
+    A
+    B
+
+type EnumTestType:
+    ett SimpleEnum(1..1)
+    condition Test:
+        ett = SimpleEnum.B

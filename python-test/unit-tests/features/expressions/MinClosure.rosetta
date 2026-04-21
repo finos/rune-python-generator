@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.expressions.min_closure
+
+type MinItem:
+    val1 int (1..1)
+    val2 int (1..1)
+
+func GetMinItem:
+    inputs: items MinItem (0..*)
+    output: result MinItem (0..1)
+    set result:
+        items min [ item -> val1 ]

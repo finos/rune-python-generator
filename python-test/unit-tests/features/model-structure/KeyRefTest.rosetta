@@ -1,0 +1,18 @@
+namespace rosetta_dsl.test.model.key_ref : <"generate Python unit tests from Rosetta.">
+
+type ANoRef:
+    aValue int (1..1)
+
+type AKey:
+    [metadata key]
+    aValue int (1..1)
+
+type BRef:
+    aKey AKey (1..1) 
+        [metadata reference]
+
+type BNoRefAKey:
+    aKey AKey (1..1) 
+
+type BNoRefANoRef:
+    aKey ANoRef (1..1) 

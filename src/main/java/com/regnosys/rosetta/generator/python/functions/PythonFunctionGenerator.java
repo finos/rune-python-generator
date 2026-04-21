@@ -1,136 +1,214 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.functions;
 
-import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.rosetta.RosettaEnumeration;
-import com.regnosys.rosetta.rosetta.RosettaFeature;
-import com.regnosys.rosetta.rosetta.RosettaTyped;
-import com.regnosys.rosetta.rosetta.simple.*;
-import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.GraphCycleProhibitedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.regnosys.rosetta.rosetta.RosettaNamed;
-import com.regnosys.rosetta.rosetta.expression.*;
-import com.regnosys.rosetta.types.RObjectFactory;
-import org.jgrapht.graph.GraphCycleProhibitedException;
 
-import java.util.*;
-
+import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
-import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.generator.python.expressions.PythonExpressionScope;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.generator.util.RosettaFunctionExtensions;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
+import com.regnosys.rosetta.rosetta.RosettaType;
+import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
+import com.regnosys.rosetta.rosetta.simple.Annotated;
+import com.regnosys.rosetta.rosetta.simple.AssignPathRoot;
+import com.regnosys.rosetta.rosetta.simple.Attribute;
+import com.regnosys.rosetta.rosetta.simple.Data;
+import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.rosetta.simple.Operation;
+import com.regnosys.rosetta.rosetta.simple.Segment;
+import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
+import com.regnosys.rosetta.types.RObjectFactory;
 
-public class PythonFunctionGenerator {
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
+public final class PythonFunctionGenerator {
+
+    /**
+     * The logger.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator.class);
 
+    /**
+     * The function dependency provider.
+     */
     @Inject
     private PythonFunctionDependencyProvider functionDependencyProvider;
 
-    @Inject
-    private PythonExpressionGenerator expressionGenerator;
 
+
+    /**
+     * The object factory.
+     */
     @Inject
     private RObjectFactory rObjectFactory;
 
     /**
-     * Generate Python from the collection of Rosetta functions.
-     * 
-     * @param rFunctions the collection of Rosetta functions to generate
-     * @return a Map of all the generated Python indexed by the file name
+     * The Rosetta function extensions.
      */
+    @Inject
+    private RosettaFunctionExtensions rosettaFunctionExtensions;
 
-    public Map<String, String> generate(Iterable<Function> rFunctions,
-            PythonCodeGeneratorContext context, String namespacePrefix) {
+    /** Provider for expression generator instances. */
+    @Inject
+    private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
+
+    /**
+     * Scan Rosetta functions to build dependency graph.
+     *
+     * @param functions the collection of Rosetta functions to generate
+     * @param context   the Python code generator context
+     */
+    public void scan(Iterable<Function> functions, PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
-        if (dependencyDAG == null) {
-            throw new RuntimeException("Dependency DAG not initialized");
-        }
+        for (Function function : functions) {
+            String functionName = context.getFullyQualifiedName(function);
+            dependencyDAG.addVertex(functionName);
+            context.addFunctionName(functionName);
 
-        Set<String> enumImports = context.getEnumImports();
-        if (enumImports == null) {
-            throw new RuntimeException("Enum imports not initialized");
-        }
+            if (isCodeImplementation(function)) {
+                context.addNativeFunctionName(functionName);
+            }
 
+            addFunctionDependencies(dependencyDAG, functionName, function, context);
+        }
+    }
+
+    public Map<String, String> generate(Iterable<Function> functions, PythonCodeGeneratorContext context) {
         Map<String, String> result = new HashMap<>();
 
-        for (Function rf : rFunctions) {
-            RosettaModel model = (RosettaModel) rf.eContainer();
-            if (model == null) {
-                LOGGER.warn("Function {} has no container, skipping", rf.getName());
-                continue;
-            }
-            try {
-                String pythonFunction = generateFunction(rf, enumImports, namespacePrefix);
-
-                String functionName = RuneToPythonMapper.getFullyQualifiedObjectName(rf, namespacePrefix);
-                result.put(functionName, pythonFunction);
-                dependencyDAG.addVertex(functionName);
-                context.addFunctionName(functionName);
-
-                addFunctionDependencies(dependencyDAG, functionName, rf, namespacePrefix);
-            } catch (Exception ex) {
-                LOGGER.error("Exception occurred generating rf {}", rf.getName(), ex);
-                throw new RuntimeException("Error generating Python for function " + rf.getName(), ex);
-            }
+        for (Function function : functions) {
+            processFunction(function, context, result);
         }
+        // native_registry imports are already included in createImports()
         return result;
     }
 
-    private void addFunctionDependencies(Graph<String, DefaultEdge> dependencyDAG, String functionName, Function rf,
-            String namespacePrefix) {
-        Set<RosettaNamed> dependencies = new HashSet<>();
-
-        rf.getInputs().forEach(input -> {
-            if (input.getTypeCall() != null && input.getTypeCall().getType() != null) {
-                dependencies.add(input.getTypeCall().getType());
-            }
-        });
-        if (rf.getOutput() != null && rf.getOutput().getTypeCall() != null
-                && rf.getOutput().getTypeCall().getType() != null) {
-            dependencies.add(rf.getOutput().getTypeCall().getType());
+    private void processFunction(Function function, PythonCodeGeneratorContext context,
+            Map<String, String> result) {
+        RosettaModel model = (RosettaModel) function.eContainer();
+        if (model == null) {
+            LOGGER.warn("Function {} has no container, skipping", function.getName());
+            return;
         }
 
-        Iterator<?> allContents = rf.eAllContents();
-        while (allContents.hasNext()) {
-            Object content = allContents.next();
-            if (content instanceof RosettaSymbolReference ref) {
+        try {
+            String pythonFunction = generateFunction(function, context);
+            String functionName = context.getFullyQualifiedName(function);
+            result.put(functionName, pythonFunction);
+        } catch (Exception ex) {
+            LOGGER.error("Exception occurred generating function {}", function.getName(), ex);
+            throw new RuntimeException(
+                "Error generating Python for function " + function.getName(), ex
+            );
+        }
+    }
+
+    private void collectNamedDependencies(RosettaExpression expression, Set<RosettaNamed> dependencies) {
+        if (expression == null) {
+            return;
+        }
+        switch (expression) {
+            case RosettaSymbolReference ref -> {
                 if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
                         || ref.getSymbol() instanceof RosettaEnumeration) {
                     dependencies.add((RosettaNamed) ref.getSymbol());
                 }
-            } else if (content instanceof RosettaConstructorExpression cons) {
+                ref.getArgs().forEach(arg -> collectNamedDependencies(arg, dependencies));
+            }
+            case RosettaConstructorExpression cons -> {
                 if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
                     dependencies.add(cons.getTypeCall().getType());
+                }
+                cons.getValues().forEach(val -> collectNamedDependencies(val.getValue(), dependencies));
+            }
+            default -> {
+            }
+        }
+        expression.eContents().forEach(child -> {
+            if (child instanceof RosettaExpression childExpr) {
+                collectNamedDependencies(childExpr, dependencies);
+            }
+        });
+    }
+
+    private void addFunctionDependencies(
+        Graph<String, DefaultEdge> dependencyDAG,
+        String functionName,
+        Function function,
+        PythonCodeGeneratorContext context
+    ) {
+        Set<RosettaNamed> dependencies = new HashSet<>();
+
+        DependencySet dependencySet = collectDependencyRoots(function);
+
+        for (RosettaNamed named : dependencySet.namedRoots()) {
+            dependencies.add(named);
+        }
+
+        for (RosettaExpression expression : dependencySet.expressionRoots()) {
+            collectNamedDependencies(expression, dependencies);
+        }
+
+        // Also collect types from nested assign paths (used in ObjectBuilder initialization preamble)
+        for (Operation operation : function.getOperations()) {
+            if (operation.getPath() != null) {
+                Segment segment = operation.getPath();
+                while (segment != null) {
+                    if (segment.getFeature() instanceof Attribute pathAttr) {
+                        if (pathAttr.getTypeCall() != null && pathAttr.getTypeCall().getType() != null) {
+                            RosettaNamed attrType = (RosettaNamed) pathAttr.getTypeCall().getType();
+                            if (attrType instanceof Data || attrType instanceof Function) {
+                                dependencies.add(attrType);
+                            }
+                        }
+                    }
+                    segment = segment.getNext();
                 }
             }
         }
 
         for (RosettaNamed dep : dependencies) {
             String depName = "";
-            if (dep instanceof Data) {
-                depName = applyPrefix(rObjectFactory.buildRDataType((Data) dep).getQualifiedName().toString(),
-                        namespacePrefix);
-            } else if (dep instanceof Function) {
-                depName = RuneToPythonMapper.getFullyQualifiedObjectName((Function) dep, namespacePrefix);
-            } else if (dep instanceof RosettaEnumeration) {
-                depName = applyPrefix(
-                        rObjectFactory.buildREnumType((RosettaEnumeration) dep).getQualifiedName().toString(),
-                        namespacePrefix);
+            switch (dep) {
+                case Data data -> depName = context.applyPrefix(
+                    rObjectFactory.buildRDataType(data).getQualifiedName().toString());
+                case Function function1 -> depName = context.getFullyQualifiedName(function1);
+                case RosettaEnumeration rosettaEnumeration -> depName = rObjectFactory
+                    .buildREnumType(rosettaEnumeration)
+                    .getQualifiedName()
+                    .toString();
+                default -> {
+                }
             }
 
             if (!depName.isEmpty() && !functionName.equals(depName)) {
                 addDependency(dependencyDAG, functionName, depName);
             }
         }
-    }
-
-    private static String applyPrefix(String name, String namespacePrefix) {
-        return (namespacePrefix != null && !namespacePrefix.isBlank())
-                ? namespacePrefix + "." + name
-                : name;
     }
 
     private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
@@ -144,14 +222,52 @@ public class PythonFunctionGenerator {
         }
     }
 
-    private String generateFunction(Function rf, Set<String> enumImports, String namespacePrefix) {
-        if (rf == null) {
+    private boolean isCodeImplementation(Function function) {
+        if (function == null) {
             throw new RuntimeException("Function is null");
         }
-        if (enumImports == null) {
+
+        // 1. Check for explicit annotation first (highest priority)
+        Annotated annotated = (Annotated) function;
+        boolean hasCodeImplementationAnnotation = annotated.getAnnotations()
+                .stream()
+                .map(aRef -> aRef.getAnnotation())
+                .anyMatch(a -> "codeImplementation".equals(a.getName()));
+        if (hasCodeImplementationAnnotation) {
+            return true;
+        }
+
+        // 2. Implicit indicator: no operations.
+        // We exclude Enum Dispatchers (headers) because those have a generated
+        // 'match' body and should not default to native execution unless
+        // explicitly forced via the annotation.
+        return function.getOperations().isEmpty()
+            && !rosettaFunctionExtensions.handleAsEnumFunction(function);
+    }
+
+
+    private String generateFunction(Function function, PythonCodeGeneratorContext context) {
+        if (function == null) {
+            throw new RuntimeException("Function is null");
+        }
+        String functionFQN = context.getFullyQualifiedName(function);
+        String pythonName = context.getStandaloneClasses().contains(functionFQN)
+                ? function.getName()
+                : context.getBundleObjectName(function);
+        return generateFunctionBody(function, pythonName, context);
+    }
+
+    private String generateFunctionBody(Function function, String pythonName, PythonCodeGeneratorContext context) {
+        if (context.getEnumImports() == null) {
             throw new RuntimeException("Enum imports is null");
         }
-        enumImports.addAll(collectFunctionDependencies(rf, namespacePrefix));
+        Set<String> funcDeps = collectFunctionDependencies(function, context);
+        context.getEnumImports().addAll(funcDeps);
+        String functionFQN = context.getFullyQualifiedName(function);
+        context.getFunctionEnumImports().put(functionFQN, funcDeps);
+
+        PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
+        expressionGenerator.setContext(context);
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -159,62 +275,143 @@ public class PythonFunctionGenerator {
 
         writer.appendLine("@replaceable");
         writer.appendLine("@validate_call");
-        writer.appendLine("def " + RuneToPythonMapper.getBundleObjectName(rf, namespacePrefix)
-                + generateInputs(rf, namespacePrefix) + ":");
+        writer.appendLine("def " + pythonName + generateInputs(function, context) + ":");
         writer.indent();
 
-        writer.appendBlock(generateDescription(rf, namespacePrefix));
+        writer.appendBlock(generateDescription(function, context));
 
-        if (!rf.getConditions().isEmpty()) {
-            writer.appendLine("_pre_registry = {}");
-        }
-        if (!rf.getPostConditions().isEmpty()) {
-            writer.appendLine("_post_registry = {}");
-        }
         writer.appendLine("self = inspect.currentframe()");
         writer.appendLine("");
-        if (rf.getConditions().isEmpty()) {
+        Iterable<Attribute> inputs = rosettaFunctionExtensions.getInputs(function);
+        if (inputs.iterator().hasNext()) {
+            for (Attribute input : inputs) {
+                writer.appendLine(input.getName() + " = rune_cow(" + input.getName() + ")");
+            }
             writer.appendLine("");
         }
 
-        writer.appendBlock(generateConditions(rf));
+        writer.appendBlock(generateConditions(function, expressionGenerator));
+        writer.appendBlock(generateAlias(function, expressionGenerator));
 
-        int[] level = { 0 };
-        generateAlias(writer, rf, level);
-        generateOperations(writer, rf, level, namespacePrefix);
-        generateOutput(writer, rf);
+        boolean isCodeImplementation = isCodeImplementation(function);
+        boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
+
+        if (isDispatcher) {
+            writer.appendBlock(generateDispatchLogic(function, pythonName, isCodeImplementation, context));
+        } else if (isCodeImplementation) {
+            writer.appendLine(generateNativeFunctionCall(function, context));
+        } else {
+            writer.appendBlock(generateOperations(function, context, expressionGenerator));
+        }
+
+        writer.appendBlock(generateOutput(function, isCodeImplementation, expressionGenerator));
 
         writer.unindent();
         writer.newLine();
 
+        if (isDispatcher) {
+            writer.appendBlock(generateSpecializations(function, pythonName, context));
+        }
+
         return writer.toString();
     }
 
-    private String generateInputs(Function function, String namespacePrefix) {
-        StringBuilder result = new StringBuilder("(");
-        List<Attribute> inputs = function.getInputs();
-        for (int i = 0; i < inputs.size(); i++) {
-            Attribute input = inputs.get(i);
-            String inputBundleName = RuneToPythonMapper.getBundleObjectName(input.getTypeCall().getType(),
-                    namespacePrefix);
-            String inputType = RuneToPythonMapper.formatPythonType(
-                    inputBundleName,
-                    input.getCard().getInf(),
-                    input.getCard().getSup(),
-                    true);
-            result.append(input.getName()).append(": ").append(inputType);
+    private String generateDispatchLogic(Function function, String pythonName, boolean isCodeImplementation, PythonCodeGeneratorContext context) {
+        PythonCodeWriter writer = new PythonCodeWriter();
 
-            if (i < inputs.size() - 1) {
-                result.append(", ");
-            }
+        Attribute enumInput = rosettaFunctionExtensions.getInputs(function).stream()
+                .filter(input -> input.getTypeCall().getType() instanceof RosettaEnumeration)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Dispatcher " + function.getName() + " must have at least one enumeration input"));
+
+        String enumParam = enumInput.getName();
+        String arguments = function.getInputs().stream()
+                .map(RosettaNamed::getName)
+                .collect(Collectors.joining(", "));
+
+        List<com.regnosys.rosetta.rosetta.simple.FunctionDispatch> specializations = getSortedSpecializations(function);
+
+        writer.appendLine("match " + enumParam + ":");
+        writer.indent();
+
+        for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
+            String enumValue = EnumHelper.convertValue(spec.getValue().getValue());
+            String specName = "_" + pythonName + "_" + enumValue;
+            writer.appendLine("case "
+                + context.getFullyQualifiedName(spec.getValue().getEnumeration())
+                + "."
+                + enumValue
+                + ":");
+            writer.indent();
+            writer.appendLine("return " + specName + "(" + arguments + ")");
+            writer.unindent();
         }
-        result.append(") -> ");
-        Attribute output = function.getOutput();
+
+        writer.appendLine("case _:");
+        writer.indent();
+        if (isCodeImplementation) {
+             writer.appendLine(generateNativeFunctionCall(function, context));
+             writer.appendLine("return " + function.getOutput().getName());
+        } else {
+             writer.appendLine("raise ValueError(f\"Enum value {" + enumParam + "} not implemented for " + function.getName() + "\")");
+        }
+        writer.unindent();
+        writer.unindent();
+        return writer.toString();
+    }
+
+    private String generateSpecializations(Function function, String pythonName, PythonCodeGeneratorContext context) {
+        PythonCodeWriter writer = new PythonCodeWriter();
+
+        List<com.regnosys.rosetta.rosetta.simple.FunctionDispatch> specializations = getSortedSpecializations(function);
+
+        for (com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec : specializations) {
+            String enumValue = EnumHelper.convertValue(spec.getValue().getValue());
+            String specName = "_" + pythonName + "_" + enumValue;
+            writer.appendBlock(generateFunctionBody(spec, specName, context));
+        }
+        return writer.toString();
+    }
+
+    private List<com.regnosys.rosetta.rosetta.simple.FunctionDispatch> getSortedSpecializations(Function function) {
+        return java.util.stream.StreamSupport
+                .stream(rosettaFunctionExtensions.getDispatchingFunctions(function).spliterator(), false)
+                .sorted(java.util.Comparator.comparing(f -> f.getValue().getValue().getName()))
+                .collect(Collectors.toList());
+    }
+
+    private String generateNativeFunctionCall(Function function, PythonCodeGeneratorContext context) {
+        String outputName = function.getOutput().getName();
+        String qualifiedName = context.getRuneQualifiedName(function);
+        String arguments = function.getInputs().stream()
+                .map(RosettaNamed::getName)
+                .collect(Collectors.joining(", "));
+
+        return String.format("%s = rune_execute_native('%s'%s)",
+                outputName,
+                qualifiedName,
+                arguments.isEmpty() ? "" : ", " + arguments);
+    }
+
+    private String generateInputs(Function function, PythonCodeGeneratorContext context) {
+        String inputs = rosettaFunctionExtensions.getInputs(function).stream()
+                .map(input -> {
+                    String inputTypeName = getTypeNameForContext(input.getTypeCall().getType(), context);
+                    String inputType = RuneToPythonMapper.formatCardinality(
+                            inputTypeName,
+                            input.getCard().getInf(),
+                            input.getCard().getSup(),
+                            true);
+                    return input.getName() + ": " + inputType;
+                })
+                .collect(Collectors.joining(", "));
+
+        StringBuilder result = new StringBuilder("(").append(inputs).append(") -> ");
+        Attribute output = rosettaFunctionExtensions.getOutput(function);
         if (output != null) {
-            String outputBundleName = RuneToPythonMapper.getBundleObjectName(output.getTypeCall().getType(),
-                    namespacePrefix);
-            String outputType = RuneToPythonMapper.formatPythonType(
-                    outputBundleName,
+            String outputTypeName = getTypeNameForContext(output.getTypeCall().getType(), context);
+            String outputType = RuneToPythonMapper.formatCardinality(
+                    outputTypeName,
                     1, // Force min=1 to suppress Optional/| None for return types
                     output.getCard().getSup(),
                     true);
@@ -225,13 +422,26 @@ public class PythonFunctionGenerator {
         return result.toString();
     }
 
-    private void generateOutput(PythonCodeWriter writer, Function function) {
-        Attribute output = function.getOutput();
+    private String getTypeNameForContext(RosettaNamed type, PythonCodeGeneratorContext context) {
+        if (type instanceof RosettaEnumeration || RuneToPythonMapper.isRosettaBasicType(type.getName())) {
+            return context.getBundleObjectName(type);
+        }
+        String fqn = context.getFullyQualifiedName(type);
+        if (context.getStandaloneClasses().contains(fqn)) {
+            return type.getName();
+        }
+        return context.getBundleObjectName(type);
+    }
+
+    private String generateOutput(Function function, boolean isCodeImplementation,
+            PythonExpressionGenerator expressionGenerator) {
+        Attribute output = rosettaFunctionExtensions.getOutput(function);
         if (output != null) {
-            if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty()) {
+            PythonCodeWriter writer = new PythonCodeWriter();
+            if (function.getOperations().isEmpty() && function.getShortcuts().isEmpty() && !isCodeImplementation) {
                 writer.appendLine(output.getName() + " = rune_resolve_attr(self, \"" + output.getName() + "\")");
             }
-            String postConds = generatePostConditions(function);
+            String postConds = generatePostConditions(function, expressionGenerator);
             if (!postConds.isEmpty()) {
                 writer.appendLine("");
                 writer.appendBlock(postConds);
@@ -242,10 +452,13 @@ public class PythonFunctionGenerator {
             }
 
             writer.appendLine("return " + output.getName());
+            return writer.toString();
         }
+        return "";
     }
 
-    private String generateDescription(Function function, String namespacePrefix) {
+
+    private String generateDescription(Function function, PythonCodeGeneratorContext context) {
         List<Attribute> inputs = function.getInputs();
         Attribute output = function.getOutput();
         String description = function.getDefinition();
@@ -259,9 +472,10 @@ public class PythonFunctionGenerator {
         writer.appendLine("Parameters");
         writer.appendLine("----------");
         for (Attribute input : inputs) {
-            String paramName = RuneToPythonMapper.formatPythonType(
-                    RuneToPythonMapper.getFullyQualifiedObjectName(input.getTypeCall().getType(), namespacePrefix),
-                    1, // Force min=1 to match legacy docstring format (no Optional)
+            String qName = context.getFullyQualifiedName(input.getTypeCall().getType());
+            String paramName = RuneToPythonMapper.formatCardinality(
+                    qName,
+                    1, // Force min=1 for docstrings
                     input.getCard().getSup(),
                     true);
             writer.appendLine(input.getName() + " : " + paramName);
@@ -273,9 +487,10 @@ public class PythonFunctionGenerator {
         writer.appendLine("Returns");
         writer.appendLine("-------");
         if (output != null) {
-            String paramName = RuneToPythonMapper.formatPythonType(
-                    RuneToPythonMapper.getFullyQualifiedObjectName(output.getTypeCall().getType(), namespacePrefix),
-                    1, // Force min=1 to match legacy docstring format (no Optional)
+            String qName = context.getFullyQualifiedName(output.getTypeCall().getType());
+            String paramName = RuneToPythonMapper.formatCardinality(
+                    qName,
+                    1, // Force min=1 for docstrings
                     output.getCard().getSup(),
                     true);
 
@@ -288,50 +503,85 @@ public class PythonFunctionGenerator {
         return writer.toString();
     }
 
-    private Set<String> collectFunctionDependencies(Function rf, String namespacePrefix) {
+    private Set<String> collectFunctionDependencies(Function function, PythonCodeGeneratorContext context) {
         Set<String> enumImports = new HashSet<>();
-        rf.getShortcuts().forEach(
-                shortcut -> functionDependencyProvider.addDependencies(shortcut.getExpression(), enumImports,
-                        namespacePrefix));
-        rf.getOperations().forEach(
-                operation -> functionDependencyProvider.addDependencies(operation.getExpression(), enumImports,
-                        namespacePrefix));
+        DependencySet dependencySet = collectDependencyRoots(function);
 
-        List<Condition> allConditions = new ArrayList<>(rf.getConditions());
-        allConditions.addAll(rf.getPostConditions());
-        allConditions.forEach(
-                condition -> functionDependencyProvider.addDependencies(condition.getExpression(), enumImports,
-                        namespacePrefix));
-
-        rf.getInputs().forEach(input -> {
-            if (input.getTypeCall() != null && input.getTypeCall().getType() != null) {
-                functionDependencyProvider.addDependencies(input.getTypeCall().getType(), enumImports, namespacePrefix);
-            }
-        });
-
-        if (rf.getOutput() != null && rf.getOutput().getTypeCall() != null
-                && rf.getOutput().getTypeCall().getType() != null) {
-            functionDependencyProvider.addDependencies(rf.getOutput().getTypeCall().getType(), enumImports,
-                    namespacePrefix);
+        String sourceNamespace = context.applyPrefix(function.getModel().getName());
+        for (RosettaNamed named : dependencySet.namedRoots()) {
+            functionDependencyProvider.addDependencies(named, enumImports, sourceNamespace, context);
+        }
+        for (RosettaExpression expression : dependencySet.expressionRoots()) {
+            functionDependencyProvider.addDependencies(expression, enumImports, sourceNamespace, context);
         }
         return enumImports;
     }
 
-    private String generateConditions(Function function) {
-        if (!function.getConditions().isEmpty()) {
-            PythonCodeWriter writer = new PythonCodeWriter();
-            writer.appendLine("# conditions");
-            writer.appendBlock(
-                    expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry"));
-            writer.appendLine("# Execute all registered conditions");
-            writer.appendLine("rune_execute_local_conditions(_pre_registry, 'Pre-condition')");
-            writer.appendLine("");
-            return writer.toString();
+    private DependencySet collectDependencyRoots(Function function) {
+        List<RosettaNamed> namedRoots = new ArrayList<>();
+        List<RosettaExpression> expressionRoots = new ArrayList<>();
+
+        // Inputs and outputs
+        rosettaFunctionExtensions.getInputs(function).forEach(input -> {
+            if (input.getTypeCall() != null && input.getTypeCall().getType() != null) {
+                namedRoots.add((RosettaNamed) input.getTypeCall().getType());
+            }
+        });
+        Attribute output = rosettaFunctionExtensions.getOutput(function);
+        if (output != null && output.getTypeCall() != null && output.getTypeCall().getType() != null) {
+             namedRoots.add((RosettaNamed) output.getTypeCall().getType());
         }
-        return "";
+
+        // Dispatching enums
+        if (function instanceof com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec) {
+            if (spec.getValue() != null && spec.getValue().getEnumeration() != null) {
+                namedRoots.add(spec.getValue().getEnumeration());
+            }
+        }
+        if (rosettaFunctionExtensions.handleAsEnumFunction(function)) {
+            rosettaFunctionExtensions.getDispatchingFunctions(function).forEach(spec -> {
+                if (spec.getValue() != null && spec.getValue().getEnumeration() != null) {
+                    namedRoots.add(spec.getValue().getEnumeration());
+                }
+            });
+        }
+
+        // Expressions
+        function.getShortcuts().forEach(s -> expressionRoots.add(s.getExpression()));
+        function.getOperations().forEach(o -> expressionRoots.add(o.getExpression()));
+        function.getConditions().forEach(c -> expressionRoots.add(c.getExpression()));
+        function.getPostConditions().forEach(c -> expressionRoots.add(c.getExpression()));
+
+        return new DependencySet(namedRoots, expressionRoots);
     }
 
-    private String generatePostConditions(Function function) {
+    private record DependencySet(List<RosettaNamed> namedRoots, List<RosettaExpression> expressionRoots) {
+        
+    }
+
+    private String generateConditions(Function function, PythonExpressionGenerator expressionGenerator) {
+        PythonCodeWriter writer = new PythonCodeWriter();
+        PythonCodeWriter conditionsWriter = new PythonCodeWriter();
+        boolean hasConditions = !function.getConditions().isEmpty();
+        if (hasConditions) {
+            writer.appendLine("_pre_registry = {}");
+            conditionsWriter.appendLine("# conditions");
+            conditionsWriter.appendBlock(
+                    expressionGenerator.generateFunctionConditions(function.getConditions(), "_pre_registry"));
+            conditionsWriter.appendLine("# Execute all registered conditions");
+            conditionsWriter.appendLine("rune_execute_local_conditions(_pre_registry, 'Pre-condition')");
+            conditionsWriter.appendLine("");
+        } else {
+            conditionsWriter.appendLine("");
+        }
+        if (!function.getPostConditions().isEmpty()) {
+            writer.appendLine("_post_registry = {}");
+        }
+        writer.appendBlock(conditionsWriter.toString());
+        return writer.toString();
+    }
+
+    private String generatePostConditions(Function function, PythonExpressionGenerator expressionGenerator) {
         if (!function.getPostConditions().isEmpty()) {
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# post-conditions");
@@ -344,138 +594,320 @@ public class PythonFunctionGenerator {
         return "";
     }
 
-    private void generateAlias(PythonCodeWriter writer, Function function, int[] level) {
-        for (ShortcutDeclaration shortcut : function.getShortcuts()) {
-            expressionGenerator.setIfCondBlocks(new ArrayList<>());
-            String expression = expressionGenerator.generateExpression(shortcut.getExpression(), level[0], false);
-
-            for (String block : expressionGenerator.getIfCondBlocks()) {
-                writer.appendBlock(block);
-                writer.newLine();
-            }
-            if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
-                level[0] += expressionGenerator.getIfCondBlocks().size();
-            }
-            writer.appendLine(shortcut.getName() + " = " + expression);
-        }
+    private String generateAlias(Function function,
+        PythonExpressionGenerator expressionGenerator) {
+        return generateAliasFromShortcuts(getEffectiveShortcuts(function), expressionGenerator);
     }
 
-    private void generateOperations(PythonCodeWriter writer, Function function, int[] level, String namespacePrefix) {
-        if (function.getOutput() != null) {
-            List<String> setNames = new ArrayList<>();
+    private String generateAliasFromShortcuts(List<ShortcutDeclaration> shortcuts,
+        PythonExpressionGenerator expressionGenerator) {
+        PythonCodeWriter writer = new PythonCodeWriter();
+        for (ShortcutDeclaration shortcut : shortcuts) {
+            PythonExpressionGenerator.ExpressionResult result = expressionGenerator.generate(
+                    shortcut.getExpression(),
+                    PythonExpressionScope.of("self"));
+
+            appendCompanionBlocks(writer, result.companionBlocks());
+            writer.appendLine(shortcut.getName() + " = " + result.expression());
+        }
+        return writer.toString();
+    }
+
+    private List<ShortcutDeclaration> getEffectiveShortcuts(Function function) {
+        List<ShortcutDeclaration> shortcuts = new ArrayList<>(function.getShortcuts());
+        if (function instanceof com.regnosys.rosetta.rosetta.simple.FunctionDispatch spec) {
+            Function main = rosettaFunctionExtensions.getMainFunction(spec);
+            if (main != null) {
+                // Prepend base shortcuts so they are defined first
+                shortcuts.addAll(0, main.getShortcuts());
+            }
+        }
+        return shortcuts;
+    }
+
+    private String generateOperations(Function function,
+        PythonCodeGeneratorContext context,
+        PythonExpressionGenerator expressionGenerator) {
+        if (rosettaFunctionExtensions.getOutput(function) != null) {
+            PythonCodeWriter writer = new PythonCodeWriter();
+            PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();
+
+            // 1. Preamble: Proactive initialization
+            Set<String> seenRoots = new HashSet<>();
+
             for (Operation operation : function.getOperations()) {
                 AssignPathRoot root = operation.getAssignRoot();
-                expressionGenerator.setIfCondBlocks(new ArrayList<>());
-                String expression = expressionGenerator.generateExpression(operation.getExpression(), level[0], false);
+                String rootName = root.getName();
 
-                for (String block : expressionGenerator.getIfCondBlocks()) {
-                    writer.appendBlock(block);
-                    writer.newLine();
+                // 1a. Root initialization on first sight
+                if (!seenRoots.contains(rootName)) {
+                    seenRoots.add(rootName);
+                    if (operation.isAdd() || operation.getPath() != null) {
+                        if (root instanceof Attribute attribute) {
+                            RosettaType type = attribute.getTypeCall().getType();
+                            boolean isEnum = type instanceof RosettaEnumeration;
+                            if (attribute.getCard().isIsMany() || isEnum) {
+                                writer.appendLine(rootName + " = rune_cow([])");
+                                scope.markInitialized(rootName);
+                            } else if (operation.getPath() != null) {
+                                String bundleName = (type instanceof RosettaNamed named)
+                                        ? getTypeNameForContext(named, context)
+                                        : context.getBundleObjectName((RosettaNamed) type);
+                                scope.markAsObjectBuilder(rootName);
+                                writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                            }
+                        } else {
+                            // Handle ShortcutDeclaration or other AssignPathRoots
+                            if (operation.isAdd()) {
+                                writer.appendLine(rootName + " = rune_cow([])");
+                                scope.markInitialized(rootName);
+                            }
+                        }
+                    }
                 }
-                if (!expressionGenerator.getIfCondBlocks().isEmpty()) {
-                    level[0] += expressionGenerator.getIfCondBlocks().size();
-                }
-                if (operation.isAdd()) {
-                    generateAddOperation(writer, root, operation, function, expression, setNames);
-                } else {
-                    generateSetOperation(writer, root, operation, function, expression, setNames, namespacePrefix);
+
+                // 1b. Nested path initialization
+                if (operation.getPath() != null && scope.isObjectBuilder(rootName)) {
+                    initializePathInPreamble(rootName, operation.getPath(), function, writer, scope, context);
                 }
             }
+
+            // 2. Execution: Actual operations
+            for (Operation operation : function.getOperations()) {
+                AssignPathRoot root = operation.getAssignRoot();
+
+                PythonExpressionGenerator.ExpressionResult result = expressionGenerator.generate(
+                        operation.getExpression(),
+                        PythonExpressionScope.of("self"));
+
+                appendCompanionBlocks(writer, result.companionBlocks());
+
+                String expression = result.expression();
+                if (operation.isAdd()) {
+                    writer.appendBlock(generateAddOperation(root, operation, expression, scope, context));
+                } else {
+                    writer.appendBlock(generateSetOperation(root, operation, expression, scope, context));
+                }
+            }
+            // ObjectBuilder import is already included in createImports()
+            return writer.toString();
+        }
+        return "";
+    }
+
+    private String generateDottedPath(Segment path) {
+        return String.join(".", getSegmentNames(path));
+    }
+
+    private String generateSetOperation(
+        AssignPathRoot root,
+        Operation operation,
+        String expression,
+        PythonFunctionGenerationScope scope,
+        PythonCodeGeneratorContext context
+    ) {
+        PythonCodeWriter writer = new PythonCodeWriter();
+        String rootName = root.getName();
+        RosettaType rootType = (root instanceof Attribute attr) ? attr.getTypeCall().getType() : null;
+
+        if (rootType instanceof RosettaEnumeration || operation.getPath() == null) {
+            writer.appendLine(rootName + " = " + expression);
+            scope.markInitialized(rootName);
+        } else {
+            if (!scope.isInitialized(rootName)) {
+                if (rootType != null) {
+                    String bundleName = (rootType instanceof RosettaNamed named)
+                            ? getTypeNameForContext(named, context)
+                            : context.getBundleObjectName((RosettaNamed) rootType);
+                    scope.markAsObjectBuilder(rootName);
+                    writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                }
+            }
+
+            writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
+        }
+        return writer.toString();
+    }
+
+    private void appendCompanionBlocks(PythonCodeWriter writer, List<String> blocks) {
+        for (String block : blocks) {
+            writer.appendBlock(block);
+            writer.newLine();
         }
     }
 
-    private void generateAddOperation(PythonCodeWriter writer, AssignPathRoot root, Operation operation,
-            Function function, String expression, List<String> setNames) {
-        Attribute attribute = (Attribute) root;
+    private String generateAddOperation(
+        AssignPathRoot root,
+        Operation operation,
+        String expression,
+        PythonFunctionGenerationScope scope,
+        PythonCodeGeneratorContext context
+    ) {
+        PythonCodeWriter writer = new PythonCodeWriter();
+        Attribute attribute = root instanceof Attribute ? (Attribute) root : null;
         String rootName = root.getName();
-        if (attribute.getTypeCall().getType() instanceof RosettaEnumeration) {
-            if (!setNames.contains(rootName)) {
-                setNames.add(rootName);
-                writer.appendLine(rootName + " = []");
-            }
+        RosettaType attributeType = attribute != null ? attribute.getTypeCall().getType() : null;
+        if (attributeType == null && attribute != null) {
+            throw new RuntimeException("Attribute type is null for " + rootName);
+        }
+
+        if (attributeType instanceof RosettaEnumeration) {
             writer.appendLine(rootName + ".extend(" + expression + ")");
+        } else if (isMany(operation)) {
+            String path = (operation.getPath() == null) ? "" : "." + generateDottedPath(operation.getPath());
+            writer.appendLine("rune_add_to_list(" + rootName + path + ", " + expression + ")");
         } else {
-            if (!setNames.contains(rootName)) {
-                setNames.add(rootName);
-                writer.appendLine(rootName + " = " + expression);
+            if (!scope.isInitialized(rootName)) {
+                if (operation.getPath() != null) {
+                    String bundleName = (attributeType instanceof RosettaNamed named)
+                            ? getTypeNameForContext(named, context)
+                            : context.getBundleObjectName((RosettaNamed) attributeType);
+                    scope.markAsObjectBuilder(rootName);
+                    writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
+                    writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
+                } else {
+                    writer.appendLine(rootName + " = " + expression);
+                    scope.markInitialized(rootName);
+                }
             } else {
                 if (operation.getPath() == null) {
-                    writer.appendLine(rootName + ".add_rune_attr(self, " + expression + ")");
+                    writer.appendLine(rootName + " = " + expression);
                 } else {
-                    String path = generateAttributesPath(operation.getPath());
-                    writer.appendLine(rootName
-                            + ".add_rune_attr(rune_resolve_attr(rune_resolve_attr(self, "
-                            + rootName
-                            + "), "
-                            + path
-                            + "), "
-                            + expression
-                            + ")");
+                    writer.appendLine(rootName + "." + generateDottedPath(operation.getPath()) + " = " + expression);
                 }
             }
         }
+        return writer.toString();
     }
 
-    private void generateSetOperation(PythonCodeWriter writer, AssignPathRoot root, Operation operation,
-            Function function, String expression, List<String> setNames, String namespacePrefix) {
-        Attribute attributeRoot = (Attribute) root;
-        String equalsSign = " = ";
-        if (attributeRoot.getTypeCall().getType() instanceof RosettaEnumeration || operation.getPath() == null) {
-            writer.appendLine(attributeRoot.getName() + equalsSign + expression);
-        } else {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(attributeRoot.getTypeCall().getType(),
-                    namespacePrefix);
-            if (!setNames.contains(attributeRoot.getName())) {
-                setNames.add(attributeRoot.getName());
-                writer.appendLine(attributeRoot.getName() + equalsSign + "_get_rune_object('"
-                        + bundleName + "', " +
-                        getNextPathElementName(operation.getPath()) + ", "
-                        + buildObject(expression, operation.getPath(), namespacePrefix) + ")");
-            } else {
-                writer.appendLine(attributeRoot.getName() + equalsSign + "set_rune_attr(rune_resolve_attr(self, '"
-                        + attributeRoot.getName()
-                        + "'), " +
-                        generateAttributesPath(operation.getPath()) + ", " + expression + ")");
+    private boolean isMany(Operation operation) {
+        if (operation.getPath() == null) {
+            return operation.getAssignRoot() instanceof Attribute attr && attr.getCard().isIsMany();
+        }
+        Segment current = operation.getPath();
+        while (current.getNext() != null) {
+            current = current.getNext();
+        }
+        return current.getFeature() instanceof Attribute attr && attr.getCard().isIsMany();
+    }
+
+    private void initializePathInPreamble(
+        String rootName,
+        Segment path,
+        Function function,
+        PythonCodeWriter writer,
+        PythonFunctionGenerationScope scope,
+        PythonCodeGeneratorContext context
+    ) {
+        Segment current = path;
+        String currentPath = rootName;
+
+        while (current != null) {
+            String attrName = current.getFeature().getName();
+            currentPath += "." + attrName;
+
+            if (current.getFeature() instanceof Attribute attribute && !scope.isInitialized(currentPath)) {
+                // Determine if this path element is ever first-touched by an 'add'
+                final Segment capturedCurrent = current;
+                boolean needsPreamble = function.getOperations().stream()
+                    .filter(op -> op.getAssignRoot().getName().equals(rootName) && op.getPath() != null)
+                    .filter(op -> isSamePath(path, op.getPath(), capturedCurrent))
+                    .findFirst()
+                    .map(op -> op.isAdd() || op.getPath().getNext() != null)
+                    .orElse(false);
+
+                if (needsPreamble) {
+                    if (attribute.getCard().isIsMany()) {
+                        writer.appendLine(currentPath + " = rune_cow([])");
+                        scope.markInitialized(currentPath);
+                    } else if (current.getNext() != null) {
+                        RosettaType attrType = attribute.getTypeCall().getType();
+                        String bundleName = (attrType instanceof RosettaNamed named)
+                                ? getTypeNameForContext(named, context)
+                                : context.getBundleObjectName((RosettaNamed) attrType);
+                        writer.appendLine(currentPath + " = ObjectBuilder(" + bundleName + ")");
+                        scope.markInitialized(currentPath);
+                    }
+                }
             }
+            current = current.getNext();
         }
     }
 
-    private String generateAttributesPath(Segment path) {
-        Segment currentPath = path;
-        StringBuilder result = new StringBuilder("'");
-        while (currentPath != null) {
-            result.append(currentPath.getFeature().getName());
-            if (currentPath.getNext() != null) {
-                result.append("->");
+    private boolean isSamePath(Segment targetPath, Segment opPath, Segment upToSegment) {
+        Segment t = targetPath;
+        Segment o = opPath;
+        while (t != null && o != null) {
+            if (!t.getFeature().getName().equals(o.getFeature().getName())) {
+                return false;
             }
-            currentPath = currentPath.getNext();
+            if (t == upToSegment) {
+                return true;
+            }
+            t = t.getNext();
+            o = o.getNext();
         }
-        result.append("'");
-        return result.toString();
+        return false;
     }
 
-    private String getNextPathElementName(Segment path) {
-        return (path == null) ? null : "'" + path.getFeature().getName() + "'";
+    private List<String> getSegmentNames(Segment path) {
+        List<String> segments = new ArrayList<>();
+        Segment current = path;
+        while (current != null) {
+            segments.add(current.getFeature().getName());
+            current = current.getNext();
+        }
+        return segments;
     }
 
-    private String buildObject(String expression, Segment path, String namespacePrefix) {
-        if (path == null || path.getNext() == null) {
-            return expression;
+    /**
+     * Tracks the initialization state and metadata of local Python variables within
+     * a function.
+     */
+    private static class PythonFunctionGenerationScope {
+        /** The set of variable names that have been initialized in this scope. */
+        private final HashSet<String> initializedNames = new HashSet<>();
+        /** The set of variable names that are marked as ObjectBuilders. */
+        private final HashSet<String> objectBuilderNames = new HashSet<>();
+
+        /**
+         * Checks if a variable name has been initialized in this scope.
+         * 
+         * @param name the variable name
+         * @return true if initialized, false otherwise
+         */
+        public boolean isInitialized(String name) {
+            return initializedNames.contains(name);
         }
 
-        RosettaFeature feature = path.getFeature();
-        if (feature instanceof RosettaTyped typed) {
-            String bundleName = RuneToPythonMapper.getBundleObjectName(typed.getTypeCall().getType(), namespacePrefix);
-            Segment nextPath = path.getNext();
-            return "_get_rune_object('"
-                    + bundleName
-                    + "', "
-                    + getNextPathElementName(nextPath)
-                    + ", "
-                    + buildObject(expression, nextPath, namespacePrefix)
-                    + ")";
+        /**
+         * Marks a variable name as initialized with a simple value or list.
+         * 
+         * @param name the variable name
+         */
+        public void markInitialized(String name) {
+            initializedNames.add(name);
         }
-        throw new IllegalArgumentException("Cannot build object for feature " + feature.getName() + " of type "
-                + feature.getClass().getSimpleName());
+
+        /**
+         * Marks a variable name as an ObjectBuilder. This will trigger .to_model()
+         * finalization.
+         * 
+         * @param name the variable name
+         */
+        public void markAsObjectBuilder(String name) {
+            objectBuilderNames.add(name);
+            initializedNames.add(name);
+        }
+
+        /**
+         * Checks if a variable name is marked as an ObjectBuilder.
+         *
+         * @param name the variable name
+         * @return true if it's an ObjectBuilder, false otherwise
+         */
+        public boolean isObjectBuilder(String name) {
+            return objectBuilderNames.contains(name);
+        }
     }
 }

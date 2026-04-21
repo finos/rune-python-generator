@@ -1,75 +1,82 @@
-# _Serialization Update_
+# Release Notes
 
-_What is being released?_
+## Current Release
 
-This release adds support for metadata and for serialization / deserialization consistent with the [serialization specifications in CDM issue #3236](https://github.com/finos/common-domain-model/issues/3236)
+> **Runtime Dependency**: this release requires [rune-python-runtime](https://github.com/finos/rune-python-runtime) v2.0.0, which is available on PyPI. The generated `pyproject.toml` declares `rune.runtime>=2.0.0,<3.0.0`.
 
-Also included is support for:
+### 1. Function Support
 
-- circular Type definitions
-- increased testing of operators
-- generating Python across multiple namespaces
-- Command line (CLI) generation of Python from a Rune source file or directory.  To execute the CLI (assuming
-the default process wherein the JAR is built in the target directory): 
+Rune functions are now generated as Python callables. (Issues [#108](https://github.com/finos/rune-python-generator/issues/108), [#144](https://github.com/finos/rune-python-generator/issues/144), [#156](https://github.com/finos/rune-python-generator/issues/156), [#157](https://github.com/finos/rune-python-generator/issues/157))
 
-```bash
- java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s [rune source files] -t [target directory for generated Python]
-```
+- **Comprehensive support**: stepwise object construction (`ObjectBuilder`), enum-based dispatch (`match`), and pre/post conditions are all generated.
+- **Native "hand-crafted" functions**: functions annotated `[codeImplementation]` or with an empty body are bridged to custom Python implementations via `rune_execute_native`. (Issues [#147](https://github.com/finos/rune-python-generator/issues/147), [#158](https://github.com/finos/rune-python-generator/issues/158)) See [NATIVE_FUNCTIONS_INTEGRATION.md](docs/NATIVE_FUNCTIONS_INTEGRATION.md) for integration details.
+- **Side-effect-free pass-by-value inputs**: function parameters are wrapped in a COW (copy-on-write) proxy at call time, ensuring the caller's objects are never mutated by function execution. (Issue [#169](https://github.com/finos/rune-python-generator/issues/169))
+- **Enum-based dispatch**: functions overloaded by enum value are generated as isolated per-case helpers. (Issue [#165](https://github.com/finos/rune-python-generator/issues/165))
 
-## Reading From and Writing To a String
+---
 
-The generated Python code can deserialize and serialize an object.
+### 2. Completion of Support for All Rune Defined Expressions
 
-### Deserializing from a string
+All standard Rune expressions are now generated. (Issues [#7](https://github.com/finos/rune-python-generator/issues/7), [#168](https://github.com/finos/rune-python-generator/issues/168))
 
-To deserialize from a string and create an object of the model specified in the string invoke the function:
+- **Missing collection and list operators**: added support for use of `sort`, `min`, `max`, `reduce`, `distinct`, `flatten`, `reverse`, `sum`, `one-of`, when operating across a list.  All other remaining operators are fully generated.
+- **Implicit closure parameters**: `extract`, `filter`, and `reduce` with no named parameter fall back to the implicit `item` variable (or `a`/`b` for `reduce`).
+- **Closure-based keys**: `sort`, `min`, and `max` with a closure block (e.g., `sort [ item -> price -> amount ]`) are translated to `key=lambda` syntax.
+- **Null / "nothing" propagation**: all collection operators filter `None` values and short-circuit to `None` when the input collection is absent, consistent with the Rune specification.
+- **List comparison null semantics**: `null` values are correctly handled in list comparisons, including pairwise `<>` semantics.
+- **`with-meta`**: inline `with-meta` expressions are translated to type-aware Python — `*WithMeta` constructors for basic types, `EnumWithMetaMixin.deserialize()` for enum types, and `set_meta()` for complex types.
+- **`as-key`**: single and multi-cardinality `as-key` operations are translated to `Reference(x)` and list comprehensions.
 
-`BaseDataClass.rune_deserialize` with the following parameters
+For the full coverage matrix see [RUNE_LANGUAGE_GAPS.md](docs/RUNE_LANGUAGE_GAPS.md).
 
-    rune_json (str): A JSON string.
+---
 
-    validate_model (bool, optional): Validate that the model passses all Rune defined constraints after deserializing.  Setting to False allows for creation of an invalid Model.  Defaults to True.
+### 3. Circular Reference Support
 
-    strict (bool, optional): Ensure that all input types strictly match the Rune definition.  If set to False, deserialization will attempt to convert types (i.e. convert a string to an int).  Defaults to True.
+Mutually recursive types (circular inheritance and attribute references) are now fully handled. (Issue [#145](https://github.com/finos/rune-python-generator/issues/145))
 
-    raise_validation_exceptions (bool, optional): Raise an exception should there be validation error. Setting to False generates a list of errors and allows for creation of an invalid model.  Defaults to True.
+- Closed gaps in the handling of circular inheritance and attribute cycles.
+- Circular dependencies are identified automatically and grouped into a small bundle; all other types are emitted as standalone files.
 
-    Returns:
-      BaseModel: The Rune model.
+---
 
-### Serialize to a string
+### 4. Significant Load Performance Improvement
 
-To serialize from a Rune object ("obj"), invoke the function:
+Load time reduced by approximately 98% (~120 s → ~2 s for CDM 6.0). (Issue [#148](https://github.com/finos/rune-python-generator/issues/148))
 
-`obj.rune_serialize` with the following parameters:
+The generator partitions types into two categories:
 
-    validate_model (bool, optional): Validate that the model passes all Rune defined constraings prior to serialization. Setting to False allows serialization of an invalid Model. Defaults to True.
+- **Standalone** (~94% of CDM types): each type is emitted to its own `.py` file with annotations written directly in the class body. No `model_rebuild()` is called at import time.
+- **Bundled** (~6% of CDM types): types involved in circular dependency cycles are grouped into `_bundle.py` with `model_rebuild()` called once per bundle.
 
-    strict (bool, optional): Ensure that all input types strictly match the Rune definition.  Setting to False saves fields with types that do not match the Model definition.  Defaults to True.
+---
 
-    raise_validation_exceptions (bool, optional): Raise an exception should there be validation error. Setting to False generates a list of errors and allows for serialzation of an invalid model.  Defaults to True.
+### 5. Completion of Support for Type Aliases
 
-    indent (int | None, optional): Indentation to use in the JSON output. If None is passed, the output will be compact. Defaults to None.
+Type aliases (`typeAlias`) are now resolved to their underlying Python types at generation time. Where multiple aliases would otherwise produce the same Python type name, unique disambiguating names are generated to avoid conflicts.
 
-    serialize_as_any (bool, optional): Instructs serialization to attempt to convert types to align to the Model defintion.  Defaults to False.
+Note: Basic type constraints on a `typeAlias` (pattern, min/max length, numeric ranges) are propagated to the generated Python field. However, named `condition` blocks on a `typeAlias` are silently discarded — see [RUNE_LANGUAGE_GAPS.md](docs/RUNE_LANGUAGE_GAPS.md) for details. In CDM, the only `typeAlias` carrying a named condition is `FpMLCodingScheme`, which is used exclusively for FpML codelist domain validation and delegates to the native function `ValidateFpMLCodingSchemeDomain`.
 
-    include (IncEx | None, optional): Field(s) to include in the JSON output.  Ignored if not specified.  Defaults to None.
+---
 
-    exclude (IncEx | None, optional): Field(s) to exclude from the JSON output. Ignored if not specified.  Defaults to None.
+### 6. Refactored Object, Attribute, and Expression Generation
 
-    exclude_unset (bool, optional): Exclude fields that have not been explicitly set. Defaults to True.
+Internal generator refactoring to simplify code and support reuse:
 
-    round_trip (bool, optional): If True, checks that the serialized output can be used to create a valid object.  Defaults to False.
+- Introduced `PythonExpressionScope` to manage receiver context and lambda symbol shadowing during expression generation.
+- Multi-statement expressions that require intermediate values are now emitted as inline immediately-invoked lambdas rather than requiring function-level statement hoisting.
+- Consolidated object, attribute, and expression generation to remove duplication and improve maintainability.
 
-    warnings (bool | Literal['none', 'warn', 'error'], optional): Determines how to handle serialization errors. There are three options:
-    - False/"none" silently allows the serialization of an invalid Model.
-    - True/"warn" logs errors and allows the serialization of an invalid Model.
-    - "error" fails to save an invalid Model and raises a PydanticSerializationError`
-    Defaults to True.
+---
 
-    exclude_defaults (bool, optional): Determines whether to exclude fields that are set to their default value. If False, fields that have default values because they not been explictly set will be included.  Defaults to True.
+### 7. Test Suite
 
-    exclude_none (bool, optional): Determines whether to exclude fields that have a value of `None`. If True, fields set to None will be included.  Defaults to False.
+- Improved testing rigor and coverage.
+- JUnit suite reorganized from 54 to 22 classes with consistent `Python*` naming and less fragile assertions.
+- Python unit tests restructured so Rune filename, namespace, and pytest filename correspond without exception.
 
-    Returns:
-      A string.
+---
+
+## Known Gaps
+
+See [RUNE_LANGUAGE_GAPS.md](docs/RUNE_LANGUAGE_GAPS.md) for the full feature coverage matrix.

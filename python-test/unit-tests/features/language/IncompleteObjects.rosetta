@@ -1,0 +1,13 @@
+namespace rosetta_dsl.test.language.IncompleteObjects : <"generate Python unit tests from Rosetta.">
+
+type A:
+    a1 int (1..1)
+    a2 int (1..1)
+
+func CreateA:
+    inputs:
+        a1 int (1..1)
+    output:
+        a A (1..1)
+    set a->a1: a1
+    set a->a2: a1 * 2

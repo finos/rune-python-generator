@@ -1,85 +1,177 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.object;
 
-import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
-import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
-import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-import com.regnosys.rosetta.rosetta.RosettaModel;
-import com.regnosys.rosetta.rosetta.simple.Data;
-import com.regnosys.rosetta.types.RDataType;
-import com.regnosys.rosetta.types.RObjectFactory;
-import jakarta.inject.Inject;
-import com.regnosys.rosetta.types.RAttribute;
-import com.regnosys.rosetta.types.REnumType;
-import com.regnosys.rosetta.types.RType;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.GraphCycleProhibitedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerator;
+import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
+import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
+import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.simple.Data;
+import com.regnosys.rosetta.types.RAliasType;
+import com.regnosys.rosetta.types.RAttribute;
+import com.regnosys.rosetta.types.RChoiceType;
+import com.regnosys.rosetta.types.RDataType;
+import com.regnosys.rosetta.types.RObjectFactory;
+import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.TypeSystem;
+import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 /**
  * Generate Python from Rune Types
  */
 public class PythonModelObjectGenerator {
 
+    /**
+     * The logger.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(PythonModelObjectGenerator.class);
+
+    /**
+     * The R object factory.
+     */
     @Inject
     private RObjectFactory rObjectFactory;
-
+    
+    /**
+     * The type system.
+     */
     @Inject
-    private PythonExpressionGenerator expressionGenerator;
+    private TypeSystem typeSystem;
 
+
+
+    /**
+     * The Python attribute processor.
+     */
     @Inject
     private PythonAttributeProcessor pythonAttributeProcessor;
 
+    /**
+     * The Python choice alias processor.
+     */
     @Inject
     private PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
     /**
-     * Generate Python from the collection of Rosetta classes (of type Data).
-     * 
-     * @param rClasses        the collection of Rosetta Classes for this model
-     * @param namespacePrefix optional prefix to prepend to every namespace
-     * @return a Map of all the generated Python indexed by the class name
+     * The Python expression generator provider.
      */
-    public Map<String, String> generate(Iterable<Data> rClasses,
-            PythonCodeGeneratorContext context, String namespacePrefix) {
+    @Inject
+    private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
+
+    /**
+     * Scan Rosetta classes to build dependency graph and record super types.
+     *
+     * @param rClasses the collection of Rosetta Classes for this model
+     * @param context  the Python code generator context
+     */
+    public void scan(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
-        if (dependencyDAG == null) {
-            throw new RuntimeException("Dependency DAG not initialized");
+        for (Data rc : rClasses) {
+            String className = context.getFullyQualifiedName(rc);
+            context.addClassName(className);
+            dependencyDAG.addVertex(className);
+
+            if (rc.getSuperType() != null) {
+                String superClassName = context.getFullyQualifiedName(rc.getSuperType());
+                addDependency(dependencyDAG, className, superClassName);
+                context.getSuperTypes().put(className, superClassName);
+            }
+
+            // Add dependencies for attributes
+            RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
+            for (RAttribute attr : rosettaDataType.getOwnAttributes()) {
+                RType rt = attr.getRMetaAnnotatedType().getRType();
+                if (rt instanceof RAliasType) {
+                    rt = typeSystem.stripFromTypeAliases(rt);
+                }
+                // Normalize choice types to their underlying data type, mirroring what
+                // getImportsFromAttributes does. Without this, a dependency on a choice-type
+                // attribute is invisible to the DAG, the cycle goes undetected, and both
+                // types are classified as standalone — causing a Python circular import.
+                if (rt instanceof RChoiceType rChoiceType) {
+                    rt = rChoiceType.asRDataType();
+                }
+                if (rt instanceof RDataType rdt) {
+                    if (!RuneToPythonMapper.isRosettaBasicType(rdt)) {
+                        String attrClassName = context.applyPrefix(rdt.getNamespace().toString()) + "." + rdt.getName();
+                        addDependency(dependencyDAG, className, attrClassName);
+                    }
+                }
+            }
+
+            // Add dependencies for conditions (Data Rules)
+            for (com.regnosys.rosetta.rosetta.simple.Condition condition : rc.getConditions()) {
+                addExpressionDependencies(dependencyDAG, className, condition.getExpression(), context);
+            }
         }
-        Set<String> enumImports = context.getEnumImports();
-        if (enumImports == null) {
-            throw new RuntimeException("Enum imports not initialized");
+    }
+
+    private void addExpressionDependencies(
+        Graph<String, DefaultEdge> dependencyDAG,
+        String className,
+        RosettaExpression expression,
+        PythonCodeGeneratorContext context) {
+        if (expression == null) {
+            return;
+        }
+        if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference ref) {
+            if (ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Data
+                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Function
+                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.RosettaEnumeration) {
+
+                String depName = context.getFullyQualifiedName((com.regnosys.rosetta.rosetta.RosettaNamed) ref.getSymbol());
+                addDependency(dependencyDAG, className, depName);
+            }
+            ref.getArgs().forEach(arg -> addExpressionDependencies(dependencyDAG, className, arg, context));
+        } else if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression cons) {
+            if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
+                String depName = context.getFullyQualifiedName(cons.getTypeCall().getType());
+                addDependency(dependencyDAG, className, depName);
+            }
+            cons.getValues().forEach(val -> addExpressionDependencies(dependencyDAG, className, val.getValue(), context));
         }
 
+        expression.eContents().forEach(child -> {
+            if (child instanceof com.regnosys.rosetta.rosetta.expression.RosettaExpression childExpr) {
+                addExpressionDependencies(dependencyDAG, className, childExpr, context);
+            }
+        });
+    }
+
+    /**
+     * Generate Python from the collection of Rosetta classes (of type Data).
+     *
+     * @param rClasses the collection of Rosetta Classes for this model
+     * @param context  the Python code generator context
+     * @return a Map of all the generated Python indexed by the class name
+     */
+    public final Map<String, String> generate(Iterable<Data> rClasses, PythonCodeGeneratorContext context) {
+        Set<String> enumImports = context.getEnumImports();
         Map<String, String> result = new HashMap<>();
 
         for (Data rc : rClasses) {
-            RosettaModel model = (RosettaModel) rc.eContainer();
-            String effectiveModelName = applyPrefix(model.getName(), namespacePrefix);
-
-            // Generate Python for the class
+            String className = context.getFullyQualifiedName(rc);
             try {
-                String pythonClass = generateClass(rc, enumImports, namespacePrefix);
-
-                // construct the class name using "." as a delimiter
-                String className = effectiveModelName + "." + rc.getName();
+                String pythonClass = generateClass(rc, enumImports, context);
                 result.put(className, pythonClass);
-
-                dependencyDAG.addVertex(className);
-                if (rc.getSuperType() != null) {
-                    Data superClass = rc.getSuperType();
-                    RosettaModel superModel = (RosettaModel) superClass.eContainer();
-                    String superClassName = applyPrefix(superModel.getName(), namespacePrefix)
-                            + "." + superClass.getName();
-
-                    addDependency(dependencyDAG, className, superClassName);
-                }
-
-                addAttributeDependencies(dependencyDAG, className, rc, namespacePrefix);
             } catch (Exception e) {
                 throw new RuntimeException("Error generating Python for class " + rc.getName(), e);
             }
@@ -87,46 +179,21 @@ public class PythonModelObjectGenerator {
         return result;
     }
 
-    private void addAttributeDependencies(Graph<String, DefaultEdge> dependencyDAG, String className, Data rc,
-            String namespacePrefix) {
-        RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
-        for (RAttribute attr : buildRDataType.getOwnAttributes()) {
-            RType rt = attr.getRMetaAnnotatedType().getRType();
-            if (rt instanceof RDataType || rt instanceof REnumType) {
-                String dependencyName = "";
-                if (rt instanceof RDataType) {
-                    dependencyName = applyPrefix(((RDataType) rt).getQualifiedName().toString(), namespacePrefix);
-                } else {
-                    dependencyName = applyPrefix(((REnumType) rt).getQualifiedName().toString(), namespacePrefix);
-                }
-                if (!dependencyName.isEmpty() && !className.equals(dependencyName)) {
-                    addDependency(dependencyDAG, className, dependencyName);
-                }
-            }
-        }
-    }
 
-    private static String applyPrefix(String name, String namespacePrefix) {
-        return (namespacePrefix != null && !namespacePrefix.isBlank())
-                ? namespacePrefix + "." + name
-                : name;
-    }
-
-    private void addDependency(Graph<String, DefaultEdge> dependencyDAG, String className, String dependencyName) {
+    private void addDependency(
+        Graph<String, DefaultEdge> dependencyDAG,
+        String className,
+        String dependencyName) {
         dependencyDAG.addVertex(dependencyName);
         if (!className.equals(dependencyName)) {
-            try {
-                dependencyDAG.addEdge(dependencyName, className);
-            } catch (GraphCycleProhibitedException e) {
-                // Ignore cycles in this context
-            }
+            dependencyDAG.addEdge(dependencyName, className);
         }
     }
 
-    private String generateClass(Data rc, Set<String> enumImports, String namespacePrefix) {
-        if (rc == null) {
-            throw new RuntimeException("Rosetta class not initialized");
-        }
+    private String generateClass(Data rc, Set<String> enumImports, PythonCodeGeneratorContext context) {
+        RosettaModel model = (RosettaModel) rc.eContainer();
+        String className = context.applyPrefix(model.getName()) + "." + rc.getName();
+        boolean isStandalone = context.getStandaloneClasses().contains(className);
         if (rc.getSuperType() != null && rc.getSuperType().getName() == null) {
             throw new RuntimeException(
                     "The class superType for " + rc.getName() + " exists but its name is null");
@@ -135,13 +202,20 @@ public class PythonModelObjectGenerator {
             throw new RuntimeException("Enum imports not initialized");
         }
 
-        pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports, namespacePrefix);
+        if (!isStandalone) {
+            pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports, context, false);
+        }
 
-        return generateBody(rc, namespacePrefix);
+        return generateBody(rc, context, isStandalone);
     }
 
+    /**
+     * Generates the _ALLOWED_METADATA string for the type.
+     * 
+     * @param rc the Rosetta class
+     * @return the _ALLOWED_METADATA string
+     */
     private String getClassMetaDataString(Data rc) {
-        // generate _ALLOWED_METADATA string for the type
         RDataType rcRData = rObjectFactory.buildRDataType(rc);
         PythonCodeWriter writer = new PythonCodeWriter();
         boolean first = true;
@@ -153,9 +227,11 @@ public class PythonModelObjectGenerator {
             } else {
                 writer.append(", ");
             }
-            switch (metaData.getName()) {
-                case "key", "id" -> writer.append("'@key', '@key:external'");
-                case "scheme" -> writer.append("'@scheme'");
+            String metaDataName = metaData.getName();
+            if (metaDataName.equals("key") || metaDataName.equals("id")) {
+                writer.append("'@key', '@key:external'");
+            } else if (metaDataName.equals("scheme")) {
+                writer.append("'@scheme'");
             }
         }
         if (!first) {
@@ -193,18 +269,46 @@ public class PythonModelObjectGenerator {
         return writer.toString();
     }
 
-    private String generateBody(Data rc, String namespacePrefix) {
+    private String generateBody(Data rc, PythonCodeGeneratorContext context, boolean isStandalone) {
+        PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
+        expressionGenerator.setContext(context);
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
         PythonCodeWriter writer = new PythonCodeWriter();
 
-        String superClassName = (rc.getSuperType() != null)
-                ? RuneToPythonMapper.getBundleObjectName(rc.getSuperType(), namespacePrefix)
-                : "BaseDataClass";
+        String superClassName;
+        if (rc.getSuperType() != null) {
+            String superFQN = context.getFullyQualifiedName(rc.getSuperType());
+            if (isStandalone || context.getStandaloneClasses().contains(superFQN)) {
+                // Modules use the class name directly (with an import)
+                superClassName = rc.getSuperType().getName();
+            } else {
+                // Internal bundle uses flattened name
+                superClassName = context.getBundleObjectName(rc.getSuperType());
+            }
+        } else {
+            superClassName = "BaseDataClass";
+        }
 
-        writer.appendLine("class " + RuneToPythonMapper.getBundleObjectName(rc, namespacePrefix)
-                + "(" + superClassName + "):");
+        if (isStandalone) {
+            // Standard imports come from createImports() in processDAG — only add type-specific imports here
+            if (rc.getSuperType() != null) {
+                String superFQN = context.getFullyQualifiedName(rc.getSuperType());
+                String superClassNameInImport = rc.getSuperType().getName();
+                writer.appendLine(String.format("from %s import %s", superFQN, superClassNameInImport));
+            }
+            // Add attribute-level imports (all Data types safe for standalone files)
+            Set<String> imports = new java.util.HashSet<>();
+            pythonAttributeProcessor.getImportsFromAttributes(rc, imports, context, true);
+            for (String imp : imports) {
+                writer.appendLine(imp);
+            }
+            writer.newLine();
+        }
+
+        String classNameDefinition = isStandalone ? rc.getName() : context.getBundleObjectName(rc);
+        writer.appendLine("class " + classNameDefinition + "(" + superClassName + "):");
         writer.indent();
 
         String metaData = getClassMetaDataString(rc);
@@ -220,17 +324,28 @@ public class PythonModelObjectGenerator {
             writer.appendLine("\"\"\"");
         }
 
-        // _FQRTN uses the unmodified Rune type identity (not prefixed) for serialization compatibility
-        writer.appendLine("_FQRTN = '" + RuneToPythonMapper.getFullyQualifiedObjectName(rc) + "'");
+        if (!isStandalone) {
+            writer.appendLine("_FQRTN: ClassVar[str] = '" + RuneToPythonMapper.getFullyQualifiedName(rc) + "'");
+        }
 
-        writer.appendBlock(pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints, namespacePrefix));
+        AttributeProcessingResult attrResult = pythonAttributeProcessor.generateAllAttributes(rc, keyRefConstraints, context);
+        writer.appendBlock(attrResult.getAttributeCode());
+
+        if (!isStandalone) {
+            String bundleName = context.getBundleObjectName(rc);
+            List<String> updates = attrResult.getAnnotationUpdates().stream()
+                    .map(update -> bundleName + "." + update)
+                    .collect(Collectors.toList());
+
+            context.addPostDefinitionUpdates(bundleName, updates);
+        }
 
         String constraints = keyRefConstraintsToString(keyRefConstraints);
         if (!constraints.isEmpty()) {
             writer.appendBlock(constraints);
         }
 
-        writer.appendBlock(expressionGenerator.generateTypeOrFunctionConditions(rc));
+        writer.appendBlock(expressionGenerator.generateTypeConditions(rc));
 
         return writer.toString();
     }

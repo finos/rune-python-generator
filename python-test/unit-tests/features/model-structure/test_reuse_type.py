@@ -1,0 +1,21 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""Entity reuse unit tests"""
+
+from rosetta_dsl.test.model.reuse_type.BaseEntity import BaseEntity
+from rosetta_dsl.test.model.reuse_type.BarNoRef import BarNoRef
+from rosetta_dsl.test.model.reuse_type.BarRef import BarRef
+
+
+def test_entity_reuse():
+    """Test entity reuse."""
+    base_entity = BaseEntity(number=1)
+    BarRef(bar=base_entity)
+    BarNoRef(bar=base_entity)
+
+
+if __name__ == "__main__":
+    test_entity_reuse()

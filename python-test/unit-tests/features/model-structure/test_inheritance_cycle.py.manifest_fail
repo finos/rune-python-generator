@@ -1,0 +1,17 @@
+"""Inheritance cycle failure test"""
+
+import pytest
+
+
+def test_inheritance_cycle_fails():
+    """
+    Test that inheritance cycles fail as expected.
+
+    EXPECTED TO FAIL: 'Parent' depends on 'Child' (attribute),
+    and 'Child' depends on 'Parent' (inheritance).
+    Since inheritance is evaluated at class definition time,
+    one of them will raise NameError depending on the DAG's choice of order.
+    """
+    with pytest.raises(NameError, match="name '.*Parent' is not defined"):
+        # Importing the bundle or the types will fail during module execution
+        pass

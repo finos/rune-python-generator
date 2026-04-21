@@ -1,4 +1,0 @@
-namespace rosetta_dsl.test.model.date_serialization : <"generate Python unit tests from Rosetta.">
-
-type DateSerializatonTest:
-    dateValue date (1..1)

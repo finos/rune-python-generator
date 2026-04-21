@@ -1,0 +1,7 @@
+namespace rosetta_dsl.test.model.inheritance_cycle
+
+type Parent:
+    child Child (0..1)
+
+type Child extends Parent:
+    val int (1..1)

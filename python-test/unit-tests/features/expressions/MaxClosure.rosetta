@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.expressions.max_closure
+
+type MaxItem:
+    val1 int (1..1)
+    val2 int (1..1)
+
+func GetMaxItem:
+    inputs: items MaxItem (0..*)
+    output: result MaxItem (0..1)
+    set result:
+        items max [ item -> val1 ]

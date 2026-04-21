@@ -1,4 +1,15 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.object;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.types.RAttribute;
@@ -6,16 +17,17 @@ import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.utils.DeepFeatureCallUtil;
-import jakarta.inject.Inject;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import jakarta.inject.Inject;
 
 /**
  * Generate Python from Rune Choice Aliases
  */
 public class PythonChoiceAliasProcessor {
 
+    /**
+     * The deep feature call utility.
+     */
     @Inject
     private DeepFeatureCallUtil deepFeatureCallUtil;
 

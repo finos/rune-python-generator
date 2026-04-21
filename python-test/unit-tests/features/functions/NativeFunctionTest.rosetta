@@ -1,0 +1,43 @@
+namespace rosetta_dsl.test.functions.native
+
+enum RoundingModeEnum:
+    Down
+    Up
+
+func RoundToNearest: <"Round a number to the supplied nearest, using the supplied rounding mode.">
+    [codeImplementation]
+    inputs:
+        value number (1..1) <"The original (unrounded) number.">
+        digits int (1..1) <"The number of digits to round to.">
+        roundingMode RoundingModeEnum (1..1) <"The method of rounding (up to nearest/down to nearest.">
+    output:
+        roundedValue number (1..1)
+    condition PositiveDigits:
+        digits > 0
+
+func RoundDown: <"Round a number down to the supplied nearest.">
+    inputs:
+        value number (1..1) <"The original (unrounded) number.">
+        digits int (1..1) <"The number of digits to round to.">
+    output:
+        roundedValue number (1..1)
+    set roundedValue:
+        RoundToNearest(value, digits, RoundingModeEnum -> Down)
+
+func RoundUp: <"Round a number up to the supplied nearest.">
+    inputs:
+        value number (1..1) <"The original (unrounded) number.">
+        digits int (1..1) <"The number of digits to round to.">
+    output:
+        roundedValue number (1..1)
+    set roundedValue:
+        RoundToNearest(value, digits, RoundingModeEnum -> Up)
+
+func TestCodeImplementationWithBody:
+    [codeImplementation]
+    inputs:
+        val int (1..1)
+    output:
+        result int (1..1)
+    set result:
+        val + 1

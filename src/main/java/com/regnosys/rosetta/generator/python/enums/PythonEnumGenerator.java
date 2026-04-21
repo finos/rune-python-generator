@@ -1,30 +1,37 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.enums;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
+import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
-import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
-
-import java.util.*;
 
 public class PythonEnumGenerator {
 
     /**
      * Generate Python from the collection of Rosetta enumerations.
      * 
-     * @param rosettaEnums    the collection of Rosetta enumerations to generate
-     * @param namespacePrefix optional prefix to prepend to the namespace
+     * @param rosettaEnums the collection of Rosetta enumerations to generate
+     * @param context      the Python code generator context
      * @return a Map of all the generated Python indexed by the file name
      */
-    public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums, String namespacePrefix) {
+    public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums, PythonCodeGeneratorContext context) {
         Map<String, String> result = new HashMap<>();
         for (RosettaEnumeration enumeration : rosettaEnums) {
             RosettaModel tr = (RosettaModel) enumeration.eContainer();
-            String namespace = (namespacePrefix != null && !namespacePrefix.isBlank())
-                    ? namespacePrefix + "." + tr.getName()
-                    : tr.getName();
+            String namespace = context.applyPrefix(tr.getName());
 
             PythonCodeWriter writer = new PythonCodeWriter();
             writer.appendLine("# pylint: disable=missing-module-docstring, invalid-name, line-too-long");
@@ -35,7 +42,9 @@ public class PythonEnumGenerator {
             writer.newLine();
 
             generateEnumClass(writer, enumeration);
-            result.put(PythonCodeGeneratorUtil.toPyFileName(namespace, enumeration.getName()), writer.toString());
+            result.put(PythonCodeGeneratorUtil.toPyFileName(namespace,
+                enumeration.getName()),
+                writer.toString());
         }
         return result;
     }
@@ -54,7 +63,9 @@ public class PythonEnumGenerator {
 
     private void generateEnumClass(PythonCodeWriter writer, RosettaEnumeration enume) {
         List<RosettaEnumValue> allValues = getAllEnumValues(enume);
-        writer.appendLine("class " + enume.getName() + "(rune.runtime.metadata.EnumWithMetaMixin, Enum):");
+        writer.appendLine("class "
+            + enume.getName()
+            + "(rune.runtime.metadata.EnumWithMetaMixin, Enum):");
         writer.indent();
 
         if (enume.getDefinition() != null) {
