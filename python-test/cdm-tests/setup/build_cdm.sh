@@ -53,7 +53,7 @@ PYTHON_SETUP_PATH="$MY_PATH/../../env-setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 CDM_PROJECT_NAME="finos-cdm"
 CDM_PREFIX="finos"
-CDM_VERSION="1.2.3"
+CDM_VERSION="7.0.0-dev.98"
 cd ${MY_PATH} || error
 
 
