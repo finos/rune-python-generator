@@ -85,7 +85,7 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.78.0</rosetta.dsl.version>
+        <rosetta.dsl.version>9.77.1</rosetta.dsl.version>
 
         <xtext.version>2.38.0</xtext.version>
         <guice.version>6.0.0</guice.version>
@@ -109,9 +109,6 @@
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
         <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
-        <!-- Used by the Python generator -->
-        <cdm.rosetta.source.path>build/common-domain-model/rosetta-source/src/main/rosetta</cdm.rosetta.source.path>
-        <cdm.python.output.path>target/python-cdm</cdm.python.output.path>
     </properties>
 
     <dependencyManagement>
