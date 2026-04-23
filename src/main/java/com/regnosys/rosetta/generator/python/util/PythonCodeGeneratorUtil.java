@@ -148,17 +148,19 @@ public static String fileComment(String version) {
                 : "python-" + namespace;
         return """
                 [build-system]
-                requires = ["setuptools>=62.0"]
+                requires = ["setuptools>=77.0.3"]
                 build-backend = "setuptools.build_meta"
 
                 [project]
                 name = "%s"
                 version = "%s"
+                license = "Apache-2.0"
                 requires-python = ">= 3.11"
                 dependencies = [
                    "pydantic>=2.10.3",
                    "rune.runtime>=2.0.0,<3.0.0"
                 ]
+
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(name, version).stripIndent();
     }
