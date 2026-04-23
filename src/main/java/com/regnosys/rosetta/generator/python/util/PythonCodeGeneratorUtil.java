@@ -122,10 +122,13 @@ public static String fileComment(String version) {
     }
 
     public static String createVersionFile(String version) {
-        String versionComma = version.replace('.', ',');
+        String numericBase = version.contains(".dev")
+                ? version.substring(0, version.indexOf(".dev"))
+                : version;
+        String versionTuple = numericBase.replace('.', ',');
         return "version = ("
-                + versionComma + ",0)\n"
-                + "version_str = '" + version + "-0'\n"
+                + versionTuple + ")\n"
+                + "version_str = '" + version + "'\n"
                 + "__version__ = '" + version + "'\n"
                 + "__build_time__ = '"
                 + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
