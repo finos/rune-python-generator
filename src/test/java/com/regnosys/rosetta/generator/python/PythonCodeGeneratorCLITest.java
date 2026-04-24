@@ -167,6 +167,25 @@ class PythonCodeGeneratorCLITest {
     }
 
     @Test
+    void testSnapshotVersionFormatIsAcceptedAndConverted() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-p", "test-project",
+                "-v", "0.0.0.featuremaster-Python-Update-SNAPSHOT"
+        });
+
+        assertEquals(0, exitCode, "Should return 0 for Maven SNAPSHOT version with branch qualifier");
+        String toml = Files.readString(pythonDir.resolve("pyproject.toml"));
+        assertTrue(toml.contains("version = \"0.0.0.dev0\""),
+                "pyproject.toml should contain the PEP 440 dev version, but was:\n" + toml);
+    }
+
+    @Test
     void testValidVersionAppearsInToml() throws IOException {
         Path validFile = createValidRosettaFile(tempDir);
         Path pythonDir = tempDir.resolve("python");
