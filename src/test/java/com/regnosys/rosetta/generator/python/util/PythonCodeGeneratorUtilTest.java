@@ -64,4 +64,10 @@ class PythonCodeGeneratorUtilTest {
         assertTrue(PythonCodeGeneratorUtil.cleanVersion("${project.version}").equals("0.0.0"),
                 "cleanVersion should return 0.0.0 for Maven placeholder");
     }
+
+    @Test
+    void testCleanVersionSnapshotFormat() {
+        assertTrue(PythonCodeGeneratorUtil.cleanVersion("0.0.0.featuremaster-Python-Update-SNAPSHOT").equals("0.0.0.dev0"),
+                "cleanVersion should convert Maven SNAPSHOT branch version to PEP 440 dev0");
+    }
 }
