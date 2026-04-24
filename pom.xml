@@ -77,7 +77,7 @@
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>21</maven.compiler.release>
 
-        <commons-io.version>2.21.0</commons-io.version>
+        <commons-io.version>2.22.0</commons-io.version>
         <commons-cli.version>1.11.0</commons-cli.version>
 
         <!-- Release -->
