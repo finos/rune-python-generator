@@ -178,6 +178,12 @@ public static String fileComment(String version) {
             return version;
         }
 
+        // Convert Maven SNAPSHOT versions with branch qualifier (e.g. "0.0.0.featuremaster-Python-Update-SNAPSHOT")
+        if (version.matches("\\d+\\.\\d+\\.\\d+\\.[A-Za-z][A-Za-z0-9-]+-SNAPSHOT")) {
+            String[] parts = version.split("\\.");
+            return parts[0] + "." + parts[1] + "." + parts[2] + ".dev0";
+        }
+
         String[] versionParts = version.split("\\.");
         if (versionParts.length > 2) {
             String thirdPart = versionParts[2].replaceAll("[^\\d]", "");
