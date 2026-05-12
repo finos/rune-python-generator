@@ -163,6 +163,7 @@ public static String fileComment(String version) {
                    "pydantic>=2.10.3",
                    "rune.runtime>=2.0.0,<3.0.0"
                 ]
+                readme = "README.md"
 
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(name, version).stripIndent();
