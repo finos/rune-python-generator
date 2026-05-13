@@ -563,7 +563,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertBundleContainsExpectedString("""
                 type Test: <"Test any <> list rhs condition">
                     field1 string (1..*) <"Test string list field1">
-                    field2 string (1..*) <"Test string list field2">
+                    field2 string (1..1) <"Test string list field2">
                     condition TestCond: <"Test condition">
                         field1 any <> field2
                 """,
@@ -586,7 +586,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertBundleContainsExpectedString("""
                 type Test: <"Test all <> list rhs condition">
                     field1 string (1..*) <"Test string list field1">
-                    field2 string (1..*) <"Test string list field2">
+                    field2 string (1..1) <"Test string list field2">
                     condition TestCond: <"Test condition">
                         field1 all <> field2
                 """,
@@ -597,7 +597,7 @@ public class PythonCollectionExpressionTest {
                         Test condition
                         \"""
                         item = self
-                        return rune_all_elements(rune_resolve_attr(self, "field1"), "<>", rune_resolve_attr(self, "field2"))
+                        return (not rune_any_elements(rune_resolve_attr(self, "field1"), "=", rune_resolve_attr(self, "field2")))
                 """);
     }
 
@@ -743,7 +743,7 @@ public class PythonCollectionExpressionTest {
     public void testGenerateBinDisjointCondition() {
         testUtils.assertBundleContainsExpectedString("""
                 type Test: <"Test disjoint binary expression condition">
-                    field1 string (1..1) <"Test string field1">
+                    field1 string (1..*) <"Test string field1">
                     field2 string (1..1) <"Test string field2">
                     field3 boolean (1..1) <"Test boolean field3">
                     condition TestCond: <"Test condition">
@@ -752,42 +752,42 @@ public class PythonCollectionExpressionTest {
                         then field3=True
                 """,
                 """
-                        class Test(BaseDataClass):
-                            \"""
-                            Test disjoint binary expression condition
-                            \"""
-                            field1: str = Field(..., description='Test string field1')
-                            \"""
-                            Test string field1
-                            \"""
-                            field2: str = Field(..., description='Test string field2')
-                            \"""
-                            Test string field2
-                            \"""
-                            field3: bool = Field(..., description='Test boolean field3')
-                            \"""
-                            Test boolean field3
-                            \"""
+                class Test(BaseDataClass):
+                    \"""
+                    Test disjoint binary expression condition
+                    \"""
+                    field1: list[str | None] = Field(..., description='Test string field1', min_length=1)
+                    \"""
+                    Test string field1
+                    \"""
+                    field2: str = Field(..., description='Test string field2')
+                    \"""
+                    Test string field2
+                    \"""
+                    field3: bool = Field(..., description='Test boolean field3')
+                    \"""
+                    Test boolean field3
+                    \"""
 
-                            @rune_condition
-                            def condition_0_TestCond(self):
-                                \"""
-                                Test condition
-                                \"""
-                                item = self
-                                def _then_fn1():
-                                    return rune_all_elements(rune_resolve_attr(self, "field3"), "=", True)
+                    @rune_condition
+                    def condition_0_TestCond(self):
+                        \"""
+                        Test condition
+                        \"""
+                        item = self
+                        def _then_fn1():
+                            return rune_all_elements(rune_resolve_attr(self, "field3"), "=", True)
 
-                                def _else_fn1():
-                                    return True
+                        def _else_fn1():
+                            return True
 
-                                def _then_fn0():
-                                    return if_cond_fn((rune_any_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2")) and rune_disjoint(["A"], rune_resolve_attr(self, "field1"))), _then_fn1, _else_fn1)
+                        def _then_fn0():
+                            return if_cond_fn((rune_any_elements(["B", "C", "D"], "=", rune_resolve_attr(self, "field2")) and rune_disjoint(["A"], rune_resolve_attr(self, "field1"))), _then_fn1, _else_fn1)
 
-                                def _else_fn0():
-                                    return True
+                        def _else_fn0():
+                            return True
 
-                                return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", False), _then_fn0, _else_fn0)""");
+                        return if_cond_fn(rune_all_elements(rune_resolve_attr(self, "field3"), "=", False), _then_fn0, _else_fn0)""");
     }
 
     // -------------------------------------------------------------------------

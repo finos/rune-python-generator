@@ -194,7 +194,7 @@ public class PythonInheritanceTest {
                 b string (0..1)
 
             type Bar extends Foo:
-                a string (0..1)
+                override a string (0..1)
             """,
             """
             class Foo(BaseDataClass):
@@ -209,7 +209,7 @@ public class PythonInheritanceTest {
                 b string (0..1)
 
             type Bar extends Foo:
-                a string (0..1)
+                override a string (0..1)
             """,
             """
             class Bar(Foo):
