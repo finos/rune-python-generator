@@ -34,6 +34,7 @@ public class PythonNameCollisionTest {
                 namespace test.collision
                 
                 type CollidingName:
+                    [metadata key]
                     attr int(1..1)
                     other CollidingName(0..1)
                         [metadata reference]
@@ -50,7 +51,7 @@ public class PythonNameCollisionTest {
         String classPython = gf.get("src/test/collision/CollidingName.py").toString();
         testUtils.assertGeneratedContainsExpectedString(classPython, "class CollidingName(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(classPython,
-                "other: Annotated[Optional[CollidingName | BaseReference], CollidingName.serializer(), CollidingName.validator(('@ref', '@ref:external'))] = Field(None, description='')");
+                "other: Annotated[Optional[CollidingName | BaseReference], CollidingName.serializer(), CollidingName.validator(('@key', '@key:external', '@ref', '@ref:external'))] = Field(None, description='')");            
 
         // CollidingName function is also standalone.
         String funcPython = gf.get("src/test/collision/functions/CollidingName.py").toString();
