@@ -115,39 +115,39 @@ public class PythonExistsExpressionTest {
     public void testSingleExists() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        type Bar:
-                            field number (0..1)
+                type Bar:
+                    field number (0..1)
 
-                        func SingleExists:
-                            inputs: bar Bar (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                bar -> field single exists
-                        """,
+                func SingleExists:
+                    inputs: bar Bar (1..*)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> field single exists
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def SingleExists(bar: Bar) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def SingleExists(bar: list[Bar | None]) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            bar : com.rosetta.test.model.Bar
+                    Parameters
+                    ----------
+                    bar : list[com.rosetta.test.model.Bar | None]
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            bar = rune_cow(bar)
-
-
-                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"), "single")
+                    bar = rune_cow(bar)
 
 
-                            return result""");
+                    result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"), "single")
+
+
+                    return result""");
     }
 
     /**
@@ -285,41 +285,41 @@ public class PythonExistsExpressionTest {
     public void testDeepPathSingleExists() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        type Sub:
-                            field number (0..1)
-                        type Bar:
-                            sub Sub (0..1)
+                type Sub:
+                    field number (0..1)
+                type Bar:
+                    sub Sub (0..1)
 
-                        func DeepExists:
-                            inputs: bar Bar (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                bar -> sub -> field single exists
-                        """,
+                func DeepExists:
+                    inputs: bar Bar (1..*)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> sub -> field single exists
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def DeepExists(bar: Bar) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def DeepExists(bar: list[Bar | None]) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            bar : com.rosetta.test.model.Bar
+                    Parameters
+                    ----------
+                    bar : list[com.rosetta.test.model.Bar | None]
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            bar = rune_cow(bar)
-
-
-                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bar"), "sub"), "field"), "single")
+                    bar = rune_cow(bar)
 
 
-                            return result""");
+                    result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "bar"), "sub"), "field"), "single")
+
+
+                    return result""");
     }
 
     /**
