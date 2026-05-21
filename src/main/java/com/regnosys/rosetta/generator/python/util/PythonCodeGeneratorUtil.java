@@ -168,7 +168,7 @@ public static String fileComment(String version) {
                     "Programming Language :: Python :: 3 :: Only",
                     "Programming Language :: Python :: 3.11",
                     "Programming Language :: Python :: 3.12",
-                    "Programming Language :: Python :: 3.13",
+                    "Programming Language :: Python :: 3.13"
                 ]                
                 authors = [
                     { name = "Daniel Schwartz" },
