@@ -60,8 +60,8 @@ cd ${MY_PATH} || error
 source "$MY_PATH/../../ensure_jar_exists.sh" || { echo "Failed to source ensure_jar_exists.sh"; exit 1; }
 
 # Parse command-line arguments
-# CDM_BRANCH="master"
-CDM_BRANCH="6.x.x"
+CDM_BRANCH="master"
+# CDM_BRANCH="6.x.x"
 SKIP_CDM=0
 for arg in "$@"; do
   case "$arg" in
@@ -94,6 +94,36 @@ if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
     exit 1
 fi
+
+echo "***** Injecting resources into the CDM package"
+
+# Define the resources source and the destination for the resources inside the CDM package
+RESOURCES_SRC="$MY_PATH/../resources/common-domain-model"
+RESOURCES_DEST="$PYTHON_TARGET_PATH/src/finos/resources"
+
+# Copy the files over
+mkdir -p "$RESOURCES_DEST"
+cp -r "$RESOURCES_SRC/"* "$RESOURCES_DEST/"
+
+# Create a MANIFEST.in file to force pip wheel to include the JSON files
+# NOTE: Because target/python-cdm is a volatile, auto-generated 
+# directory controlled by the Java generator, a static MANIFEST.in placed here 
+# would not be tracked by Git and could be destroyed.
+# Therefore, we dynamically inject this packaging rule during the build pipeline.
+echo "recursive-include src/finos/resources *" > "$PYTHON_TARGET_PATH/MANIFEST.in"
+
+echo "Resources injection successful!"
+
+echo "***** Injecting Python runtime extensions into the CDM package"
+
+EXTENSIONS_SRC="$MY_PATH/../../../src/main/python/runtime-extensions"
+EXTENSIONS_DEST="$PYTHON_TARGET_PATH/src/finos/runtime_extensions"
+
+# Copy the files over
+mkdir -p "$EXTENSIONS_DEST"
+cp -r "$EXTENSIONS_SRC/"* "$EXTENSIONS_DEST/"
+
+echo "Runtime extensions injection successful!"
 
 echo "***** build CDM Python package"
 cd $PYTHON_TARGET_PATH

@@ -26,14 +26,19 @@ MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${MY_PATH} || error "Could not change to script directory"
 
 ROSETTA_DIR="${MY_PATH}/../rosetta"
+RESOURCES_DIR="${MY_PATH}/../resources"
 
 echo "***** resetting the rosetta directory"
 rm -rf "${ROSETTA_DIR}"
 mkdir -p "${ROSETTA_DIR}/common-domain-model"
 
+echo "***** resetting the resources directory"
+rm -rf "${RESOURCES_DIR}"
+mkdir -p "${RESOURCES_DIR}/common-domain-model"
+
 CDM_BRANCH=${1:-"master"}
 
-echo "***** pull CDM rosetta definitions ($CDM_BRANCH)"
+echo "***** pull CDM rosetta definitions and resources from Github ($CDM_BRANCH)"
 TEMP_CDM="${MY_PATH}/../temp_cdm"
 rm -rf "${TEMP_CDM}"
 mkdir -p "${TEMP_CDM}"
@@ -41,8 +46,10 @@ cd "${TEMP_CDM}"
 
 git init
 git config core.sparseCheckout true
+
 cat <<EOF > .git/info/sparse-checkout
 rosetta-source/src/main/rosetta/*
+rosetta-source/src/main/resources/codelist/json/*
 pom.xml
 rosetta-source/pom.xml
 EOF
@@ -52,6 +59,10 @@ git pull --depth 1 origin $CDM_BRANCH || error "git pull for CDM failed"
 
 # Copy CDM files to the target 'common-domain-model' folder
 cp -r rosetta-source/src/main/rosetta/* "${ROSETTA_DIR}/common-domain-model/"
+
+# Copy CDM resources to the target 'common-domain-model/resources' folder
+mkdir -p "${RESOURCES_DIR}/common-domain-model/codelist/json"
+cp -r rosetta-source/src/main/resources/codelist/json/* "${RESOURCES_DIR}/common-domain-model/codelist/json/"
 
 # Check for rune-fpml[-.]version property in pom.xml
 FPML_VERSION=$(sed -n 's/.*<rune-fpml[-.]version>\(.*\)<\/rune-fpml[-.]version>.*/\1/p' pom.xml | head -n 1)
