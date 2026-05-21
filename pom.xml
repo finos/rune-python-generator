@@ -94,7 +94,7 @@
         <logback.version>1.5.32</logback.version>
 
         <!-- test -->
-        <junit.version>6.0.3</junit.version>
+        <junit.version>6.1.0</junit.version>
 
         <!-- plugin -->
         <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
