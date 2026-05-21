@@ -164,6 +164,17 @@ public static String fileComment(String version) {
                    "rune.runtime>=2.0.0,<3.0.0"
                 ]
                 readme = "README.md"
+                classifiers = [
+                    "Programming Language :: Python :: 3 :: Only",
+                    "Programming Language :: Python :: 3.11",
+                    "Programming Language :: Python :: 3.12",
+                    "Programming Language :: Python :: 3.13",
+                ]                
+                authors = [
+                    { name = "Daniel Schwartz" },
+                    { name = "Plamen Neykov" },
+                    { name = "Others (See AUTHORS)" }
+                ]
 
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(name, version).stripIndent();
