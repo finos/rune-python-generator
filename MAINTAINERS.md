@@ -6,10 +6,10 @@ This file lists the maintainers of this repository.
 
 | GitHub Username | Name | Organization | Email |
 |----------------|------|--------------|-------|
-| @davidalk | David Al-Kanani | *please add organization* | *please add email* |
-| @dschwartznyc | *please add name* | *please add organization* | *please add email* |
-| @hugohills-regnosys | Hugo Hills | REGnosys | *please add email* |
-| @plamen-neykov | Plamen Neykov | *please add organization* | *please add email* |
+| @davidalk | David Al-Kanani | REGnosys | david.al-kanani@regnosys.com |
+| @dschwartznyc | Daniel Schwartz | FT Advisory LLC | daniel.schwartz@ftadvisory.co |
+| @hugohills-regnosys | Hugo Hills | REGnosys | hugo.hills@regnosys.com |
+| @plamen-neykov | Plamen Neykov | CLOUDRISK Ltd | plamen.neykov@cloudrisk.co.uk |
 
 For information about maintainer responsibilities and resources, see the [FINOS Maintainers Cheatsheet](https://community.finos.org/docs/finos-maintainers-cheatsheet).
 
