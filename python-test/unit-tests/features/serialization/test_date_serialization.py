@@ -17,8 +17,8 @@ def test_date_serialization():
     dt_in = DateSerializatonTest(dateValue=datetime.datetime(2025, 10, 30))
     dt_in.validate_model()
     dt_str = dt_in.rune_serialize()
-    print('dt_str:', dt_str)
-    BaseDataClass.rune_deserialize(dt_str)
+    dt_out = BaseDataClass.rune_deserialize(dt_str)
+    assert dt_out == dt_in
 
 if __name__ == "__main__":
     test_date_serialization()
