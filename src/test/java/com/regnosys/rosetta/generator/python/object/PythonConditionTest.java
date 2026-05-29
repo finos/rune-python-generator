@@ -433,7 +433,7 @@ public class PythonConditionTest {
                         Test choice description.
                         \"""
                         item = self
-                        return rune_check_one_of(self, 'testTypeValue1', 'testTypeValue2', necessity=False)
+                        return rune_check_one_of(item, 'testTypeValue1', 'testTypeValue2', necessity=False)
                 """);
     }
 
@@ -500,7 +500,7 @@ public class PythonConditionTest {
                     @rune_condition
                     def condition_0_(self):
                         item = self
-                        return rune_check_one_of(self, 'a0', 'a1', necessity=True)
+                        return rune_check_one_of(item, 'a0', 'a1', necessity=True)
                 """);
         testUtils.assertGeneratedContainsExpectedString(
                 pythonString,
@@ -521,7 +521,7 @@ public class PythonConditionTest {
                         Choice rule to represent an FpML choice construct.
                         \"""
                         item = self
-                        return rune_check_one_of(self, 'intValue1', 'intValue2', necessity=False)
+                        return rune_check_one_of(item, 'intValue1', 'intValue2', necessity=False)
 
                     @rune_condition
                     def condition_2_ReqOneOrTwo(self):
@@ -529,7 +529,7 @@ public class PythonConditionTest {
                         Choice rule to represent an FpML choice construct.
                         \"""
                         item = self
-                        return rune_check_one_of(self, 'intValue1', 'intValue2', necessity=True)
+                        return rune_check_one_of(item, 'intValue1', 'intValue2', necessity=True)
 
                     @rune_condition
                     def condition_3_SecondOneOrTwo(self):
@@ -626,8 +626,34 @@ public class PythonConditionTest {
                 @rune_condition
                 def condition_0_Choice(self):
                     item = self
-                    return rune_check_one_of(self, 'intType', 'stringType', necessity=True)
+                    return rune_check_one_of(item, 'intType', 'stringType', necessity=True)
             """;
         testUtils.assertGeneratedContainsExpectedString(choicePython, expectedChoice);
+    }
+
+    /**
+     * Test case for a choice condition embedded in a compound expression.
+     * e.g. `if x is absent and required choice a, b, c then y exists`
+     * ChoiceOperation must be handled by generateExpression, not only by
+     * generateConstraintCondition (which only handles top-level choice).
+     */
+    @Test
+    public void testChoiceEmbeddedInCompoundCondition() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type Foo:
+                    a int (0..1)
+                    b int (0..1)
+                    c int (0..1)
+                    d int (0..1)
+
+                    condition EmbeddedChoice:
+                        if a is absent
+                            and required choice b, c
+                        then d exists
+                """);
+        String generatedPython = python.get("src/com/rosetta/test/model/Foo.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+                "rune_check_one_of(item, 'b', 'c', necessity=True)");
     }
 }
