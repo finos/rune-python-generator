@@ -254,33 +254,33 @@ public class PythonConditionalExpressionTest {
     public void testGenerateChoiceCondition() {
         testUtils.assertBundleContainsExpectedString("""
                 type Test1:<"Test choice condition.">
-                field1 string (0..1) <"Test string field 1">
-                field2 string (0..1) <"Test string field 2">
-                field3 string (0..1) <"Test string field 3">
-                condition TestChoice: optional choice field1, field2, field3
+                    field1 string (0..1) <"Test string field 1">
+                    field2 string (0..1) <"Test string field 2">
+                    field3 string (0..1) <"Test string field 3">
+                    condition TestChoice: optional choice field1, field2, field3
                 """,
                 """
-                        class Test1(BaseDataClass):
-                            \"""
-                            Test choice condition.
-                            \"""
-                            field1: Optional[str] = Field(None, description='Test string field 1')
-                            \"""
-                            Test string field 1
-                            \"""
-                            field2: Optional[str] = Field(None, description='Test string field 2')
-                            \"""
-                            Test string field 2
-                            \"""
-                            field3: Optional[str] = Field(None, description='Test string field 3')
-                            \"""
-                            Test string field 3
-                            \"""
+                class Test1(BaseDataClass):
+                    \"""
+                    Test choice condition.
+                    \"""
+                    field1: Optional[str] = Field(None, description='Test string field 1')
+                    \"""
+                    Test string field 1
+                    \"""
+                    field2: Optional[str] = Field(None, description='Test string field 2')
+                    \"""
+                    Test string field 2
+                    \"""
+                    field3: Optional[str] = Field(None, description='Test string field 3')
+                    \"""
+                    Test string field 3
+                    \"""
 
-                            @rune_condition
-                            def condition_0_TestChoice(self):
-                                item = self
-                                return rune_check_one_of(self, 'field1', 'field2', 'field3', necessity=False)""");
+                    @rune_condition
+                    def condition_0_TestChoice(self):
+                        item = self
+                        return rune_check_one_of(item, 'field1', 'field2', 'field3', necessity=False)""");
     }
 
     /**
@@ -294,19 +294,19 @@ public class PythonConditionalExpressionTest {
                     condition OneOf: one-of
                 """,
                 """
-                        class Test1(BaseDataClass):
-                            _CHOICE_ALIAS_MAP ={"field1":[]}
-                            \"""
-                            Test one-of condition.
-                            \"""
-                            field1: Optional[str] = Field(None, description='Test string field 1')
-                            \"""
-                            Test string field 1
-                            \"""
+                class Test1(BaseDataClass):
+                    _CHOICE_ALIAS_MAP ={"field1":[]}
+                    \"""
+                    Test one-of condition.
+                    \"""
+                    field1: Optional[str] = Field(None, description='Test string field 1')
+                    \"""
+                    Test string field 1
+                    \"""
 
-                            @rune_condition
-                            def condition_0_OneOf(self):
-                                item = self
-                                return rune_check_one_of(self, 'field1', necessity=True)""");
+                    @rune_condition
+                    def condition_0_OneOf(self):
+                        item = self
+                        return rune_check_one_of(item, 'field1', necessity=True)""");
     }
 }

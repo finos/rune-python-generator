@@ -306,6 +306,16 @@ public final class PythonExpressionGenerator {
             case WithMetaOperation withMeta -> {
                 return generateWithMetaOperation(withMeta, scope);
             }
+            case ChoiceOperation choice -> {
+                String receiver = choice.getArgument() != null
+                        ? generateExpression(choice.getArgument(), scope)
+                        : scope.receiver();
+                String attrs = choice.getAttributes().stream()
+                        .map(a -> "'" + a.getName() + "'")
+                        .collect(Collectors.joining(", "));
+                String necessity = choice.getNecessity() == Necessity.OPTIONAL ? "necessity=False" : "necessity=True";
+                return "rune_check_one_of(" + receiver + ", " + attrs + ", " + necessity + ")";
+            }
             default -> throw new UnsupportedOperationException(
                     "Unsupported expression type of " + expr.getClass().getSimpleName());
         }
@@ -398,10 +408,10 @@ public final class PythonExpressionGenerator {
                 String attrs = dt.getAllAttributes().stream()
                         .map(a -> "'" + a.getName() + "'")
                         .collect(Collectors.joining(", "));
-                return "rune_check_one_of(" + argument + ", " + attrs + ")";
+                return "rune_check_one_of(" + argument + ", " + attrs + ", necessity=True)";
             }
         }
-        return "rune_check_one_of(" + argument + ")";
+        return "rune_check_one_of(" + argument + ", necessity=True)";
     }
 
     private String generateFilterOperation(FilterOperation expr, PythonExpressionScope scope) {
@@ -653,19 +663,9 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateConstraintCondition(Data cls, Condition cond) {
-        RosettaExpression expression = cond.getExpression();
-        List<Attribute> attributes = cls.getAttributes();
-        String necessity = "necessity=True";
-        if (expression instanceof ChoiceOperation choice) {
-            attributes = choice.getAttributes();
-            if (choice.getNecessity() == Necessity.OPTIONAL) {
-                necessity = "necessity=False";
-            }
-        }
-        String attrs = attributes.stream().map(a -> "'" + a.getName() + "'").collect(Collectors.joining(", "));
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.indent();
-        writer.appendLine("return rune_check_one_of(self, " + attrs + ", " + necessity + ")");
+        writer.appendLine("return " + generateExpression(cond.getExpression(), PythonExpressionScope.of("self")));
         return writer.toString();
     }
 
