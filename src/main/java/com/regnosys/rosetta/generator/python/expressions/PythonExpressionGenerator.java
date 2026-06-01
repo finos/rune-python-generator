@@ -16,6 +16,7 @@ import com.regnosys.rosetta.rosetta.RosettaEnumValue;
 import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaFeature;
+import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaSymbol;
 import com.regnosys.rosetta.rosetta.expression.AsKeyOperation;
 import com.regnosys.rosetta.rosetta.expression.ChoiceOperation;
@@ -351,6 +352,10 @@ public final class PythonExpressionGenerator {
         if (expr.getFeature() instanceof RosettaEnumValue evalue) {
             return generateEnumString(evalue);
         }
+        if (expr.getFeature() instanceof RosettaMetaType metaType) {
+            String receiver = generateExpression(expr.getReceiver(), scope);
+            return "(lambda _r: _r.get_meta(\"" + metaType.getName() + "\") if _r is not None else None)(" + receiver + ")";
+        }
         String right = expr.getFeature().getName();
         if ("None".equals(right)) {
             right = "NONE";
@@ -502,6 +507,8 @@ public final class PythonExpressionGenerator {
             return symbol.getName();
         } else if (symbol instanceof ShortcutDeclaration) {
             return "rune_resolve_attr(self, \"" + symbol.getName() + "\")";
+        } else if (symbol instanceof RosettaMetaType metaType) {
+            return scope.receiver() + ".get_meta(\"" + metaType.getName() + "\")";
         } else {
             throw new UnsupportedOperationException(
                     "Unsupported symbol reference for: " + symbol.getClass().getSimpleName());

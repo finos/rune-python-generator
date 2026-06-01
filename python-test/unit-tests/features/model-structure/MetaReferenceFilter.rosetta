@@ -1,0 +1,38 @@
+namespace rosetta_dsl.test.model.meta_reference_filter : <"Tests for metadata reference filtering and navigation.">
+
+metaType reference string
+
+type Party:
+    [metadata key]
+    name string (0..1)
+
+type Leg:
+    partyRef Party (0..1)
+        [metadata reference]
+
+type Counterparty:
+    partyReference Party (1..1)
+        [metadata reference]
+    role string (0..1)
+
+func FilterByReference:
+    inputs:
+        legs Leg (0..*)
+    output:
+        result Party (0..1)
+            [metadata reference]
+    set result:
+        legs
+            extract partyRef
+            then filter reference exists
+            then first
+
+func FilterByPartyReference:
+    inputs:
+        counterparties Counterparty (0..*)
+    output:
+        result Counterparty (0..1)
+    set result:
+        counterparties
+            filter partyReference -> reference exists
+            then only-element
