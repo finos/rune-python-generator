@@ -105,7 +105,7 @@ public class PythonEnumTest {
                 @rune_condition
                 def condition_0_(self):
                     item = self
-                    return rune_check_one_of(self, 'ancillaryParty', 'legalEntity', necessity=True)
+                    return rune_check_one_of(item, 'ancillaryParty', 'legalEntity', necessity=True)
             """;
 
         String expectedTestType4 = """
@@ -192,7 +192,7 @@ public class PythonEnumTest {
                     Requires that a unit type must be set.
                     \"""
                     item = self
-                    return rune_check_one_of(self, 'capacityUnit', 'weatherUnit', necessity=True)
+                    return rune_check_one_of(item, 'capacityUnit', 'weatherUnit', necessity=True)
             """;
         String expectedTestType3 = """
             class WeatherUnitEnum(rune.runtime.metadata.EnumWithMetaMixin, Enum):

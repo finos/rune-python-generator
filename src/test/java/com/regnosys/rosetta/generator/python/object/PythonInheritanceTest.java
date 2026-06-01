@@ -322,7 +322,7 @@ public class PythonInheritanceTest {
                 @rune_condition
                 def condition_0_UnitType(self):
                     item = self
-                    return rune_check_one_of(self, 'capacityUnit', 'weatherUnit', 'financialUnit', 'currency', necessity=True)
+                    return rune_check_one_of(item, 'capacityUnit', 'weatherUnit', 'financialUnit', 'currency', necessity=True)
             """);
     }
 }
