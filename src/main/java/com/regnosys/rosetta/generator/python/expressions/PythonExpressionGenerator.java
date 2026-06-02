@@ -82,6 +82,7 @@ import com.regnosys.rosetta.types.RMetaAnnotatedType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.RosettaTypeProvider;
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 
 import jakarta.inject.Inject;
 
@@ -353,8 +354,10 @@ public final class PythonExpressionGenerator {
             return generateEnumString(evalue);
         }
         if (expr.getFeature() instanceof RosettaMetaType metaType) {
+            String metaDataName = PythonCodeGeneratorUtil.mapMetaTypeToMetaDataName(metaType.getName());
+            String functionName = (metaDataName.startsWith(("ref"))) ? ".resolve_ref" : ".get_meta";
             String receiver = generateExpression(expr.getReceiver(), scope);
-            return "(lambda _r: _r.get_meta(\"" + metaType.getName() + "\") if _r is not None else None)(" + receiver + ")";
+            return "(lambda _r: _r" + functionName + "(\"" + metaDataName + "\") if _r is not None else None)(" + receiver + ")";
         }
         String right = expr.getFeature().getName();
         if ("None".equals(right)) {
@@ -508,7 +511,9 @@ public final class PythonExpressionGenerator {
         } else if (symbol instanceof ShortcutDeclaration) {
             return "rune_resolve_attr(self, \"" + symbol.getName() + "\")";
         } else if (symbol instanceof RosettaMetaType metaType) {
-            return scope.receiver() + ".get_meta(\"" + metaType.getName() + "\")";
+            String metaDataName = PythonCodeGeneratorUtil.mapMetaTypeToMetaDataName(metaType.getName());
+            String functionName = (metaDataName.startsWith(("ref"))) ? ".resolve_ref" : ".get_meta";
+            return scope.receiver() + functionName + "(\"" + metaDataName + "\")";
         } else {
             throw new UnsupportedOperationException(
                     "Unsupported symbol reference for: " + symbol.getClass().getSimpleName());

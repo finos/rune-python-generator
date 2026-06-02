@@ -1,6 +1,7 @@
 namespace rosetta_dsl.test.model.meta_reference_filter : <"Tests for metadata reference filtering and navigation.">
 
 metaType reference string
+metaType scheme string
 
 type Party:
     [metadata key]
@@ -14,6 +15,13 @@ type Counterparty:
     partyReference Party (1..1)
         [metadata reference]
     role string (0..1)
+
+type Trade:
+    identifier string (0..1)
+        [metadata scheme]
+
+type TradeHolder:
+    trade Trade (0..1)
 
 func FilterByReference:
     inputs:
@@ -35,4 +43,14 @@ func FilterByPartyReference:
     set result:
         counterparties
             filter partyReference -> reference exists
+            then only-element
+
+func FilterByScheme:
+    inputs:
+        holders TradeHolder (0..*)
+    output:
+        result TradeHolder (0..1)
+    set result:
+        holders
+            filter trade -> identifier -> scheme exists
             then only-element
