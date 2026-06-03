@@ -96,7 +96,7 @@ ${PYEXE} -m pip install -r requirements.txt || error
 #      Example: RUNE_RUNTIME_REF="feature/function_support"
 #   3. (default) — no explicit install; rune.runtime is a declared dependency of the generated
 #      wheel and will be pulled from PyPI automatically when that wheel is installed.
-# RUNE_RUNTIME_DIR="../../../../../rune-python-runtime/FINOS/rune-python-runtime"
+RUNE_RUNTIME_DIR="../../../../../rune-python-runtime/FINOS/rune-python-runtime"
 # RUNE_RUNTIME_REF="feature/function_support"
 
 if [ -n "$RUNE_RUNTIME_DIR" ] && [ -d "$RUNE_RUNTIME_DIR" ]; then

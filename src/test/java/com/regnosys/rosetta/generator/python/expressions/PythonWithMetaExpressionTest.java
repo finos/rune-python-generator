@@ -222,7 +222,7 @@ public class PythonWithMetaExpressionTest {
                             then filter reference exists
                             then first
                 """,
-                "rune_filter(item, lambda item: rune_attr_exists(item.resolve_ref(\"ref\")))");
+                "rune_filter(item, lambda item: rune_attr_exists(item.resolve_ref_key(\"ref\")))");
     }
 
     // -------------------------------------------------------------------------
@@ -252,6 +252,6 @@ public class PythonWithMetaExpressionTest {
                             filter partyReference -> reference exists
                             then only-element
                 """,
-                "rune_filter(rune_resolve_attr(self, \"counterparties\"), lambda item: rune_attr_exists((lambda _r: _r.resolve_ref(\"ref\") if _r is not None else None)(rune_resolve_attr(item, \"partyReference\"))))");
+                "rune_filter(rune_resolve_attr(self, \"counterparties\"), lambda item: rune_attr_exists(item.resolve_ref_key(\"partyReference\")))");
     }
 }
