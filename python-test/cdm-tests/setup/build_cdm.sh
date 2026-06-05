@@ -60,8 +60,8 @@ cd ${MY_PATH} || error
 source "$MY_PATH/../../ensure_jar_exists.sh" || { echo "Failed to source ensure_jar_exists.sh"; exit 1; }
 
 # Parse command-line arguments
-# CDM_BRANCH="master"
-CDM_BRANCH="6.x.x"
+CDM_BRANCH="master"
+# CDM_BRANCH="6.x.x"
 SKIP_CDM=0
 for arg in "$@"; do
   case "$arg" in

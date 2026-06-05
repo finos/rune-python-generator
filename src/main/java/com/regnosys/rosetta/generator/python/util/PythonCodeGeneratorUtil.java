@@ -15,7 +15,7 @@ public final class PythonCodeGeneratorUtil {
     private PythonCodeGeneratorUtil() {
     }
 
-public static String fileComment(String version) {
+    public static String fileComment(String version) {
         return """
                 # This file is auto-generated from the Rune Python Generator, do not edit.
                 # Version: %s
@@ -203,5 +203,16 @@ public static String fileComment(String version) {
         }
 
         return "0.0.0";
+    }
+    public static String mapMetaTypeToMetaDataName(String metaTypeName) {
+        return switch (metaTypeName) {
+            case "reference" -> "ref";
+            case "key" -> "key";
+            case "scheme" -> "scheme";
+            case "id" -> "key_external";
+            case "location" -> "key_scoped";
+            case "address" -> "ref_scoped";
+            default -> throw new UnsupportedOperationException("Unsupported meta type: " + metaTypeName);
+        };
     }
 }

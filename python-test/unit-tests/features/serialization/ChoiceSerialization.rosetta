@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.choice_serialization : <"generate Python unit tests from Rosetta.">
+
+type A:
+    value int (1..1)
+
+type B:
+    value int (1..1)
+
+choice ChoiceSerializatonTest:
+    A
+    B
