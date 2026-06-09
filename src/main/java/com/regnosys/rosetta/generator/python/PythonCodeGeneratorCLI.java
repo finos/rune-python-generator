@@ -127,7 +127,7 @@ public class PythonCodeGeneratorCLI {
     /** Regex matching a dev version string such as {@code 1.2.3-dev.4}. */
     private static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
     /** Regex matching a Maven SNAPSHOT version with branch qualifier such as {@code 0.0.0.featuremaster-Python-Update-SNAPSHOT}. */
-    private static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)\\.[A-Za-z][A-Za-z0-9-]+-SNAPSHOT");
+    private static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)\\.[A-Za-z][A-Za-z0-9_-]+-SNAPSHOT");
 
     /**
      * Public constructor for the CLI tool.
@@ -151,25 +151,25 @@ public class PythonCodeGeneratorCLI {
         Options options = new Options();
         Option help = new Option("h", "Print usage");
         Option srcDirOpt = Option.builder("s").longOpt("dir").argName("srcDir").desc("Source Rosetta directory")
-                .hasArg().build();
+                .hasArg().get();
         Option srcFileOpt = Option.builder("f").longOpt("file").argName("srcFile").desc("Source Rosetta file").hasArg()
-                .build();
+                .get();
         Option tgtDirOpt = Option.builder("t").longOpt("tgt").argName("tgtDir")
-                .desc("Target Python directory (default: ./python)").hasArg().build();
-        Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors").desc("Continue even if there are validation errors").build();
-        Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings").desc("Fail if there are validation warnings").build();
+                .desc("Target Python directory (default: ./python)").hasArg().get();
+        Option allowErrorsOpt = Option.builder("e").longOpt("allow-errors").desc("Continue even if there are validation errors").get();
+        Option failOnWarningsOpt = Option.builder("w").longOpt("fail-on-warnings").desc("Fail if there are validation warnings").get();
         Option projectNameOpt = Option.builder("p").longOpt("project-name").argName("projectName")
                 .desc("Override the pyproject.toml project name (default: python-<first-namespace-segment>)")
-                .hasArg().build();
+                .hasArg().get();
         Option versionOpt = Option.builder("v").longOpt("version").argName("version")
                 .desc("Package version in #.#.# format (default: " + DEFAULT_VERSION + ")")
-                .hasArg().build();
+                .hasArg().get();
         Option namespacePrefixOpt = Option.builder("x").longOpt("namespace-prefix").argName("namespacePrefix")
                 .desc("Prefix to prepend to every generated namespace (e.g. finos)")
-                .hasArg().build();
+                .hasArg().get();
         Option nativeDirOpt = Option.builder("n").longOpt("native-dir").argName("nativeDir")
                 .desc("Source directory containing native function implementations to copy into the generated package")
-                .hasArg().build();
+                .hasArg().get();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
