@@ -345,6 +345,7 @@ public class PythonCodeGeneratorCLI {
         Map<String, CharSequence> generatedPython = new HashMap<>();
 
         List<RosettaModel> validModels = new ArrayList<>();
+        List<String> skippedModels = new ArrayList<>();
 
         for (RosettaModel model : models) {
             Resource resource = model.eResource();
@@ -398,6 +399,7 @@ public class PythonCodeGeneratorCLI {
 
             if (hasErrors) {
                 LOGGER.error("Skipping model {} due to validation errors.", model.getName());
+                skippedModels.add(model.getName());
             } else {
                 validModels.add(model);
             }
@@ -431,6 +433,13 @@ public class PythonCodeGeneratorCLI {
 
         writePythonFiles(generatedPython, tgtDir);
         copyNativeFunctions(nativeDir, tgtDir, generatedPython.keySet(), namespacePrefix);
+
+        LOGGER.info("Read {} model(s)", models.size());
+        if (!skippedModels.isEmpty()) {
+            LOGGER.error("Skipped {} model(s):", skippedModels.size());
+            skippedModels.forEach(m -> LOGGER.error("  - {}", m));
+        }
+        LOGGER.info("Wrote {} files to {}", generatedPython.size(), tgtDir);
         return 0;
     }
 
@@ -478,7 +487,6 @@ public class PythonCodeGeneratorCLI {
                 System.err.println("Failed to write file: " + outputPath + " - " + e.getMessage());
             }
         }
-        LOGGER.info("Wrote {} files to {}", generatedPython.size(), tgtDir);
     }
 
     private static void copyNativeFunctions(String nativeDir, String tgtDir, Set<String> generatedPaths, String namespacePrefix) {
