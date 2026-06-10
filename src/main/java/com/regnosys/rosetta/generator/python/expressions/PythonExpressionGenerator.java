@@ -16,6 +16,7 @@ import com.regnosys.rosetta.rosetta.RosettaEnumValue;
 import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaFeature;
+import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaSymbol;
 import com.regnosys.rosetta.rosetta.expression.AsKeyOperation;
 import com.regnosys.rosetta.rosetta.expression.ChoiceOperation;
@@ -81,6 +82,7 @@ import com.regnosys.rosetta.types.RMetaAnnotatedType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.RosettaTypeProvider;
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
+import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 
 import jakarta.inject.Inject;
 
@@ -306,6 +308,16 @@ public final class PythonExpressionGenerator {
             case WithMetaOperation withMeta -> {
                 return generateWithMetaOperation(withMeta, scope);
             }
+            case ChoiceOperation choice -> {
+                String receiver = choice.getArgument() != null
+                        ? generateExpression(choice.getArgument(), scope)
+                        : scope.receiver();
+                String attrs = choice.getAttributes().stream()
+                        .map(a -> "'" + a.getName() + "'")
+                        .collect(Collectors.joining(", "));
+                String necessity = choice.getNecessity() == Necessity.OPTIONAL ? "necessity=False" : "necessity=True";
+                return "rune_check_one_of(" + receiver + ", " + attrs + ", " + necessity + ")";
+            }
             default -> throw new UnsupportedOperationException(
                     "Unsupported expression type of " + expr.getClass().getSimpleName());
         }
@@ -341,6 +353,23 @@ public final class PythonExpressionGenerator {
         if (expr.getFeature() instanceof RosettaEnumValue evalue) {
             return generateEnumString(evalue);
         }
+        if (expr.getFeature() instanceof RosettaMetaType metaType) {
+            String metaDataName = PythonCodeGeneratorUtil.mapMetaTypeToMetaDataName(metaType.getName());
+            if (metaDataName.startsWith("ref")
+                    && expr.getReceiver() instanceof RosettaSymbolReference receiverRef
+                    && receiverRef.getSymbol() instanceof Attribute refAttr) {
+                RMetaAnnotatedType receiverType = typeProvider.getRMetaAnnotatedType(expr.getReceiver());
+                if (receiverType != null && receiverType.hasAttributeMeta()
+                        && receiverType.getMetaAttributes().stream()
+                                .anyMatch(ma -> "reference".equals(ma.getName())
+                                        || "address".equals(ma.getName()))) {
+                    return scope.receiver() + ".resolve_ref_key(\"" + refAttr.getName() + "\")";
+                }
+            }
+            String functionName = metaDataName.startsWith("ref") ? ".resolve_ref_key" : ".get_meta";
+            String receiver = generateExpression(expr.getReceiver(), scope);
+            return "(lambda _r: _r" + functionName + "(\"" + metaDataName + "\") if _r is not None else None)(" + receiver + ")";
+        }
         String right = expr.getFeature().getName();
         if ("None".equals(right)) {
             right = "NONE";
@@ -351,6 +380,15 @@ public final class PythonExpressionGenerator {
 
     private String generateThenOperation(ThenOperation expr, PythonExpressionScope scope) {
         InlineFunction funcExpr = expr.getFunction();
+
+        if (expr.getArgument() instanceof MapOperation mapOp
+                && funcExpr.getBody() instanceof FilterOperation filterOp) {
+            String specialResult = tryGenerateReferenceFilterChain(mapOp, filterOp, funcExpr, scope);
+            if (specialResult != null) {
+                return specialResult;
+            }
+        }
+
         String argExpr = generateExpression(expr.getArgument(), scope);
 
         String funcParams = funcExpr.getParameters().stream().map(ClosureParameter::getName)
@@ -366,6 +404,53 @@ public final class PythonExpressionGenerator {
         String lambdaFunction = (funcParams.isEmpty()) ? "(lambda item: " + body + ")"
                 : "(lambda " + funcParams + ": " + body + ")";
         return lambdaFunction + "(" + argExpr + ")";
+    }
+
+    private String tryGenerateReferenceFilterChain(
+            MapOperation mapOp, FilterOperation filterOp,
+            InlineFunction thenFunc, PythonExpressionScope scope) {
+
+        RosettaExpression mapBody = mapOp.getFunction().getBody();
+        if (!(mapBody instanceof RosettaSymbolReference mapRef)
+                || !(mapRef.getSymbol() instanceof Attribute refAttr)) {
+            return null;
+        }
+        RMetaAnnotatedType mapBodyType = typeProvider.getRMetaAnnotatedType(mapBody);
+        if (mapBodyType == null || !mapBodyType.hasAttributeMeta()
+                || mapBodyType.getMetaAttributes().stream()
+                        .noneMatch(ma -> "reference".equals(ma.getName())
+                                || "address".equals(ma.getName()))) {
+            return null;
+        }
+
+        RosettaExpression filterBody = filterOp.getFunction().getBody();
+        if (!(filterBody instanceof RosettaExistsExpression existsExpr)
+                || !(existsExpr.getArgument() instanceof RosettaSymbolReference metaRef)
+                || !(metaRef.getSymbol() instanceof RosettaMetaType metaType)) {
+            return null;
+        }
+        String metaDataName = PythonCodeGeneratorUtil.mapMetaTypeToMetaDataName(metaType.getName());
+        if (!metaDataName.startsWith("ref")) {
+            return null;
+        }
+
+        String param = thenFunc.getParameters().isEmpty() ? "item"
+                : thenFunc.getParameters().get(0).getName();
+        String rawCollection = generateExpression(mapOp.getArgument(), scope);
+        String rawArg = "[x for x in " + rawCollection + " or [] if x is not None]";
+
+        String fieldName = refAttr.getName();
+        String resolveCall = param + ".resolve_ref_key(\"" + fieldName + "\")";
+        String existsCall;
+        if (existsExpr.getModifier() == ExistsModifier.SINGLE) {
+            existsCall = "rune_attr_exists(" + resolveCall + ", \"single\")";
+        } else if (existsExpr.getModifier() == ExistsModifier.MULTIPLE) {
+            existsCall = "rune_attr_exists(" + resolveCall + ", \"multiple\")";
+        } else {
+            existsCall = "rune_attr_exists(" + resolveCall + ")";
+        }
+        String filterExpr = "rune_filter(" + param + ", lambda " + param + ": " + existsCall + ")";
+        return "(lambda " + param + ": " + filterExpr + ")(" + rawArg + ")";
     }
 
     private String generateReduceOperation(ReduceOperation expr, PythonExpressionScope scope) {
@@ -398,10 +483,10 @@ public final class PythonExpressionGenerator {
                 String attrs = dt.getAllAttributes().stream()
                         .map(a -> "'" + a.getName() + "'")
                         .collect(Collectors.joining(", "));
-                return "rune_check_one_of(" + argument + ", " + attrs + ")";
+                return "rune_check_one_of(" + argument + ", " + attrs + ", necessity=True)";
             }
         }
-        return "rune_check_one_of(" + argument + ")";
+        return "rune_check_one_of(" + argument + ", necessity=True)";
     }
 
     private String generateFilterOperation(FilterOperation expr, PythonExpressionScope scope) {
@@ -492,6 +577,10 @@ public final class PythonExpressionGenerator {
             return symbol.getName();
         } else if (symbol instanceof ShortcutDeclaration) {
             return "rune_resolve_attr(self, \"" + symbol.getName() + "\")";
+        } else if (symbol instanceof RosettaMetaType metaType) {
+            String metaDataName = PythonCodeGeneratorUtil.mapMetaTypeToMetaDataName(metaType.getName());
+            String functionName = (metaDataName.startsWith(("ref"))) ? ".resolve_ref_key" : ".get_meta";
+            return scope.receiver() + functionName + "(\"" + metaDataName + "\")";
         } else {
             throw new UnsupportedOperationException(
                     "Unsupported symbol reference for: " + symbol.getClass().getSimpleName());
@@ -653,19 +742,9 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateConstraintCondition(Data cls, Condition cond) {
-        RosettaExpression expression = cond.getExpression();
-        List<Attribute> attributes = cls.getAttributes();
-        String necessity = "necessity=True";
-        if (expression instanceof ChoiceOperation choice) {
-            attributes = choice.getAttributes();
-            if (choice.getNecessity() == Necessity.OPTIONAL) {
-                necessity = "necessity=False";
-            }
-        }
-        String attrs = attributes.stream().map(a -> "'" + a.getName() + "'").collect(Collectors.joining(", "));
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.indent();
-        writer.appendLine("return rune_check_one_of(self, " + attrs + ", " + necessity + ")");
+        writer.appendLine("return " + generateExpression(cond.getExpression(), PythonExpressionScope.of("self")));
         return writer.toString();
     }
 

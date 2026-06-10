@@ -194,7 +194,7 @@ public class PythonInheritanceTest {
                 b string (0..1)
 
             type Bar extends Foo:
-                a string (0..1)
+                override a string (0..1)
             """,
             """
             class Foo(BaseDataClass):
@@ -209,7 +209,7 @@ public class PythonInheritanceTest {
                 b string (0..1)
 
             type Bar extends Foo:
-                a string (0..1)
+                override a string (0..1)
             """,
             """
             class Bar(Foo):
@@ -322,7 +322,7 @@ public class PythonInheritanceTest {
                 @rune_condition
                 def condition_0_UnitType(self):
                     item = self
-                    return rune_check_one_of(self, 'capacityUnit', 'weatherUnit', 'financialUnit', 'currency', necessity=True)
+                    return rune_check_one_of(item, 'capacityUnit', 'weatherUnit', 'financialUnit', 'currency', necessity=True)
             """);
     }
 }

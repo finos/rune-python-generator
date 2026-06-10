@@ -183,4 +183,75 @@ public class PythonWithMetaExpressionTest {
                 """,
                 "(lambda _wm: (_wm.set_meta(check_allowed=False, address=rune_resolve_attr(self, \"addrVal\")), _wm)[-1])(rune_resolve_attr(self, \"val\"))");
     }
+
+    // -------------------------------------------------------------------------
+    // Filter on standalone metadata reference existence: filter reference exists
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testFilterOnMetadataReferenceExists() {
+        testUtils.assertBundleContainsExpectedString("""
+                metaType reference string
+
+                type Party:
+                    [metadata key]
+                    name string (0..1)
+
+                type Leg:
+                    partyRef Party (0..1)
+                        [metadata reference]
+
+                func GetPartyRef:
+                    inputs:
+                        leg Leg (0..1)
+                    output:
+                        result Party (0..1)
+                            [metadata reference]
+                    set result:
+                        leg -> partyRef
+
+                func FilterByReference:
+                    inputs:
+                        legs Leg (0..*)
+                    output:
+                        result Party (0..1)
+                            [metadata reference]
+                    set result:
+                        legs
+                            extract GetPartyRef( item )
+                            then filter reference exists
+                            then first
+                """,
+                "rune_filter(item, lambda item: rune_attr_exists(item.resolve_ref_key(\"ref\")))");
+    }
+
+    // -------------------------------------------------------------------------
+    // Feature call on metadata reference: field -> reference exists
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testFeatureCallOnMetadataReference() {
+        testUtils.assertBundleContainsExpectedString("""
+                metaType reference string
+
+                type Party:
+                    [metadata key]
+                    name string (0..1)
+
+                type Counterparty:
+                    partyReference Party (1..1)
+                        [metadata reference]
+
+                func FilterByPartyReference:
+                    inputs:
+                        counterparties Counterparty (0..*)
+                    output:
+                        result Counterparty (0..1)
+                    set result:
+                        counterparties
+                            filter partyReference -> reference exists
+                            then only-element
+                """,
+                "rune_filter(rune_resolve_attr(self, \"counterparties\"), lambda item: rune_attr_exists(item.resolve_ref_key(\"partyReference\")))");
+    }
 }

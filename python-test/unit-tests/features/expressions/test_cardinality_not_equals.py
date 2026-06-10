@@ -9,48 +9,47 @@ from rosetta_dsl.test.expressions.cardinalitynotequals.functions.TestAnyNotEqual
 from rosetta_dsl.test.expressions.cardinalitynotequals.functions.TestAllNotEqualsList import TestAllNotEqualsList
 from rosetta_dsl.test.expressions.cardinalitynotequals.functions.TestNotEqualsList import TestNotEqualsList
 
-# any <> list: cross-product — true if any element of x != any element of y
+# any <> y (scalar): true if any element of x != y
 
-def test_any_not_equals_list__true_when_any_pair_differs():
-    # "A" != "B" satisfies the condition
-    assert TestAnyNotEqualsList(x=["A", "B"], y=["A", "B"])
-
-
-def test_any_not_equals_list__false_when_all_pairs_equal():
-    # every x_i == every y_j (all same value), cross-product all equal
-    assert not TestAnyNotEqualsList(x=["A", "A"], y=["A", "A"])
+def test_any_not_equals_list__true_when_any_element_differs():
+    # "B" != "A" satisfies the condition
+    assert TestAnyNotEqualsList(x=["A", "B"], y="A")
 
 
-def test_any_not_equals_list__true_when_x_has_extra_value():
-    assert TestAnyNotEqualsList(x=["A", "B"], y=["A"])
+def test_any_not_equals_list__false_when_all_elements_equal_y():
+    # every x_i == y
+    assert not TestAnyNotEqualsList(x=["A", "A"], y="A")
 
 
-def test_any_not_equals_list__true_when_y_has_extra_value():
-    assert TestAnyNotEqualsList(x=["A"], y=["A", "B"])
+def test_any_not_equals_list__true_when_single_element_differs():
+    assert TestAnyNotEqualsList(x=["B"], y="A")
 
 
-# all <> list: pairwise zip — true if every x_i != y_i (same length required)
-
-def test_all_not_equals_list__true_when_all_pairs_differ():
-    assert TestAllNotEqualsList(x=["A", "B"], y=["C", "D"])
+def test_any_not_equals_list__false_when_single_element_equals_y():
+    assert not TestAnyNotEqualsList(x=["A"], y="A")
 
 
-def test_all_not_equals_list__false_when_any_pair_equal():
-    assert not TestAllNotEqualsList(x=["A", "B"], y=["A", "D"])
+# all <> y (scalar): true if no element of x equals y
+
+def test_all_not_equals_list__true_when_all_differ_from_y():
+    assert TestAllNotEqualsList(x=["A", "B"], y="C")
 
 
-def test_all_not_equals_list__false_when_lengths_differ():
-    # pairwise zip requires equal lengths
-    assert not TestAllNotEqualsList(x=["A", "B"], y=["C"])
+def test_all_not_equals_list__false_when_one_element_equals_y():
+    assert not TestAllNotEqualsList(x=["A", "B"], y="A")
 
 
-def test_all_not_equals_list__false_when_all_equal():
-    assert not TestAllNotEqualsList(x=["A", "B"], y=["A", "B"])
+def test_all_not_equals_list__false_when_all_elements_equal_y():
+    assert not TestAllNotEqualsList(x=["A", "A"], y="A")
+
+
+def test_all_not_equals_list__false_when_last_element_equals_y():
+    assert not TestAllNotEqualsList(x=["A", "B"], y="B")
 
 
 def test_all_not_equals_list__single_elements():
-    assert TestAllNotEqualsList(x=["A"], y=["B"])
-    assert not TestAllNotEqualsList(x=["A"], y=["A"])
+    assert TestAllNotEqualsList(x=["A"], y="B")
+    assert not TestAllNotEqualsList(x=["A"], y="A")
 
 def test_not_equals_list__false_when_all_pairs_equal():
     # every x_i == every y_j (all same value), cross-product all equal

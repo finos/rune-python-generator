@@ -1,0 +1,83 @@
+namespace rosetta_dsl.test.model.meta_reference_filter : <"Tests for metadata reference filtering and navigation.">
+
+metaType reference string
+metaType scheme string
+
+type Party:
+    [metadata key]
+    name string (0..1)
+
+type Leg:
+    partyRef Party (0..1)
+        [metadata reference]
+
+type Counterparty:
+    partyReference Party (1..1)
+        [metadata reference]
+    role string (0..1)
+
+type Trade:
+    identifier string (0..1)
+        [metadata scheme]
+
+type TradeHolder:
+    trade Trade (0..1)
+
+func FilterByReference:
+    inputs:
+        legs Leg (0..*)
+    output:
+        result Leg (0..1)
+    set result:
+        legs
+            filter partyRef -> reference exists
+            then first
+
+func FilterByPartyReference:
+    inputs:
+        counterparties Counterparty (0..*)
+    output:
+        result Counterparty (0..1)
+    set result:
+        counterparties
+            filter partyReference -> reference exists
+            then only-element
+
+func FilterByScheme:
+    inputs:
+        holders TradeHolder (0..*)
+    output:
+        result TradeHolder (0..1)
+    set result:
+        holders
+            filter trade -> identifier -> scheme exists
+            then only-element
+
+// Exercises generateSymbolReference → RosettaMetaType (resolve_ref path):
+// After extracting the partyReference field, `reference` is a bare
+// RosettaMetaType symbol reference resolved via scope.receiver().resolve_ref("ref").
+// Mirrors FilterIdentifiersByScheme but for the resolve_ref branch.
+func FilterCounterpartiesByReference:
+    inputs:
+        counterparties Counterparty (0..*)
+    output:
+        result Counterparty (0..1)
+    set result:
+        counterparties
+            filter partyReference -> reference exists
+            then first
+
+// Exercises generateSymbolReference → RosettaMetaType (get_meta path):
+// After extracting the identifier field, `scheme` is a bare RosettaMetaType
+// symbol reference resolved via scope.receiver().get_meta("scheme").
+func FilterIdentifiersByScheme:
+    inputs:
+        trades Trade (0..*)
+    output:
+        result string (0..1)
+            [metadata scheme]
+    set result:
+        trades
+            extract identifier
+            then filter scheme exists
+            then first

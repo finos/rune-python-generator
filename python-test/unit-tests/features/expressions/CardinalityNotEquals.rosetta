@@ -2,8 +2,8 @@ namespace rosetta_dsl.test.expressions.cardinalitynotequals
 
 func TestAnyNotEqualsList:
     inputs:
-        x string (0..*)
-        y string (0..*)
+        x string (1..*)
+        y string (1..1)
     output:
         result boolean (1..1)
     set result:
@@ -11,8 +11,8 @@ func TestAnyNotEqualsList:
 
 func TestAllNotEqualsList:
     inputs:
-        x string (0..*)
-        y string (0..*)
+        x string (1..*)
+        y string (1..1)
     output:
         result boolean (1..1)
     set result:

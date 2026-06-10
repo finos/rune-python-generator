@@ -77,7 +77,7 @@
         <java.enforced.version>[21,22)</java.enforced.version>
         <maven.compiler.release>21</maven.compiler.release>
 
-        <commons-io.version>2.21.0</commons-io.version>
+        <commons-io.version>2.22.0</commons-io.version>
         <commons-cli.version>1.11.0</commons-cli.version>
 
         <!-- Release -->
@@ -85,23 +85,23 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.77.1</rosetta.dsl.version>
+        <rosetta.dsl.version>9.83.1</rosetta.dsl.version>
 
-        <xtext.version>2.38.0</xtext.version>
+        <xtext.version>2.43.0</xtext.version>
         <guice.version>6.0.0</guice.version>
 
-        <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.32</logback.version>
+        <slf4j.version>2.0.18</slf4j.version>
+        <logback.version>1.5.34</logback.version>
 
         <!-- test -->
-        <junit.version>6.0.3</junit.version>
+        <junit.version>6.1.0</junit.version>
 
         <!-- plugin -->
-        <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
+        <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
         <maven-install-plugin.version>3.1.4</maven-install-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
@@ -198,19 +198,19 @@
                 <version>${logback.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>com.regnosys.rosetta</artifactId>
+                <groupId>org.finos.rune</groupId>
+                <artifactId>rune-lang</artifactId>
                 <version>${rosetta.dsl.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>com.regnosys.rosetta.tests</artifactId>
+                <groupId>org.finos.rune</groupId>
+                <artifactId>rune-testing</artifactId>
                 <version>${rosetta.dsl.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.regnosys.rosetta</groupId>
-                <artifactId>com.regnosys.rosetta.lib</artifactId>
+                <groupId>org.finos.rune</groupId>
+                <artifactId>rune-runtime</artifactId>
                 <version>${rosetta.dsl.version}</version>
             </dependency>
             <dependency>
@@ -242,16 +242,16 @@
         </dependency>
         <!-- migrated from Python POM: start -->
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.lib</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-lang</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.regnosys.rosetta</groupId>
-            <artifactId>com.regnosys.rosetta.tests</artifactId>
+            <groupId>org.finos.rune</groupId>
+            <artifactId>rune-testing</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
