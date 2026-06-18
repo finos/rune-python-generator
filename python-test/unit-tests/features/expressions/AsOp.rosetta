@@ -1,0 +1,61 @@
+namespace rosetta_dsl.test.expressions.as_op : <"generate Python unit tests for the as operator.">
+
+type Foo:
+
+type Bar extends Foo:
+    barAttr int (1..1)
+    inner Qux (1..1)
+
+type Qux extends Foo:
+    quxAttr int (1..1)
+    attr int (1..1)
+
+func AsDataSingle: <"Test as operator: data type narrowing, single">
+    inputs:
+        foo Foo (1..1)
+    output:
+        result int (0..1)
+    set result:
+        foo as Bar -> barAttr
+
+func AsDataMulti: <"Test as operator: data type narrowing, multi">
+    inputs:
+        foos Foo (0..*)
+    output:
+        result int (0..*)
+    set result:
+        foos as Bar -> barAttr
+
+func AsChained: <"Test as operator: chained as followed by -> attribute access">
+    inputs:
+        foo Foo (1..1)
+    output:
+        result int (0..1)
+    set result:
+        foo as Bar -> inner -> attr
+
+type ChoiceBar:
+    barAttr int (1..1)
+
+type ChoiceQux:
+    quxAttr int (1..1)
+
+choice ChoiceFoo:
+    ChoiceBar
+    ChoiceQux
+
+func AsChoiceSingle: <"Test as operator: choice narrowing, single">
+    inputs:
+        choiceFoo ChoiceFoo (1..1)
+    output:
+        result int (0..1)
+    set result:
+        choiceFoo as ChoiceBar -> barAttr
+
+func AsChoiceMulti: <"Test as operator: choice narrowing, multi">
+    inputs:
+        choiceFoos ChoiceFoo (0..*)
+    output:
+        result int (0..*)
+    set result:
+        choiceFoos as ChoiceBar -> barAttr

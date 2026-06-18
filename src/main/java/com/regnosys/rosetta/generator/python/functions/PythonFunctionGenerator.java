@@ -29,6 +29,7 @@ import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaType;
+import com.regnosys.rosetta.rosetta.expression.AsOperation;
 import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
@@ -144,6 +145,15 @@ public final class PythonFunctionGenerator {
                     dependencies.add(cons.getTypeCall().getType());
                 }
                 cons.getValues().forEach(val -> collectNamedDependencies(val.getValue(), dependencies));
+            }
+            case AsOperation asOp -> {
+                // The target of `as` is a cross-reference (not a containment child), so it
+                // is invisible to the eContents() walk below and must be added explicitly.
+                // Only data type targets need an import; choice option targets are just an
+                // attribute name on the choice's own (already-imported) class.
+                if (asOp.getType() instanceof Data dataTarget) {
+                    dependencies.add(dataTarget);
+                }
             }
             default -> {
             }
@@ -397,6 +407,9 @@ public final class PythonFunctionGenerator {
         String inputs = rosettaFunctionExtensions.getInputs(function).stream()
                 .map(input -> {
                     String inputTypeName = getTypeNameForContext(input.getTypeCall().getType(), context);
+                    if (input.getTypeCall().getType() instanceof Data) {
+                        inputTypeName = "InstanceOf[" + inputTypeName + "]";
+                    }
                     String inputType = RuneToPythonMapper.formatCardinality(
                             inputTypeName,
                             input.getCard().getInf(),

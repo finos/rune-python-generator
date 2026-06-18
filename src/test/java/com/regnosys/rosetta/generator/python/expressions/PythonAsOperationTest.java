@@ -57,12 +57,12 @@ public class PythonAsOperationTest {
 
             func TestAsChoiceSingle:
                 inputs: foo Foo (1..1)
-                output: result int (0..1)
+                output: result Bar (0..1)
                 set result:
-                    foo as Bar -> barAttr
+                    foo as Bar
             """,
             """
-            result = rune_resolve_attr(rune_resolve_attr(self, "foo"), "Bar") -> barAttr
+            result = rune_resolve_attr(rune_resolve_attr(self, "foo"), "Bar")
             """);
     }
 
@@ -85,12 +85,12 @@ public class PythonAsOperationTest {
 
             func TestAsChoiceMulti:
                 inputs: foos Foo (0..*)
-                output: result int (0..*)
+                output: result Bar (0..*)
                 set result:
-                    foos as Bar -> barAttr
+                    foos as Bar
             """,
             """
-            [_v for _x in (rune_resolve_attr(self, "foos") or []) if (_v := rune_resolve_attr(_x, "Bar")) is not None]
+            result = [_v for _x in (rune_resolve_attr(self, "foos") or []) if (_v := rune_resolve_attr(_x, "Bar")) is not None]
             """);
     }
 
@@ -116,12 +116,12 @@ public class PythonAsOperationTest {
 
             func TestAsDataSingle:
                 inputs: foo Foo (1..1)
-                output: result int (0..1)
+                output: result Bar (0..1)
                 set result:
-                    foo as Bar -> barAttr
+                    foo as Bar
             """,
             """
-            (_x if isinstance(_x := (rune_resolve_attr(self, "foo")), Bar) else None)
+            result = (_x if isinstance(rune_unwrap(_x := (rune_resolve_attr(self, "foo"))), Bar) else None)
             """);
     }
 
@@ -147,7 +147,7 @@ public class PythonAsOperationTest {
                     foos as Bar
             """,
             """
-            [_x for _x in (rune_resolve_attr(self, "foos") or []) if isinstance(_x, Bar)]
+            result = [_x for _x in (rune_resolve_attr(self, "foos") or []) if isinstance(rune_unwrap(_x), Bar)]
             """);
     }
 
@@ -177,7 +177,7 @@ public class PythonAsOperationTest {
                     foo as Bar -> inner -> attr
             """,
             """
-            rune_resolve_attr(rune_resolve_attr((_x if isinstance(_x := (rune_resolve_attr(self, "foo")), Bar) else None), "inner"), "attr")
+            result = rune_resolve_attr(rune_resolve_attr((_x if isinstance(rune_unwrap(_x := (rune_resolve_attr(self, "foo"))), Bar) else None), "inner"), "attr")
             """);
     }
 }

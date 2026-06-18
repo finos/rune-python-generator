@@ -126,13 +126,14 @@ If the alias path is more than one attribute deep (nested choice), the existing 
 
 ## 5. Implementation checklist
 
-- [ ] Add `case AsOperation` to `PythonExpressionGenerator.generateExpression()`, implementing Sections 4.1–4.4
-- [ ] Add unit tests in the generator test suite covering:
-  - Choice narrowing, single, match
-  - Choice narrowing, single, no match
+- [x] Add `case AsOperation` to `PythonExpressionGenerator.generateExpression()`, implementing Sections 4.1–4.4
+- [x] Add unit tests in the generator test suite covering:
+  - Choice narrowing, single
   - Choice narrowing, multi
-  - Data type narrowing, single, match
-  - Data type narrowing, single, no match
+  - Data type narrowing, single
   - Data type narrowing, multi
   - Chained `as` followed by `->` attribute access
-- [ ] Update `RUNE_LANGUAGE_GAPS.md` to mark `as` as supported once implemented
+
+  (`PythonAsOperationTest`; codegen-only tests, so the "match"/"no match" runtime
+  distinction collapses into a single generated-code shape per cardinality/mode.)
+- [x] Update `RUNE_LANGUAGE_GAPS.md` to mark `as` as supported once implemented

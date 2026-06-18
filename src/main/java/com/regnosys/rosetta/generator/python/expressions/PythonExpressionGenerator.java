@@ -19,6 +19,7 @@ import com.regnosys.rosetta.rosetta.RosettaFeature;
 import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaSymbol;
 import com.regnosys.rosetta.rosetta.expression.AsKeyOperation;
+import com.regnosys.rosetta.rosetta.expression.AsOperation;
 import com.regnosys.rosetta.rosetta.expression.ChoiceOperation;
 import com.regnosys.rosetta.rosetta.expression.ClosureParameter;
 import com.regnosys.rosetta.rosetta.expression.DistinctOperation;
@@ -70,6 +71,7 @@ import com.regnosys.rosetta.rosetta.expression.ToTimeOperation;
 import com.regnosys.rosetta.rosetta.expression.ToZonedDateTimeOperation;
 import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
+import com.regnosys.rosetta.rosetta.simple.ChoiceOption;
 import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
@@ -184,6 +186,9 @@ public final class PythonExpressionGenerator {
             }
             case AsKeyOperation asKey -> {
                 return generateAsKeyOperation(asKey, scope);
+            }
+            case AsOperation asOp -> {
+                return generateAsOperation(asOp, scope);
             }
             case DistinctOperation distinct -> {
                 return generateDistinctOperation(distinct, scope);
@@ -329,6 +334,34 @@ public final class PythonExpressionGenerator {
             return "[Reference(x) for x in (" + arg + " or []) if x is not None]";
         }
         return "Reference(" + arg + ")";
+    }
+
+    /**
+     * Generates Python for the {@code as} operator. Narrows a choice to one of its options
+     * (by navigating the option's attribute) or a data type to one of its extensions
+     * (by an isinstance check), per docs/AS_OPERATOR_IMPACT.md.
+     */
+    private String generateAsOperation(AsOperation expr, PythonExpressionScope scope) {
+        boolean isMulti = cardinalityProvider.isMulti(expr.getArgument());
+        String arg = generateExpression(expr.getArgument(), scope);
+        RType argType = typeProvider.getRMetaAnnotatedType(expr.getArgument()).getRType();
+
+        if (argType instanceof RChoiceType) {
+            String optionName = ((ChoiceOption) expr.getType()).getName();
+            if (isMulti) {
+                return "[_v for _x in (" + arg + " or []) if (_v := rune_resolve_attr(_x, \""
+                        + optionName + "\")) is not None]";
+            }
+            return "rune_resolve_attr(" + arg + ", \"" + optionName + "\")";
+        }
+
+        // Narrowed values may still be wrapped in a copy-on-write proxy (rune_cow), which is
+        // not a subclass of the wrapped type, so the isinstance check must unwrap first.
+        String targetTypeName = ((Data) expr.getType()).getName();
+        if (isMulti) {
+            return "[_x for _x in (" + arg + " or []) if isinstance(rune_unwrap(_x), " + targetTypeName + ")]";
+        }
+        return "(_x if isinstance(rune_unwrap(_x := (" + arg + ")), " + targetTypeName + ") else None)";
     }
 
     private String generateConditionalExpression(RosettaConditionalExpression expr, PythonExpressionScope scope) {
