@@ -346,13 +346,33 @@ public final class PythonExpressionGenerator {
         String arg = generateExpression(expr.getArgument(), scope);
         RType argType = typeProvider.getRMetaAnnotatedType(expr.getArgument()).getRType();
 
-        if (argType instanceof RChoiceType) {
-            String optionName = ((ChoiceOption) expr.getType()).getName();
-            if (isMulti) {
-                return "[_v for _x in (" + arg + " or []) if (_v := rune_resolve_attr(_x, \""
-                        + optionName + "\")) is not None]";
+        if (argType instanceof RChoiceType rChoiceType) {
+            ChoiceOption targetOption = (ChoiceOption) expr.getType();
+            List<String> path = findChoiceOptionPath(rChoiceType, targetOption);
+            if (path == null) {
+                path = List.of(targetOption.getName());
             }
-            return "rune_resolve_attr(" + arg + ", \"" + optionName + "\")";
+            if (isMulti) {
+                // Each step in the path becomes an `if` clause with a walrus assignment,
+                // guarding the next step. Single-step collapses to the existing pattern.
+                StringBuilder sb = new StringBuilder("[_v for _x in (").append(arg).append(" or [])");
+                String prev = "_x";
+                for (int i = 0; i < path.size(); i++) {
+                    String varName = (i == path.size() - 1) ? "_v" : "_t" + i;
+                    sb.append(" if (").append(varName)
+                      .append(" := rune_resolve_attr(").append(prev).append(", \"")
+                      .append(path.get(i)).append("\")) is not None");
+                    prev = varName;
+                }
+                sb.append("]");
+                return sb.toString();
+            }
+            // Single: chain rune_resolve_attr calls.
+            String result = arg;
+            for (String step : path) {
+                result = "rune_resolve_attr(" + result + ", \"" + step + "\")";
+            }
+            return result;
         }
 
         // Narrowed values may still be wrapped in a copy-on-write proxy (rune_cow), which is
@@ -362,6 +382,31 @@ public final class PythonExpressionGenerator {
             return "[_x for _x in (" + arg + " or []) if isinstance(rune_unwrap(_x), " + targetTypeName + ")]";
         }
         return "(_x if isinstance(rune_unwrap(_x := (" + arg + ")), " + targetTypeName + ") else None)";
+    }
+
+    /**
+     * Returns the path of option names from {@code choiceType} to {@code targetOption},
+     * walking transitively through nested choice types. Returns {@code null} if not found.
+     * <p>
+     * Example: for {@code NestedFoo as Opt2} where {@code NestedFoo -> NestedBar -> Opt2},
+     * returns {@code ["NestedBar", "Opt2"]}.
+     */
+    private List<String> findChoiceOptionPath(RChoiceType choiceType, ChoiceOption targetOption) {
+        for (var option : choiceType.getOwnOptions()) {
+            if (option.getEObject().equals(targetOption)) {
+                return List.of(option.getEObject().getName());
+            }
+            if (option.getType().getRType() instanceof RChoiceType nested) {
+                List<String> subPath = findChoiceOptionPath(nested, targetOption);
+                if (subPath != null) {
+                    List<String> path = new ArrayList<>();
+                    path.add(option.getEObject().getName());
+                    path.addAll(subPath);
+                    return path;
+                }
+            }
+        }
+        return null;
     }
 
     private String generateConditionalExpression(RosettaConditionalExpression expr, PythonExpressionScope scope) {
