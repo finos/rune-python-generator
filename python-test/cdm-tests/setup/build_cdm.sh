@@ -63,7 +63,6 @@ source "$MY_PATH/../../ensure_jar_exists.sh" || { echo "Failed to source ensure_
 CDM_BRANCH="master"
 CDM_REPO="https://github.com/finos/common-domain-model.git"
 FPML_REPO="https://github.com/rosetta-models/rune-fpml.git"
-FPML_BRANCH=""
 SKIP_CDM=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -83,10 +82,6 @@ while [[ $# -gt 0 ]]; do
       FPML_REPO="$2"
       shift 2
       ;;
-    --fpml-branch)
-      FPML_BRANCH="$2"
-      shift 2
-      ;;
     *)
       CDM_BRANCH="$1"
       shift
@@ -96,9 +91,7 @@ done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
     echo "***** Fetching CDM version: $CDM_BRANCH"
-    GET_CDM_ARGS=("$CDM_BRANCH" --cdm-repo "$CDM_REPO" --fpml-repo "$FPML_REPO")
-    [ -n "$FPML_BRANCH" ] && GET_CDM_ARGS+=(--fpml-branch "$FPML_BRANCH")
-    source $MY_PATH/get_cdm.sh "${GET_CDM_ARGS[@]}"
+    source $MY_PATH/get_cdm.sh "$CDM_BRANCH" --cdm-repo "$CDM_REPO" --fpml-repo "$FPML_REPO"
 else
     echo "Skipping get_cdm.sh as requested."
 fi

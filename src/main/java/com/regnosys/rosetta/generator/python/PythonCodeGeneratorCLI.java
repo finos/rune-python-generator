@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
@@ -186,7 +185,7 @@ public class PythonCodeGeneratorCLI {
         try {
             CommandLine cmd = parser.parse(options, args);
             if (cmd.hasOption("h")) {
-                printUsage(options);
+                printUsage();
                 return 0;
             }
             String tgtDir = cmd.getOptionValue("t", "./python");
@@ -215,7 +214,7 @@ public class PythonCodeGeneratorCLI {
 
             if (projectName == null || projectName.isBlank()) {
                 LOGGER.error("Project name (-p / --project-name) is required.");
-                printUsage(options);
+                printUsage();
                 return 1;
             }
 
@@ -228,12 +227,12 @@ public class PythonCodeGeneratorCLI {
                 return translateFromSourceFile(srcFile, tgtDir, opts);
             } else {
                 LOGGER.error("Either a source directory (-s) or source file (-f) must be specified.");
-                printUsage(options);
+                printUsage();
                 return 1;
             }
         } catch (ParseException e) {
             LOGGER.error("Failed to parse command line arguments: {}", e.getMessage());
-            printUsage(options);
+            printUsage();
             return 1;
         }
     }
@@ -259,9 +258,19 @@ public class PythonCodeGeneratorCLI {
 
     }
 
-    private static void printUsage(Options options) {
-        HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("PythonCodeGeneratorCLI", options, true);
+    private static void printUsage() {
+        System.out.println("Usage: PythonCodeGeneratorCLI [options]");
+        System.out.println("Options:");
+        System.out.println("  -s, --dir <srcDir>               Source Rosetta directory");
+        System.out.println("  -f, --file <srcFile>             Source Rosetta file");
+        System.out.println("  -t, --tgt <tgtDir>               Target Python directory (default: ./python)");
+        System.out.println("  -p, --project-name <name>        Override pyproject.toml project name (required)");
+        System.out.println("  -v, --version <version>          Package version in #.#.# format (default: " + DEFAULT_VERSION + ")");
+        System.out.println("  -x, --namespace-prefix <prefix>  Prefix to prepend to every generated namespace");
+        System.out.println("  -n, --native-dir <nativeDir>     Source directory for native function implementations");
+        System.out.println("  -e, --allow-errors               Continue even if there are validation errors");
+        System.out.println("  -w, --fail-on-warnings           Fail if there are validation warnings");
+        System.out.println("  -h                               Print this help");
     }
 
     private int translateFromSourceDir(String srcDir, String tgtDir, GenerationOptions opts) {
@@ -319,6 +328,10 @@ public class PythonCodeGeneratorCLI {
         }
 
         Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
+        if (injector == null) {
+            LOGGER.error("Failed to create injector.");
+            return 1;
+        }
         ResourceSet resourceSet = injector.getInstance(ResourceSet.class);
         List<Resource> resources = new LinkedList<>();
         RosettaBuiltinsService builtins = injector.getInstance(RosettaBuiltinsService.class);
@@ -349,6 +362,7 @@ public class PythonCodeGeneratorCLI {
 
         for (RosettaModel model : models) {
             Resource resource = model.eResource();
+            String sourceFile = resource.getURI().lastSegment();
             boolean hasErrors = false;
             try {
                 List<Issue> issues = validator.validate(resource, CheckMode.ALL, CancelIndicator.NullImpl);
@@ -376,13 +390,13 @@ public class PythonCodeGeneratorCLI {
                                 }
                             }
 
-                            LOGGER.error("Validation ERROR in {} (Line {}): {} on element '{}'",
-                                    model.getName(), issue.getLineNumber(), issue.getMessage(), identification);
+                            LOGGER.error("Validation ERROR in {} ({}, Line {}): {} on element '{}'",
+                                    model.getName(), sourceFile, issue.getLineNumber(), issue.getMessage(), identification);
                             hasErrors = true;
                             break;
                         case WARNING:
-                            LOGGER.warn("Validation WARNING in {} (Line {}): {}", model.getName(),
-                                    issue.getLineNumber(), issue.getMessage());
+                            LOGGER.warn("Validation WARNING in {} ({}, Line {}): {}", model.getName(),
+                                    sourceFile, issue.getLineNumber(), issue.getMessage());
                             if (failOnWarnings) {
                                 hasErrors = true;
                             }

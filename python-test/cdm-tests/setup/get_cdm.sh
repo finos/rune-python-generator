@@ -34,7 +34,6 @@ mkdir -p "${ROSETTA_DIR}/common-domain-model"
 CDM_BRANCH="${1:-master}"
 CDM_REMOTE="https://github.com/finos/common-domain-model.git"
 FPML_REMOTE="https://github.com/rosetta-models/rune-fpml.git"
-FPML_BRANCH_OVERRIDE=""
 
 idx=2
 while [ $idx -le $# ]; do
@@ -42,9 +41,8 @@ while [ $idx -le $# ]; do
     ((next_idx=idx+1))
     val="${!next_idx}"
     case "$arg" in
-        --cdm-repo)    CDM_REMOTE="$val";          ((idx+=2)) ;;
-        --fpml-repo)   FPML_REMOTE="$val";         ((idx+=2)) ;;
-        --fpml-branch) FPML_BRANCH_OVERRIDE="$val"; ((idx+=2)) ;;
+        --cdm-repo)  CDM_REMOTE="$val"; ((idx+=2)) ;;
+        --fpml-repo) FPML_REMOTE="$val"; ((idx+=2)) ;;
         *) ((idx++)) ;;
     esac
 done
@@ -69,13 +67,7 @@ git pull --depth 1 origin $CDM_BRANCH || error "git pull for CDM failed"
 # Copy CDM files to the target 'common-domain-model' folder
 cp -r rosetta-source/src/main/rosetta/* "${ROSETTA_DIR}/common-domain-model/"
 
-# Resolve FpML branch: explicit override > pom.xml lookup
-if [ -n "$FPML_BRANCH_OVERRIDE" ]; then
-    FPML_VERSION="$FPML_BRANCH_OVERRIDE"
-    echo "***** Using explicit FpML branch: $FPML_VERSION"
-else
-    FPML_VERSION=$(sed -n 's/.*<rune-fpml[-.]version>\(.*\)<\/rune-fpml[-.]version>.*/\1/p' pom.xml | head -n 1)
-fi
+FPML_VERSION=$(sed -n 's/.*<rune-fpml[-.]version>\(.*\)<\/rune-fpml[-.]version>.*/\1/p' pom.xml | head -n 1)
 
 if [ -n "$FPML_VERSION" ]; then
     echo "***** pulling FpML definitions ($FPML_VERSION from $FPML_REMOTE)"
