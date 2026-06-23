@@ -6,13 +6,29 @@ package com.regnosys.rosetta.generator.python.util;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.types.RAttribute;
 
 public final class PythonCodeGeneratorUtil {
 
+    public static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+    public static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
+    public static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)\\.[A-Za-z][A-Za-z0-9_-]+-SNAPSHOT");
+    private static final Pattern PEP440_DEV_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.dev\\d+");
+
     private PythonCodeGeneratorUtil() {
+    }
+
+    public static boolean isValidVersion(String version) {
+        if (version == null) {
+            return false;
+        }
+        return VALID_VERSION_PATTERN.matcher(version).matches()
+            || DEV_VERSION_PATTERN.matcher(version).matches()
+            || SNAPSHOT_VERSION_PATTERN.matcher(version).matches();
     }
 
     public static String fileComment(String version) {
@@ -64,10 +80,10 @@ public final class PythonCodeGeneratorUtil {
                 from decimal import Decimal
                 from typing import Annotated, Optional
 
-                from pydantic import Field, validate_call, InstanceOf
+                from pydantic import Field, validate_call
 
                 from rune.runtime.base_data_class import BaseDataClass
-                from rune.runtime.cow import rune_cow, rune_unwrap
+                from rune.runtime.cow import rune_cow
                 from rune.runtime.conditions import *
                 from rune.runtime.func_proxy import *
                 from rune.runtime.metadata import *
@@ -184,24 +200,20 @@ public final class PythonCodeGeneratorUtil {
         if (version == null || version.equals("${project.version}")) {
             return "0.0.0";
         }
-
-        // Preserve PEP 440 dev versions already converted by the CLI (e.g. "1.2.3.dev4")
-        if (version.matches("\\d+\\.\\d+\\.\\d+\\.dev\\d+")) {
+        if (PEP440_DEV_VERSION_PATTERN.matcher(version).matches()) {
             return version;
         }
-
-        // Convert Maven SNAPSHOT versions with branch qualifier (e.g. "0.0.0.featuremaster-Python-Update-SNAPSHOT")
-        if (version.matches("\\d+\\.\\d+\\.\\d+\\.[A-Za-z][A-Za-z0-9-]+-SNAPSHOT")) {
-            String[] parts = version.split("\\.");
-            return parts[0] + "." + parts[1] + "." + parts[2] + ".dev0";
+        Matcher snapshotMatcher = SNAPSHOT_VERSION_PATTERN.matcher(version);
+        if (snapshotMatcher.matches()) {
+            return snapshotMatcher.group(1) + ".dev0";
         }
-
-        String[] versionParts = version.split("\\.");
-        if (versionParts.length > 2) {
-            String thirdPart = versionParts[2].replaceAll("[^\\d]", "");
-            return versionParts[0] + "." + versionParts[1] + "." + thirdPart;
+        Matcher devMatcher = DEV_VERSION_PATTERN.matcher(version);
+        if (devMatcher.matches()) {
+            return devMatcher.group(1) + ".dev" + devMatcher.group(2);
         }
-
+        if (VALID_VERSION_PATTERN.matcher(version).matches()) {
+            return version;
+        }
         return "0.0.0";
     }
     public static String mapMetaTypeToMetaDataName(String metaTypeName) {
