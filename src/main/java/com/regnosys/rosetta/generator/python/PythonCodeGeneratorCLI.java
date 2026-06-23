@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
@@ -120,14 +119,6 @@ public class PythonCodeGeneratorCLI {
      */
     static final String DEFAULT_VERSION = "0.0.0";
 
-    /**
-     * Regex that a version string must fully match: three dot-separated integers.
-     */
-    private static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
-    /** Regex matching a dev version string such as {@code 1.2.3-dev.4}. */
-    private static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
-    /** Regex matching a Maven SNAPSHOT version with branch qualifier such as {@code 0.0.0.featuremaster-Python-Update-SNAPSHOT}. */
-    private static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)\\.[A-Za-z][A-Za-z0-9_-]+-SNAPSHOT");
 
     /**
      * Public constructor for the CLI tool.
@@ -199,18 +190,11 @@ public class PythonCodeGeneratorCLI {
             String version = DEFAULT_VERSION;
             if (cmd.hasOption("v")) {
                 String rawVersion = cmd.getOptionValue("v");
-                java.util.regex.Matcher devMatcher = DEV_VERSION_PATTERN.matcher(rawVersion);
-                java.util.regex.Matcher snapshotMatcher = SNAPSHOT_VERSION_PATTERN.matcher(rawVersion);
-                if (snapshotMatcher.matches()) {
-                    version = snapshotMatcher.group(1) + ".dev0";
-                } else if (devMatcher.matches()) {
-                    version = devMatcher.group(1) + ".dev" + devMatcher.group(2);
-                } else if (VALID_VERSION_PATTERN.matcher(rawVersion).matches()) {
-                    version = rawVersion;
-                } else {
+                if (!PythonCodeGeneratorUtil.isValidVersion(rawVersion)) {
                     LOGGER.error("Invalid version format '{}'. Expected #.#.# (e.g. 1.2.3), #.#.#-dev.# (e.g. 1.2.3-dev.4), or #.#.#.<branch>-SNAPSHOT (e.g. 0.0.0.featuremaster-Python-Update-SNAPSHOT).", rawVersion);
                     return 1;
                 }
+                version = PythonCodeGeneratorUtil.cleanVersion(rawVersion);
             }
 
             if (projectName == null || projectName.isBlank()) {
