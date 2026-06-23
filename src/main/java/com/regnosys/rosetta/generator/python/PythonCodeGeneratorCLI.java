@@ -120,6 +120,7 @@ public class PythonCodeGeneratorCLI {
      */
     static final String DEFAULT_VERSION = "0.0.0";
 
+    
     /**
      * Public constructor for the CLI tool.
      */
