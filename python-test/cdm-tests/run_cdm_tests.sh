@@ -28,6 +28,9 @@ usage() {
     echo "  -k, --keep-venv           Skip cleanup of the virtual environment"
     echo "  -s, --skip-cdm            Skip CDM fetch and build (use existing wheel)"
     echo "  -v <version>              CDM branch/tag to fetch (default: master)"
+    echo "  --cdm-repo <url>          CDM git repo URL (default: finos/common-domain-model)"
+    echo "  --fpml-repo <url>         FpML git repo URL (default: rosetta-models/rune-fpml)"
+    echo "  --fpml-branch <branch>    FpML branch/tag override (default: read from CDM pom.xml)"
     echo "  -h, --help                Show this help"
 }
 
@@ -35,6 +38,9 @@ REUSE_ENV=0
 SKIP_CDM=0
 CLEANUP=1
 CDM_VERSION="master"
+CDM_REPO="https://github.com/finos/common-domain-model.git"
+FPML_REPO="https://github.com/rosetta-models/rune-fpml.git"
+FPML_BRANCH=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -55,6 +61,18 @@ while [[ $# -gt 0 ]]; do
             CDM_VERSION="$2"
             shift 2
             ;;
+        --cdm-repo)
+            CDM_REPO="$2"
+            shift 2
+            ;;
+        --fpml-repo)
+            FPML_REPO="$2"
+            shift 2
+            ;;
+        --fpml-branch)
+            FPML_BRANCH="$2"
+            shift 2
+            ;;
         -h|--help)
             usage
             exit 0
@@ -69,7 +87,9 @@ done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
     echo "***** Fetching and building CDM version: $CDM_VERSION..."
-    "$MY_PATH/setup/build_cdm.sh" "$CDM_VERSION" || exit 1
+    BUILD_CDM_ARGS=("$CDM_VERSION" --cdm-repo "$CDM_REPO" --fpml-repo "$FPML_REPO")
+    [ -n "$FPML_BRANCH" ] && BUILD_CDM_ARGS+=(--fpml-branch "$FPML_BRANCH")
+    "$MY_PATH/setup/build_cdm.sh" "${BUILD_CDM_ARGS[@]}" || exit 1
 else
     echo "***** Skipping CDM fetch and build (using existing wheel)"
 fi
