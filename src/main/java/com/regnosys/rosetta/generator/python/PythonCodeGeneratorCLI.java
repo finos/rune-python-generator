@@ -119,7 +119,6 @@ public class PythonCodeGeneratorCLI {
      * Default version used when no {@code -v} option is provided.
      */
     static final String DEFAULT_VERSION = "0.0.0";
-
     
     /**
      * Public constructor for the CLI tool.

@@ -6,6 +6,7 @@ package com.regnosys.rosetta.generator.python.util;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,5 +70,76 @@ class PythonCodeGeneratorUtilTest {
     void testCleanVersionSnapshotFormat() {
         assertTrue(PythonCodeGeneratorUtil.cleanVersion("0.0.0.featuremaster-Python-Update-SNAPSHOT").equals("0.0.0.dev0"),
                 "cleanVersion should convert Maven SNAPSHOT branch version to PEP 440 dev0");
+    }
+
+    @Test
+    void testCleanVersionSnapshotWithUnderscoreInBranch() {
+        assertEquals("0.0.0.dev0",
+                PythonCodeGeneratorUtil.cleanVersion("0.0.0.aanta_677ea5142b8d666852cae77-4784-CDM6-ProposedWorkflowStepFix_UpdExp-SNAPSHOT"),
+                "cleanVersion should handle SNAPSHOT branch qualifiers containing underscores");
+    }
+
+    @Test
+    void testCleanVersionMavenDevFormat() {
+        assertEquals("1.2.3.dev4",
+                PythonCodeGeneratorUtil.cleanVersion("1.2.3-dev.4"),
+                "cleanVersion should convert Maven-style dev version to PEP 440");
+    }
+
+    // --- isValidVersion ---
+
+    @Test
+    void testIsValidVersionStable() {
+        assertTrue(PythonCodeGeneratorUtil.isValidVersion("1.2.3"),
+                "stable X.Y.Z should be valid");
+    }
+
+    @Test
+    void testIsValidVersionDevFormat() {
+        assertTrue(PythonCodeGeneratorUtil.isValidVersion("1.2.3-dev.4"),
+                "X.Y.Z-dev.N should be valid");
+    }
+
+    @Test
+    void testIsValidVersionSnapshotFormat() {
+        assertTrue(PythonCodeGeneratorUtil.isValidVersion("0.0.0.featuremaster-Python-Update-SNAPSHOT"),
+                "X.Y.Z.<branch>-SNAPSHOT should be valid");
+    }
+
+    @Test
+    void testIsValidVersionSnapshotWithUnderscoreInBranch() {
+        assertTrue(PythonCodeGeneratorUtil.isValidVersion(
+                "0.0.0.aanta_677ea5142b8d666852cae77-4784-CDM6-ProposedWorkflowStepFix_UpdExp-SNAPSHOT"),
+                "SNAPSHOT branch qualifier containing underscores should be valid");
+    }
+
+    @Test
+    void testIsValidVersionNullReturnsFalse() {
+        assertFalse(PythonCodeGeneratorUtil.isValidVersion(null),
+                "null should not be valid");
+    }
+
+    @Test
+    void testIsValidVersionTooFewSegments() {
+        assertFalse(PythonCodeGeneratorUtil.isValidVersion("1.0"),
+                "X.Y is not a valid version");
+    }
+
+    @Test
+    void testIsValidVersionNonNumericSegment() {
+        assertFalse(PythonCodeGeneratorUtil.isValidVersion("1.a.0"),
+                "non-numeric segment should not be valid");
+    }
+
+    @Test
+    void testIsValidVersionSnapshotWithoutBranchQualifier() {
+        assertFalse(PythonCodeGeneratorUtil.isValidVersion("1.0.0-SNAPSHOT"),
+                "bare -SNAPSHOT without branch qualifier should not be valid");
+    }
+
+    @Test
+    void testIsValidVersionPep440DevIsNotValidInput() {
+        assertFalse(PythonCodeGeneratorUtil.isValidVersion("1.2.3.dev4"),
+                "PEP 440 output format X.Y.Z.devN is not a valid raw input version");
     }
 }
