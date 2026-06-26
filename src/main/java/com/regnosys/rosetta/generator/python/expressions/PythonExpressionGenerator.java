@@ -384,13 +384,6 @@ public final class PythonExpressionGenerator {
         return "(_x if isinstance(rune_unwrap(_x := (" + arg + ")), " + targetTypeName + ") else None)";
     }
 
-    /**
-     * Returns the path of option names from {@code choiceType} to {@code targetOption},
-     * walking transitively through nested choice types. Returns {@code null} if not found.
-     * <p>
-     * Example: for {@code NestedFoo as Opt2} where {@code NestedFoo -> NestedBar -> Opt2},
-     * returns {@code ["NestedBar", "Opt2"]}.
-     */
     private List<String> findChoiceOptionPath(RChoiceType choiceType, ChoiceOption targetOption) {
         for (var option : choiceType.getOwnOptions()) {
             if (option.getEObject().equals(targetOption)) {

@@ -354,4 +354,211 @@ public class PythonAsOperationTest {
             result = rune_resolve_attr(rune_resolve_attr(ChoiceFoo(ChoiceBar=ChoiceBar(barAttr=42)), "ChoiceBar"), "barAttr")
             """);
     }
+
+    // -------------------------------------------------------------------------
+    // File header imports
+    // -------------------------------------------------------------------------
+
+    /**
+     * Data type narrowing emits {@code rune_unwrap}. Verifies the standard file header
+     * imports it alongside {@code rune_cow} from {@code rune.runtime.cow}.
+     */
+    @Test
+    public void testDataTypeNarrowingImportsRuneUnwrap() {
+        String generated = testUtils.generatePythonAndExtractBundle(
+            """
+            type Foo:
+
+            type Bar extends Foo:
+                barAttr int (1..1)
+
+            func TestUnwrapImport:
+                inputs: foo Foo (1..1)
+                output: result Bar (0..1)
+                set result:
+                    foo as Bar
+            """);
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "from rune.runtime.cow import rune_cow, rune_unwrap");
+    }
+
+    // -------------------------------------------------------------------------
+    // Choice options where one type extends a sibling option type
+    // -------------------------------------------------------------------------
+
+    /**
+     * When a choice option's type extends a sibling option's type, narrowing to the
+     * subtype must generate the correct {@code rune_resolve_attr} call and must not
+     * throw during code generation.
+     *
+     * <p>Mirrors Java {@code AsOperationTest#asChoiceOptionThatExtendsSiblingOptionShouldNotThrow}.
+     */
+    @Test
+    public void testAsChoiceOptionThatExtendsSiblingOptionShouldNotThrow() {
+        testUtils.assertBundleContainsExpectedString(
+            """
+            choice Foo:
+                Bar
+                Qux
+
+            type Bar:
+                barAttr string (0..1)
+
+            type Qux extends Bar:
+                quxAttr string (0..1)
+
+            func TestSiblingExtends:
+                inputs: foo Foo (1..1)
+                output: result Qux (0..1)
+                set result:
+                    foo as Qux
+            """,
+            """
+            result = rune_resolve_attr(rune_resolve_attr(self, "foo"), "Qux")
+            """);
+    }
+
+    /**
+     * CDM-like deep model: {@code InflationRateSpecification extends FloatingRateSpecification},
+     * both direct options of the same choice. Chained {@code as} operations must generate the
+     * correct path for each narrowing step without throwing.
+     *
+     * <p>Mirrors Java {@code AsOperationTest#asNestedChoiceOptionThatExtendsSiblingOptionShouldNotThrow}.
+     */
+    @Test
+    public void testAsNestedChoiceOptionThatExtendsSiblingOptionShouldNotThrow() {
+        testUtils.assertBundleContainsExpectedString(
+            """
+            type Product:
+                economicTerms EconomicTerms (0..1)
+
+            type EconomicTerms:
+                payout PayoutChoice (0..1)
+
+            choice PayoutChoice:
+                InterestRatePayout
+                OtherPayout
+
+            type InterestRatePayout:
+                rateSpecification RateSpecificationChoice (0..1)
+
+            type OtherPayout:
+                attr int (0..1)
+
+            choice RateSpecificationChoice:
+                FloatingRateSpecification
+                InflationRateSpecification
+
+            type FloatingRateSpecification:
+                attr1 int (0..1)
+
+            type InflationRateSpecification extends FloatingRateSpecification:
+                attr2 int (0..1)
+
+            func TestDeepSiblingExtends:
+                inputs: product Product (1..1)
+                output: result InflationRateSpecification (0..1)
+                set result:
+                    product -> economicTerms -> payout as InterestRatePayout
+                        -> rateSpecification as InflationRateSpecification
+            """,
+            """
+            result = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "product"), "economicTerms"), "payout"), "InterestRatePayout"), "rateSpecification"), "InflationRateSpecification")
+            """);
+    }
+
+    /**
+     * {@code Derived extends Base}, where {@code Base} is a direct option of {@code Outer} and
+     * {@code Derived} is a direct option of nested {@code Inner}. Narrowing to {@code Derived}
+     * must navigate through {@code Inner} (the EObject match), not stop at {@code Base} (the
+     * supertype option in the sibling branch).
+     *
+     * <p>Mirrors Java {@code AsOperationTest#asChoiceOptionReachableViaSiblingSupertypeShouldNotThrow}.
+     */
+    @Test
+    public void testAsChoiceOptionReachableViaSiblingSupertypeShouldNotThrow() {
+        testUtils.assertBundleContainsExpectedString(
+            """
+            choice Outer:
+                Inner
+                Base
+
+            choice Inner:
+                Derived
+                Sibling
+
+            type Base:
+                baseAttr int (0..1)
+
+            type Derived extends Base:
+                derivedAttr int (0..1)
+
+            type Sibling:
+                siblingAttr int (0..1)
+
+            func TestSupertypeSibling:
+                inputs: outer Outer (1..1)
+                output: result Derived (0..1)
+                set result:
+                    outer as Derived
+            """,
+            """
+            result = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "outer"), "Inner"), "Derived")
+            """);
+    }
+
+    /**
+     * {@code Bar extends Foo}; {@code Bar} is reachable via {@code Inner1} and {@code Foo} via
+     * {@code Inner2}. {@code as Bar} must navigate to the exact {@code Inner1.Bar} EObject,
+     * not the supertype {@code Inner2.Foo} slot.
+     *
+     * <p>Covers Java tests {@code asNavigatesToExactOptionWhenSiblingBranchesAreIncomparable},
+     * {@code asToOptionInUnselectedBranchIsAbsentAndDoesNotThrow}, and
+     * {@code asDoesNotMatchSubtypeStoredUnderSiblingSupertypeOption}.
+     */
+    @Test
+    public void testAsNavigatesToExactOptionWhenSiblingBranchesAreIncomparable() {
+        testUtils.assertBundleContainsExpectedString(
+            """
+            type Foo:
+
+            type Bar extends Foo:
+                barAttr int (0..1)
+
+            type Qux extends Foo:
+                quxAttr int (0..1)
+
+            type A:
+
+            type B:
+
+            choice Outer:
+                Inner1
+                Inner2
+
+            choice Inner1:
+                Bar
+                A
+
+            choice Inner2:
+                Foo
+                B
+
+            func TestExactBarPath:
+                inputs: outer Outer (1..1)
+                output: result Bar (0..1)
+                set result:
+                    outer as Bar
+
+            func TestExactFooPath:
+                inputs: outer Outer (1..1)
+                output: result Foo (0..1)
+                set result:
+                    outer as Foo
+            """,
+            // `as Bar` must route through Inner1, not Inner2 (even though Bar extends Foo which is in Inner2)
+            """
+            result = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "outer"), "Inner1"), "Bar")
+            """);
+    }
 }
