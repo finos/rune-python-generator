@@ -1,0 +1,14 @@
+namespace rosetta_dsl.test.expressions.polymorphism_demo : <"generate Python unit tests demonstrating a runtime polymorphism issue.">
+
+type Foo:
+
+type Bar extends Foo:
+    barAttr int (1..1)
+
+func IdentityFoo: <"Returns its input unchanged. Used to demonstrate that passing a subtype through a supertype-typed parameter loses its runtime identity, independently of the as operator.">
+    inputs:
+        foo Foo (1..1)
+    output:
+        result Foo (1..1)
+    set result:
+        foo

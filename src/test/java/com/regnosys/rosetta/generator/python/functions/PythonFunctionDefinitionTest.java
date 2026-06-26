@@ -191,7 +191,7 @@ public class PythonFunctionDefinitionTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def TestAbsType(arg: AInput) -> Decimal:
+            def TestAbsType(arg: InstanceOf[AInput]) -> Decimal:
                 \"\"\"
                 Returns the absolute value of a number. If the argument is not negative, the argument is returned. If the argument is negative, the negation of the argument is returned.
 
@@ -433,7 +433,7 @@ public class PythonFunctionDefinitionTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def TestObjectCreationFromFields(baseObject: BaseObject) -> BaseObject:
+            def TestObjectCreationFromFields(baseObject: InstanceOf[BaseObject]) -> BaseObject:
                 \"\"\"
 
                 Parameters
@@ -495,7 +495,7 @@ public class PythonFunctionDefinitionTest {
         String expectedBundle = """
             @replaceable
             @validate_call
-            def ResolveInterestRateObservationIdentifiers(payout: InterestRatePayout, date: datetime.date) -> ObservationIdentifier:
+            def ResolveInterestRateObservationIdentifiers(payout: InstanceOf[InterestRatePayout], date: datetime.date) -> ObservationIdentifier:
             """;
         String generatedPython = gf.get("src/com/rosetta/test/model/functions/ResolveInterestRateObservationIdentifiers.py").toString();
         // Check signature

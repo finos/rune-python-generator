@@ -309,7 +309,7 @@ public class PythonCollectionExpressionTest {
                 """);
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "def TestNestedNested(items: list[Item | None] | None) -> int:");
+                "def TestNestedNested(items: list[InstanceOf[Item] | None] | None) -> int:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "result = (lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
     }

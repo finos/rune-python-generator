@@ -1,0 +1,188 @@
+namespace rosetta_dsl.test.expressions.as_op : <"generate Python unit tests for the as operator.">
+
+type Foo:
+
+type Bar extends Foo:
+    barAttr int (1..1)
+    inner Qux (1..1)
+
+type Qux extends Foo:
+    quxAttr int (1..1)
+    attr int (1..1)
+
+func AsDataSingle: <"Test as operator: data type narrowing, single">
+    inputs:
+        foo Foo (1..1)
+    output:
+        result int (0..1)
+    set result:
+        foo as Bar -> barAttr
+
+func AsDataMulti: <"Test as operator: data type narrowing, multi">
+    inputs:
+        foos Foo (0..*)
+    output:
+        result int (0..*)
+    set result:
+        foos as Bar -> barAttr
+
+func AsChained: <"Test as operator: chained as followed by -> attribute access">
+    inputs:
+        foo Foo (1..1)
+    output:
+        result int (0..1)
+    set result:
+        foo as Bar -> inner -> attr
+
+type ChoiceBar:
+    barAttr int (1..1)
+
+type ChoiceQux:
+    quxAttr int (1..1)
+
+choice ChoiceFoo:
+    ChoiceBar
+    ChoiceQux
+
+func AsChoiceSingle: <"Test as operator: choice narrowing, single">
+    inputs:
+        choiceFoo ChoiceFoo (1..1)
+    output:
+        result int (0..1)
+    set result:
+        choiceFoo as ChoiceBar -> barAttr
+
+func AsChoiceMulti: <"Test as operator: choice narrowing, multi">
+    inputs:
+        choiceFoos ChoiceFoo (0..*)
+    output:
+        result int (0..*)
+    set result:
+        choiceFoos as ChoiceBar -> barAttr
+
+// Inline construction tests — data type narrowing
+// These use (if True then X else Foo {}) so the static type is the supertype Foo,
+// making the as-narrowing semantically non-trivial.
+
+func AsDataTypeSingleMatchTest: <"Inline Bar construction: narrowing to Bar succeeds and returns barAttr.">
+    output:
+        result int (0..1)
+    set result:
+        (if True
+        then Bar { barAttr: 42, inner: Qux { quxAttr: 0, attr: 0 } }
+        else Foo {})
+            as Bar -> barAttr
+
+func AsDataTypeSingleNoMatchReturnsEmptyTest: <"Inline Qux construction: narrowing to Bar yields empty because Qux is not Bar.">
+    output:
+        result int (0..1)
+    set result:
+        (if True
+        then Qux { quxAttr: 12, attr: 0 }
+        else Foo {})
+            as Bar -> barAttr
+
+func AsDataTypeMultiFiltersTest: <"Inline mixed list: as Bar filters to the two Bar instances and counts them.">
+    output:
+        result int (0..1)
+    set result:
+        [
+            Bar { barAttr: 1, inner: Qux { quxAttr: 0, attr: 0 } },
+            Qux { quxAttr: 2, attr: 0 },
+            Bar { barAttr: 3, inner: Qux { quxAttr: 0, attr: 0 } }
+        ]
+            as Bar -> barAttr count
+
+// Inline construction tests — choice narrowing
+
+func AsChoiceSingleMatchTest: <"Inline ChoiceFoo holding ChoiceBar: narrowing to ChoiceBar succeeds.">
+    output:
+        result int (0..1)
+    set result:
+        ChoiceFoo {
+            ChoiceBar: ChoiceBar { barAttr: 42 },
+            ...
+        }
+            as ChoiceBar -> barAttr
+
+func AsChoiceSingleNoMatchReturnsEmptyTest: <"Inline ChoiceFoo holding ChoiceQux: narrowing to ChoiceBar yields empty.">
+    output:
+        result int (0..1)
+    set result:
+        ChoiceFoo {
+            ChoiceQux: ChoiceQux { quxAttr: 12 },
+            ...
+        }
+            as ChoiceBar -> barAttr
+
+func AsChoiceMultiFiltersTest: <"Inline list of choices: as ChoiceBar filters and sums barAttr from matching elements.">
+    output:
+        result int (0..1)
+    set result:
+        [
+            ChoiceFoo { ChoiceBar: ChoiceBar { barAttr: 1 }, ... },
+            ChoiceFoo { ChoiceQux: ChoiceQux { quxAttr: 2 }, ... }
+        ]
+            as ChoiceBar -> barAttr sum
+
+// Metadata test — as applied to a choice option carrying [metadata scheme]
+
+typeAlias MyString: string(maxLength: 42)
+
+choice ChoiceFooMeta:
+    number
+    MyString
+        [metadata scheme]
+
+func AsChoiceOptionWithMetadataTest: <"Narrowing to a choice option with scheme metadata preserves and exposes the metadata.">
+    inputs:
+        choiceFooMeta ChoiceFooMeta (0..1)
+    output:
+        result string (0..1)
+    set result:
+        choiceFooMeta as MyString -> scheme
+
+// Nested choice tests — target type is an option of an inner choice
+
+type Opt1:
+    opt1Attr int (1..1)
+
+type Opt2:
+    opt2Attr int (1..1)
+
+type Opt3:
+    opt3Attr int (1..1)
+
+choice NestedBar:
+    Opt2
+    Opt3
+
+choice NestedFoo:
+    Opt1
+    NestedBar
+
+func AsNestedChoiceOptionTest: <"as resolves through two levels of nested choice to reach Opt2.">
+    output:
+        result int (0..1)
+    set result:
+        NestedFoo {
+            NestedBar: NestedBar {
+                Opt2: Opt2 { opt2Attr: 7 },
+                ...
+            },
+            ...
+        }
+        as Opt2 -> opt2Attr
+
+func AsNestedChoiceOptionTest2: <"as to Opt3 yields empty when the inner choice holds Opt2.">
+    output:
+        result int (0..1)
+    set result:
+        NestedFoo {
+            NestedBar: NestedBar {
+                Opt2: Opt2 { opt2Attr: 7 },
+                ...
+            },
+            ...
+        }
+            as Opt3 -> opt3Attr

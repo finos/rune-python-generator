@@ -31,9 +31,23 @@ echo "***** resetting the rosetta directory"
 rm -rf "${ROSETTA_DIR}"
 mkdir -p "${ROSETTA_DIR}/common-domain-model"
 
-CDM_BRANCH=${1:-"master"}
+CDM_BRANCH="${1:-master}"
+CDM_REMOTE="https://github.com/finos/common-domain-model.git"
+FPML_REMOTE="https://github.com/rosetta-models/rune-fpml.git"
 
-echo "***** pull CDM rosetta definitions ($CDM_BRANCH)"
+idx=2
+while [ $idx -le $# ]; do
+    arg="${!idx}"
+    ((next_idx=idx+1))
+    val="${!next_idx}"
+    case "$arg" in
+        --cdm-repo)  CDM_REMOTE="$val"; ((idx+=2)) ;;
+        --fpml-repo) FPML_REMOTE="$val"; ((idx+=2)) ;;
+        *) ((idx++)) ;;
+    esac
+done
+
+echo "***** pull CDM rosetta definitions ($CDM_BRANCH from $CDM_REMOTE)"
 TEMP_CDM="${MY_PATH}/../temp_cdm"
 rm -rf "${TEMP_CDM}"
 mkdir -p "${TEMP_CDM}"
@@ -47,18 +61,16 @@ pom.xml
 rosetta-source/pom.xml
 EOF
 
-git remote add origin https://github.com/finos/common-domain-model.git
+git remote add origin "$CDM_REMOTE"
 git pull --depth 1 origin $CDM_BRANCH || error "git pull for CDM failed"
 
 # Copy CDM files to the target 'common-domain-model' folder
 cp -r rosetta-source/src/main/rosetta/* "${ROSETTA_DIR}/common-domain-model/"
 
-# Check for rune-fpml[-.]version property in pom.xml
 FPML_VERSION=$(sed -n 's/.*<rune-fpml[-.]version>\(.*\)<\/rune-fpml[-.]version>.*/\1/p' pom.xml | head -n 1)
 
 if [ -n "$FPML_VERSION" ]; then
-    echo "***** Found rune-fpml-version: $FPML_VERSION"
-    echo "***** pulling FpML definitions from https://github.com/rosetta-models/rune-fpml"
+    echo "***** pulling FpML definitions ($FPML_VERSION from $FPML_REMOTE)"
 
     mkdir -p "${ROSETTA_DIR}/rune-fpml"
 
@@ -70,7 +82,7 @@ if [ -n "$FPML_VERSION" ]; then
     git init
     git config core.sparseCheckout true
     echo "rosetta-source/src/main/rosetta/*" >> .git/info/sparse-checkout
-    git remote add origin https://github.com/rosetta-models/rune-fpml.git
+    git remote add origin "$FPML_REMOTE"
 
     # Attempt to pull the specific version/tag, fallback to master if it fails
     git pull --depth 1 origin "$FPML_VERSION" || {

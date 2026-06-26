@@ -61,26 +61,37 @@ source "$MY_PATH/../../ensure_jar_exists.sh" || { echo "Failed to source ensure_
 
 # Parse command-line arguments
 CDM_BRANCH="master"
-# CDM_BRANCH="6.x.x"
+CDM_REPO="https://github.com/finos/common-domain-model.git"
+FPML_REPO="https://github.com/rosetta-models/rune-fpml.git"
 SKIP_CDM=0
-for arg in "$@"; do
-  case "$arg" in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --skip-cdm)
       SKIP_CDM=1
+      shift
       ;;
     -r|--reuse-env)
       export REUSE_ENV=1
+      shift
+      ;;
+    --cdm-repo)
+      CDM_REPO="$2"
+      shift 2
+      ;;
+    --fpml-repo)
+      FPML_REPO="$2"
+      shift 2
       ;;
     *)
-      # default any other argument to the CDM version
-      CDM_BRANCH="$arg"
+      CDM_BRANCH="$1"
+      shift
       ;;
   esac
 done
 
 if [[ $SKIP_CDM -eq 0 ]]; then
     echo "***** Fetching CDM version: $CDM_BRANCH"
-    source $MY_PATH/get_cdm.sh "$CDM_BRANCH"
+    source $MY_PATH/get_cdm.sh "$CDM_BRANCH" --cdm-repo "$CDM_REPO" --fpml-repo "$FPML_REPO"
 else
     echo "Skipping get_cdm.sh as requested."
 fi
