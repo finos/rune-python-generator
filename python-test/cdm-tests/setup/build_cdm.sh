@@ -82,6 +82,10 @@ while [[ $# -gt 0 ]]; do
       FPML_REPO="$2"
       shift 2
       ;;
+    -v|--cdm-version)
+      CDM_VERSION="$2"
+      shift 2
+      ;;
     *)
       CDM_BRANCH="$1"
       shift
