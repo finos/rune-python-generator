@@ -164,7 +164,7 @@ public class PythonMetadataTest {
         String functionPython = getPython()
             .get("src/test/generated_syntax/metadata/functions/TestMetaPath.py").toString();
         testUtils.assertGeneratedContainsExpectedString(functionPython,
-            "def TestMetaPath(inpRoot: Root) -> NodeRef:");
+            "def TestMetaPath(inpRoot: InstanceOf[Root]) -> NodeRef:");
         testUtils.assertGeneratedContainsExpectedString(functionPython,
             "out = rune_resolve_attr(rune_resolve_attr(self, \"inpRoot\"), \"nodeRef\")");
     }

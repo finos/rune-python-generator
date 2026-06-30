@@ -146,6 +146,7 @@ All Rosetta/Rune expression types are fully supported by the Python code generat
 | Feature | Handled | Description |
 | :--- | :---: | :--- |
 | **ArithmeticOperation** | ✅ | Binary arithmetic (+, -, *, /) over two expressions. |
+| **AsOperation** | ✅ | The `as` operator (Rune DSL v10). Choice narrowing emits `rune_resolve_attr(arg, "OptionName")` (or a filtered list comprehension for multi-valued arguments); data type narrowing emits an `isinstance` check via the walrus operator, returning the narrowed value or `None` (or a filtered list comprehension for multi-valued arguments). See [AS_OPERATOR_IMPACT.md](AS_OPERATOR_IMPACT.md) for the full design. |
 | **AsKeyOperation** | ✅ | Emits `Reference(arg)` (or a list comprehension for multi-valued arguments). The DSL restricts `as-key` to attributes annotated with `[metadata reference]`, and the operand is always a keyed complex type (`[metadata key]`) — never a bare primitive. `Reference(obj)` calls `get_or_create_key()` on the live object, which is the correct runtime behaviour. `as-key` is purely assignment-side syntax (store by reference, not by value); the operand is always already in scope, so no graph-walking is needed. |
 | **ChoiceOperation** | ✅ | Handled within type conditions (via `rune_check_one_of`). |
 | **ComparisonOperation** | ✅ | Binary comparisons (e.g., <, <=, >, >=). |

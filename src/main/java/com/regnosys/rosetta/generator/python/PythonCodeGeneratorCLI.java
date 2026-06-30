@@ -23,8 +23,9 @@ import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.help.HelpFormatter;
+import org.apache.commons.cli.help.TextHelpAppendable;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FileUtils;
@@ -118,8 +119,7 @@ public class PythonCodeGeneratorCLI {
      * Default version used when no {@code -v} option is provided.
      */
     static final String DEFAULT_VERSION = "0.0.0";
-
-
+    
     /**
      * Public constructor for the CLI tool.
      */
@@ -244,8 +244,14 @@ public class PythonCodeGeneratorCLI {
     }
 
     private static void printUsage(Options options) {
-        HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("PythonCodeGeneratorCLI", options, true);
+        try {
+            HelpFormatter.builder()
+                    .setHelpAppendable(new TextHelpAppendable(new java.io.PrintWriter(System.out, true)))
+                    .get()
+                    .printHelp("PythonCodeGeneratorCLI", null, options, null, true);
+        } catch (java.io.IOException e) {
+            LOGGER.error("Failed to print usage: {}", e.getMessage());
+        }
     }
 
     private int translateFromSourceDir(String srcDir, String tgtDir, GenerationOptions opts) {
@@ -303,6 +309,10 @@ public class PythonCodeGeneratorCLI {
         }
 
         Injector injector = new PythonRosettaStandaloneSetup().createInjectorAndDoEMFRegistration();
+        if (injector == null) {
+            LOGGER.error("Failed to create injector.");
+            return 1;
+        }
         ResourceSet resourceSet = injector.getInstance(ResourceSet.class);
         List<Resource> resources = new LinkedList<>();
         RosettaBuiltinsService builtins = injector.getInstance(RosettaBuiltinsService.class);
@@ -333,6 +343,7 @@ public class PythonCodeGeneratorCLI {
 
         for (RosettaModel model : models) {
             Resource resource = model.eResource();
+            String sourceFile = resource.getURI().lastSegment();
             boolean hasErrors = false;
             try {
                 List<Issue> issues = validator.validate(resource, CheckMode.ALL, CancelIndicator.NullImpl);
@@ -360,13 +371,13 @@ public class PythonCodeGeneratorCLI {
                                 }
                             }
 
-                            LOGGER.error("Validation ERROR in {} (Line {}): {} on element '{}'",
-                                    model.getName(), issue.getLineNumber(), issue.getMessage(), identification);
+                            LOGGER.error("Validation ERROR in {} ({}, Line {}): {} on element '{}'",
+                                    model.getName(), sourceFile, issue.getLineNumber(), issue.getMessage(), identification);
                             hasErrors = true;
                             break;
                         case WARNING:
-                            LOGGER.warn("Validation WARNING in {} (Line {}): {}", model.getName(),
-                                    issue.getLineNumber(), issue.getMessage());
+                            LOGGER.warn("Validation WARNING in {} ({}, Line {}): {}", model.getName(),
+                                    sourceFile, issue.getLineNumber(), issue.getMessage());
                             if (failOnWarnings) {
                                 hasErrors = true;
                             }

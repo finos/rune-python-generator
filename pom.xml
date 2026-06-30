@@ -14,7 +14,7 @@
     <parent>
         <groupId>org.finos</groupId>
         <artifactId>finos</artifactId>
-        <version>9</version>
+        <version>10</version>
     </parent>
 
     <groupId>com.regnosys.rosetta.code-generators</groupId>
@@ -85,13 +85,13 @@
         <repoServerHost>s01.oss.sonatype.org</repoServerHost>
         <stagingTimeoutInMinutes>20</stagingTimeoutInMinutes>
 
-        <rosetta.dsl.version>9.84.0</rosetta.dsl.version>
+        <rosetta.dsl.version>10.0.0</rosetta.dsl.version>
 
         <xtext.version>2.43.0</xtext.version>
         <guice.version>6.0.0</guice.version>
 
         <slf4j.version>2.0.18</slf4j.version>
-        <logback.version>1.5.34</logback.version>
+        <logback.version>1.5.37</logback.version>
 
         <!-- test -->
         <junit.version>6.1.0</junit.version>

@@ -31,39 +31,39 @@ public class PythonExistsExpressionTest {
     public void testExistsBasic() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        type Bar:
-                            field number (0..1)
+                type Bar:
+                    field number (0..1)
 
-                        func ExistsBasic:
-                            inputs: bar Bar (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                bar -> field exists
-                        """,
+                func ExistsBasic:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> field exists
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def ExistsBasic(bar: Bar) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def ExistsBasic(bar: InstanceOf[Bar]) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            bar : com.rosetta.test.model.Bar
+                    Parameters
+                    ----------
+                    bar : com.rosetta.test.model.Bar
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            bar = rune_cow(bar)
-
-
-                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
+                    bar = rune_cow(bar)
 
 
-                            return result""");
+                    result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
+
+
+                    return result""");
     }
 
     /**
@@ -73,39 +73,39 @@ public class PythonExistsExpressionTest {
     public void testAbsentBasic() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        type Bar:
-                            field number (0..1)
+                type Bar:
+                    field number (0..1)
 
-                        func AbsentBasic:
-                            inputs: bar Bar (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                bar -> field is absent
-                        """,
+                func AbsentBasic:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> field is absent
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def AbsentBasic(bar: Bar) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def AbsentBasic(bar: InstanceOf[Bar]) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            bar : com.rosetta.test.model.Bar
+                    Parameters
+                    ----------
+                    bar : com.rosetta.test.model.Bar
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            bar = rune_cow(bar)
-
-
-                            result = (not rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field")))
+                    bar = rune_cow(bar)
 
 
-                            return result""");
+                    result = (not rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field")))
+
+
+                    return result""");
     }
 
     /**
@@ -127,7 +127,7 @@ public class PythonExistsExpressionTest {
                 """
                 @replaceable
                 @validate_call
-                def SingleExists(bar: list[Bar | None]) -> bool:
+                def SingleExists(bar: list[InstanceOf[Bar] | None]) -> bool:
                     \"\"\"
 
                     Parameters
@@ -157,39 +157,39 @@ public class PythonExistsExpressionTest {
     public void testMultipleExists() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        type Bar:
-                            fieldList number (0..*)
+                type Bar:
+                    fieldList number (0..*)
 
-                        func MultipleExists:
-                            inputs: bar Bar (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                bar -> fieldList multiple exists
-                        """,
+                func MultipleExists:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> fieldList multiple exists
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def MultipleExists(bar: Bar) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def MultipleExists(bar: InstanceOf[Bar]) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            bar : com.rosetta.test.model.Bar
+                    Parameters
+                    ----------
+                    bar : com.rosetta.test.model.Bar
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            bar = rune_cow(bar)
-
-
-                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "fieldList"), "multiple")
+                    bar = rune_cow(bar)
 
 
-                            return result""");
+                    result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "fieldList"), "multiple")
+
+
+                    return result""");
     }
 
     /**
@@ -199,40 +199,40 @@ public class PythonExistsExpressionTest {
     public void testExistsWithMetadata() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        type Bar:
-                            field number (0..1)
-                                [metadata scheme]
+                type Bar:
+                    field number (0..1)
+                        [metadata scheme]
 
-                        func ExistsWithMetadata:
-                            inputs: bar Bar (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                bar -> field exists
-                        """,
+                func ExistsWithMetadata:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> field exists
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def ExistsWithMetadata(bar: Bar) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def ExistsWithMetadata(bar: InstanceOf[Bar]) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            bar : com.rosetta.test.model.Bar
+                    Parameters
+                    ----------
+                    bar : com.rosetta.test.model.Bar
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            bar = rune_cow(bar)
-
-
-                            result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
+                    bar = rune_cow(bar)
 
 
-                            return result""");
+                    result = rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field"))
+
+
+                    return result""");
     }
 
     /**
@@ -242,40 +242,40 @@ public class PythonExistsExpressionTest {
     public void testExistsWithLogicalOperators() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        type Bar:
-                            field1 number (0..1)
-                            field2 number (0..1)
+                type Bar:
+                    field1 number (0..1)
+                    field2 number (0..1)
 
-                        func ExistsWithLogical:
-                            inputs: bar Bar (1..1)
-                            output: result boolean (1..1)
-                            set result:
-                                bar -> field1 exists and bar -> field2 exists
-                        """,
+                func ExistsWithLogical:
+                    inputs: bar Bar (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        bar -> field1 exists and bar -> field2 exists
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def ExistsWithLogical(bar: Bar) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def ExistsWithLogical(bar: InstanceOf[Bar]) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            bar : com.rosetta.test.model.Bar
+                    Parameters
+                    ----------
+                    bar : com.rosetta.test.model.Bar
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            bar = rune_cow(bar)
-
-
-                            result = (rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field1")) and rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field2")))
+                    bar = rune_cow(bar)
 
 
-                            return result""");
+                    result = (rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field1")) and rune_attr_exists(rune_resolve_attr(rune_resolve_attr(self, "bar"), "field2")))
+
+
+                    return result""");
     }
 
     /**
@@ -299,7 +299,7 @@ public class PythonExistsExpressionTest {
                 """
                 @replaceable
                 @validate_call
-                def DeepExists(bar: list[Bar | None]) -> bool:
+                def DeepExists(bar: list[InstanceOf[Bar] | None]) -> bool:
                     \"\"\"
 
                     Parameters
@@ -329,42 +329,42 @@ public class PythonExistsExpressionTest {
     public void testExistsInFunctionArguments() {
         testUtils.assertBundleContainsExpectedString(
                 """
-                        func ExistsArg:
-                            inputs:
-                                arg1 number (0..1)
-                                arg2 number (0..1)
-                            output:
-                                result boolean (1..1)
-                            set result:
-                                arg1 exists or arg2 exists
-                        """,
+                func ExistsArg:
+                    inputs:
+                        arg1 number (0..1)
+                        arg2 number (0..1)
+                    output:
+                        result boolean (1..1)
+                    set result:
+                        arg1 exists or arg2 exists
+                """,
                 """
-                        @replaceable
-                        @validate_call
-                        def ExistsArg(arg1: Decimal | None, arg2: Decimal | None) -> bool:
-                            \"\"\"
+                @replaceable
+                @validate_call
+                def ExistsArg(arg1: Decimal | None, arg2: Decimal | None) -> bool:
+                    \"\"\"
 
-                            Parameters
-                            ----------
-                            arg1 : Decimal
+                    Parameters
+                    ----------
+                    arg1 : Decimal
 
-                            arg2 : Decimal
+                    arg2 : Decimal
 
-                            Returns
-                            -------
-                            result : bool
+                    Returns
+                    -------
+                    result : bool
 
-                            \"\"\"
-                            self = inspect.currentframe()
+                    \"\"\"
+                    self = inspect.currentframe()
 
-                            arg1 = rune_cow(arg1)
-                            arg2 = rune_cow(arg2)
-
-
-                            result = (rune_attr_exists(rune_resolve_attr(self, "arg1")) or rune_attr_exists(rune_resolve_attr(self, "arg2")))
+                    arg1 = rune_cow(arg1)
+                    arg2 = rune_cow(arg2)
 
 
-                            return result""");
+                    result = (rune_attr_exists(rune_resolve_attr(self, "arg1")) or rune_attr_exists(rune_resolve_attr(self, "arg2")))
+
+
+                    return result""");
     }
 
     /**
@@ -372,7 +372,8 @@ public class PythonExistsExpressionTest {
      */
     @Test
     public void testOnlyExistsSinglePath() {
-        testUtils.assertBundleContainsExpectedString("""
+        testUtils.assertBundleContainsExpectedString(
+            """
                 type A:
                     field1 number (0..1)
 
@@ -382,8 +383,8 @@ public class PythonExistsExpressionTest {
                     condition TestCond:
                         if aValue -> field1 exists
                             then aValue -> field1 only exists
-                """,
-                "return rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"aValue\"), \"field1\"))");
+            """,
+            "return rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"aValue\"), \"field1\"))");
     }
 
     /**
@@ -391,18 +392,19 @@ public class PythonExistsExpressionTest {
      */
     @Test
     public void testOnlyExistsMultiplePaths() {
-        testUtils.assertBundleContainsExpectedString("""
-                type Bar:
-                    before number (0..1)
-                    after number (0..1)
+        testUtils.assertBundleContainsExpectedString(
+            """
+            type Bar:
+                before number (0..1)
+                after number (0..1)
 
-                func OnlyExistsMultiplePaths:
-                    inputs: bar Bar (1..1)
-                    output: result boolean (1..1)
-                    set result:
-                        ( bar -> before, bar -> after ) only exists
-                """,
-                "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"after\"))");
+            func OnlyExistsMultiplePaths:
+                inputs: bar Bar (1..1)
+                output: result boolean (1..1)
+                set result:
+                    ( bar -> before, bar -> after ) only exists
+            """,
+            "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"after\"))");
     }
 
     /**
@@ -410,18 +412,19 @@ public class PythonExistsExpressionTest {
      */
     @Test
     public void testOnlyExistsWithMetadata() {
-        testUtils.assertBundleContainsExpectedString("""
-                type Bar:
-                    before number (0..1)
-                        [metadata scheme]
+        testUtils.assertBundleContainsExpectedString(
+            """
+            type Bar:
+                before number (0..1)
+                    [metadata scheme]
 
-                func OnlyExistsWithMetadata:
-                    inputs: bar Bar (1..1)
-                    output: result boolean (1..1)
-                    set result:
-                        bar -> before only exists
-                """,
-                "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"))");
+            func OnlyExistsWithMetadata:
+                inputs: bar Bar (1..1)
+                output: result boolean (1..1)
+                set result:
+                    bar -> before only exists
+            """,
+            "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"))");
     }
 
     /**
@@ -430,17 +433,17 @@ public class PythonExistsExpressionTest {
     @Test
     public void testOnlyExistsThreePaths() {
         testUtils.assertBundleContainsExpectedString("""
-                type Bar:
-                    a number (0..1)
-                    b number (0..1)
-                    c number (0..1)
+            type Bar:
+                a number (0..1)
+                b number (0..1)
+                c number (0..1)
 
-                func OnlyExistsThree:
-                    inputs: bar Bar (1..1)
-                    output: result boolean (1..1)
-                    set result:
-                        ( bar -> a, bar -> b, bar -> c ) only exists
-                """,
-                "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"a\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"b\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"c\"))");
+            func OnlyExistsThree:
+                inputs: bar Bar (1..1)
+                output: result boolean (1..1)
+                set result:
+                    ( bar -> a, bar -> b, bar -> c ) only exists
+            """,
+            "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"a\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"b\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"c\"))");
     }
 }

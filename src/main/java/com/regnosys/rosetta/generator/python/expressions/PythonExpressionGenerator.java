@@ -19,6 +19,7 @@ import com.regnosys.rosetta.rosetta.RosettaFeature;
 import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaSymbol;
 import com.regnosys.rosetta.rosetta.expression.AsKeyOperation;
+import com.regnosys.rosetta.rosetta.expression.AsOperation;
 import com.regnosys.rosetta.rosetta.expression.ChoiceOperation;
 import com.regnosys.rosetta.rosetta.expression.ClosureParameter;
 import com.regnosys.rosetta.rosetta.expression.DistinctOperation;
@@ -70,6 +71,7 @@ import com.regnosys.rosetta.rosetta.expression.ToTimeOperation;
 import com.regnosys.rosetta.rosetta.expression.ToZonedDateTimeOperation;
 import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
+import com.regnosys.rosetta.rosetta.simple.ChoiceOption;
 import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
@@ -184,6 +186,9 @@ public final class PythonExpressionGenerator {
             }
             case AsKeyOperation asKey -> {
                 return generateAsKeyOperation(asKey, scope);
+            }
+            case AsOperation asOp -> {
+                return generateAsOperation(asOp, scope);
             }
             case DistinctOperation distinct -> {
                 return generateDistinctOperation(distinct, scope);
@@ -329,6 +334,72 @@ public final class PythonExpressionGenerator {
             return "[Reference(x) for x in (" + arg + " or []) if x is not None]";
         }
         return "Reference(" + arg + ")";
+    }
+
+    /**
+     * Generates Python for the {@code as} operator. Narrows a choice to one of its options
+     * (by navigating the option's attribute) or a data type to one of its extensions
+     * (by an isinstance check), per docs/AS_OPERATOR_IMPACT.md.
+     */
+    private String generateAsOperation(AsOperation expr, PythonExpressionScope scope) {
+        boolean isMulti = cardinalityProvider.isMulti(expr.getArgument());
+        String arg = generateExpression(expr.getArgument(), scope);
+        RType argType = typeProvider.getRMetaAnnotatedType(expr.getArgument()).getRType();
+
+        if (argType instanceof RChoiceType rChoiceType) {
+            ChoiceOption targetOption = (ChoiceOption) expr.getType();
+            List<String> path = findChoiceOptionPath(rChoiceType, targetOption);
+            if (path == null) {
+                path = List.of(targetOption.getName());
+            }
+            if (isMulti) {
+                // Each step in the path becomes an `if` clause with a walrus assignment,
+                // guarding the next step. Single-step collapses to the existing pattern.
+                StringBuilder sb = new StringBuilder("[_v for _x in (").append(arg).append(" or [])");
+                String prev = "_x";
+                for (int i = 0; i < path.size(); i++) {
+                    String varName = (i == path.size() - 1) ? "_v" : "_t" + i;
+                    sb.append(" if (").append(varName)
+                      .append(" := rune_resolve_attr(").append(prev).append(", \"")
+                      .append(path.get(i)).append("\")) is not None");
+                    prev = varName;
+                }
+                sb.append("]");
+                return sb.toString();
+            }
+            // Single: chain rune_resolve_attr calls.
+            String result = arg;
+            for (String step : path) {
+                result = "rune_resolve_attr(" + result + ", \"" + step + "\")";
+            }
+            return result;
+        }
+
+        // Narrowed values may still be wrapped in a copy-on-write proxy (rune_cow), which is
+        // not a subclass of the wrapped type, so the isinstance check must unwrap first.
+        String targetTypeName = ((Data) expr.getType()).getName();
+        if (isMulti) {
+            return "[_x for _x in (" + arg + " or []) if isinstance(rune_unwrap(_x), " + targetTypeName + ")]";
+        }
+        return "(_x if isinstance(rune_unwrap(_x := (" + arg + ")), " + targetTypeName + ") else None)";
+    }
+
+    private List<String> findChoiceOptionPath(RChoiceType choiceType, ChoiceOption targetOption) {
+        for (var option : choiceType.getOwnOptions()) {
+            if (option.getEObject().equals(targetOption)) {
+                return List.of(option.getEObject().getName());
+            }
+            if (option.getType().getRType() instanceof RChoiceType nested) {
+                List<String> subPath = findChoiceOptionPath(nested, targetOption);
+                if (subPath != null) {
+                    List<String> path = new ArrayList<>();
+                    path.add(option.getEObject().getName());
+                    path.addAll(subPath);
+                    return path;
+                }
+            }
+        }
+        return null;
     }
 
     private String generateConditionalExpression(RosettaConditionalExpression expr, PythonExpressionScope scope) {
