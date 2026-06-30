@@ -133,8 +133,22 @@ class PythonCodeGeneratorUtilTest {
 
     @Test
     void testIsValidVersionSnapshotWithoutBranchQualifier() {
-        assertFalse(PythonCodeGeneratorUtil.isValidVersion("1.0.0-SNAPSHOT"),
-                "bare -SNAPSHOT without branch qualifier should not be valid");
+        assertTrue(PythonCodeGeneratorUtil.isValidVersion("1.0.0-SNAPSHOT"),
+                "bare -SNAPSHOT without branch qualifier should be valid");
+    }
+
+    @Test
+    void testCleanVersionSnapshotWithDotInBranchQualifier() {
+        assertEquals("0.0.0.dev0",
+                PythonCodeGeneratorUtil.cleanVersion("0.0.0.erin._68bf072a8b2a2bdff21c85a-as-syntax_UpdatedExpectations-SNAPSHOT"),
+                "cleanVersion should handle SNAPSHOT branch qualifiers containing dots");
+    }
+
+    @Test
+    void testIsValidVersionSnapshotWithDotInBranchQualifier() {
+        assertTrue(PythonCodeGeneratorUtil.isValidVersion(
+                "0.0.0.erin._68bf072a8b2a2bdff21c85a-as-syntax_UpdatedExpectations-SNAPSHOT"),
+                "SNAPSHOT branch qualifier containing dots should be valid");
     }
 
     @Test

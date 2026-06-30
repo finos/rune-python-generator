@@ -16,7 +16,7 @@ public final class PythonCodeGeneratorUtil {
 
     public static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
     public static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
-    public static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)\\.[A-Za-z][A-Za-z0-9_-]+-SNAPSHOT");
+    public static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+).*-SNAPSHOT");
     private static final Pattern PEP440_DEV_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.dev\\d+");
 
     private PythonCodeGeneratorUtil() {
