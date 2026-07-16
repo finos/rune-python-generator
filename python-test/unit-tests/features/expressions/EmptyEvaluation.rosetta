@@ -1,0 +1,17 @@
+namespace rosetta_dsl.test.expressions.empty_evaluation
+
+type Foo:
+    someBoolean boolean (0..1)
+    alwaysFalse boolean (1..1)
+
+func IsAbsent:
+    inputs: foo Foo (1..1)
+    output: result boolean (1..1)
+    set result:
+        foo -> someBoolean is absent
+
+func IsPresent:
+    inputs: foo Foo (1..1)
+    output: result boolean (1..1)
+    set result:
+        foo -> someBoolean exists

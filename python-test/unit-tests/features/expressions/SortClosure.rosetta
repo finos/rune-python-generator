@@ -9,3 +9,15 @@ func SortItems:
     output: result SortItem (0..*)
     set result:
         items sort [ item -> val1 ]
+
+func SortItemsBySecondField:
+    inputs: items SortItem (0..*)
+    output: result SortItem (0..*)
+    set result:
+        items sort [ item -> val2 ]
+
+func SortIntegers:
+    inputs: items int (0..*)
+    output: result int (0..*)
+    set result:
+        items sort

@@ -1,0 +1,16 @@
+namespace rosetta_dsl.test.language.type_alias_condition
+
+typeAlias StringCode:
+    string
+
+    condition ValidCode:
+        item <> "INVALID"
+
+type CodeHolder:
+    code StringCode (1..1)
+
+func BuildCodeHolder:
+    inputs: code string (1..1)
+    output: result CodeHolder (1..1)
+    set result:
+        CodeHolder { code: code }

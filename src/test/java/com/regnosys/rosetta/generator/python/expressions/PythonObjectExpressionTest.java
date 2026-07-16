@@ -137,4 +137,80 @@ public class PythonObjectExpressionTest {
 
                     return result""");
     }
+
+    // -------------------------------------------------------------------------
+    // From ConstructorTest — derived-class override and nested list construction
+    // -------------------------------------------------------------------------
+
+    /**
+     * A derived class constructor that overrides a parent attribute with a
+     * more specific type generates the derived class name, not the parent's.
+     */
+    @Test
+    public void testDerivedClassConstructorUsesOverriddenType() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Parent:
+                type Child extends Parent:
+                    attr int (1..1)
+
+                type Holder:
+                    items Parent (0..*)
+
+                type ChildHolder extends Holder:
+                    override items Child (0..*)
+
+                func BuildChildHolder:
+                    output: result ChildHolder (1..1)
+                    set result:
+                        ChildHolder {
+                            items: [
+                                Child { attr: 1 },
+                                Child { attr: 2 }
+                            ]
+                        }
+                """,
+                "ChildHolder(items=[Child(attr=1), Child(attr=2)])");
+    }
+
+    /**
+     * A nested constructor with an ellipsis ({@code ...}) generates keyword
+     * arguments only for the explicitly provided fields; omitted fields use
+     * their Python defaults.
+     */
+    @Test
+    public void testConstructorWithEllipsisOmitsUnspecifiedFields() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Foo:
+                    a int (1..1)
+                    b int (0..1)
+
+                func BuildPartialFoo:
+                    output: result Foo (1..1)
+                    set result:
+                        Foo { a: 42, ... }
+                """,
+                "Foo(a=42)");
+    }
+
+    /**
+     * Constructor expression with a list literal generates a Python list.
+     */
+    @Test
+    public void testConstructorWithListLiteralGeneratesPythonList() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Item:
+                    val int (1..1)
+
+                type Container:
+                    items Item (0..*)
+
+                func BuildContainer:
+                    output: result Container (1..1)
+                    set result:
+                        Container {
+                            items: [ Item { val: 1 }, Item { val: 2 }, Item { val: 3 } ]
+                        }
+                """,
+                "Container(items=[Item(val=1), Item(val=2), Item(val=3)])");
+    }
 }
