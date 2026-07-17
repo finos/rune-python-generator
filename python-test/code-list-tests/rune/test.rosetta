@@ -1,0 +1,52 @@
+namespace codelist
+
+// ==============================================================================
+// Core Data Types
+// ==============================================================================
+type CodeList: 
+    codes CodeValue (0..*)
+
+type CodeValue: 
+    value string (1..1)
+
+// ==============================================================================
+// Native & Validation Functions
+// ==============================================================================
+func LoadCodeList:
+    [codeImplementation]
+    inputs:
+        domain string (1..1)
+    output:
+        codelist CodeList (0..1)
+
+func ValidateFpMLCodingSchemeDomain:
+    inputs:
+        code FpMLCodingScheme (1..1)
+        domain string (1..1)
+    output:
+        isValid boolean (1..1)
+
+    alias codelist: LoadCodeList(domain)
+
+    set isValid:
+        if codelist exists
+        then codelist -> codes -> value any = code
+        else False
+
+// ==============================================================================
+// Type Aliases & Conditions
+// ==============================================================================
+typeAlias FpMLCodingScheme(domain string):
+    string
+    condition IsValidCodingScheme:
+        if item exists
+        then ValidateFpMLCodingSchemeDomain(item, domain)
+
+typeAlias BusinessCenter: FpMLCodingScheme(domain: "business-center")
+
+// ==============================================================================
+// Our Integration Test Model
+// ==============================================================================
+type TradeTest: <"A minimal type to test codelist integration and Pydantic validation.">
+    businessCenter BusinessCenter (1..1)
+        [metadata scheme]
