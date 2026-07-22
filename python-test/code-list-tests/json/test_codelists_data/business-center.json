@@ -1,0 +1,26 @@
+{
+  "identification": {
+    "description": "A list of codes identifying business centers",
+    "publicationDate": "2021-10-05",
+    "shortName": "businessCenterScheme",
+    "version": "1-0",
+    "codeShortId": "business-center",
+    "canonicalUri": "http://www.fpml.org/coding-scheme/business-center",
+    "canonicalVersionUri": "http://www.fpml.org/coding-scheme/business-center-1-0",
+    "locationUri": "http://www.fpml.org/coding-scheme/business-center-1-0.xml"
+  },
+  "codes": [
+    {
+      "value": "GBLO",
+      "description": "London, United Kingdom",
+      "source": "FpML",
+      "effectiveDate": "2021-10-05"
+    },
+    {
+      "value": "USNY",
+      "description": "New York City, USA",
+      "source": "FpML",
+      "effectiveDate": "2022-05-10"
+    }
+  ]
+}

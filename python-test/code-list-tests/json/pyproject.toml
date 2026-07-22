@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=83.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-codelists-data"
+version = "1.0.0"
+description = "Dummy codelist wheel for generator integration tests"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["test_codelists_data"]
+
+[tool.setuptools.package-data]
+"test_codelists_data" = ["*.json"]

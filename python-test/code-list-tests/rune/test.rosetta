@@ -1,0 +1,11 @@
+namespace codelist
+
+import cdm.base.staticdata.codelist.BusinessCenter
+
+// ==============================================================================
+// Our Integration Test Model
+// ==============================================================================
+
+type TradeTest: <"A minimal type to test codelist integration and Pydantic validation.">
+    businessCenter BusinessCenter (1..1)
+        [metadata scheme]
