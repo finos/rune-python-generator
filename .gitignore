@@ -79,8 +79,4 @@ src/generated/
 /build/
 test/***
 
-# Codelist integration test artifacts
-**/python-test/code-list-tests/target/
-**/python-test/code-list-tests/json/build/
-
 
