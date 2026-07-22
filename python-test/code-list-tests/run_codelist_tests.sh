@@ -69,7 +69,8 @@ PROJECT_ROOT_PATH="$MY_PATH/../.."
 PYTHON_SETUP_PATH="$MY_PATH/../env-setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 
-TARGET_DIR="$MY_PATH/target"
+# Target directory
+TARGET_DIR="$PROJECT_ROOT_PATH/target/python-code-list-test"
 WHEEL_DIR="$TARGET_DIR/wheels"
 GENERATED_CODE_DIR="$TARGET_DIR/generated-code"
 
@@ -112,10 +113,9 @@ echo "***** 3. Activating virtual environment..."
 if [ -z "${WINDIR}" ]; then PY_SCRIPTS='bin'; else PY_SCRIPTS='Scripts'; fi
 source "$PROJECT_ROOT_PATH/$VENV_NAME/${PY_SCRIPTS}/activate" || error "Failed to activate venv"
 
-# Note: Overriding the default runtime installation to test the new codelist extension 
-# features prior to the upstream merge in finos/rune-python-runtime.
-echo "***** 4. Installing target Rune Runtime fork (feature/load_codelist_extension)..."
-python -m pip install "git+https://github.com/jserrano-spec/th-rune-python-runtime.git@feature/load_codelist_extension" || error "Failed to install custom runtime branch."
+# Pulling the upstream Finos runtime (main branch) which now includes the CachedJSONRuneObjectDeserializer (v2.1.0+).
+echo "***** 4. Installing upstream Rune Runtime (main)..."
+python -m pip install "git+https://github.com/finos/rune-python-runtime.git@main" || error "Failed to install upstream runtime."
 
 # ==============================================================================
 # WHEEL PACKAGING
@@ -130,6 +130,9 @@ python -m pip wheel --no-deps --only-binary :all: . -w "$WHEEL_DIR" || error "Fa
 echo "***** 6. Building the generated Python code wheel..."
 cd "$GENERATED_CODE_DIR" || error "Could not enter generated code directory."
 python -m pip wheel --no-deps --only-binary :all: . -w "$WHEEL_DIR" || error "Failed to build generated code wheel."
+
+# Clean up the intermediate build artifacts left by setuptools
+rm -rf "$MY_PATH/json/build" "$MY_PATH/json/"*.egg-info
 
 # ==============================================================================
 # INSTALLATION & TESTING
