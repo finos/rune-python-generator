@@ -197,7 +197,7 @@ public final class PythonExpressionGenerator {
                 return generateFilterOperation(filter, scope);
             }
             case FirstOperation first -> {
-                return "next((x for x in (" + generateExpression(first.getArgument(), scope) + " or []) if x is not None), None)";
+                return "(lambda items: next((x for x in (items or []) if x is not None), None))(" + generateExpression(first.getArgument(), scope) + ")";
             }
             case FlattenOperation flatten -> {
                 return generateFlattenOperation(flatten, scope);
@@ -296,7 +296,7 @@ public final class PythonExpressionGenerator {
                 return generateFeatureCall(featureCall, scope);
             }
             case RosettaOnlyElement onlyElement -> {
-                return "rune_get_only_element([x for x in (" + generateExpression(onlyElement.getArgument(), scope) + " or []) if x is not None])";
+                return "(lambda items: rune_get_only_element([x for x in (items or []) if x is not None]))(" + generateExpression(onlyElement.getArgument(), scope) + ")";
             }
             case RosettaOnlyExistsExpression onlyExists -> {
                 String args = onlyExists.getArgs().stream()
@@ -353,9 +353,7 @@ public final class PythonExpressionGenerator {
                 path = List.of(targetOption.getName());
             }
             if (isMulti) {
-                // Each step in the path becomes an `if` clause with a walrus assignment,
-                // guarding the next step. Single-step collapses to the existing pattern.
-                StringBuilder sb = new StringBuilder("[_v for _x in (").append(arg).append(" or [])");
+                StringBuilder sb = new StringBuilder("(lambda _items: [_v for _x in _items");
                 String prev = "_x";
                 for (int i = 0; i < path.size(); i++) {
                     String varName = (i == path.size() - 1) ? "_v" : "_t" + i;
@@ -364,7 +362,7 @@ public final class PythonExpressionGenerator {
                       .append(path.get(i)).append("\")) is not None");
                     prev = varName;
                 }
-                sb.append("]");
+                sb.append("])((").append(arg).append(" or []))");
                 return sb.toString();
             }
             // Single: chain rune_resolve_attr calls.
@@ -379,7 +377,7 @@ public final class PythonExpressionGenerator {
         // not a subclass of the wrapped type, so the isinstance check must unwrap first.
         String targetTypeName = ((Data) expr.getType()).getName();
         if (isMulti) {
-            return "[_x for _x in (" + arg + " or []) if isinstance(rune_unwrap(_x), " + targetTypeName + ")]";
+            return "(lambda _items: [_x for _x in _items if isinstance(rune_unwrap(_x), " + targetTypeName + ")])((" + arg + " or []))";
         }
         return "(_x if isinstance(rune_unwrap(_x := (" + arg + ")), " + targetTypeName + ") else None)";
     }
@@ -993,7 +991,7 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateLastOperation(LastOperation last, PythonExpressionScope scope) {
-        return "next((x for x in reversed(" + generateExpression(last.getArgument(), scope) + " or []) if x is not None), None)";
+        return "(lambda items: next((x for x in reversed(items or []) if x is not None), None))(" + generateExpression(last.getArgument(), scope) + ")";
     }
 
     private String generateSumOperation(SumOperation sum, PythonExpressionScope scope) {
