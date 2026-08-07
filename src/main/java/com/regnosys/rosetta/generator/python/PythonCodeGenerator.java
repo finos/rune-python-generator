@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -337,19 +338,20 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         PythonCodeWriter dataObjectsWriter = new PythonCodeWriter();
         PythonCodeWriter functionsWriter = new PythonCodeWriter();
         PythonCodeWriter annotationUpdateWriter = new PythonCodeWriter();
-        PythonCodeWriter rebuildWriter = new PythonCodeWriter();
 
         BundleHeaderResult headerResult = buildBundleHeader(context, nameSpace, bundleWriter);
 
         List<Set<String>> sccs = context.getSccs();
         List<Integer> sccOrder = buildCondensationGraph(context.getDependencyDAG(), sccs);
 
+        List<String> pendingRebuilds = new ArrayList<>();
         emitSortedClasses(sccOrder, sccs, context, nameSpace,
                 headerResult.standaloneSupertypesOfBundled(),
-                dataObjectsWriter, functionsWriter, annotationUpdateWriter, rebuildWriter, result);
+                dataObjectsWriter, functionsWriter, annotationUpdateWriter, pendingRebuilds, result);
 
+        String rebuildContent = emitRebuildCallsInOrder(pendingRebuilds, context);
         assembleBundleFile(nameSpace, context, bundleWriter, dataObjectsWriter, functionsWriter,
-                annotationUpdateWriter, rebuildWriter, headerResult.deferredStandaloneImports(), result);
+                annotationUpdateWriter, rebuildContent, headerResult.deferredStandaloneImports(), result);
 
         return result;
     }
@@ -473,7 +475,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param dataObjectsWriter           Accumulates bundled class bodies.
      * @param functionsWriter             Accumulates bundled function bodies.
      * @param annotationUpdateWriter      Accumulates Phase 2 annotation updates.
-     * @param rebuildWriter               Accumulates Phase 3 model_rebuild calls.
+     * @param pendingRebuilds             Accumulates bundle class names that need Phase 3 model_rebuild calls.
      * @param result                      Map to receive proxy stub and standalone file entries.
      */
     private void emitSortedClasses(
@@ -485,7 +487,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         PythonCodeWriter dataObjectsWriter,
         PythonCodeWriter functionsWriter,
         PythonCodeWriter annotationUpdateWriter,
-        PythonCodeWriter rebuildWriter,
+        List<String> pendingRebuilds,
         Map<String, CharSequence> result
     ) {
         Graph<String, DefaultEdge> dependencyDAG = context.getDependencyDAG();
@@ -509,7 +511,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                     emitBundledClass(name, bundleClassName, classObject, functionObject,
                             nameSpace, context, standaloneClasses, standaloneSupertypesOfBundled,
                             emittedInlineSupertypeImports,
-                            dataObjectsWriter, functionsWriter, annotationUpdateWriter, rebuildWriter,
+                            dataObjectsWriter, functionsWriter, annotationUpdateWriter, pendingRebuilds,
                             result);
                 } else {
                     emitStandaloneFile(name, classObject, functionObject,
@@ -536,7 +538,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         PythonCodeWriter dataObjectsWriter,
         PythonCodeWriter functionsWriter,
         PythonCodeWriter annotationUpdateWriter,
-        PythonCodeWriter rebuildWriter,
+        List<String> pendingRebuilds,
         Map<String, CharSequence> result
     ) {
         if (classObject != null) {
@@ -561,8 +563,8 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 for (String update : updates) {
                     annotationUpdateWriter.appendLine(update);
                 }
-                // Phase 3: Rebuild — only needed when there are delayed annotation updates
-                rebuildWriter.appendLine(String.format("%s.model_rebuild(force=True)", bundleClassName));
+                // Phase 3: Collect for rebuild — emitted in dependency order by emitRebuildCallsInOrder
+                pendingRebuilds.add(bundleClassName);
             }
         }
         if (functionObject != null) {
@@ -581,6 +583,72 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         result.put(
             SRC + PythonCodeGeneratorUtil.toFileSystemPath(name) + ".py",
             generateProxyStub(name, nameSpace, bundleClassName, functionObject != null));
+    }
+
+    /**
+     * Sorts and emits the Phase 3 {@code model_rebuild(force=True)} calls in dependency order.
+     *
+     * <p>Rebuild calls are sorted topologically by the rebuild-dependency graph recorded in
+     * {@code context} during Phase 2 annotation-update generation: if class A holds a deferred
+     * field of type B, an edge B→A is present, ensuring B is rebuilt before A.
+     *
+     * <p>Mutual cycles (A↔B both reference each other) are handled via condensation: types
+     * that form a cycle are grouped into one SCC and emitted together in their original
+     * {@code pendingRebuilds} insertion order. The condensation DAG is then topo-sorted so
+     * the SCC groups themselves appear in the correct relative order.
+     */
+    private String emitRebuildCallsInOrder(
+        List<String> pendingRebuilds,
+        PythonCodeGeneratorContext context
+    ) {
+        PythonCodeWriter rebuildWriter = new PythonCodeWriter();
+        Set<String> rebuildSet = new LinkedHashSet<>(pendingRebuilds);
+        Map<String, Set<String>> deps = context.getRebuildDeps();
+
+        DefaultDirectedGraph<String, DefaultEdge> rebuildGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
+        for (String cls : rebuildSet) {
+            rebuildGraph.addVertex(cls);
+        }
+        for (String cls : rebuildSet) {
+            for (String dep : deps.getOrDefault(cls, Collections.emptySet())) {
+                if (rebuildSet.contains(dep)) {
+                    rebuildGraph.addEdge(dep, cls); // dep must be rebuilt before cls
+                }
+            }
+        }
+
+        // Condense cycles: group mutually-dependent types into SCCs, topo-sort the condensation.
+        KosarajuStrongConnectivityInspector<String, DefaultEdge> sccInspector =
+            new KosarajuStrongConnectivityInspector<>(rebuildGraph);
+        List<Set<String>> rebuildSccs = sccInspector.stronglyConnectedSets();
+
+        Map<String, Integer> clsToScc = new HashMap<>();
+        DefaultDirectedGraph<Integer, DefaultEdge> condensation = new DefaultDirectedGraph<>(DefaultEdge.class);
+        for (int i = 0; i < rebuildSccs.size(); i++) {
+            condensation.addVertex(i);
+            for (String cls : rebuildSccs.get(i)) {
+                clsToScc.put(cls, i);
+            }
+        }
+        for (DefaultEdge edge : rebuildGraph.edgeSet()) {
+            int src = clsToScc.get(rebuildGraph.getEdgeSource(edge));
+            int tgt = clsToScc.get(rebuildGraph.getEdgeTarget(edge));
+            if (src != tgt) {
+                condensation.addEdge(src, tgt);
+            }
+        }
+
+        TopologicalOrderIterator<Integer, DefaultEdge> topo = new TopologicalOrderIterator<>(condensation);
+        while (topo.hasNext()) {
+            Set<String> sccMembers = rebuildSccs.get(topo.next());
+            // Emit SCC members in their original pendingRebuilds insertion order
+            for (String cls : pendingRebuilds) {
+                if (sccMembers.contains(cls)) {
+                    rebuildWriter.appendLine(String.format("%s.model_rebuild(force=True)", cls));
+                }
+            }
+        }
+        return rebuildWriter.toString();
     }
 
     /**
@@ -696,7 +764,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      * @param dataObjectsWriter      Accumulated bundled class bodies.
      * @param functionsWriter        Accumulated bundled function bodies.
      * @param annotationUpdateWriter Accumulated Phase 2 annotation updates.
-     * @param rebuildWriter          Accumulated Phase 3 model_rebuild calls.
+     * @param rebuildContent         Sorted Phase 3 model_rebuild calls as a string.
      * @param deferredImports        Standalone-class imports to emit after class definitions.
      * @param result                 Map to receive the assembled bundle file entry.
      */
@@ -707,7 +775,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         PythonCodeWriter dataObjectsWriter,
         PythonCodeWriter functionsWriter,
         PythonCodeWriter annotationUpdateWriter,
-        PythonCodeWriter rebuildWriter,
+        String rebuildContent,
         List<String> deferredImports,
         Map<String, CharSequence> result
     ) {
@@ -732,11 +800,11 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             bundleWriter.appendBlock(annotationUpdateWriter.toString());
         }
 
-        if (!rebuildWriter.isEmpty()) {
+        if (rebuildContent != null && !rebuildContent.isEmpty()) {
             bundleWriter.newLine();
             bundleWriter.newLine();
             bundleWriter.appendLine("# Phase 3: Rebuild");
-            bundleWriter.appendBlock(rebuildWriter.toString());
+            bundleWriter.appendBlock(rebuildContent);
         }
 
         bundleWriter.appendBlock(functionsWriter.toString());
