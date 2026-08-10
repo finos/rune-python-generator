@@ -9,17 +9,15 @@
 #   python-test/cdm-tests/run_cdm_tests.sh [options]
 #
 # Options:
-#   -b <branch>            CDM branch/tag to fetch (default: master)
-#   -v, --cdm-version <v>  Version string for the Python package (default: 0.0.0 for master)
-#   -s, --skip-cdm         Skip CDM fetch and build; use the existing wheel
-#   --fetch-sample         Fetch the ingestion sample from the CDM repo at the same
-#                          branch ref (sets CDM_SAMPLE_PATH for pytest); without this
-#                          flag the committed sample in cdm-samples/ is used
-#   -r, --reuse-env        Reuse the existing virtual environment
-#   -k, --keep-venv        Skip cleanup of the virtual environment after tests
-#   --cdm-repo <url>       CDM git repo URL (default: finos/common-domain-model)
-#   --fpml-repo <url>      FpML git repo URL (default: rosetta-models/rune-fpml)
-#   -h, --help             Show this help
+#   -b <branch>             CDM branch/tag to fetch (default: master)
+#   -v, --cdm-version <v>   Version string for the Python package (default: 0.0.0 for master)
+#   -s, --skip-cdm          Skip CDM fetch and build; use the existing wheel
+#   -i, --skip-ingestion    Skip fetching the live sample and skip test_deserialize_trade_state.py
+#   -r, --reuse-env         Reuse the existing virtual environment
+#   -k, --keep-venv         Skip cleanup of the virtual environment after tests
+#   --cdm-repo <url>        CDM git repo URL (default: finos/common-domain-model)
+#   --fpml-repo <url>       FpML git repo URL (default: rosetta-models/rune-fpml)
+#   -h, --help              Show this help
 
 type -P python > /dev/null && PYEXE=python || PYEXE=python3
 if ! $PYEXE -c 'import sys; assert sys.version_info >= (3,11)' > /dev/null 2>&1; then
@@ -42,7 +40,7 @@ usage() {
 
 REUSE_ENV=0
 SKIP_CDM=0
-FETCH_SAMPLE=0
+SKIP_INGESTION=0
 CLEANUP=1
 CDM_BRANCH="master"
 CDM_VERSION=""
@@ -54,7 +52,7 @@ while [[ $# -gt 0 ]]; do
         -r|--reuse-env)      export REUSE_ENV=1; CLEANUP=0; shift ;;
         -k|--keep-venv)      CLEANUP=0; shift ;;
         -s|--skip-cdm)       SKIP_CDM=1; shift ;;
-        --fetch-sample)      FETCH_SAMPLE=1; shift ;;
+        -i|--skip-ingestion) SKIP_INGESTION=1; shift ;;
         -b)                  CDM_BRANCH="$2"; shift 2 ;;
         -v|--cdm-version)    CDM_VERSION="$2"; shift 2 ;;
         --cdm-repo)          CDM_REPO="$2"; shift 2 ;;
@@ -91,9 +89,11 @@ MY_PATH="$_SAVED_MY_PATH"
 unset _SAVED_MY_PATH
 
 # ---------------------------------------------------------------------------
-# Step 3: optionally fetch the ingestion sample from the CDM repo
+# Step 3: fetch the ingestion sample from the CDM repo (default)
 # ---------------------------------------------------------------------------
-if [[ $FETCH_SAMPLE -eq 1 ]]; then
+PYTEST_ARGS=(-p no:cacheprovider)
+
+if [[ $SKIP_INGESTION -eq 0 ]]; then
     SAMPLE_REPO_PATH="rosetta-source/src/main/resources/ingest/output/fpml-confirmation-to-trade-state/fpml-5-13-products-credit-derivatives/cd-ex01-long-asia-corp-fixreg.json"
     SAMPLE_RAW_URL="https://raw.githubusercontent.com/finos/common-domain-model/$CDM_BRANCH/$SAMPLE_REPO_PATH"
     SAMPLE_DIR="$PROJECT_ROOT_PATH/target/cdm-samples"
@@ -105,7 +105,8 @@ if [[ $FETCH_SAMPLE -eq 1 ]]; then
     echo "***** Sample saved ($( wc -c < "$SAMPLE_FILE" | tr -d ' ') bytes)"
     export CDM_SAMPLE_PATH="$SAMPLE_FILE"
 else
-    echo "***** Step 3: using committed sample (pass --fetch-sample to pull from repo)"
+    echo "***** Step 3: skipping ingestion test (-i)"
+    PYTEST_ARGS+=(--ignore="$MY_PATH/test_deserialize_trade_state.py")
 fi
 
 # ---------------------------------------------------------------------------
@@ -113,7 +114,7 @@ fi
 # ---------------------------------------------------------------------------
 echo "***** Step 4: running CDM tests"
 python -m pip install pytest --quiet
-python -m pytest -p no:cacheprovider "$MY_PATH"
+python -m pytest "${PYTEST_ARGS[@]}" "$MY_PATH"
 TEST_EXIT_CODE=$?
 rm -rf .pytest
 
