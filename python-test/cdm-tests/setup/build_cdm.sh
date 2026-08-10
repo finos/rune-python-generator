@@ -53,7 +53,6 @@ PYTHON_SETUP_PATH="$MY_PATH/../../env-setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 CDM_PROJECT_NAME="finos-cdm"
 CDM_PREFIX="finos"
-CDM_VERSION="7.0.0-dev.98"
 cd ${MY_PATH} || error
 
 
@@ -61,6 +60,7 @@ source "$MY_PATH/../../ensure_jar_exists.sh" || { echo "Failed to source ensure_
 
 # Parse command-line arguments
 CDM_BRANCH="master"
+CDM_VERSION=""
 CDM_REPO="https://github.com/finos/common-domain-model.git"
 FPML_REPO="https://github.com/rosetta-models/rune-fpml.git"
 SKIP_CDM=0
@@ -92,6 +92,15 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Default version: 0.0.0 for master, branch name otherwise
+if [[ -z "$CDM_VERSION" ]]; then
+    if [[ "$CDM_BRANCH" == "master" ]]; then
+        CDM_VERSION="0.0.0"
+    else
+        CDM_VERSION="$CDM_BRANCH"
+    fi
+fi
 
 if [[ $SKIP_CDM -eq 0 ]]; then
     echo "***** Fetching CDM version: $CDM_BRANCH"

@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -325,6 +326,30 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 standaloneClasses.add(vertex);
             }
         }
+
+        // Promote to bundled: any own-type class whose bundled ancestor is also an own type.
+        // Pydantic's model_rebuild(force=True) does not propagate parent annotation changes to
+        // a child's model_fields — each subclass must be in the bundle to receive explicit
+        // Phase 2 and Phase 3 treatment for inherited deferred fields.
+        Map<String, String> superTypes = context.getSuperTypes();
+        boolean anyPromotion = true;
+        while (anyPromotion) {
+            anyPromotion = false;
+            for (String cls : new ArrayList<>(standaloneClasses)) {
+                if (!ownTypes.contains(cls)) {
+                    continue; // external type — always standalone
+                }
+                String parentFqn = superTypes.get(cls);
+                if (parentFqn == null || !ownTypes.contains(parentFqn)) {
+                    continue; // no own-type parent
+                }
+                if (!standaloneClasses.contains(parentFqn)) {
+                    standaloneClasses.remove(cls);
+                    anyPromotion = true;
+                    LOGGER.debug("Promoted {} to bundled (parent {} is bundled)", cls, parentFqn);
+                }
+            }
+        }
     }
 
     private Map<String, CharSequence> processDAG(
@@ -344,10 +369,18 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         List<Set<String>> sccs = context.getSccs();
         List<Integer> sccOrder = buildCondensationGraph(context.getDependencyDAG(), sccs);
 
+        propagateInheritedPhase2Updates(context);
+
         List<String> pendingRebuilds = new ArrayList<>();
         emitSortedClasses(sccOrder, sccs, context, nameSpace,
                 headerResult.standaloneSupertypesOfBundled(),
                 dataObjectsWriter, functionsWriter, annotationUpdateWriter, pendingRebuilds, result);
+
+        // Add deferred standalone imports into the rebuild graph so they are ordered
+        // correctly relative to bundled classes: a standalone type S must rebuild before any
+        // bundled class B whose Phase 2 annotations reference S, and S itself must rebuild
+        // after the bundled types it depends on.
+        integrateStandaloneRebuilds(context, headerResult.deferredStandaloneImports(), pendingRebuilds);
 
         String rebuildContent = emitRebuildCallsInOrder(pendingRebuilds, context);
         assembleBundleFile(nameSpace, context, bundleWriter, dataObjectsWriter, functionsWriter,
@@ -586,16 +619,214 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     }
 
     /**
+     * Propagates Phase 2 annotation updates and rebuild deps from bundled parent classes to their
+     * bundled subclasses.
+     *
+     * <p>Pydantic v2's {@code model_rebuild(force=True)} on a child class does not pick up changes
+     * made to a parent's {@code model_fields[f].annotation} — each subclass holds its own copy of
+     * the FieldInfo. Any field that was deferred ({@code None}-typed) in a bundled parent must
+     * therefore also receive an explicit Phase 2 update on every bundled child that inherits it.
+     *
+     * <p>Rebuild deps are also propagated so that the rebuild-ordering graph correctly reflects
+     * transitive field-dep constraints inherited via subclassing (e.g. if Parent.product is of
+     * type NonTransferableProduct, Child inheriting that field must also rebuild NonTransferableProduct
+     * before itself).
+     *
+     * <p>Both propagation steps run in fixpoint loops so that multi-level inheritance chains
+     * (grandparent → parent → child) are handled correctly.
+     */
+    private void propagateInheritedPhase2Updates(PythonCodeGeneratorContext context) {
+        Map<String, String> superTypes = context.getSuperTypes();
+        Map<String, List<String>> updates = context.getPostDefinitionUpdates();
+        Set<String> standaloneClasses = context.getStandaloneClasses();
+
+        // Build bundled parent (bundle name) → list of bundled children (bundle names)
+        Map<String, List<String>> bundledChildrenByParent = new HashMap<>();
+        for (Map.Entry<String, String> entry : superTypes.entrySet()) {
+            String childFqn = entry.getKey();
+            String parentFqn = entry.getValue();
+            if (!standaloneClasses.contains(childFqn) && !standaloneClasses.contains(parentFqn)) {
+                bundledChildrenByParent
+                    .computeIfAbsent(getBundleClassName(parentFqn), k -> new ArrayList<>())
+                    .add(getBundleClassName(childFqn));
+            }
+        }
+
+        // Fixpoint: propagate Phase 2 update strings until stable (handles multi-level chains)
+        boolean anyChange = true;
+        while (anyChange) {
+            anyChange = false;
+            for (Map.Entry<String, List<String>> entry : bundledChildrenByParent.entrySet()) {
+                String parentBundle = entry.getKey();
+                List<String> parentUpdates = updates.get(parentBundle);
+                if (parentUpdates == null || parentUpdates.isEmpty()) {
+                    continue;
+                }
+                for (String childBundle : entry.getValue()) {
+                    Set<String> existingFields = extractFieldNamesFromUpdates(
+                        updates.getOrDefault(childBundle, Collections.emptyList()));
+                    Set<String> fieldsToPropagate = new HashSet<>();
+                    for (String line : parentUpdates) {
+                        String field = extractModelFieldsName(line);
+                        if (field != null && !existingFields.contains(field)) {
+                            fieldsToPropagate.add(field);
+                        }
+                    }
+                    if (fieldsToPropagate.isEmpty()) {
+                        continue;
+                    }
+                    List<String> toAdd = new ArrayList<>();
+                    for (String line : parentUpdates) {
+                        if (isUpdateLineForFields(line, fieldsToPropagate, parentBundle)) {
+                            toAdd.add(childBundle + line.substring(parentBundle.length()));
+                        }
+                    }
+                    if (!toAdd.isEmpty()) {
+                        context.addPostDefinitionUpdates(childBundle, toAdd);
+                        anyChange = true;
+                    }
+                }
+            }
+        }
+
+        // Fixpoint: propagate rebuild deps until stable so transitive constraints are captured
+        Map<String, Set<String>> rebuildDeps = context.getRebuildDeps();
+        boolean anyDepChange = true;
+        while (anyDepChange) {
+            anyDepChange = false;
+            for (Map.Entry<String, List<String>> entry : bundledChildrenByParent.entrySet()) {
+                String parentBundle = entry.getKey();
+                Set<String> parentDeps = rebuildDeps.getOrDefault(parentBundle, Collections.emptySet());
+                if (parentDeps.isEmpty()) {
+                    continue;
+                }
+                for (String childBundle : entry.getValue()) {
+                    Set<String> childDeps = rebuildDeps.getOrDefault(childBundle, Collections.emptySet());
+                    for (String dep : parentDeps) {
+                        if (!dep.equals(childBundle) && !childDeps.contains(dep)) {
+                            context.addRebuildDep(childBundle, dep);
+                            anyDepChange = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String extractModelFieldsName(String updateLine) {
+        int start = updateLine.indexOf(".model_fields[\"");
+        if (start < 0) {
+            return null;
+        }
+        int end = updateLine.indexOf("\"", start + 15);
+        return end >= 0 ? updateLine.substring(start + 15, end) : null;
+    }
+
+    private Set<String> extractFieldNamesFromUpdates(List<String> updates) {
+        Set<String> fields = new HashSet<>();
+        for (String line : updates) {
+            String f = extractModelFieldsName(line);
+            if (f != null) {
+                fields.add(f);
+            }
+        }
+        return fields;
+    }
+
+    private boolean isUpdateLineForFields(String line, Set<String> fields, String bundleName) {
+        for (String field : fields) {
+            if (line.startsWith(bundleName + ".model_fields[\"" + field + "\"]")
+                    || line.startsWith(bundleName + ".__annotations__[\"" + field + "\"]")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Adds deferred standalone imports into the rebuild graph so they are ordered correctly
+     * inside Phase 3 rather than being relegated to an unordered Phase 4 after all bundled
+     * rebuilds.
+     *
+     * <p>Two sets of edges are added:
+     * <ol>
+     *   <li><b>S → bundled dep:</b> standalone class S must rebuild <em>after</em> every bundled
+     *       class it references (derived from the dependency DAG).</li>
+     *   <li><b>bundled B → S:</b> bundled class B must rebuild <em>after</em> standalone S
+     *       whenever B's Phase 2 annotation strings mention S's class name (meaning B inlines
+     *       S's schema at rebuild time).</li>
+     * </ol>
+     *
+     * @param context         The generator context (DAG, post-definition updates, standalone set).
+     * @param deferredImports List of {@code "from <module> import <ClassName>"} import strings.
+     * @param pendingRebuilds The rebuild list (mutated: standalone class names are appended).
+     */
+    private void integrateStandaloneRebuilds(
+        PythonCodeGeneratorContext context,
+        List<String> deferredImports,
+        List<String> pendingRebuilds
+    ) {
+        if (deferredImports.isEmpty()) {
+            return;
+        }
+        Set<String> standaloneClasses = context.getStandaloneClasses();
+        Map<String, List<String>> updates = context.getPostDefinitionUpdates();
+        Graph<String, DefaultEdge> dag = context.getDependencyDAG();
+
+        Set<String> pendingSet = new HashSet<>(pendingRebuilds);
+
+        for (String imp : deferredImports) {
+            int importIdx = imp.lastIndexOf(" import ");
+            if (importIdx < 0) continue;
+            String className = imp.substring(importIdx + " import ".length()).trim();
+            String fqn = imp.substring("from ".length(), importIdx).trim();
+
+            // Add standalone class to pendingRebuilds if not already present
+            if (pendingSet.add(className)) {
+                pendingRebuilds.add(className);
+            }
+
+            // Dep 1: standalone S must rebuild AFTER bundled types it directly references.
+            // The DAG convention is addEdge(dependency, dependent), so INCOMING edges to S's
+            // vertex are the types S depends on (S's field types), while OUTGOING edges are
+            // classes that depend on S.
+            if (dag.containsVertex(fqn)) {
+                for (DefaultEdge edge : dag.incomingEdgesOf(fqn)) {
+                    String depFqn = dag.getEdgeSource(edge);
+                    if (!standaloneClasses.contains(depFqn)) {
+                        // depFqn is a bundled type that S references — S must rebuild after it
+                        context.addRebuildDep(className, getBundleClassName(depFqn));
+                    }
+                }
+            }
+
+            // Dep 2: bundled class B must rebuild AFTER standalone S if B's Phase 2
+            // annotation strings reference S by its imported name.
+            for (Map.Entry<String, List<String>> entry : updates.entrySet()) {
+                String bundleClass = entry.getKey();
+                for (String updateLine : entry.getValue()) {
+                    if (updateLine.contains(className)) {
+                        context.addRebuildDep(bundleClass, className);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Sorts and emits the Phase 3 {@code model_rebuild(force=True)} calls in dependency order.
      *
-     * <p>Rebuild calls are sorted topologically by the rebuild-dependency graph recorded in
-     * {@code context} during Phase 2 annotation-update generation: if class A holds a deferred
-     * field of type B, an edge B→A is present, ensuring B is rebuilt before A.
+     * <p>Rebuild ordering is driven entirely by field-reference deps recorded in {@code context}
+     * during Phase 2: if class A holds a deferred field of type B, an edge B→A is present so B
+     * is rebuilt first. Inheritance edges are NOT added to the rebuild graph because
+     * {@link #propagateInheritedPhase2Updates} has already copied each parent's deferred-field
+     * annotations and rebuild deps onto every bundled subclass, making the child's rebuild
+     * self-sufficient.
      *
      * <p>Mutual cycles (A↔B both reference each other) are handled via condensation: types
-     * that form a cycle are grouped into one SCC and emitted together in their original
-     * {@code pendingRebuilds} insertion order. The condensation DAG is then topo-sorted so
-     * the SCC groups themselves appear in the correct relative order.
+     * that form a cycle are grouped into one SCC and topo-sorted together using
+     * {@link #sortRebuildScc}, which uses a field-dep-predecessor heuristic for cycle-breaking.
      */
     private String emitRebuildCallsInOrder(
         List<String> pendingRebuilds,
@@ -609,6 +840,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         for (String cls : rebuildSet) {
             rebuildGraph.addVertex(cls);
         }
+        // Field-reference deps: B must rebuild before A when A has a deferred field of type B.
         for (String cls : rebuildSet) {
             for (String dep : deps.getOrDefault(cls, Collections.emptySet())) {
                 if (rebuildSet.contains(dep)) {
@@ -641,14 +873,130 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         TopologicalOrderIterator<Integer, DefaultEdge> topo = new TopologicalOrderIterator<>(condensation);
         while (topo.hasNext()) {
             Set<String> sccMembers = rebuildSccs.get(topo.next());
-            // Emit SCC members in their original pendingRebuilds insertion order
-            for (String cls : pendingRebuilds) {
-                if (sccMembers.contains(cls)) {
+            if (sccMembers.size() == 1) {
+                rebuildWriter.appendLine(String.format("%s.model_rebuild(force=True)", sccMembers.iterator().next()));
+            } else {
+                // Multi-element SCC (genuine field-dep cycle): sort by field-dep-predecessor heuristic
+                List<String> sortedMembers = sortRebuildScc(sccMembers, pendingRebuilds, deps);
+                for (String cls : sortedMembers) {
                     rebuildWriter.appendLine(String.format("%s.model_rebuild(force=True)", cls));
                 }
             }
         }
         return rebuildWriter.toString();
+    }
+
+    /**
+     * Sorts rebuild-SCC members using Kahn's algorithm with field-dep-predecessor cycle-breaking.
+     *
+     * <p>Directed edges within the SCC subgraph come from field-reference deps: if class B
+     * holds a deferred field of type A, an edge A→B means A must rebuild before B.
+     *
+     * <p>When all remaining nodes have in-degree &gt; 0 (genuine field-dep cycle), the cycle is
+     * broken by preferring nodes that have the fewest field-dep predecessors still in the
+     * remaining set — i.e., nodes that are least constrained by unresolved deps. Ties are broken
+     * by position in {@code pendingRebuilds} (class-definition order).
+     *
+     * @param sccMembers      Bundle class names in this rebuild SCC.
+     * @param pendingRebuilds All rebuild bundle class names in insertion order (for tie-breaking).
+     * @param rebuildDeps     Bundle-name-to-set map: class → set of deps that must rebuild first.
+     * @return SCC members in a rebuild order that respects as many dep edges as possible.
+     */
+    private List<String> sortRebuildScc(
+        Set<String> sccMembers,
+        List<String> pendingRebuilds,
+        Map<String, Set<String>> rebuildDeps
+    ) {
+        // Build successors and in-degree maps within this SCC.
+        // Edge A → B means A must rebuild before B.
+        Map<String, Set<String>> successors = new HashMap<>();
+        Map<String, Integer> inDegree = new HashMap<>();
+        for (String m : sccMembers) {
+            successors.put(m, new HashSet<>());
+            inDegree.put(m, 0);
+        }
+
+        // Field-ref edges: dep → cls (dep must rebuild before cls)
+        for (String cls : sccMembers) {
+            for (String dep : rebuildDeps.getOrDefault(cls, Collections.emptySet())) {
+                if (sccMembers.contains(dep) && !dep.equals(cls)) {
+                    if (successors.get(dep).add(cls)) {
+                        inDegree.merge(cls, 1, Integer::sum);
+                    }
+                }
+            }
+        }
+
+        // Build pendingRebuilds position map for stable tie-breaking
+        Map<String, Integer> pendingPos = new HashMap<>();
+        for (int i = 0; i < pendingRebuilds.size(); i++) {
+            pendingPos.putIfAbsent(pendingRebuilds.get(i), i);
+        }
+
+        // Kahn's algorithm with field-dep-predecessor cycle-breaking
+        List<String> result = new ArrayList<>();
+        Set<String> remaining = new HashSet<>(sccMembers);
+
+        while (!remaining.isEmpty()) {
+            // Prefer nodes with in-degree 0, ordered by pendingRebuilds position
+            String chosen = null;
+            int chosenPos = Integer.MAX_VALUE;
+            for (String m : remaining) {
+                if (inDegree.get(m) == 0) {
+                    int pos = pendingPos.getOrDefault(m, Integer.MAX_VALUE);
+                    if (chosen == null || pos < chosenPos) {
+                        chosen = m;
+                        chosenPos = pos;
+                    }
+                }
+            }
+
+            if (chosen == null) {
+                // Cycle-breaking: prefer nodes with fewest field-dep predecessors still in remaining.
+                // A node with fewer unresolved predecessors can be rebuilt with less schema
+                // incompleteness — the field-dep edge target (the class being depended upon)
+                // should be emitted first because others depend on it.
+                int minPreds = Integer.MAX_VALUE;
+                for (String m : remaining) {
+                    int preds = 0;
+                    for (String dep : rebuildDeps.getOrDefault(m, Collections.emptySet())) {
+                        if (remaining.contains(dep) && !dep.equals(m)) {
+                            preds++;
+                        }
+                    }
+                    minPreds = Math.min(minPreds, preds);
+                }
+                int bestPos = Integer.MAX_VALUE;
+                for (String m : remaining) {
+                    int preds = 0;
+                    for (String dep : rebuildDeps.getOrDefault(m, Collections.emptySet())) {
+                        if (remaining.contains(dep) && !dep.equals(m)) {
+                            preds++;
+                        }
+                    }
+                    if (preds == minPreds) {
+                        int pos = pendingPos.getOrDefault(m, Integer.MAX_VALUE);
+                        if (chosen == null || pos < bestPos) {
+                            chosen = m;
+                            bestPos = pos;
+                        }
+                    }
+                }
+                if (chosen == null) {
+                    chosen = remaining.iterator().next(); // fallback, should never reach here
+                }
+            }
+
+            result.add(chosen);
+            remaining.remove(chosen);
+            for (String succ : successors.getOrDefault(chosen, Collections.emptySet())) {
+                if (remaining.contains(succ)) {
+                    inDegree.merge(succ, -1, Integer::sum);
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
