@@ -29,7 +29,7 @@ fi
 export PYTHONDONTWRITEBYTECODE=1
 
 MY_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-PROJECT_ROOT_PATH="$MY_PATH/../.."
+PROJECT_ROOT_PATH="$( cd "$MY_PATH/../.." >/dev/null 2>&1 && pwd )"
 PYTHON_SETUP_PATH="$MY_PATH/../env-setup"
 
 source "$MY_PATH/../ensure_jar_exists.sh" || { echo "Failed to source ensure_jar_exists.sh"; exit 1; }
@@ -84,24 +84,26 @@ fi
 # ---------------------------------------------------------------------------
 echo "***** Step 2: setting up Python environment"
 _SAVED_MY_PATH="$MY_PATH"
+_SAVED_CDM_BRANCH="$CDM_BRANCH"
 source "$MY_PATH/setup/setup_cdm_test_env.sh" || exit 1
 MY_PATH="$_SAVED_MY_PATH"
-unset _SAVED_MY_PATH
+CDM_BRANCH="$_SAVED_CDM_BRANCH"
+unset _SAVED_MY_PATH _SAVED_CDM_BRANCH
 
 # ---------------------------------------------------------------------------
 # Step 3: fetch the ingestion sample from the CDM repo (default)
 # ---------------------------------------------------------------------------
 PYTEST_ARGS=(-p no:cacheprovider)
+SAMPLE_TMPDIR=""
 
 if [[ $SKIP_INGESTION -eq 0 ]]; then
     SAMPLE_REPO_PATH="rosetta-source/src/main/resources/ingest/output/fpml-confirmation-to-trade-state/fpml-5-13-products-credit-derivatives/cd-ex01-long-asia-corp-fixreg.json"
     SAMPLE_RAW_URL="https://raw.githubusercontent.com/finos/common-domain-model/$CDM_BRANCH/$SAMPLE_REPO_PATH"
-    SAMPLE_DIR="$PROJECT_ROOT_PATH/target/cdm-samples"
-    SAMPLE_FILE="$SAMPLE_DIR/cd-ex01-long-asia-corp-fixreg.json"
-    mkdir -p "$SAMPLE_DIR"
+    SAMPLE_TMPDIR="$(mktemp -d)"
+    SAMPLE_FILE="$SAMPLE_TMPDIR/cd-ex01-long-asia-corp-fixreg.json"
     echo "***** Step 3: fetching sample from $SAMPLE_RAW_URL"
     curl -sSL --fail "$SAMPLE_RAW_URL" -o "$SAMPLE_FILE" \
-        || { echo "ERROR: failed to fetch CDM sample"; exit 1; }
+        || { echo "ERROR: failed to fetch CDM sample"; rm -rf "$SAMPLE_TMPDIR"; exit 1; }
     echo "***** Sample saved ($( wc -c < "$SAMPLE_FILE" | tr -d ' ') bytes)"
     export CDM_SAMPLE_PATH="$SAMPLE_FILE"
 else
@@ -121,6 +123,7 @@ rm -rf .pytest
 # ---------------------------------------------------------------------------
 # Cleanup
 # ---------------------------------------------------------------------------
+[[ -n "$SAMPLE_TMPDIR" ]] && rm -rf "$SAMPLE_TMPDIR"
 deactivate
 if [[ $CLEANUP -eq 1 ]]; then
     echo "***** cleaning up environment"
