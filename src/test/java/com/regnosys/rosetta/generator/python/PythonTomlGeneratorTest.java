@@ -60,6 +60,18 @@ class PythonTomlGeneratorTest {
     }
 
     /**
+     * Generated projects require the runtime version that introduced
+     * {@code rune_resolve_attr_values}.
+     */
+    @Test
+    void testTomlRequiresRuntimeVersionTwoTwoOrLater() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(MODEL);
+        String toml = python.get("pyproject.toml").toString();
+        assertTrue(toml.contains("\"rune.runtime>=2.2.0,<3.0.0\""),
+                "Expected pyproject.toml to require rune.runtime>=2.2.0,<3.0.0 but was:\n" + toml);
+    }
+
+    /**
      * When a namespace prefix is supplied (via the future {@code -x} CLI option),
      * the pyproject.toml project name should incorporate the prefix as the first
      * segment (e.g. {@code python-finos} for prefix {@code finos}).
