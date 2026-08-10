@@ -1,0 +1,31 @@
+namespace rosetta_dsl.test.expressions.constructor
+
+type Foo:
+    a int (1..1)
+    b int (0..1)
+
+type Item:
+    val int (1..1)
+
+type Container:
+    items Item (0..*)
+
+func BuildFooComplete:
+    inputs: seed int (1..1)
+    output: result Foo (1..1)
+    set result:
+        Foo { a: seed, b: 2 }
+
+func BuildFooPartial:
+    inputs: val int (1..1)
+    output: result Foo (1..1)
+    set result:
+        Foo { a: val, ... }
+
+func BuildContainer:
+    inputs: n int (1..1)
+    output: result Container (1..1)
+    set result:
+        Container {
+            items: [ Item { val: 1 }, Item { val: 2 }, Item { val: n } ]
+        }

@@ -887,6 +887,29 @@ public class PythonCollectionExpressionTest {
     // From PythonReduceOperationTest
     // -------------------------------------------------------------------------
 
+    // -------------------------------------------------------------------------
+    // From RosettaSortOperationTest — sort with key expression
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code items sort [ item -> val ]} generates a sort with a {@code key=} lambda
+     * that uses {@code rune_resolve_attr} to extract the key field.
+     */
+    @Test
+    public void testSortWithKeyExpression() {
+        testUtils.assertBundleContainsExpectedString("""
+                type SortItem:
+                    val int (1..1)
+
+                func SortByVal:
+                    inputs: items SortItem (0..*)
+                    output: result SortItem (0..*)
+                    set result:
+                        items sort [ item -> val ]
+                """,
+                "(lambda items: sorted((x for x in (items or []) if x is not None), key=lambda item: rune_resolve_attr(item, \"val\")) if items is not None else None)(rune_resolve_attr(self, \"items\"))");
+    }
+
     @Test
     public void testReduceOperation() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(
