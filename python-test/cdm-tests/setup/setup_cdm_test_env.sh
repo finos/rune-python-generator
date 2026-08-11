@@ -108,13 +108,18 @@ if [ -z "$CDM_WHL" ] || [ "$FORCE_REBUILD" -eq 1 ]; then
     "$MY_PATH/build_cdm.sh" "${BUILD_ARGS[@]}" || error
 fi
 
-# Install the CDM wheel with --no-deps so pip does not resolve rune-runtime as a
-# transitive dependency and overwrite the editable local install set up above.
-# All CDM dependencies (pydantic, dateutil, etc.) are already covered by the
-# rune-runtime install performed by setup_python_env.sh.
 echo "**** Install CDM package ****"
-python -m pip install --no-deps --force-reinstall --pre \
-    "$PYTHONCDMDIR"/*-*-py3-none-any.whl
+# If rune-runtime is already installed (e.g. editable local checkout via RUNE_RUNTIME_DIR),
+# use --no-deps to avoid pip overwriting it with the PyPI version.
+# Otherwise let pip resolve all transitive deps normally so rune-runtime and its
+# dependencies (pydantic, dateutil, etc.) are pulled from PyPI automatically.
+if python -c "import rune.runtime" 2>/dev/null; then
+    python -m pip install --no-deps --force-reinstall --pre \
+        "$PYTHONCDMDIR"/*-*-py3-none-any.whl
+else
+    python -m pip install --force-reinstall --pre \
+        "$PYTHONCDMDIR"/*-*-py3-none-any.whl
+fi
 
 # When run directly (not sourced), clean up unless -k was given
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

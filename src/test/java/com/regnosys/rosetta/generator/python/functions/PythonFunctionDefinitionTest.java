@@ -10,6 +10,8 @@ import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
@@ -542,6 +544,95 @@ public class PythonFunctionDefinitionTest {
             """;
         testUtils.assertGeneratedContainsExpectedString(
             gf.get("src/com/rosetta/test/model/functions/TestAsKey.py").toString(), expectedBundle);
+    }
+
+    // -------------------------------------------------------------------------
+    // Bundled-type import regression tests
+    // -------------------------------------------------------------------------
+
+    /**
+     * A standalone function whose input is a BUNDLED Data type must use the simple class name
+     * in the {@code @validate_call} signature and import that class from its proxy-stub module.
+     *
+     * <p>Regression: before the fix, the generator used the flattened bundle alias
+     * (e.g. {@code com_rosetta_test_model_CycleA}) in the annotation but never emitted an import
+     * for it, causing a {@code NameError} when pydantic evaluated the decorator.
+     */
+    @Test
+    public void testStandaloneFunctionImportsBundledInputType() {
+        // CycleA and CycleB form a mutual-reference cycle → they become bundled types.
+        // ProcessCycle is a function in the same namespace that takes CycleA as input.
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                type CycleA:
+                    b CycleB (0..1)
+
+                type CycleB:
+                    a CycleA (0..1)
+
+                func ProcessCycle:
+                    inputs:
+                        inp CycleA (1..1)
+                    output:
+                        result boolean (1..1)
+                    set result:
+                        inp -> b exists
+                """);
+
+        // Confirm CycleA is bundled (the bundle file must exist).
+        assertTrue(gf.containsKey("src/com/_bundle.py"),
+                "Cyclic types must produce a _bundle.py");
+
+        String funcFile = gf.get("src/com/rosetta/test/model/functions/ProcessCycle.py").toString();
+
+        // The annotation must use the simple class name so pydantic can resolve it.
+        assertTrue(funcFile.contains("InstanceOf[CycleA]"),
+                "Signature must use the simple class name CycleA for a bundled input type");
+
+        // A direct import must be present so pydantic's @validate_call can resolve the name.
+        assertTrue(funcFile.contains("from com.rosetta.test.model.CycleA import CycleA"),
+                "Standalone function file must import the bundled input type by its simple name");
+
+        // The flattened bundle alias must not appear — it is not defined in this file's scope.
+        assertFalse(funcFile.contains("com_rosetta_test_model_CycleA"),
+                "Flattened bundle alias must not appear in a standalone function file");
+    }
+
+    /**
+     * Same regression as {@link #testStandaloneFunctionImportsBundledInputType} but for the
+     * function's return-type annotation.
+     */
+    @Test
+    public void testStandaloneFunctionImportsBundledOutputType() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                type CycleA:
+                    b CycleB (0..1)
+
+                type CycleB:
+                    a CycleA (0..1)
+
+                func GetCycleA:
+                    inputs:
+                        inp CycleB (1..1)
+                    output:
+                        result CycleA (0..1)
+                    set result:
+                        inp -> a
+                """);
+
+        assertTrue(gf.containsKey("src/com/_bundle.py"),
+                "Cyclic types must produce a _bundle.py");
+
+        String funcFile = gf.get("src/com/rosetta/test/model/functions/GetCycleA.py").toString();
+
+        // Return type annotation must use the simple name.
+        assertTrue(funcFile.contains("-> CycleA"),
+                "Return type annotation must use the simple class name CycleA");
+
+        assertTrue(funcFile.contains("from com.rosetta.test.model.CycleA import CycleA"),
+                "Standalone function file must import the bundled output type by its simple name");
+
+        assertFalse(funcFile.contains("com_rosetta_test_model_CycleA"),
+                "Flattened bundle alias must not appear in the return annotation");
     }
 
     /**

@@ -261,13 +261,18 @@ public final class PythonFunctionGenerator {
             throw new RuntimeException("Function is null");
         }
         String functionFQN = context.getFullyQualifiedName(function);
-        String pythonName = context.getStandaloneClasses().contains(functionFQN)
-                ? function.getName()
-                : context.getBundleObjectName(function);
-        return generateFunctionBody(function, pythonName, context);
+        boolean isStandalone = context.getStandaloneClasses().contains(functionFQN);
+        String pythonName = isStandalone ? function.getName() : context.getBundleObjectName(function);
+        return generateFunctionBody(function, pythonName, isStandalone, context);
     }
 
     private String generateFunctionBody(Function function, String pythonName, PythonCodeGeneratorContext context) {
+        String functionFQN = context.getFullyQualifiedName(function);
+        boolean isStandalone = context.getStandaloneClasses().contains(functionFQN);
+        return generateFunctionBody(function, pythonName, isStandalone, context);
+    }
+
+    private String generateFunctionBody(Function function, String pythonName, boolean isStandalone, PythonCodeGeneratorContext context) {
         if (context.getEnumImports() == null) {
             throw new RuntimeException("Enum imports is null");
         }
@@ -285,7 +290,7 @@ public final class PythonFunctionGenerator {
 
         writer.appendLine("@replaceable");
         writer.appendLine("@validate_call");
-        writer.appendLine("def " + pythonName + generateInputs(function, context) + ":");
+        writer.appendLine("def " + pythonName + generateInputs(function, context, isStandalone) + ":");
         writer.indent();
 
         writer.appendBlock(generateDescription(function, context));
@@ -403,32 +408,41 @@ public final class PythonFunctionGenerator {
                 arguments.isEmpty() ? "" : ", " + arguments);
     }
 
-    private String generateInputs(Function function, PythonCodeGeneratorContext context) {
+    private String generateInputs(Function function, PythonCodeGeneratorContext context, boolean isStandalone) {
         String inputs = rosettaFunctionExtensions.getInputs(function).stream()
                 .map(input -> {
-                    String inputTypeName = getTypeNameForContext(input.getTypeCall().getType(), context);
-                    if (input.getTypeCall().getType() instanceof Data) {
-                        inputTypeName = "InstanceOf[" + inputTypeName + "]";
+                    RosettaNamed inputType = input.getTypeCall().getType();
+                    String inputTypeName;
+                    if (inputType instanceof Data) {
+                        // Standalone files import types by simple name; bundled files use the
+                        // flattened name defined in the same bundle module.
+                        String dataName = isStandalone ? inputType.getName() : getTypeNameForContext(inputType, context);
+                        inputTypeName = "InstanceOf[" + dataName + "]";
+                    } else {
+                        inputTypeName = getTypeNameForContext(inputType, context);
                     }
-                    String inputType = RuneToPythonMapper.formatCardinality(
+                    String formattedType = RuneToPythonMapper.formatCardinality(
                             inputTypeName,
                             input.getCard().getInf(),
                             input.getCard().getSup(),
                             true);
-                    return input.getName() + ": " + inputType;
+                    return input.getName() + ": " + formattedType;
                 })
                 .collect(Collectors.joining(", "));
 
         StringBuilder result = new StringBuilder("(").append(inputs).append(") -> ");
         Attribute output = rosettaFunctionExtensions.getOutput(function);
         if (output != null) {
-            String outputTypeName = getTypeNameForContext(output.getTypeCall().getType(), context);
-            String outputType = RuneToPythonMapper.formatCardinality(
+            RosettaNamed outputType = output.getTypeCall().getType();
+            String outputTypeName = (isStandalone && outputType instanceof Data)
+                    ? outputType.getName()
+                    : getTypeNameForContext(outputType, context);
+            String formattedOutputType = RuneToPythonMapper.formatCardinality(
                     outputTypeName,
                     1, // Force min=1 to suppress Optional/| None for return types
                     output.getCard().getSup(),
                     true);
-            result.append(outputType);
+            result.append(formattedOutputType);
         } else {
             result.append("None");
         }

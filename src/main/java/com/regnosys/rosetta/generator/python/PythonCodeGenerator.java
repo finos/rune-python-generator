@@ -1025,9 +1025,12 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             List<String> typeImports = new ArrayList<>();
             for (DefaultEdge edge : inEdges) {
                 String depName = dependencyDAG.getEdgeSource(edge);
-                if (context.getStandaloneClasses().contains(depName)
-                        && (context.getClassObjects().containsKey(depName)
-                            || context.getFunctionObjects().containsKey(depName))) {
+                boolean isClassDep = context.getClassObjects().containsKey(depName);
+                boolean isFuncDep  = context.getFunctionObjects().containsKey(depName);
+                if (isClassDep || (context.getStandaloneClasses().contains(depName) && isFuncDep)) {
+                    // Data class dep (standalone or bundled) or standalone function dep:
+                    // standalone function signatures use the simple class name, so import
+                    // it directly from its proxy-stub module.
                     String shortName = depName.substring(depName.lastIndexOf('.') + 1);
                     typeImports.add("from " + depName + " import " + shortName);
                 }
