@@ -117,6 +117,17 @@ public final class PythonAttributeProcessor {
             pythonType = "None";
             annotationUpdates.add(String.format("model_fields[\"%s\"].annotation = %s", attrName, hint.build(false)));
             annotationUpdates.add(String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true)));
+
+            // Record rebuild dependency: className's model_rebuild must run after the referenced
+            // type's model_rebuild. Only track types in the same bundle (same context, not standalone).
+            String fqnAttrTypeName = context.applyPrefix(rt.getNamespace().toString()) + "." + rt.getName();
+            if (!className.equals(fqnAttrTypeName)
+                    && context.getClassNames().contains(fqnAttrTypeName)
+                    && !context.getStandaloneClasses().contains(fqnAttrTypeName)) {
+                context.addRebuildDep(
+                    className.replace(".", "_"),
+                    fqnAttrTypeName.replace(".", "_"));
+            }
         } else {
             pythonType = hint.build(true);
         }

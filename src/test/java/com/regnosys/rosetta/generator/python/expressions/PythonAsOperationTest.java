@@ -90,7 +90,7 @@ public class PythonAsOperationTest {
                     foos as Bar
             """,
             """
-            result = [_v for _x in (rune_resolve_attr(self, "foos") or []) if (_v := rune_resolve_attr(_x, "Bar")) is not None]
+            result = rune_resolve_attr_values(rune_resolve_attr(self, "foos"), "Bar")
             """);
     }
 
@@ -224,10 +224,9 @@ public class PythonAsOperationTest {
     }
 
     /**
-     * Multi-cardinality nested choice narrowing — the generated list comprehension must
-     * guard each path step individually with a walrus assignment and {@code is not None},
-     * so that elements whose intermediate choice does not hold the expected option are
-     * excluded rather than causing an attribute error.
+     * Multi-cardinality nested choice narrowing — generated helper calls must resolve and
+     * filter each path step individually, so that elements whose intermediate choice does not
+     * hold the expected option are excluded rather than causing an attribute error.
      */
     @Test
     public void testAsNestedChoiceNarrowingMulti() {
@@ -257,7 +256,7 @@ public class PythonAsOperationTest {
                     outers as Opt2
             """,
             """
-            result = [_v for _x in (rune_resolve_attr(self, "outers") or []) if (_t0 := rune_resolve_attr(_x, "NestedBar")) is not None if (_v := rune_resolve_attr(_t0, "Opt2")) is not None]
+            result = rune_resolve_attr_values(rune_resolve_attr_values(rune_resolve_attr(self, "outers"), "NestedBar"), "Opt2")
             """);
     }
 

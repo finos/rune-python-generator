@@ -98,6 +98,13 @@ public final class PythonCodeGeneratorContext {
      * The namespace prefix to prepend to all generated namespaces (e.g. "finos"), or null.
      */
     private String namespacePrefix = null;
+    /**
+     * Rebuild dependency graph: maps a bundle class name to the set of bundle class names
+     * that must be rebuilt before it. Populated by PythonAttributeProcessor when generating
+     * deferred annotation updates; consumed by PythonCodeGenerator to sort Phase 3 rebuild
+     * calls in dependency order.
+     */
+    private Map<String, Set<String>> rebuildDeps = null;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new LinkedHashSet<>();
@@ -116,6 +123,7 @@ public final class PythonCodeGeneratorContext {
         this.allEnums = new ArrayList<>();
         this.superTypes = new HashMap<>();
         this.functionEnumImports = new HashMap<>();
+        this.rebuildDeps = new HashMap<>();
     }
 
     public List<String> getSubfolders() {
@@ -231,6 +239,16 @@ public final class PythonCodeGeneratorContext {
 
     public void setSccs(List<Set<String>> sccs) {
         this.sccs = sccs;
+    }
+
+    public void addRebuildDep(String dependent, String dependency) {
+        if (!dependent.equals(dependency)) {
+            rebuildDeps.computeIfAbsent(dependent, k -> new LinkedHashSet<>()).add(dependency);
+        }
+    }
+
+    public Map<String, Set<String>> getRebuildDeps() {
+        return rebuildDeps;
     }
 
     public String getNamespacePrefix() {
