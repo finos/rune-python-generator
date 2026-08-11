@@ -353,19 +353,13 @@ public final class PythonExpressionGenerator {
                 path = List.of(targetOption.getName());
             }
             if (isMulti) {
-                // Each step in the path becomes an `if` clause with a walrus assignment,
-                // guarding the next step. Single-step collapses to the existing pattern.
-                StringBuilder sb = new StringBuilder("[_v for _x in (").append(arg).append(" or [])");
-                String prev = "_x";
-                for (int i = 0; i < path.size(); i++) {
-                    String varName = (i == path.size() - 1) ? "_v" : "_t" + i;
-                    sb.append(" if (").append(varName)
-                      .append(" := rune_resolve_attr(").append(prev).append(", \"")
-                      .append(path.get(i)).append("\")) is not None");
-                    prev = varName;
+                // Resolve each step across the current collection, filtering out None values
+                // before navigating the next step of a nested choice path.
+                String result = arg;
+                for (String step : path) {
+                    result = "rune_resolve_attr_values(" + result + ", \"" + step + "\")";
                 }
-                sb.append("]");
-                return sb.toString();
+                return result;
             }
             // Single: chain rune_resolve_attr calls.
             String result = arg;
