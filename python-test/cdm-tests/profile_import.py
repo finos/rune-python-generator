@@ -83,6 +83,20 @@ def main():
     t_total = time.perf_counter() - t_start
     print("Import done.", flush=True)
 
+    # ── first-use (model_validate on minimal data) ─────────────────────────
+    rss_pre_validate = rss_mb()
+    rebuild_times_before_validate = len(rebuild_times)
+    _first_use_data = {"trade": None, "state": None, "resetHistory": None,
+                       "transferHistory": None, "observationHistory": None}
+    t_validate_start = time.perf_counter()
+    try:
+        TradeState.model_validate(_first_use_data)
+    except Exception:
+        pass  # validation error is fine — we only care about schema-build cost
+    t_validate = time.perf_counter() - t_validate_start
+    rss_post_validate = rss_mb()
+    rebuild_calls_during_validate = len(rebuild_times) - rebuild_times_before_validate
+
     # ── snapshot ──────────────────────────────────────────────────────────
     gc.collect()
     rss_after = rss_mb()
@@ -104,10 +118,16 @@ def main():
     print(f"\n{sep}")
     print("TIMING SUMMARY")
     print(sep)
-    print(f"  Total import time     : {t_total:.1f}s")
-    print(f"  Time in model_rebuild : {total_rebuild:.1f}s  ({total_rebuild/t_total*100:.0f}% of total)")
+    print(f"  Total import time     : {t_total:.2f}s")
+    print(f"  Time in model_rebuild : {total_rebuild:.2f}s  ({total_rebuild/t_total*100:.0f}% of total)")
     print(f"  model_rebuild calls   : {len(rebuild_times)}")
     print(f"  Average per rebuild   : {total_rebuild/len(rebuild_times)*1000:.1f}ms" if rebuild_times else "")
+    print(f"\n  -- First use (model_validate) --")
+    print(f"  First-use time        : {t_validate*1000:.0f}ms")
+    print(f"  RSS before first use  : {rss_pre_validate:.1f} MB")
+    print(f"  RSS after first use   : {rss_post_validate:.1f} MB")
+    print(f"  RSS delta (first use) : {rss_post_validate - rss_pre_validate:.1f} MB")
+    print(f"  model_rebuild during  : {rebuild_calls_during_validate} calls")
 
     print(f"\n{sep}")
     print(f"TOP {args.top} SLOWEST model_rebuild CALLS")

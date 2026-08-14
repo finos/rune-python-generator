@@ -311,6 +311,16 @@ public class PythonModelObjectGenerator {
         writer.appendLine("class " + classNameDefinition + "(" + superClassName + "):");
         writer.indent();
 
+        // Bundled classes defer initial schema compilation until after all class bodies are
+        // defined. By the time Phase 3 model_rebuild(force=True) runs, all cyclic types are
+        // fully available, so Pydantic can build schemas ~4× faster (~1.8 GB / ~5s for CDM
+        // vs ~7.9 GB / ~17s without defer_build). Phase 3 is still required: Pydantic
+        // builds None-typed placeholder schemas eagerly even with defer_build=True, so an
+        // explicit model_rebuild is needed to pick up Phase 2 annotation updates.
+        if (!isStandalone) {
+            writer.appendLine("model_config = ConfigDict(defer_build=True)");
+        }
+
         String metaData = getClassMetaDataString(rc);
         if (!metaData.isEmpty()) {
             writer.appendBlock(metaData);

@@ -425,10 +425,21 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 headerResult.standaloneSupertypesOfBundled(),
                 dataObjectsWriter, functionsWriter, annotationUpdateWriter, pendingRebuilds, result);
 
-        // Add deferred standalone imports into the rebuild graph so they are ordered
-        // correctly relative to bundled classes: a standalone type S must rebuild before any
-        // bundled class B whose Phase 2 annotations reference S, and S itself must rebuild
-        // after the bundled types it depends on.
+        // Phase 3: model_rebuild(force=True) calls emitted in dependency order.
+        //
+        // These are required despite defer_build=True on every bundled class. Pydantic
+        // builds None-typed placeholder schemas eagerly at class-definition time (None is
+        // a trivially resolvable type), so the deferred-build flag alone does not prevent
+        // the wrong schema from being used. model_rebuild(force=True) forces Pydantic to
+        // re-read the Phase 2-updated __annotations__ and build the correct schema.
+        //
+        // defer_build=True still saves memory/time: because it prevents any intermediate
+        // schema compilation during the class-definition phase, all cyclic types are fully
+        // defined by the time Phase 3 runs, and Pydantic's schema builder can resolve
+        // cross-type references in a single pass (~4× faster than without defer_build).
+        //
+        // Standalone classes with deferred imports are integrated into the rebuild graph
+        // so they are ordered correctly relative to bundled classes.
         integrateStandaloneRebuilds(context, headerResult.deferredStandaloneImports(), pendingRebuilds);
 
         String rebuildContent = emitRebuildCallsInOrder(pendingRebuilds, context);

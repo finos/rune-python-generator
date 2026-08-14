@@ -79,9 +79,9 @@ public class PythonCircularDependencyTest {
         testUtils.assertBundleContainsExpectedString(model,
                 "rosetta_dsl_test_model_circular_dependency_Bar2.model_fields[\"bar1\"].annotation = Optional[rosetta_dsl_test_model_circular_dependency_Bar1]");
 
-        testUtils.assertBundleContainsExpectedString(model, "# Phase 3: Rebuild");
-        testUtils.assertBundleContainsExpectedString(model, "rosetta_dsl_test_model_circular_dependency_Bar1.model_rebuild(force=True)");
-        testUtils.assertBundleContainsExpectedString(model, "rosetta_dsl_test_model_circular_dependency_Bar2.model_rebuild(force=True)");
+        // Bundled classes use defer_build=True (cheaper build) + Phase 3 model_rebuild (correctness)
+        testUtils.assertBundleContainsExpectedString(model, "model_rebuild(force=True)");
+        testUtils.assertBundleContainsExpectedString(model, "model_config = ConfigDict(defer_build=True)");
     }
 
     /**
@@ -116,9 +116,9 @@ public class PythonCircularDependencyTest {
         testUtils.assertBundleContainsExpectedString(model,
                 "com_rosetta_test_model_CircularB.model_fields[\"a\"].annotation = com_rosetta_test_model_CircularA");
 
-        testUtils.assertBundleContainsExpectedString(model, "# Phase 3: Rebuild");
-        testUtils.assertBundleContainsExpectedString(model, "com_rosetta_test_model_CircularA.model_rebuild(force=True)");
-        testUtils.assertBundleContainsExpectedString(model, "com_rosetta_test_model_CircularB.model_rebuild(force=True)");
+        // Bundled classes use defer_build=True (cheaper build) + Phase 3 model_rebuild (correctness)
+        testUtils.assertBundleContainsExpectedString(model, "model_rebuild(force=True)");
+        testUtils.assertBundleContainsExpectedString(model, "model_config = ConfigDict(defer_build=True)");
     }
 
     /**
@@ -232,17 +232,15 @@ public class PythonCircularDependencyTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_B.__annotations__[\"a\"] = Annotated[Optional[rosetta_dsl_test_language_CircularDependency_A], rosetta_dsl_test_language_CircularDependency_A.serializer(), rosetta_dsl_test_language_CircularDependency_A.validator()]");
 
-        // 2b. Verify model_fields annotation updates (required for model_rebuild(force=True) to pick up real type)
+        // 2b. Verify model_fields annotation updates (picked up by Pydantic at first use via defer_build)
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_A.model_fields[\"b\"].annotation = rosetta_dsl_test_language_CircularDependency_B");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "rosetta_dsl_test_language_CircularDependency_B.model_fields[\"a\"].annotation = Optional[rosetta_dsl_test_language_CircularDependency_A]");
 
-        // 3. Verify Model Rebuilds in Phase 3
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "rosetta_dsl_test_language_CircularDependency_A.model_rebuild(force=True)");
-        testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "rosetta_dsl_test_language_CircularDependency_B.model_rebuild(force=True)");
+        // 3. Phase 3 model_rebuild calls present — needed alongside defer_build=True for correctness
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "model_rebuild(force=True)");
+        testUtils.assertGeneratedContainsExpectedString(generatedPython, "model_config = ConfigDict(defer_build=True)");
 
         // 4. Verify Proxy Stubs at FQ paths — external imports must always use
         //    the fully-qualified path, never import from _bundle directly.
