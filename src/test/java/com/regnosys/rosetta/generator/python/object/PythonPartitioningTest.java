@@ -275,30 +275,22 @@ public class PythonPartitioningTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 12 — standalone attribute-type imports are deferred;
-    //           standalone base-class imports stay in the header
+    // Test 12 — standalone types referenced by bundled types are reverse-promoted
+    //           into the bundle; no scattered imports remain in the bundle body
     // -----------------------------------------------------------------------
     /**
-     * When a standalone type S depends on a bundled type B1 (from one SCC), and a
-     * bundled type B2 (from a different SCC) depends on S *as an attribute type*, the
-     * bundle must import S AFTER defining all bundled classes — not in the header.
+     * A standalone own-type used only as an attribute type (not as a direct base class)
+     * of a bundled type is NOT reverse-promoted. Attribute annotations are lazy strings
+     * under PEP 563 and do not need the type at class-definition time. The import is
+     * deferred to a consolidated section after all bundled class definitions.
      *
-     * However, if a bundled type extends a standalone type (uses it as a direct base
-     * class), that standalone import MUST remain in the header: Python evaluates
-     * base-class expressions immediately at class-definition time, unlike attribute
-     * annotations which are lazy strings under PEP 563.
-     *
-     * Model structure (attribute-type deferral):
+     * Model structure:
      *   CycleA1 ↔ CycleA2   (first SCC — bundled)
      *   CycleB1 ↔ CycleB2   (second SCC — bundled; CycleB1 has attribute of type Standalone)
-     *   Standalone           (singleton SCC — standalone; depends on CycleA1)
-     *
-     * Model structure (base-class in header):
-     *   CycleX ↔ CycleY     (bundled)
-     *   StandaloneBase       (standalone — used as base class of CycleX)
+     *   Standalone           (singleton SCC — stays standalone; import is deferred)
      */
     @Test
-    public void testDeferredStandaloneImportAppearsAfterBundledClassDefinitions() {
+    public void testStandaloneAttributeTypeRemainsStandaloneWithDeferredImport() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
                 namespace com.rosetta.test.model
 
@@ -321,44 +313,31 @@ public class PythonPartitioningTest {
 
         String bundlePython = gf.get("src/com/_bundle.py").toString();
 
-        // Standalone must be generated as its own file (not bundled)
+        // Standalone is NOT promoted — it stays as a standalone class file
         String standalonePython = gf.get("src/com/rosetta/test/model/Standalone.py").toString();
         testUtils.assertGeneratedContainsExpectedString(standalonePython, "class Standalone(BaseDataClass):");
+        testUtils.assertGeneratedDoesNotContain(standalonePython, "__getattr__");
 
-        // Bundle must contain all four bundled classes
+        // Bundle must contain the four bundled types but NOT Standalone
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "class com_rosetta_test_model_CycleA1(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(bundlePython, "class com_rosetta_test_model_CycleB1(BaseDataClass):");
+        testUtils.assertGeneratedDoesNotContain(bundlePython, "class com_rosetta_test_model_Standalone");
 
-        // The deferred section marker must be present
-        testUtils.assertGeneratedContainsExpectedString(bundlePython,
-                "# Standalone type imports (deferred to avoid circular import at bundle load time)");
-
-        // The Standalone import must appear AFTER the bundled class definitions
-        testUtils.assertAppearsAfter(bundlePython,
-                "class com_rosetta_test_model_CycleA1(BaseDataClass):",
-                "from com.rosetta.test.model.Standalone import Standalone");
+        // The Standalone import is deferred — it appears after all bundled class definitions
         testUtils.assertAppearsAfter(bundlePython,
                 "class com_rosetta_test_model_CycleB1(BaseDataClass):",
                 "from com.rosetta.test.model.Standalone import Standalone");
-
-        // The Standalone import must NOT appear in the header (before first class def)
-        int firstClassDef = bundlePython.indexOf("class com_rosetta_test_model_");
-        int standaloneImport = bundlePython.indexOf("from com.rosetta.test.model.Standalone import Standalone");
-        org.junit.jupiter.api.Assertions.assertTrue(standaloneImport > firstClassDef,
-                "Standalone import must appear after bundled class definitions, not in the header");
     }
 
     /**
-     * A standalone type used as a direct base class of a bundled type must be imported
-     * inline in the bundle body, immediately before the bundled class that extends it.
-     * This ensures all bundled types the standalone depends on are already defined when
-     * its file is loaded (avoiding the circular-import error that would arise if the
-     * import were in the header).
+     * A standalone own-type used as a direct base class of a bundled type is
+     * reverse-promoted into the bundle. The bundled subclass references the base
+     * using the flattened bundle name, and no inline import appears in the bundle body.
      *
-     * Model: CycleX ↔ CycleY (bundled); CycleX extends StandaloneBase (standalone).
+     * Model: CycleX ↔ CycleY (bundled); CycleX extends StandaloneBase (reverse-promoted).
      */
     @Test
-    public void testStandaloneBaseClassImportIsInlineBeforeSubclass() {
+    public void testStandaloneBaseClassIsReversePromotedToBundled() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
                 namespace com.rosetta.test.model
 
@@ -374,27 +353,22 @@ public class PythonPartitioningTest {
 
         String bundlePython = gf.get("src/com/_bundle.py").toString();
 
-        // CycleX's class statement must reference StandaloneBase by short name
-        testUtils.assertGeneratedContainsExpectedString(bundlePython,
-                "class com_rosetta_test_model_CycleX(StandaloneBase):");
+        // StandaloneBase is reverse-promoted: its file is a proxy stub
+        String baseProxy = gf.get("src/com/rosetta/test/model/StandaloneBase.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(baseProxy, "__getattr__");
+        testUtils.assertGeneratedDoesNotContain(baseProxy, "class StandaloneBase(BaseDataClass):");
 
-        // The import must be present in the bundle
+        // Bundle must contain StandaloneBase with its flattened name
         testUtils.assertGeneratedContainsExpectedString(bundlePython,
+                "class com_rosetta_test_model_StandaloneBase(BaseDataClass):");
+
+        // CycleX uses the flattened bundle name as its base class
+        testUtils.assertGeneratedContainsExpectedString(bundlePython,
+                "class com_rosetta_test_model_CycleX(com_rosetta_test_model_StandaloneBase):");
+
+        // No inline import for StandaloneBase anywhere in the bundle
+        testUtils.assertGeneratedDoesNotContain(bundlePython,
                 "from com.rosetta.test.model.StandaloneBase import StandaloneBase");
-
-        // The import must appear just before the class that uses it as a base
-        testUtils.assertAppearsAfter(bundlePython,
-                "from com.rosetta.test.model.StandaloneBase import StandaloneBase",
-                "class com_rosetta_test_model_CycleX(StandaloneBase):");
-
-        // The import must NOT be in the header (i.e. it must appear after some class def,
-        // or at least after the deferred-imports comment — here we simply verify ordering)
-        // StandaloneBase import must come AFTER header (no class defs precede it in header)
-        // and BEFORE CycleX class def.
-        int standaloneImport = bundlePython.indexOf("from com.rosetta.test.model.StandaloneBase import StandaloneBase");
-        int cycleXDef = bundlePython.indexOf("class com_rosetta_test_model_CycleX(StandaloneBase):");
-        org.junit.jupiter.api.Assertions.assertTrue(standaloneImport < cycleXDef,
-                "StandaloneBase import must appear before the class that extends it");
     }
 
     // -----------------------------------------------------------------------

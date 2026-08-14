@@ -350,6 +350,55 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 }
             }
         }
+
+        // Reverse-promote to bundled: any own-type standalone that is a direct supertype of a
+        // bundled own-type is pulled into the bundle. Python evaluates base-class expressions
+        // at class-definition time, so a standalone supertype would require an inline import
+        // placed mid-file just before its subclass — creating scattered imports. Bundling it
+        // instead lets the subclass use the flattened bundle name with no import needed.
+        // Only supertype edges are considered; attribute-type edges are not (those annotations
+        // are lazy strings under PEP 563 and are handled by the consolidated deferred section).
+        // The fixpoint propagates up inheritance chains: if B (bundled) extends A (standalone)
+        // extends X (standalone), A is promoted first, then X is promoted in the next iteration.
+        boolean anyReversePromotion = true;
+        while (anyReversePromotion) {
+            anyReversePromotion = false;
+            for (String cls : new ArrayList<>(ownTypes)) {
+                if (standaloneClasses.contains(cls)) {
+                    continue; // cls is standalone — only check bundled types
+                }
+                String parentFqn = superTypes.get(cls);
+                if (parentFqn == null || !ownTypes.contains(parentFqn)) {
+                    continue; // no own-namespace supertype
+                }
+                if (standaloneClasses.contains(parentFqn)) {
+                    standaloneClasses.remove(parentFqn);
+                    anyReversePromotion = true;
+                    LOGGER.debug("Reverse-promoted {} to bundled (direct supertype of bundled {})", parentFqn, cls);
+                }
+            }
+        }
+
+        // Second forward-promotion pass: reverse-promotion may have newly bundled some types
+        // whose standalone children now also need bundling (to inherit Phase 2/3 treatment).
+        anyPromotion = true;
+        while (anyPromotion) {
+            anyPromotion = false;
+            for (String cls : new ArrayList<>(standaloneClasses)) {
+                if (!ownTypes.contains(cls)) {
+                    continue;
+                }
+                String parentFqn = superTypes.get(cls);
+                if (parentFqn == null || !ownTypes.contains(parentFqn)) {
+                    continue;
+                }
+                if (!standaloneClasses.contains(parentFqn)) {
+                    standaloneClasses.remove(cls);
+                    anyPromotion = true;
+                    LOGGER.debug("Promoted {} to bundled (parent {} newly bundled by reverse-promotion)", cls, parentFqn);
+                }
+            }
+        }
     }
 
     private Map<String, CharSequence> processDAG(
