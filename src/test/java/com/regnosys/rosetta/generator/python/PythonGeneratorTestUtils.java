@@ -147,4 +147,9 @@ public final class PythonGeneratorTestUtils {
         String allFiles = generatePythonAndExtractBundle(model);
         assertGeneratedContainsExpectedString(allFiles, expectedString);
     }
+
+    public void assertBundleDoesNotContain(String model, String unexpectedString) {
+        String allFiles = generatePythonAndExtractBundle(model);
+        assertGeneratedDoesNotContain(allFiles, unexpectedString);
+    }
 }

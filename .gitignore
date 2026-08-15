@@ -46,6 +46,7 @@ Thumbs.db
 # Python
 __pycache__
 .pyenv/
+.profile-pyenv/
 .pytest_cache/
 .pydevproject
 # checkstyle

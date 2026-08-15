@@ -80,7 +80,7 @@ public final class PythonCodeGeneratorUtil {
                 from decimal import Decimal
                 from typing import Annotated, Optional
 
-                from pydantic import Field, validate_call, InstanceOf
+                from pydantic import ConfigDict, Field, validate_call, InstanceOf
 
                 from rune.runtime.base_data_class import BaseDataClass
                 from rune.runtime.cow import rune_cow, rune_unwrap
