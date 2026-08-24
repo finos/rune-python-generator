@@ -168,14 +168,6 @@ jobs:
         java-version: 21
         cache: maven
 
-    - name: Set project version for build (ephemeral)
-      env:
-        TAG_NAME: ${{ needs.prepare-release.outputs.tag_name }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
-
     - name: Build JARs
       shell: bash
       run: mvn -B clean package -Drosetta.dsl.version="${{ needs.prepare-release.outputs.dsl_version }}"
@@ -191,6 +183,15 @@ jobs:
       run: |
         set -e
         python-test/unit-tests/run_python_unit_tests.sh
+
+    - name: Set project version and repackage for release (ephemeral)
+      env:
+        TAG_NAME: ${{ needs.prepare-release.outputs.tag_name }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
+        mvn -B package -DskipTests -Drosetta.dsl.version="${{ needs.prepare-release.outputs.dsl_version }}"
 
     - name: Collect artifact paths
       id: archive
