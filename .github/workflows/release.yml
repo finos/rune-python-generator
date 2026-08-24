@@ -180,6 +180,18 @@ jobs:
       shell: bash
       run: mvn -B clean package -Drosetta.dsl.version="${{ needs.prepare-release.outputs.dsl_version }}"
 
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+        cache: pip
+
+    - name: Run Python unit tests
+      shell: bash
+      run: |
+        set -e
+        python-test/unit-tests/run_python_unit_tests.sh
+
     - name: Collect artifact paths
       id: archive
       shell: bash
