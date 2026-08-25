@@ -5,6 +5,10 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      dsl_version:
+        description: "DSL version for release tag and build (e.g. 9.5.0). Leave empty to use pom.xml value."
+        type: string
+        required: false
       dry_run:
         description: "DRY RUN: Do not push/tag or create a GitHub Release"
         type: boolean
@@ -48,9 +52,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DSL_VERSION=$(mvn -q help:evaluate -Dexpression=rosetta.dsl.version -DforceStdout)
+          if [ -n "${{ github.event.inputs.dsl_version }}" ]; then
+            DSL_VERSION="${{ github.event.inputs.dsl_version }}"
+            if ! [[ "$DSL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid dsl_version '$DSL_VERSION': must be in a.b.c format (e.g. 9.5.0)"
+              exit 1
+            fi
+            echo "Using provided DSL version override: $DSL_VERSION"
+          else
+            DSL_VERSION=$(mvn -q help:evaluate -Dexpression=rosetta.dsl.version -DforceStdout)
+          fi
           if [ -z "${DSL_VERSION:-}" ]; then
-            echo "Failed to resolve rosetta.dsl.version from pom.xml"
+            echo "Failed to resolve rosetta.dsl.version"
             exit 1
           fi
           echo "dsl_version=$DSL_VERSION" >> "$GITHUB_OUTPUT"
@@ -155,17 +168,30 @@ jobs:
         java-version: 21
         cache: maven
 
-    - name: Set project version for build (ephemeral)
+    - name: Build JARs
+      shell: bash
+      run: mvn -B clean package -Drosetta.dsl.version="${{ needs.prepare-release.outputs.dsl_version }}"
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+        cache: pip
+
+    - name: Run Python unit tests
+      shell: bash
+      run: |
+        set -e
+        python-test/unit-tests/run_python_unit_tests.sh
+
+    - name: Set project version and repackage for release (ephemeral)
       env:
         TAG_NAME: ${{ needs.prepare-release.outputs.tag_name }}
       shell: bash
       run: |
         set -euo pipefail
         mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
-
-    - name: Build JARs
-      shell: bash
-      run: mvn -B clean package
+        mvn -B package -DskipTests -Drosetta.dsl.version="${{ needs.prepare-release.outputs.dsl_version }}"
 
     - name: Collect artifact paths
       id: archive
