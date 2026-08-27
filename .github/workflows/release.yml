@@ -5,6 +5,10 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      dsl_version:
+        description: "DSL version for release tag and build (e.g. 9.5.0). Leave empty to use pom.xml value."
+        type: string
+        required: false
       dry_run:
         description: "DRY RUN: Do not push/tag or create a GitHub Release"
         type: boolean
@@ -48,9 +52,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DSL_VERSION=$(mvn -q help:evaluate -Dexpression=rosetta.dsl.version -DforceStdout)
+          if [ -n "${{ github.event.inputs.dsl_version }}" ]; then
+            DSL_VERSION="${{ github.event.inputs.dsl_version }}"
+            if ! [[ "$DSL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid dsl_version '$DSL_VERSION': must be in a.b.c format (e.g. 9.5.0)"
+              exit 1
+            fi
+            echo "Using provided DSL version override: $DSL_VERSION"
+          else
+            DSL_VERSION=$(mvn -q help:evaluate -Dexpression=rosetta.dsl.version -DforceStdout)
+          fi
           if [ -z "${DSL_VERSION:-}" ]; then
-            echo "Failed to resolve rosetta.dsl.version from pom.xml"
+            echo "Failed to resolve rosetta.dsl.version"
             exit 1
           fi
           echo "dsl_version=$DSL_VERSION" >> "$GITHUB_OUTPUT"
@@ -106,18 +119,17 @@ jobs:
       - name: Bump version, tag, and push (skipped in dry run)
         env:
           TAG_NAME: ${{ steps.set_tag.outputs.tag_name }}
+          DSL_VERSION: ${{ steps.get_dsl_version.outputs.dsl_version }}
+          DSL_VERSION_OVERRIDE: ${{ github.event.inputs.dsl_version }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
           BASE_REF: ${{ github.event.inputs.base_ref || 'main' }}
         shell: bash
         run: |
           set -euo pipefail
           if [ "${DRY_RUN}" = "true" ]; then
-            echo "[DRY RUN] Would set project version to ${TAG_NAME}, commit, tag, and push atomically to ${BASE_REF}."
+            echo "[DRY RUN] Would tag ${TAG_NAME} and push."
             exit 0
           fi
-
-           # We skip committing changes to the repo. Use versions:set only in the build step ephemerally.
-           echo "Skipping persistent version bump in pom.xml to avoid branch protection issues."
 
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
@@ -127,8 +139,21 @@ jobs:
             exit 1
           fi
 
-          git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
-          git push --atomic origin HEAD:"${BASE_REF}" "${TAG_NAME}"
+          if [ -n "${DSL_VERSION_OVERRIDE}" ]; then
+            # Update pom.xml so the source at the tag reflects the overridden DSL version.
+            # Commit stays off main — only the tag is pushed.
+            mvn -q -B versions:set-property \
+              -Dproperty=rosetta.dsl.version \
+              -DnewVersion="${DSL_VERSION}" \
+              -DgenerateBackupPoms=false
+            git add pom.xml
+            git commit -m "chore: set rosetta.dsl.version=${DSL_VERSION} for release ${TAG_NAME}"
+            git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
+            git push origin "${TAG_NAME}"
+          else
+            git tag -a "${TAG_NAME}" -m "Release ${TAG_NAME}"
+            git push --atomic origin HEAD:"${BASE_REF}" "${TAG_NAME}"
+          fi
 
   build-and-verify-release:
     needs: prepare-release
@@ -155,17 +180,30 @@ jobs:
         java-version: 21
         cache: maven
 
-    - name: Set project version for build (ephemeral)
+    - name: Build JARs
+      shell: bash
+      run: mvn -B clean package -Drosetta.dsl.version="${{ needs.prepare-release.outputs.dsl_version }}"
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+        cache: pip
+
+    - name: Run Python unit tests
+      shell: bash
+      run: |
+        set -e
+        python-test/unit-tests/run_python_unit_tests.sh
+
+    - name: Set project version and repackage for release (ephemeral)
       env:
         TAG_NAME: ${{ needs.prepare-release.outputs.tag_name }}
       shell: bash
       run: |
         set -euo pipefail
         mvn -q -B versions:set -DnewVersion="${TAG_NAME}" -DgenerateBackupPoms=false
-
-    - name: Build JARs
-      shell: bash
-      run: mvn -B clean package
+        mvn -B package -DskipTests -Drosetta.dsl.version="${{ needs.prepare-release.outputs.dsl_version }}"
 
     - name: Collect artifact paths
       id: archive

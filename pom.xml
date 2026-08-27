@@ -87,7 +87,7 @@
 
         <rosetta.dsl.version>9.92.1</rosetta.dsl.version>
 
-        <xtext.version>2.43.0</xtext.version>
+        <xtext.version>2.44.0</xtext.version>
         <guice.version>6.0.0</guice.version>
 
         <slf4j.version>2.0.18</slf4j.version>
@@ -308,6 +308,17 @@
                     <version>${maven-install-plugin.version}</version>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-plugin.version}</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <DSL-Version>${rosetta.dsl.version}</DSL-Version>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>${maven-checkstyle-plugin.version}</version>
@@ -349,7 +360,7 @@
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
-                <version>5.1.1</version>
+                <version>5.1.2</version>
                 <configuration>
                     <licenseSets>
                         <licenseSet>
