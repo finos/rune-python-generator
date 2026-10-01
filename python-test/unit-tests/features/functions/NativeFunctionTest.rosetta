@@ -33,11 +33,3 @@ func RoundUp: <"Round a number up to the supplied nearest.">
     set roundedValue:
         RoundToNearest(value, digits, RoundingModeEnum -> Up)
 
-func TestCodeImplementationWithBody:
-    [codeImplementation]
-    inputs:
-        val int (1..1)
-    output:
-        result int (1..1)
-    set result:
-        val + 1

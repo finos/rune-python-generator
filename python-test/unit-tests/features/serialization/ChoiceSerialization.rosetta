@@ -9,3 +9,50 @@ type B:
 choice ChoiceSerializatonTest:
     A
     B
+
+type Amount:
+    value number (1..1)
+
+type LeftOnly:
+    leftText string (1..1)
+
+type RightOnly:
+    rightText string (1..1)
+
+choice LeftChoice:
+    Amount
+    LeftOnly
+
+choice RightChoice:
+    Amount
+    RightOnly
+
+choice OuterChoice:
+    LeftChoice
+    RightChoice
+
+type ExampleDocument:
+    entries OuterChoice (1..*)
+
+func CreateExample:
+    output:
+        result ExampleDocument (1..1)
+    set result:
+        ExampleDocument {
+            entries: [
+                OuterChoice {
+                    LeftChoice: LeftChoice {
+                        Amount: Amount { value: 100 },
+                        ...
+                    },
+                    ...
+                },
+                OuterChoice {
+                    RightChoice: RightChoice {
+                        Amount: Amount { value: 100 },
+                        ...
+                    },
+                    ...
+                }
+            ]
+        }
