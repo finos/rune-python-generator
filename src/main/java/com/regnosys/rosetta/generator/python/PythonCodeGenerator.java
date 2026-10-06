@@ -440,11 +440,18 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         //
         // Standalone classes with deferred imports are integrated into the rebuild graph
         // so they are ordered correctly relative to bundled classes.
+        // Function imports from conditions are not type classes — do NOT pass to
+        // integrateStandaloneRebuilds, which would add them to pendingRebuilds and
+        // generate model_rebuild() calls on Python function objects.
         integrateStandaloneRebuilds(context, headerResult.deferredStandaloneImports(), pendingRebuilds);
 
         String rebuildContent = emitRebuildCallsInOrder(pendingRebuilds, context);
+
+        // Combine type and function imports for the deferred-import section of the bundle.
+        List<String> allDeferredImports = new ArrayList<>(headerResult.deferredStandaloneImports());
+        allDeferredImports.addAll(headerResult.deferredFunctionImports());
         assembleBundleFile(nameSpace, context, bundleWriter, dataObjectsWriter, functionsWriter,
-                annotationUpdateWriter, rebuildContent, headerResult.deferredStandaloneImports(), result);
+                annotationUpdateWriter, rebuildContent, allDeferredImports, result);
 
         return result;
     }
@@ -512,7 +519,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
         }
 
-        return new BundleHeaderResult(deferredStandaloneImports, standaloneSupertypesOfBundled);
+        List<String> deferredFunctionImports = new ArrayList<>(context.getBundleConditionFunctionImports());
+
+        return new BundleHeaderResult(deferredStandaloneImports, deferredFunctionImports, standaloneSupertypesOfBundled);
     }
 
     /**
@@ -1247,6 +1256,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      */
     private record BundleHeaderResult(
             List<String> deferredStandaloneImports,
+            List<String> deferredFunctionImports,
             Set<String> standaloneSupertypesOfBundled) {
     }
 

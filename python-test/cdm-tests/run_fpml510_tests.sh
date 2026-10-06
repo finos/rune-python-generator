@@ -3,16 +3,16 @@
 # Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
 # SPDX-License-Identifier: Apache-2.0
 #
-# Run the CDM test suite: import smoke test + deserialization ingestion test.
+# Run deserialization tests against all CDM fpml-5-10-products-* samples.
 #
 # Usage (from project root):
-#   python-test/cdm-tests/run_cdm_tests.sh [options]
+#   python-test/cdm-tests/run_fpml510_tests.sh [options]
 #
 # Options:
 #   -b <branch>             CDM branch/tag to fetch (default: master)
 #   -v, --cdm-version <v>   Version string for the Python package (default: 0.0.0 for master)
 #   -s, --skip-cdm          Skip CDM fetch and build; use the existing wheel
-#   -i, --skip-ingestion    Skip fetching the live sample and skip test_deserialize_trade_state.py
+#   -i, --skip-ingestion    Skip fetching samples and skip test_fpml510_samples.py
 #   -r, --reuse-env         Reuse the existing virtual environment
 #   -k, --keep-venv         Skip cleanup of the virtual environment after tests
 #   --cdm-repo <url>        CDM git repo URL (default: finos/common-domain-model)
@@ -64,7 +64,6 @@ done
 
 # ---------------------------------------------------------------------------
 # Step 1: pull CDM, run the generator, build the Python wheel
-# Uses system Python only — no virtualenv required.
 # ---------------------------------------------------------------------------
 if [[ $SKIP_CDM -eq 0 ]]; then
     echo "***** Step 1: building CDM wheel (branch: $CDM_BRANCH)"
@@ -78,9 +77,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 2: set up the Python test environment and install the pre-built wheel.
-# Source (not exec) so the activated venv carries through to Step 4.
-# setup_cdm_test_env.sh resets MY_PATH to its own directory; save and restore.
+# Step 2: set up the Python test environment and install the pre-built wheel
 # ---------------------------------------------------------------------------
 echo "***** Step 2: setting up Python environment"
 _SAVED_MY_PATH="$MY_PATH"
@@ -91,49 +88,104 @@ CDM_BRANCH="$_SAVED_CDM_BRANCH"
 unset _SAVED_MY_PATH _SAVED_CDM_BRANCH
 
 # ---------------------------------------------------------------------------
-# Step 3: fetch CDM serialization samples (FX and IRD)
+# Step 3: fetch all fpml-5-10-products-* samples from the CDM repo
+# Uses the GitHub Contents API to discover files, then downloads via raw URLs.
 # ---------------------------------------------------------------------------
 PYTEST_ARGS=(-p no:cacheprovider)
-SAMPLE_TMPDIR=""
+SAMPLES_TMPDIR=""
 
 if [[ $SKIP_INGESTION -eq 0 ]]; then
-    CDM_BASE="rosetta-source/src/main/resources/ingest/output/fpml-confirmation-to-trade-state"
-    CDM_RAW_BASE="https://raw.githubusercontent.com/finos/common-domain-model/$CDM_BRANCH"
-    SAMPLE_TMPDIR="$(mktemp -d)"
+    CDM_GH_REPO="finos/common-domain-model"
+    INGEST_PATH="rosetta-source/src/main/resources/ingest/output/fpml-confirmation-to-trade-state"
+    API_ROOT="https://api.github.com/repos/${CDM_GH_REPO}/contents/${INGEST_PATH}"
+    RAW_ROOT="https://raw.githubusercontent.com/${CDM_GH_REPO}/${CDM_BRANCH}/${INGEST_PATH}"
 
-    FX_REPO_PATH="$CDM_BASE/fpml-5-13-products-fx-derivatives/fx-ex01-fx-spot.json"
-    FX_FILE="$SAMPLE_TMPDIR/fx-ex01-fx-spot.json"
-    echo "***** Step 3a: fetching FX sample from $CDM_RAW_BASE/$FX_REPO_PATH"
-    curl -sSL --fail "$CDM_RAW_BASE/$FX_REPO_PATH" -o "$FX_FILE" \
-        || { echo "ERROR: failed to fetch FX sample"; rm -rf "$SAMPLE_TMPDIR"; exit 1; }
-    echo "***** FX sample saved ($( wc -c < "$FX_FILE" | tr -d ' ') bytes)"
-    export CDM_FX_SAMPLE_PATH="$FX_FILE"
+    echo "***** Step 3: discovering fpml-5-10-products-* directories (branch: $CDM_BRANCH)"
+    _LISTING_TMP=$(mktemp)
+    curl -sSL --fail "${API_ROOT}?ref=${CDM_BRANCH}" -o "$_LISTING_TMP" \
+        || { echo "ERROR: failed to list CDM ingest output directory"; rm -f "$_LISTING_TMP"; exit 1; }
 
-    IRD_REPO_PATH="$CDM_BASE/fpml-5-13-products-interest-rate-derivatives/ird-ex01-vanilla-swap.json"
-    IRD_FILE="$SAMPLE_TMPDIR/ird-ex01-vanilla-swap.json"
-    echo "***** Step 3b: fetching IRD sample from $CDM_RAW_BASE/$IRD_REPO_PATH"
-    curl -sSL --fail "$CDM_RAW_BASE/$IRD_REPO_PATH" -o "$IRD_FILE" \
-        || { echo "ERROR: failed to fetch IRD sample"; rm -rf "$SAMPLE_TMPDIR"; exit 1; }
-    echo "***** IRD sample saved ($( wc -c < "$IRD_FILE" | tr -d ' ') bytes)"
-    export CDM_IRD_SAMPLE_PATH="$IRD_FILE"
+    DIRS=$(python3 - "$_LISTING_TMP" <<'PYEOF'
+import sys, json
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+for e in data:
+    if e['type'] == 'dir' and e['name'].startswith('fpml-5-10-products-'):
+        print(e['name'])
+PYEOF
+)
+    rm -f "$_LISTING_TMP"
+
+    if [[ -z "$DIRS" ]]; then
+        echo "ERROR: no fpml-5-10-products-* directories found in CDM branch $CDM_BRANCH"
+        exit 1
+    fi
+
+    echo "***** Found directories:"
+    echo "$DIRS" | sed 's/^/         /'
+
+    SAMPLES_TMPDIR="$(mktemp -d)"
+    FAILED=0
+    TOTAL=0
+
+    while IFS= read -r dir; do
+        [[ -z "$dir" ]] && continue
+        mkdir -p "$SAMPLES_TMPDIR/$dir"
+
+        _DIR_TMP=$(mktemp)
+        curl -sSL --fail "${API_ROOT}/${dir}?ref=${CDM_BRANCH}" -o "$_DIR_TMP" \
+            || { echo "WARN: failed to list directory $dir — skipping"; rm -f "$_DIR_TMP"; continue; }
+
+        DOWNLOAD_URLS=$(python3 - "$_DIR_TMP" <<'PYEOF'
+import sys, json
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+for e in data:
+    if e['type'] == 'file' and e['name'].endswith('.json'):
+        print(e['name'])
+PYEOF
+)
+        rm -f "$_DIR_TMP"
+
+        COUNT=0
+        while IFS= read -r fname; do
+            [[ -z "$fname" ]] && continue
+            curl -sSL --fail "${RAW_ROOT}/${dir}/${fname}" \
+                -o "$SAMPLES_TMPDIR/$dir/$fname" \
+                || { echo "WARN: failed to download $dir/$fname"; ((FAILED++)); continue; }
+            ((COUNT++))
+            ((TOTAL++))
+        done <<< "$DOWNLOAD_URLS"
+
+        echo "  $dir: $COUNT files"
+    done <<< "$DIRS"
+
+    if [[ $FAILED -gt 0 ]]; then
+        echo "ERROR: $FAILED file download(s) failed"
+        rm -rf "$SAMPLES_TMPDIR"
+        exit 1
+    fi
+
+    echo "***** $TOTAL sample files downloaded to $SAMPLES_TMPDIR"
+    export CDM_FPML510_SAMPLES_DIR="$SAMPLES_TMPDIR"
 else
-    echo "***** Step 3: skipping ingestion test (-i)"
-    PYTEST_ARGS+=(--ignore="$MY_PATH/test_deserialize_trade_state.py")
+    echo "***** Step 3: skipping sample fetch (-i)"
+    PYTEST_ARGS+=(--ignore="$MY_PATH/test_fpml510_samples.py")
 fi
 
 # ---------------------------------------------------------------------------
 # Step 4: run tests
 # ---------------------------------------------------------------------------
-echo "***** Step 4: running CDM tests"
+echo "***** Step 4: running fpml-5-10 deserialization tests"
 python -m pip install pytest --quiet
-python -m pytest "${PYTEST_ARGS[@]}" "$MY_PATH"
+python -m pytest "${PYTEST_ARGS[@]}" "$MY_PATH/test_fpml510_samples.py"
 TEST_EXIT_CODE=$?
 rm -rf .pytest
 
 # ---------------------------------------------------------------------------
 # Cleanup
 # ---------------------------------------------------------------------------
-[[ -n "$SAMPLE_TMPDIR" ]] && rm -rf "$SAMPLE_TMPDIR"
+[[ -n "$SAMPLES_TMPDIR" ]] && rm -rf "$SAMPLES_TMPDIR"
 deactivate
 if [[ $CLEANUP -eq 1 ]]; then
     echo "***** cleaning up environment"

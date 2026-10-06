@@ -632,6 +632,35 @@ public class PythonConditionTest {
     }
 
     /**
+     * When a bundled type's condition calls a standalone function, the bundle must contain
+     * a deferred import for that function so it is resolvable at runtime.
+     * A and B form a cycle (both bundled); IsPositive is acyclic (standalone).
+     */
+    @Test
+    public void testBundledConditionWithStandaloneFunctionCallGeneratesImport() {
+        testUtils.assertBundleContainsExpectedString(
+                """
+                func IsPositive:
+                    inputs:
+                        value number (0..1)
+                    output:
+                        result boolean (1..1)
+
+                type A:
+                    b B (0..1)
+                    value number (0..1)
+
+                    condition PositiveValue:
+                        if value exists
+                        then IsPositive( value ) = True
+
+                type B:
+                    a A (0..1)
+                """,
+                "from com.rosetta.test.model.functions.IsPositive import IsPositive");
+    }
+
+    /**
      * Test case for a choice condition embedded in a compound expression.
      * e.g. `if x is absent and required choice a, b, c then y exists`
      * ChoiceOperation must be handled by generateExpression, not only by

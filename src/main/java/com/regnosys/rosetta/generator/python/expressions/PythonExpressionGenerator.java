@@ -681,7 +681,12 @@ public final class PythonExpressionGenerator {
             case "Min" -> "min";
             case null, default -> {
                 String fqn = context.getFullyQualifiedName(s);
-                yield context.getStandaloneClasses().contains(fqn) ? s.getName() : context.getBundleObjectName(s);
+                if (context.getStandaloneClasses().contains(fqn)) {
+                    context.addBundleConditionFunctionImport(fqn, s.getName());
+                    yield s.getName();
+                } else {
+                    yield context.getBundleObjectName(s);
+                }
             }
         };
         return "rune_call_unchecked(" + funcName + ", " + args + ")";
