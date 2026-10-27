@@ -8,6 +8,7 @@ import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.regnosys.rosetta.generator.python.PythonGeneratorTestUtils;
 import com.regnosys.rosetta.tests.RosettaInjectorProvider;
@@ -929,5 +930,28 @@ public class PythonCollectionExpressionTest {
         String generatedPython = gf.get("src/com/test/functions/SumList.py").toString();
 
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "functools.reduce(lambda a, b: (a + b), rune_resolve_attr(self, \"items\"))");
+    }
+
+    /**
+     * A conditional expression inside {@code extract} must capture the iteration variable.
+     * Pre-hoisted {@code def _then_fn()} closures do not see {@code item}; the fix emits
+     * inline {@code lambda:} expressions instead so the variable is captured correctly.
+     */
+    @Test
+    public void testConditionalInsideExtractUsesInlineLambda() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                func ConditionalExtract:
+                    inputs: vals int (0..*)
+                    output: result int (0..*)
+                    set result:
+                        vals extract (if item > 0 then item else 0)
+                """);
+
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/ConditionalExtract.py").toString();
+
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+                "if_cond_fn(rune_all_elements(item, \">\", 0), lambda: item, lambda: 0)");
+        assertFalse(generatedPython.contains("def _then_fn"),
+                "Conditional inside extract must not use pre-hoisted closure (item not in scope)");
     }
 }

@@ -397,6 +397,18 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateConditionalExpression(RosettaConditionalExpression expr, PythonExpressionScope scope) {
+        if (!"self".equals(scope.receiver())) {
+            // Inside a lambda (map/extract/filter): inline lambdas capture the iteration
+            // variable correctly. Pre-hoisted closures would not see it.
+            String ifExpr = generateExpression(expr.getIf(), scope);
+            String ifThen = generateExpression(expr.getIfthen(), scope);
+            String elseThen = (expr.getElsethen() != null && expr.isFull())
+                    ? generateExpression(expr.getElsethen(), scope)
+                    : "True";
+            return "if_cond_fn(%s, lambda: %s, lambda: %s)".formatted(ifExpr, ifThen, elseThen);
+        }
+        // Top-level scope: assign ID before recursing into sub-expressions so that
+        // pre-order numbering is preserved (outer conditional gets a lower ID than inner).
         int currentId = generatedFunctionCounter++;
         String ifExpr = generateExpression(expr.getIf(), scope);
         String ifThen = generateExpression(expr.getIfthen(), scope);
