@@ -30,6 +30,7 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaType;
 import com.regnosys.rosetta.rosetta.expression.AsOperation;
+import com.regnosys.rosetta.rosetta.expression.InlineFunction;
 import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
@@ -161,6 +162,8 @@ public final class PythonFunctionGenerator {
         expression.eContents().forEach(child -> {
             if (child instanceof RosettaExpression childExpr) {
                 collectNamedDependencies(childExpr, dependencies);
+            } else if (child instanceof InlineFunction inlineFn && inlineFn.getBody() != null) {
+                collectNamedDependencies(inlineFn.getBody(), dependencies);
             }
         });
     }
