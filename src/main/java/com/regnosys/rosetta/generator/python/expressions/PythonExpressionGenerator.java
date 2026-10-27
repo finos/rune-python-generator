@@ -203,6 +203,9 @@ public final class PythonExpressionGenerator {
                 return generateFlattenOperation(flatten, scope);
             }
             case ListLiteral listLiteral -> {
+                if (listLiteral.getElements().isEmpty()) {
+                    return "None";
+                }
                 return "[" + listLiteral.getElements().stream()
                         .map(arg -> generateExpression(arg, scope))
                         .collect(Collectors.joining(", ")) + "]";
@@ -397,6 +400,18 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateConditionalExpression(RosettaConditionalExpression expr, PythonExpressionScope scope) {
+        if (!"self".equals(scope.receiver())) {
+            // Inside a lambda (map/extract/filter): inline lambdas capture the iteration
+            // variable correctly. Pre-hoisted closures would not see it.
+            String ifExpr = generateExpression(expr.getIf(), scope);
+            String ifThen = generateExpression(expr.getIfthen(), scope);
+            String elseThen = (expr.getElsethen() != null && expr.isFull())
+                    ? generateExpression(expr.getElsethen(), scope)
+                    : "True";
+            return "if_cond_fn(%s, lambda: %s, lambda: %s)".formatted(ifExpr, ifThen, elseThen);
+        }
+        // Top-level scope: assign ID before recursing into sub-expressions so that
+        // pre-order numbering is preserved (outer conditional gets a lower ID than inner).
         int currentId = generatedFunctionCounter++;
         String ifExpr = generateExpression(expr.getIf(), scope);
         String ifThen = generateExpression(expr.getIfthen(), scope);
@@ -592,13 +607,23 @@ public final class PythonExpressionGenerator {
         }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
-                    .map(pair -> pair.getKey().getName() + "="
-                            + generateExpression(pair.getValue(), scope))
+                    .map(pair -> {
+                        String valueExpr = generateExpression(pair.getValue(), scope);
+                        if (pair.getKey() instanceof Attribute attr && attr.getCard().isIsMany() && !cardinalityProvider.isMulti(pair.getValue())) {
+                            valueExpr = "[" + valueExpr + "]";
+                        }
+                        return pair.getKey().getName() + "=" + valueExpr;
+                    })
                     .collect(Collectors.joining(", ")) + ")";
         } else {
             return "{" + expr.getValues().stream()
-                    .map(pair -> "'" + pair.getKey().getName() + "': "
-                            + generateExpression(pair.getValue(), scope))
+                    .map(pair -> {
+                        String valueExpr = generateExpression(pair.getValue(), scope);
+                        if (pair.getKey() instanceof Attribute attr && attr.getCard().isIsMany() && !cardinalityProvider.isMulti(pair.getValue())) {
+                            valueExpr = "[" + valueExpr + "]";
+                        }
+                        return "'" + pair.getKey().getName() + "': " + valueExpr;
+                    })
                     .collect(Collectors.joining(", ")) + "}";
         }
     }

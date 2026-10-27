@@ -9,3 +9,4 @@ type Bar2:
     condition Test:
         if bar1 exists
             then bar1->number1 > 0
+

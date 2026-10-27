@@ -826,4 +826,60 @@ public class PythonFunctionDefinitionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "c.valueC = (rune_resolve_attr(self, \"Alias1\") * rune_resolve_attr(self, \"Alias2\"))");
     }
+
+    /**
+     * A function used inside a {@code filter} expression must be imported in the
+     * generated module.  Before the fix, the dependency scanner did not add a
+     * {@code Function} case when walking named symbols inside inline function bodies,
+     * so the called function was never imported and raised a {@code NameError} at runtime.
+     */
+    @Test
+    public void testFilterWithFunctionCallGeneratesImport() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                func IsNonNegative:
+                    inputs: val int (1..1)
+                    output: result boolean (1..1)
+                    set result:
+                        val >= 0
+
+                func FilterNonNegative:
+                    inputs: vals int (0..*)
+                    output: result int (0..*)
+                    set result:
+                        vals filter IsNonNegative(item)
+                """);
+
+        String filterFile = gf.get("src/com/rosetta/test/model/functions/FilterNonNegative.py").toString();
+
+        assertTrue(filterFile.contains("from com.rosetta.test.model.functions.IsNonNegative import IsNonNegative"),
+                "FilterNonNegative.py must import IsNonNegative used inside the filter expression");
+        assertTrue(filterFile.contains("rune_filter"),
+                "FilterNonNegative.py must contain the rune_filter call");
+    }
+
+    /**
+     * A function whose optional output resolves to absent via {@code else empty} must
+     * generate {@code None}, not {@code []}.  Before the fix, an empty {@code ListLiteral}
+     * (the AST node for the {@code empty} keyword) was rendered as {@code []}, causing
+     * downstream absent-value checks to fail.
+     */
+    @Test
+    public void testEmptyKeywordGeneratesNone() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                func EmptyWhenFalse:
+                    inputs: val int (1..1)
+                    output: result int (0..1)
+                    set result:
+                        if val > 0
+                        then val
+                        else empty
+                """);
+
+        String generated = gf.get("src/com/rosetta/test/model/functions/EmptyWhenFalse.py").toString();
+
+        assertTrue(generated.contains("return None"),
+                "else empty must generate 'return None', not 'return []'");
+        assertFalse(generated.contains("return []"),
+                "else empty must not generate 'return []'");
+    }
 }

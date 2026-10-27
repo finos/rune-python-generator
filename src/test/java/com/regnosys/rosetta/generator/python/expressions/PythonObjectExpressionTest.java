@@ -213,4 +213,19 @@ public class PythonObjectExpressionTest {
                 """,
                 "Container(items=[Item(val=1), Item(val=2), Item(val=3)])");
     }
+
+    @Test
+    public void testConstructorWrapsScalarInListForListAttribute() {
+        testUtils.assertBundleContainsExpectedString("""
+            type IntList:
+                items int (1..*)
+
+            func ConstructListFromSingle:
+                inputs: inp int (1..1)
+                output: result IntList (1..1)
+                set result:
+                    IntList { items: inp }
+            """,
+            "IntList(items=[rune_resolve_attr(self, \"inp\")])");
+    }
 }
