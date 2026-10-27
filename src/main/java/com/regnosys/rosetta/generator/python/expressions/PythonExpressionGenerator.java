@@ -592,13 +592,23 @@ public final class PythonExpressionGenerator {
         }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
-                    .map(pair -> pair.getKey().getName() + "="
-                            + generateExpression(pair.getValue(), scope))
+                    .map(pair -> {
+                        String valueExpr = generateExpression(pair.getValue(), scope);
+                        if (pair.getKey() instanceof Attribute attr && attr.getCard().isIsMany() && !cardinalityProvider.isMulti(pair.getValue())) {
+                            valueExpr = "[" + valueExpr + "]";
+                        }
+                        return pair.getKey().getName() + "=" + valueExpr;
+                    })
                     .collect(Collectors.joining(", ")) + ")";
         } else {
             return "{" + expr.getValues().stream()
-                    .map(pair -> "'" + pair.getKey().getName() + "': "
-                            + generateExpression(pair.getValue(), scope))
+                    .map(pair -> {
+                        String valueExpr = generateExpression(pair.getValue(), scope);
+                        if (pair.getKey() instanceof Attribute attr && attr.getCard().isIsMany() && !cardinalityProvider.isMulti(pair.getValue())) {
+                            valueExpr = "[" + valueExpr + "]";
+                        }
+                        return "'" + pair.getKey().getName() + "': " + valueExpr;
+                    })
                     .collect(Collectors.joining(", ")) + "}";
         }
     }
