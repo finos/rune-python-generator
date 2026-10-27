@@ -856,4 +856,30 @@ public class PythonFunctionDefinitionTest {
         assertTrue(filterFile.contains("rune_filter"),
                 "FilterNonNegative.py must contain the rune_filter call");
     }
+
+    /**
+     * A function whose optional output resolves to absent via {@code else empty} must
+     * generate {@code None}, not {@code []}.  Before the fix, an empty {@code ListLiteral}
+     * (the AST node for the {@code empty} keyword) was rendered as {@code []}, causing
+     * downstream absent-value checks to fail.
+     */
+    @Test
+    public void testEmptyKeywordGeneratesNone() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                func EmptyWhenFalse:
+                    inputs: val int (1..1)
+                    output: result int (0..1)
+                    set result:
+                        if val > 0
+                        then val
+                        else empty
+                """);
+
+        String generated = gf.get("src/com/rosetta/test/model/functions/EmptyWhenFalse.py").toString();
+
+        assertTrue(generated.contains("return None"),
+                "else empty must generate 'return None', not 'return []'");
+        assertFalse(generated.contains("return []"),
+                "else empty must not generate 'return []'");
+    }
 }

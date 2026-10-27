@@ -203,6 +203,9 @@ public final class PythonExpressionGenerator {
                 return generateFlattenOperation(flatten, scope);
             }
             case ListLiteral listLiteral -> {
+                if (listLiteral.getElements().isEmpty()) {
+                    return "None";
+                }
                 return "[" + listLiteral.getElements().stream()
                         .map(arg -> generateExpression(arg, scope))
                         .collect(Collectors.joining(", ")) + "]";
