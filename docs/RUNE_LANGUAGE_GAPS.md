@@ -158,7 +158,7 @@ All Rosetta/Rune expression types are fully supported by the Python code generat
 | **FlattenOperation** | ✅ | Unary list operation flattening nested collections. Filters nulls and handles `COWList`. |
 | **JoinOperation** | ✅ | Binary operation joining strings (via `str.join`). |
 | **LastOperation** | ✅ | Returns the last non-null element. Returns `None` for empty or null inputs. |
-| **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). |
+| **ListLiteral** | ✅ | Literal list (e.g., `[1, 2, 3]`). An empty `ListLiteral` (the `empty` keyword) generates `None` to represent an absent optional value. |
 | **LogicalOperation** | ✅ | Binary logical operations (`and`, `or`). |
 | **MapOperation** | ✅ | Projection or mapping of values (via `extract` keyword). Supported for both explicit and implicit parameters. |
 | **MaxOperation** | ✅ | Aggregation with null-filtering. Propagates `None` if input is `None`. |
@@ -178,8 +178,8 @@ All Rosetta/Rune expression types are fully supported by the Python code generat
 | **ToTimeOperation** | ✅ | Conversion/Parse to time. |
 | **ToZonedDateTimeOperation** | ✅ | Conversion/Parse to zoned date-time. |
 | **AbsentOperation** | ✅ | Unary "is absent" assertion (via `not rune_attr_exists`). |
-| **ConditionalExpression** | ✅ | If-then-else logic (via `if_cond_fn` and helper functions). |
-| **ConstructorExpression** | ✅ | Constructs an object or dict from key-value pairs. |
+| **ConditionalExpression** | ✅ | If-then-else logic (via `if_cond_fn`). At the top level of a function body, branches are emitted as pre-hoisted closures (`_then_fnN`, `_else_fnN`). Inside a `map`/`extract`/`filter` lambda, inline `lambda:` expressions are used so the iteration variable is captured correctly. |
+| **ConstructorExpression** | ✅ | Constructs an object or dict from key-value pairs. Scalar values assigned to multi-cardinality (`0..*` / `1..*`) attributes are automatically wrapped in a list. |
 | **ContainsExpression** | ✅ | Binary "contains" assertion (via `rune_contains`). |
 | **CountExpression** | ✅ | Counts list size (via `rune_count`). |
 | **DeepFeatureCall** | ✅ | Nested attribute access (via `rune_resolve_deep_attr`). |
