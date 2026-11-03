@@ -87,6 +87,61 @@ To generate Python code from a single file or directory, after building the proj
 java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI
 ```
 
+### Using the Generated Code
+
+The generated Python classes are standard [Pydantic v2](https://docs.pydantic.dev/) models that extend `BaseDataClass` from the [rune-python-runtime](https://github.com/finos/rune-python-runtime). Each generated package exposes a `rune_deserialize` helper and every model instance exposes `rune_serialize`.
+
+#### Constructing objects
+
+Import and instantiate a generated class like any Pydantic model:
+
+```python
+from finos.cdm.base.math.UnitType import UnitType
+from finos.cdm.base.math.FinancialUnitEnum import FinancialUnitEnum
+
+unit = UnitType(financialUnit=FinancialUnitEnum.SHARE)
+```
+
+#### Serializing to JSON
+
+Call `rune_serialize()` on any root model object. The method validates the model, then returns a compact or indented JSON string that includes the Rune `@type`, `@model`, and `@version` fields required for round-trip deserialization.
+
+```python
+json_str = unit.rune_serialize(indent=2)
+# {
+#   "@type": "cdm.base.math.UnitType",
+#   "@model": "cdm",
+#   "@version": "0.0.0",
+#   "financialUnit": "Share"
+# }
+```
+
+To skip pre-serialization validation (for example when working with incomplete objects during construction):
+
+```python
+json_str = unit.rune_serialize(validate_model=False)
+```
+
+#### Deserializing from JSON
+
+Use the package-level `rune_deserialize` wrapper rather than calling `model_validate` directly. The wrapper resolves the correct namespace prefix so that `@type` strings in the JSON map to the right Python class:
+
+```python
+import finos
+
+obj = finos.rune_deserialize(json_str)
+print(type(obj).__name__)   # UnitType
+print(obj.financialUnit)    # FinancialUnitEnum.SHARE
+```
+
+Pass `validate_model=False` to skip post-deserialization constraint checking (useful when ingesting data that may not yet satisfy all conditions):
+
+```python
+obj = finos.rune_deserialize(json_str, validate_model=False)
+```
+
+The function accepts either a JSON string or a pre-parsed `dict`.
+
 ### Generating CDM from Rune
 
 To generate the Python version of the Common Domain Model (CDM), use the **build_cdm.sh** script. This script uses the branch specified in the file and creates a wheel in target/python-cdm.
