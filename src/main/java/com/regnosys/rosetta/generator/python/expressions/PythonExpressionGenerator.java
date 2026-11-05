@@ -1040,7 +1040,9 @@ public final class PythonExpressionGenerator {
 
     private String generateCountOperation(RosettaCountOperation count, PythonExpressionScope scope) {
         String arg = generateExpression(count.getArgument(), scope);
-        return "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(" + arg + ")";
+        // Models define __iter__ over their fields, and function inputs are proxies that
+        // appear to have it, so a single model object must not be treated as a collection.
+        return "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))(" + arg + ")";
     }
 
     private String generateExistsOperation(RosettaExistsExpression exists, PythonExpressionScope scope) {

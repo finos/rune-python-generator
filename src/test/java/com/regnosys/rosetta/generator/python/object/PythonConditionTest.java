@@ -309,7 +309,7 @@ public class PythonConditionTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "class CondTest(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "return rune_all_elements((lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
+            "return rune_all_elements((lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
     }
 
     /**

@@ -29,7 +29,7 @@ import jakarta.inject.Inject;
 public class PythonCountOperationTest {
 
     private static final String COUNT_LAMBDA_PREFIX =
-            "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))";
+            "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))";
 
     @Inject
     private PythonGeneratorTestUtils testUtils;
