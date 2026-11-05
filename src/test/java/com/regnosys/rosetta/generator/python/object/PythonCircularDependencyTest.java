@@ -144,12 +144,14 @@ public class PythonCircularDependencyTest {
         testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "_v = _b.com_rosetta_test_model_CircularA");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "globals()['CircularA'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "# EOF");
+        testUtils.assertGeneratedDoesNotContain(proxyCircularA, "class ");
 
         String proxyCircularB = gfAttr.get("src/com/rosetta/test/model/CircularB.py").toString();
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "def __getattr__(name: str):");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "_v = _b.com_rosetta_test_model_CircularB");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "globals()['CircularB'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "# EOF");
+        testUtils.assertGeneratedDoesNotContain(proxyCircularB, "class ");
 
         // Inheritance cycle: Parent ↔ Child (default namespace → com._bundle)
         Map<String, CharSequence> gfInh = testUtils.generatePythonFromString(

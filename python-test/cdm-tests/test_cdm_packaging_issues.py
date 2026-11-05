@@ -5,15 +5,18 @@
 
 '''
 Tests for generator/packaging issues found in CDM 7.7.0 (finos-cdm 7.7.0,
-rune.runtime 2.2.0, pydantic 2.14.1). G1 and G2 are fixed, and their tests guard
-against a regression. G3 and G4 each document one open defect and its workaround.
-These are generator or CDM-packaging issues, not runtime issues.
+rune.runtime 2.2.0, pydantic 2.14.1). G1, G2 and G3 are fixed, and their tests
+guard against a regression. G4 documents one open defect. These are generator or
+CDM-packaging issues, not runtime issues.
+
+Each test imports only the CDM modules it uses, as a user would; none imports the
+bundle directly.
 
 G1  Fixed: circular import when Asset is the first CDM import
 G2  Fixed: non-bundle class (Instrument) had a stale pydantic schema for a bundle
     class (Security) after bundle rebuild
-G3  PriceQuantityTriangulation passes a scalar (0..1) quantity to a function
-    that iterates over it as a list (same root cause as generator defect #300)
+G3  Fixed: PriceQuantityTriangulation iterated over its scalar (0..1) quantity
+    as if it were a list
 G4  Now() has no registered native implementation in the CDM package
 '''
 
@@ -53,7 +56,6 @@ def test_instrument_accepts_bundled_security():
     The generator now promotes types on a path between bundled types into the bundle,
     so Instrument is rebuilt with the final annotations.
     '''
-    import finos._bundle
     from finos.cdm.base.staticdata.asset.common.AssetIdentifier import AssetIdentifier
     from finos.cdm.base.staticdata.asset.common.AssetIdTypeEnum import AssetIdTypeEnum
     from finos.cdm.base.staticdata.asset.common.AssetTypeEnum import AssetTypeEnum
@@ -76,22 +78,17 @@ def test_instrument_accepts_bundled_security():
 
 
 # ---------------------------------------------------------------------------
-# G3: PriceQuantityTriangulation — scalar passed as list (generator defect #300)
+# G3: PriceQuantityTriangulation — extract over a scalar
 # ---------------------------------------------------------------------------
 
-def test_price_quantity_triangulation_fails_with_scalar_quantity():
-    '''PriceQuantityTriangulation iterates over quantity as a list, but CDM's
-    PriceQuantity.quantity is a scalar (0..1) field.  Passing a single
-    NonNegativeQuantitySchedule raises TypeError.
+def test_price_quantity_triangulation_accepts_scalar_quantity():
+    '''PriceQuantityTriangulation must accept a single NonNegativeQuantitySchedule.
 
-    Root cause: the generator wraps the function call in `map(lambda item: ...,
-    rune_resolve_attr(self, "quantity") or [])`, iterating over the scalar value.
-    Inside rune_cow, this becomes a _COWObject, which is not iterable.
-
-    This is the same defect as generator issue #300 (list-wrapping for scalar
-    constructor fields), manifesting in CDM's own generated code.
+    Regression test. CDM's PriceQuantity.quantity is a scalar (0..1) field, but the
+    generated `quantity extract ...` used to iterate over it as a list. Inside rune_cow
+    the value is a _COWObject, so the function raised TypeError. The generator now
+    applies extract to a single value directly.
     '''
-    import finos._bundle
     from finos.cdm.observable.common.functions.PriceQuantityTriangulation import (
         PriceQuantityTriangulation,
     )
@@ -101,8 +98,8 @@ def test_price_quantity_triangulation_fails_with_scalar_quantity():
     # Use model_construct to bypass runtime issue R5 (absent-metadata validator)
     qty = NonNegativeQuantitySchedule.model_construct(value=Decimal('1000'))
 
-    with pytest.raises(TypeError, match="'_COWObject' object is not iterable"):
-        PriceQuantityTriangulation(price=None, quantity=qty)
+    # With no prices there is nothing to check, so the triangulation holds
+    assert PriceQuantityTriangulation(price=None, quantity=qty) is True
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +117,6 @@ def test_now_function_raises_not_implemented():
     the registration mechanism; the CDM maintainers need to supply the
     implementation.
     '''
-    import finos._bundle
     from finos.cdm.base.datetime.functions.Now import Now
 
     with pytest.raises(NotImplementedError, match="doesn't have an implementation"):

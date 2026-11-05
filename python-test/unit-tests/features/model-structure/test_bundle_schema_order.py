@@ -11,9 +11,8 @@ import textwrap
 import pytest
 
 NAMESPACE = 'rosetta_dsl.test.model.bundle_schema_order'
-BUNDLE = 'rosetta_dsl._bundle'
-ENTRY_POINTS = [BUNDLE] + [f'{NAMESPACE}.{name}' for name in
-                           ('Inner', 'Outer', 'GroupA1', 'GroupB1')]
+# Users import the model's modules, never the bundle itself
+ENTRY_POINTS = [f'{NAMESPACE}.{name}' for name in ('Inner', 'Outer', 'GroupA1', 'GroupB1')]
 
 
 def _run_in_new_process(code: str) -> subprocess.CompletedProcess:
