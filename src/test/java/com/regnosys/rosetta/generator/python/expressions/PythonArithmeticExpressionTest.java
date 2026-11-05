@@ -175,6 +175,6 @@ public class PythonArithmeticExpressionTest {
                             @rune_condition
                             def condition_0_EnumConvCheck(self):
                                 item = self
-                                return rune_all_elements(MyEnum(rune_resolve_attr(self, "s")), "=", com.rosetta.test.model.MyEnum.MyEnum.VALUE_1)""");
+                                return rune_all_elements(com.rosetta.test.model.MyEnum.MyEnum(rune_resolve_attr(self, "s")), "=", com.rosetta.test.model.MyEnum.MyEnum.VALUE_1)""");
     }
 }

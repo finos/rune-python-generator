@@ -238,8 +238,10 @@ public final class PythonExpressionGenerator {
                 return generateSwitchOperation(switchOp, scope);
             }
             case ToEnumOperation toEnum -> {
-                return toEnum.getEnumeration().getName() + "("
-                        + generateExpression(toEnum.getArgument(), scope) + ")";
+                RosettaEnumeration enumeration = toEnum.getEnumeration();
+                String enumName = context.applyPrefix(enumeration.getModel().getName()) + "."
+                        + enumeration.getName() + "." + enumeration.getName();
+                return enumName + "(" + generateExpression(toEnum.getArgument(), scope) + ")";
             }
             case ToStringOperation toString -> {
                 return "rune_str(" + generateExpression(toString.getArgument(), scope) + ")";
@@ -517,7 +519,9 @@ public final class PythonExpressionGenerator {
         String param = thenFunc.getParameters().isEmpty() ? "item"
                 : thenFunc.getParameters().get(0).getName();
         String rawCollection = generateExpression(mapOp.getArgument(), scope);
-        String rawArg = "[x for x in " + rawCollection + " or [] if x is not None]";
+        String rawItems = cardinalityProvider.isMulti(mapOp.getArgument())
+                ? rawCollection + " or []" : "[" + rawCollection + "]";
+        String rawArg = "[x for x in " + rawItems + " if x is not None]";
 
         String fieldName = refAttr.getName();
         String resolveCall = param + ".resolve_ref_key(\"" + fieldName + "\")";
@@ -594,6 +598,10 @@ public final class PythonExpressionGenerator {
         }
 
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
+        if (!cardinalityProvider.isMulti(expr.getArgument())) {
+            // A single value isn't iterable, and the result stays a single value
+            return "(lambda " + param + ": None if " + param + " is None else " + funcBody + ")(" + argument + ")";
+        }
         String lambdaFunction = "lambda " + param + ": " + funcBody;
         return "[x for x in map(" + lambdaFunction + ", " + argument + " or []) if x is not None]";
     }

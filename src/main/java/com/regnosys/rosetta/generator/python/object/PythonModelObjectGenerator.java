@@ -31,6 +31,8 @@ import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.TypeSystem;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
 
+import com.regnosys.rosetta.generator.python.functions.PythonFunctionDependencyProvider;
+
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
@@ -75,6 +77,12 @@ public class PythonModelObjectGenerator {
      */
     @Inject
     private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
+
+    /**
+     * Collects the imports that condition expressions need.
+     */
+    @Inject
+    private PythonFunctionDependencyProvider functionDependencyProvider;
 
     /**
      * Scan Rosetta classes to build dependency graph and record super types.
@@ -204,9 +212,20 @@ public class PythonModelObjectGenerator {
 
         if (!isStandalone) {
             pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports, context, false);
+            addConditionImports(rc, enumImports, context);
         }
 
         return generateBody(rc, context, isStandalone);
+    }
+
+    /**
+     * Adds the imports used by the type's conditions, such as an enum that only they refer to.
+     */
+    private void addConditionImports(Data rc, Set<String> imports, PythonCodeGeneratorContext context) {
+        String sourceNamespace = context.applyPrefix(((RosettaModel) rc.eContainer()).getName());
+        for (com.regnosys.rosetta.rosetta.simple.Condition condition : rc.getConditions()) {
+            functionDependencyProvider.addDependencies(condition.getExpression(), imports, sourceNamespace, context);
+        }
     }
 
     /**
@@ -301,6 +320,7 @@ public class PythonModelObjectGenerator {
             // Add attribute-level imports (all Data types safe for standalone files)
             Set<String> imports = new java.util.HashSet<>();
             pythonAttributeProcessor.getImportsFromAttributes(rc, imports, context, true);
+            addConditionImports(rc, imports, context);
             for (String imp : imports) {
                 writer.appendLine(imp);
             }

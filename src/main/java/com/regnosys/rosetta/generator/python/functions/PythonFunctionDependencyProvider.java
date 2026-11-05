@@ -11,16 +11,15 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 
+import com.regnosys.rosetta.rosetta.RosettaEnumValue;
 import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaRule;
 import com.regnosys.rosetta.rosetta.RosettaSymbol;
-import com.regnosys.rosetta.rosetta.expression.FilterOperation;
 import com.regnosys.rosetta.rosetta.expression.InlineFunction;
 import com.regnosys.rosetta.rosetta.expression.ListLiteral;
-import com.regnosys.rosetta.rosetta.expression.MapOperation;
 import com.regnosys.rosetta.rosetta.expression.RosettaBinaryOperation;
 import com.regnosys.rosetta.rosetta.expression.RosettaConditionalExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
@@ -30,6 +29,8 @@ import com.regnosys.rosetta.rosetta.expression.RosettaFunctionalOperation;
 import com.regnosys.rosetta.rosetta.expression.RosettaOnlyExistsExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
 import com.regnosys.rosetta.rosetta.expression.RosettaUnaryOperation;
+import com.regnosys.rosetta.rosetta.expression.SwitchOperation;
+import com.regnosys.rosetta.rosetta.expression.ToEnumOperation;
 import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.rosetta.simple.Function;
 import com.regnosys.rosetta.types.RAliasType;
@@ -65,6 +66,9 @@ public final class PythonFunctionDependencyProvider {
             RosettaModel model = (RosettaModel) enumeration.eContainer();
             String prefix = context.applyPrefix(model.getName());
             enumImports.add("import " + prefix + "." + name);
+        } else if (named instanceof RosettaEnumValue enumValue) {
+            // A value written without its type, such as `AssetPrice`, still needs its enum
+            addDependencies(enumValue.getEnumeration(), enumImports, sourceNamespace, context);
         } else if (named instanceof com.regnosys.rosetta.rosetta.simple.Data data) {
             String name = data.getName();
             RosettaModel model = (RosettaModel) data.eContainer();
@@ -112,15 +116,25 @@ public final class PythonFunctionDependencyProvider {
                 if (functional.getArgument() != null) {
                     addDependencies(functional.getArgument(), enumImports, sourceNamespace, context);
                 }
-                if (functional instanceof FilterOperation filter) {
-                    addDependencies(filter.getFunction(), enumImports, sourceNamespace, context);
-                } else if (functional instanceof MapOperation map) {
-                    addDependencies(map.getFunction(), enumImports, sourceNamespace, context);
-                }
+                addDependencies(functional.getFunction(), enumImports, sourceNamespace, context);
             }
             case WithMetaOperation withMeta -> {
                 addDependencies(withMeta.getArgument(), enumImports, sourceNamespace, context);
                 withMeta.getEntries().forEach(entry -> addDependencies(entry.getValue(), enumImports, sourceNamespace, context));
+            }
+            case SwitchOperation switchOp -> {
+                addDependencies(switchOp.getArgument(), enumImports, sourceNamespace, context);
+                switchOp.getCases().forEach(switchCase -> {
+                    addDependencies(switchCase.getExpression(), enumImports, sourceNamespace, context);
+                    if (switchCase.getGuard() != null && switchCase.getGuard().getEnumGuard() != null) {
+                        addDependencies(switchCase.getGuard().getEnumGuard(), enumImports, sourceNamespace, context);
+                    }
+                });
+                addDependencies(switchOp.getDefault(), enumImports, sourceNamespace, context);
+            }
+            case ToEnumOperation toEnum -> {
+                addDependencies(toEnum.getEnumeration(), enumImports, sourceNamespace, context);
+                addDependencies(toEnum.getArgument(), enumImports, sourceNamespace, context);
             }
             case RosettaUnaryOperation unary -> {
                 addDependencies(unary.getArgument(), enumImports, sourceNamespace, context);
