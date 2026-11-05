@@ -390,6 +390,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class A(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a0: Optional[str] = Field(None, description='')
                     a1: Optional[str] = Field(None, description='')
 
@@ -415,6 +416,7 @@ public class PythonConditionTest {
                 pythonString,
                 """
                 class TestType(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test type description.
                     \"""
@@ -451,6 +453,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class AttributeIfThenTest(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     attr1: Optional[str] = Field(None, description='')
                     attr2: Optional[str] = Field(None, description='')
 
@@ -494,6 +497,7 @@ public class PythonConditionTest {
                 pythonString,
                 """
                 class A(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a0: Optional[int] = Field(None, description='')
                     a1: Optional[int] = Field(None, description='')
 
@@ -506,6 +510,7 @@ public class PythonConditionTest {
                 pythonString,
                 """
                 class B(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     intValue1: Optional[int] = Field(None, description='')
                     intValue2: Optional[int] = Field(None, description='')
                     aValue: A = Field(..., description='')
@@ -557,6 +562,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class AttributeIfThenElseTest(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     attr1: Optional[str] = Field(None, description='')
                     attr2: Optional[str] = Field(None, description='')
                     attr3: Optional[str] = Field(None, description='')
@@ -586,6 +592,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class Foo(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a: Optional[Decimal] = Field(None, description='')
                     b: Optional[Decimal] = Field(None, description='')
 
@@ -620,6 +627,7 @@ public class PythonConditionTest {
         String choicePython = python.get("src/test/generated_syntax/semantic/Choice.py").toString();
         String expectedChoice = """
             class Choice(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 intType: Optional[int] = Field(None, description='')
                 stringType: Optional[str] = Field(None, description='')
 

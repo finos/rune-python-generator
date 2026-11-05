@@ -45,6 +45,7 @@ public class PythonConditionalExpressionTest {
             """,
             """
             class Test1(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Test if-then condition.
                 \"\"\"
@@ -86,6 +87,7 @@ public class PythonConditionalExpressionTest {
             """,
             """
             class Test1(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Test if-then-else condition.
                 \"\"\"
@@ -127,6 +129,7 @@ public class PythonConditionalExpressionTest {
             """,
             """
             class Test1(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Test boolean condition.
                 \"\"\"
@@ -168,6 +171,7 @@ public class PythonConditionalExpressionTest {
             """,
             """
             class Test1(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Test absent condition.
                 \"\"\"
@@ -216,6 +220,7 @@ public class PythonConditionalExpressionTest {
             """,
             """
             class FooTest(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 a: int = Field(..., description='Test field a')
                 \"\"\"
                 Test field a
@@ -261,6 +266,7 @@ public class PythonConditionalExpressionTest {
                 """,
                 """
                 class Test1(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test choice condition.
                     \"""
@@ -295,6 +301,7 @@ public class PythonConditionalExpressionTest {
                 """,
                 """
                 class Test1(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     _CHOICE_ALIAS_MAP ={"field1":[]}
                     \"""
                     Test one-of condition.

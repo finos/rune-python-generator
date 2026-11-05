@@ -469,6 +469,7 @@ public class PythonCollectionExpressionTest {
                 """,
                 """
                 class Test(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test any operation condition
                     \"""
@@ -670,6 +671,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedA = """
                 class A(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test type
                     \"""
@@ -685,6 +687,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedBPhase1 = """
                 class B(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test type B
                     \"""
@@ -700,6 +703,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedTestPhase1 = """
                 class Test(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test filter operation condition
                     \"""
@@ -754,6 +758,7 @@ public class PythonCollectionExpressionTest {
                 """,
                 """
                 class Test(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test disjoint binary expression condition
                     \"""
@@ -808,6 +813,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 """
                         class TestJoin(BaseDataClass):
+                            model_config = ConfigDict(defer_build=True)
                             field1: list[str | None] = Field(..., description='', min_length=1)
                             delimiter: str = Field(..., description='')
 
@@ -854,6 +860,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedTest1 = """
                 class Test1(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test only-element condition.
                     \"""

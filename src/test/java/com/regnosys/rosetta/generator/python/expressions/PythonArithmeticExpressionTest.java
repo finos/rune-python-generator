@@ -50,6 +50,7 @@ public class PythonArithmeticExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 """
                 class TestMath(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a: int = Field(..., description='')
                     b: int = Field(..., description='')
 
@@ -84,6 +85,7 @@ public class PythonArithmeticExpressionTest {
                 generatedPython,
                 """
                 class ArithmeticTest(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a: int = Field(..., description='')
                     b: int = Field(..., description='')
 
@@ -118,6 +120,7 @@ public class PythonArithmeticExpressionTest {
                 """,
                 """
                         class TestConv(BaseDataClass):
+                            model_config = ConfigDict(defer_build=True)
                             val: int = Field(..., description='')
                             s: str = Field(..., description='')
 
@@ -142,6 +145,7 @@ public class PythonArithmeticExpressionTest {
                 """,
                 """
                         class TestDateConv(BaseDataClass):
+                            model_config = ConfigDict(defer_build=True)
                             s: str = Field(..., description='')
 
                             @rune_condition
@@ -165,6 +169,7 @@ public class PythonArithmeticExpressionTest {
                 """,
                 """
                         class TestEnumConv(BaseDataClass):
+                            model_config = ConfigDict(defer_build=True)
                             s: str = Field(..., description='')
 
                             @rune_condition

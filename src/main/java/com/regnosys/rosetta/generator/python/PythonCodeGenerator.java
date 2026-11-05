@@ -9,11 +9,13 @@ import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorCons
 import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.PYTHON;
 import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.SRC;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.jgrapht.Graph;
+import org.jgrapht.Graphs;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -327,11 +330,75 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
         }
 
+        // Each kind of promotion can create new bundled types for the other, so repeat until
+        // nothing changes.
+        Map<String, String> superTypes = context.getSuperTypes();
+        do {
+            promoteInheritanceRelatives(standaloneClasses, ownTypes, superTypes);
+        } while (promoteTypesOnPathsBetweenBundledTypes(dependencyDAG, standaloneClasses, ownTypes));
+    }
+
+    /**
+     * Promotes every own type that a bundled type depends on, and that itself depends on a bundled
+     * type, directly or through other types.
+     *
+     * <p>Cycle groups are found separately, so a path such as {@code GroupA1 -> Outer -> Inner ->
+     * GroupB1} is not a cycle in the dependency graph when {@code GroupA1} and {@code GroupB1} are in
+     * different groups. All bundled types share one {@code _bundle.py}, though, so at file level the
+     * bundle imports {@code Outer}, which imports {@code Inner}, which imports the bundle. If those
+     * types stayed standalone, importing one of them first would raise a circular ImportError, and
+     * importing the bundle first would build their schemas from the Phase 1 placeholders.
+     *
+     * <p>Paths may pass through functions and external types, but only own types can be promoted.
+     *
+     * @param dependencyDAG     The type dependency graph, with edges from dependency to dependent.
+     * @param standaloneClasses The standalone classes (mutated).
+     * @param ownTypes          The types belonging to this namespace.
+     * @return true if any type was promoted.
+     */
+    private boolean promoteTypesOnPathsBetweenBundledTypes(
+        Graph<String, DefaultEdge> dependencyDAG,
+        Set<String> standaloneClasses,
+        Set<String> ownTypes
+    ) {
+        Set<String> bundledTypes = new HashSet<>(dependencyDAG.vertexSet());
+        bundledTypes.retainAll(ownTypes);
+        bundledTypes.removeAll(standaloneClasses);
+
+        Set<String> toPromote = collectReachable(bundledTypes, node -> Graphs.predecessorListOf(dependencyDAG, node));
+        toPromote.retainAll(collectReachable(bundledTypes, node -> Graphs.successorListOf(dependencyDAG, node)));
+        toPromote.retainAll(ownTypes);
+        toPromote.retainAll(standaloneClasses);
+
+        toPromote.forEach(cls -> LOGGER.debug("Promoted {} to bundled (on a path between bundled types)", cls));
+        return standaloneClasses.removeAll(toPromote);
+    }
+
+    private Set<String> collectReachable(
+        Set<String> startNodes,
+        java.util.function.Function<String, List<String>> neighbours
+    ) {
+        Set<String> reachable = new HashSet<>();
+        Deque<String> pending = new ArrayDeque<>(startNodes);
+        while (!pending.isEmpty()) {
+            for (String neighbour : neighbours.apply(pending.pop())) {
+                if (reachable.add(neighbour)) {
+                    pending.push(neighbour);
+                }
+            }
+        }
+        return reachable;
+    }
+
+    private void promoteInheritanceRelatives(
+        Set<String> standaloneClasses,
+        Set<String> ownTypes,
+        Map<String, String> superTypes
+    ) {
         // Promote to bundled: any own-type class whose bundled ancestor is also an own type.
         // Pydantic's model_rebuild(force=True) does not propagate parent annotation changes to
         // a child's model_fields — each subclass must be in the bundle to receive explicit
         // Phase 2 and Phase 3 treatment for inherited deferred fields.
-        Map<String, String> superTypes = context.getSuperTypes();
         boolean anyPromotion = true;
         while (anyPromotion) {
             anyPromotion = false;
@@ -438,12 +505,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
         // defined by the time Phase 3 runs, and Pydantic's schema builder can resolve
         // cross-type references in a single pass (~4× faster than without defer_build).
         //
-        // Standalone classes with deferred imports are integrated into the rebuild graph
-        // so they are ordered correctly relative to bundled classes.
-        // Function imports from conditions are not type classes — do NOT pass to
-        // integrateStandaloneRebuilds, which would add them to pendingRebuilds and
-        // generate model_rebuild() calls on Python function objects.
-        integrateStandaloneRebuilds(context, headerResult.deferredStandaloneImports(), pendingRebuilds);
+        // Standalone classes are not rebuilt. promoteTypesOnPathsBetweenBundledTypes guarantees
+        // that a standalone class the bundle imports never depends on a bundled class, so it
+        // cannot capture a Phase 1 placeholder, and defer_build=True postpones its schema until
+        // first use. Rebuilding it here would force the build that defer_build avoids.
 
         String rebuildContent = emitRebuildCallsInOrder(pendingRebuilds, context);
 
@@ -810,77 +875,6 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
         }
         return false;
-    }
-
-    /**
-     * Adds deferred standalone imports into the rebuild graph so they are ordered correctly
-     * inside Phase 3 rather than being relegated to an unordered Phase 4 after all bundled
-     * rebuilds.
-     *
-     * <p>Two sets of edges are added:
-     * <ol>
-     *   <li><b>S → bundled dep:</b> standalone class S must rebuild <em>after</em> every bundled
-     *       class it references (derived from the dependency DAG).</li>
-     *   <li><b>bundled B → S:</b> bundled class B must rebuild <em>after</em> standalone S
-     *       whenever B's Phase 2 annotation strings mention S's class name (meaning B inlines
-     *       S's schema at rebuild time).</li>
-     * </ol>
-     *
-     * @param context         The generator context (DAG, post-definition updates, standalone set).
-     * @param deferredImports List of {@code "from <module> import <ClassName>"} import strings.
-     * @param pendingRebuilds The rebuild list (mutated: standalone class names are appended).
-     */
-    private void integrateStandaloneRebuilds(
-        PythonCodeGeneratorContext context,
-        List<String> deferredImports,
-        List<String> pendingRebuilds
-    ) {
-        if (deferredImports.isEmpty()) {
-            return;
-        }
-        Set<String> standaloneClasses = context.getStandaloneClasses();
-        Map<String, List<String>> updates = context.getPostDefinitionUpdates();
-        Graph<String, DefaultEdge> dag = context.getDependencyDAG();
-
-        Set<String> pendingSet = new HashSet<>(pendingRebuilds);
-
-        for (String imp : deferredImports) {
-            int importIdx = imp.lastIndexOf(" import ");
-            if (importIdx < 0) continue;
-            String className = imp.substring(importIdx + " import ".length()).trim();
-            String fqn = imp.substring("from ".length(), importIdx).trim();
-
-            // Add standalone class to pendingRebuilds if not already present
-            if (pendingSet.add(className)) {
-                pendingRebuilds.add(className);
-            }
-
-            // Dep 1: standalone S must rebuild AFTER bundled types it directly references.
-            // The DAG convention is addEdge(dependency, dependent), so INCOMING edges to S's
-            // vertex are the types S depends on (S's field types), while OUTGOING edges are
-            // classes that depend on S.
-            if (dag.containsVertex(fqn)) {
-                for (DefaultEdge edge : dag.incomingEdgesOf(fqn)) {
-                    String depFqn = dag.getEdgeSource(edge);
-                    if (!standaloneClasses.contains(depFqn)) {
-                        // depFqn is a bundled type that S references — S must rebuild after it
-                        context.addRebuildDep(className, getBundleClassName(depFqn));
-                    }
-                }
-            }
-
-            // Dep 2: bundled class B must rebuild AFTER standalone S if B's Phase 2
-            // annotation strings reference S by its imported name.
-            for (Map.Entry<String, List<String>> entry : updates.entrySet()) {
-                String bundleClass = entry.getKey();
-                for (String updateLine : entry.getValue()) {
-                    if (updateLine.contains(className)) {
-                        context.addRebuildDep(bundleClass, className);
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     /**
