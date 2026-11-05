@@ -640,13 +640,13 @@ public class PythonConditionTest {
     }
 
     /**
-     * When a bundled type's condition calls a standalone function, the bundle must contain
-     * a deferred import for that function so it is resolvable at runtime.
-     * A and B form a cycle (both bundled); IsPositive is acyclic (standalone).
+     * When a bundled type's condition calls a standalone function, the condition imports the
+     * function itself. A module-level import would make the bundle import a function that
+     * imports the bundle. A and B form a cycle (both bundled); IsPositive is acyclic (standalone).
      */
     @Test
     public void testBundledConditionWithStandaloneFunctionCallGeneratesImport() {
-        testUtils.assertBundleContainsExpectedString(
+        String bundle = testUtils.generatePythonAndExtractBundle(
                 """
                 func IsPositive:
                     inputs:
@@ -664,8 +664,40 @@ public class PythonConditionTest {
 
                 type B:
                     a A (0..1)
-                """,
-                "from com.rosetta.test.model.functions.IsPositive import IsPositive");
+                """);
+        testUtils.assertAppearsAfter(bundle,
+                "def condition_0_PositiveValue(self):",
+                "        from com.rosetta.test.model.functions.IsPositive import IsPositive");
+        testUtils.assertGeneratedDoesNotContain(bundle,
+                "\nfrom com.rosetta.test.model.functions.IsPositive import IsPositive");
+    }
+
+    /**
+     * A standalone type's condition imports the function it calls, inside the condition, so
+     * the module can be imported first whatever the function itself imports.
+     */
+    @Test
+    public void testStandaloneConditionWithFunctionCallGeneratesImport() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                func IsPositive:
+                    inputs:
+                        value number (0..1)
+                    output:
+                        result boolean (1..1)
+
+                type Holder:
+                    value number (0..1)
+
+                    condition PositiveValue:
+                        IsPositive( value )
+                """);
+        String holder = python.get("src/com/rosetta/test/model/Holder.py").toString();
+        testUtils.assertAppearsAfter(holder,
+                "def condition_0_PositiveValue(self):",
+                "        from com.rosetta.test.model.functions.IsPositive import IsPositive");
+        testUtils.assertGeneratedDoesNotContain(holder,
+                "\nfrom com.rosetta.test.model.functions.IsPositive import IsPositive");
     }
 
     /**

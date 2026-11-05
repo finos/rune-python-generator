@@ -4,6 +4,7 @@
  */
 package com.regnosys.rosetta.generator.python.functions;
 
+import com.regnosys.rosetta.types.CardinalityProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,6 +54,12 @@ public final class PythonFunctionGenerator {
      * The logger.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator.class);
+
+    /**
+     * Determines whether an expression is multi-valued.
+     */
+    @Inject
+    private CardinalityProvider cardinalityProvider;
 
     /**
      * The function dependency provider.
@@ -741,6 +748,13 @@ public final class PythonFunctionGenerator {
         RosettaType rootType = (root instanceof Attribute attr) ? attr.getTypeCall().getType() : null;
 
         if (rootType instanceof RosettaEnumeration || operation.getPath() == null) {
+            if (operation.getPath() == null && root instanceof Attribute attr && attr.getCard().isIsMany()
+                    && !cardinalityProvider.isMulti(operation.getExpression())) {
+                // A multi-valued output must be a list even when set from a single value. The value
+                // is still checked at runtime, because some single-valued expressions give a list.
+                expression = "(lambda v: [] if v is None else (v if isinstance(rune_unwrap(v), list) else [v]))("
+                        + expression + ")";
+            }
             writer.appendLine(rootName + " = " + expression);
             scope.markInitialized(rootName);
         } else {

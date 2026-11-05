@@ -5,7 +5,9 @@
 package com.regnosys.rosetta.generator.python.expressions;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
@@ -124,6 +126,13 @@ public final class PythonExpressionGenerator {
      * The counter for generated helper functions.
      */
     private int generatedFunctionCounter = 0;
+
+    /**
+     * Imports for the functions called by the class condition being generated, or null when no
+     * class condition is being generated. Each is emitted inside that condition, so a function is
+     * only imported once all modules have loaded, whichever module was imported first.
+     */
+    private Set<String> conditionFunctionImports = null;
 
     /** The Python code generator context. */
     private PythonCodeGeneratorContext context;
@@ -715,7 +724,9 @@ public final class PythonExpressionGenerator {
             case null, default -> {
                 String fqn = context.getFullyQualifiedName(s);
                 if (context.getStandaloneClasses().contains(fqn)) {
-                    context.addBundleConditionFunctionImport(fqn, s.getName());
+                    if (conditionFunctionImports != null) {
+                        conditionFunctionImports.add("from " + fqn + " import " + s.getName());
+                    }
                     yield s.getName();
                 } else {
                     yield context.getBundleObjectName(s);
@@ -776,12 +787,13 @@ public final class PythonExpressionGenerator {
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : cls.getConditions()) {
-            result.append(generateConditionBoilerPlate(cond, nConditions));
-            if (isConstraintCondition(cond)) {
-                result.append(generateConstraintCondition(cls, cond));
-            } else {
-                result.append(generateIfThenElseOrSwitch(cond));
-            }
+            conditionFunctionImports = new LinkedHashSet<>();
+            String body = isConstraintCondition(cond)
+                    ? generateConstraintCondition(cls, cond)
+                    : generateIfThenElseOrSwitch(cond);
+            result.append(generateConditionBoilerPlate(cond, nConditions, conditionFunctionImports));
+            result.append(body);
+            conditionFunctionImports = null;
             nConditions++;
         }
         return result.toString();
@@ -812,7 +824,7 @@ public final class PythonExpressionGenerator {
         return cond.getExpression() instanceof ChoiceOperation;
     }
 
-    private String generateConditionBoilerPlate(Condition cond, int nConditions) {
+    private String generateConditionBoilerPlate(Condition cond, int nConditions, Set<String> functionImports) {
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.newLine();
         writer.appendLine("@rune_condition");
@@ -824,6 +836,7 @@ public final class PythonExpressionGenerator {
             writer.appendLine(cond.getDefinition());
             writer.appendLine("\"\"\"");
         }
+        functionImports.forEach(writer::appendLine);
         writer.appendLine("item = self");
         return writer.toString();
     }

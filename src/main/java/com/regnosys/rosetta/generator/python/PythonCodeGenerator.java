@@ -512,11 +512,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
         String rebuildContent = emitRebuildCallsInOrder(pendingRebuilds, context);
 
-        // Combine type and function imports for the deferred-import section of the bundle.
-        List<String> allDeferredImports = new ArrayList<>(headerResult.deferredStandaloneImports());
-        allDeferredImports.addAll(headerResult.deferredFunctionImports());
+        // Functions called by conditions are imported inside each condition, not here: a
+        // module-level import would make the bundle import a function that imports the bundle.
         assembleBundleFile(nameSpace, context, bundleWriter, dataObjectsWriter, functionsWriter,
-                annotationUpdateWriter, rebuildContent, allDeferredImports, result);
+                annotationUpdateWriter, rebuildContent, headerResult.deferredStandaloneImports(), result);
 
         return result;
     }
@@ -584,9 +583,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
         }
 
-        List<String> deferredFunctionImports = new ArrayList<>(context.getBundleConditionFunctionImports());
-
-        return new BundleHeaderResult(deferredStandaloneImports, deferredFunctionImports, standaloneSupertypesOfBundled);
+        return new BundleHeaderResult(deferredStandaloneImports, standaloneSupertypesOfBundled);
     }
 
     /**
@@ -1250,7 +1247,6 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      */
     private record BundleHeaderResult(
             List<String> deferredStandaloneImports,
-            List<String> deferredFunctionImports,
             Set<String> standaloneSupertypesOfBundled) {
     }
 

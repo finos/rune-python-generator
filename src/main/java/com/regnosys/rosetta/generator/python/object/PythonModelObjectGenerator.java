@@ -375,9 +375,7 @@ public class PythonModelObjectGenerator {
             writer.appendBlock(constraints);
         }
 
-        context.setGeneratingBundledTypeCondition(!isStandalone);
         writer.appendBlock(expressionGenerator.generateTypeConditions(rc));
-        context.setGeneratingBundledTypeCondition(false);
 
         return writer.toString();
     }
