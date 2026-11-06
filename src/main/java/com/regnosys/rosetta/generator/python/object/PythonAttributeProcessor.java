@@ -114,9 +114,14 @@ public final class PythonAttributeProcessor {
             // Phase 2 updates both __annotations__ (full Annotated type for pydantic schema) and
             // model_fields[x].annotation (bare type, required so model_rebuild(force=True) picks up
             // the real type rather than the NoneType placeholder stored in model_fields).
+            // model_rebuild builds the field from model_fields, so the field's serializer and
+            // validator are also added to its metadata; otherwise the field would be built without
+            // them and its metadata (e.g. @key:scoped) would not be written.
             pythonType = "None";
             annotationUpdates.add(String.format("model_fields[\"%s\"].annotation = %s", attrName, hint.build(false)));
             annotationUpdates.add(String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true)));
+            hint.runeAnnotations().ifPresent(runeAnnotations -> annotationUpdates.add(
+                    String.format("model_fields[\"%s\"].metadata += [%s]", attrName, runeAnnotations)));
 
             // Record rebuild dependency: className's model_rebuild must run after the referenced
             // type's model_rebuild. Only track types in the same bundle (same context, not standalone).

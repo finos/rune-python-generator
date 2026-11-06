@@ -347,4 +347,40 @@ public class PythonCircularDependencyTest {
                 "        from com.rosetta.test.model.Leaf import Leaf");
         testUtils.assertGeneratedContainsExpectedString(bundle, "com_rosetta_test_model_GroupB1(value=1)");
     }
+
+    /**
+     * A bundled field gets its metadata serializer and validator on the field pydantic builds,
+     * not only in __annotations__, so its metadata (such as @key:scoped) is written. A bundled
+     * field inherited by a bundled subclass gets them on the subclass too. A field with no
+     * serializer or validator gets no metadata line.
+     */
+    @Test
+    public void testBundledFieldGetsMetadataSerializerAndValidator() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type Measure:
+                    value number (0..1)
+
+                type Holder:
+                    measure Measure (0..1)
+                        [metadata location]
+                    back Back (0..1)
+
+                type ChildHolder extends Holder:
+                    extra number (0..1)
+
+                type Back:
+                    holder Holder (0..1)
+                """);
+        String bundle = python.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "com_rosetta_test_model_Holder.model_fields[\"measure\"].metadata += "
+                        + "[Measure.serializer(), Measure.validator(('@key:scoped', ))]");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "com_rosetta_test_model_ChildHolder.model_fields[\"measure\"].metadata += "
+                        + "[Measure.serializer(), Measure.validator(('@key:scoped', ))]");
+        testUtils.assertAppearsAfter(bundle,
+                "com_rosetta_test_model_Holder.__annotations__[\"measure\"] = ",
+                "com_rosetta_test_model_Holder.model_fields[\"measure\"].metadata += ");
+    }
 }
