@@ -430,7 +430,7 @@ public final class PythonExpressionGenerator {
 
         // Narrowed values may still be wrapped in a copy-on-write proxy (rune_cow), which is
         // not a subclass of the wrapped type, so the isinstance check must unwrap first.
-        String targetTypeName = ((Data) expr.getType()).getName();
+        String targetTypeName = typeReference((Data) expr.getType());
         if (isMulti) {
             return "[_x for _x in (" + arg + " or []) if isinstance(rune_unwrap(_x), " + targetTypeName + ")]";
         }

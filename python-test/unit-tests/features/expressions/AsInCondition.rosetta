@@ -1,0 +1,36 @@
+namespace rosetta_dsl.test.expressions.as_in_condition : <"generate Python unit tests for the as operator in conditions.">
+
+// DogB and OwnerB refer to each other, so they are bundled, and so is their supertype Pet.
+// Shape and Circle are standalone. Checker is a standalone class and OwnerB a bundled one;
+// each narrows to a bundled type and to a standalone one.
+
+type Pet:
+
+type DogB extends Pet:
+    owner OwnerB (0..1)
+
+type OwnerB:
+    dog DogB (0..1)
+    pet Pet (0..1)
+    shape Shape (0..1)
+
+    condition PetIsDog:
+        if pet exists then (pet as DogB) exists
+
+    condition ShapeIsCircle:
+        if shape exists then (shape as Circle) exists
+
+type Shape:
+
+type Circle extends Shape:
+    radius number (0..1)
+
+type Checker:
+    pet Pet (0..1)
+    shape Shape (0..1)
+
+    condition PetIsDog:
+        if pet exists then (pet as DogB) exists
+
+    condition ShapeIsCircle:
+        if shape exists then (shape as Circle) exists
