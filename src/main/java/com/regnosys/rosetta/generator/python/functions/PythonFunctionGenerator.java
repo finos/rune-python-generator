@@ -166,11 +166,24 @@ public final class PythonFunctionGenerator {
             default -> {
             }
         }
-        expression.eContents().forEach(child -> {
+        collectNamedDependenciesInContents(expression, dependencies);
+    }
+
+    /**
+     * Walks the contents of a model element. Children that aren't expressions, such as a switch
+     * case or a with-meta entry, are walked through to the expressions they contain.
+     */
+    private void collectNamedDependenciesInContents(org.eclipse.emf.ecore.EObject element,
+            Set<RosettaNamed> dependencies) {
+        element.eContents().forEach(child -> {
             if (child instanceof RosettaExpression childExpr) {
                 collectNamedDependencies(childExpr, dependencies);
-            } else if (child instanceof InlineFunction inlineFn && inlineFn.getBody() != null) {
-                collectNamedDependencies(inlineFn.getBody(), dependencies);
+            } else if (child instanceof InlineFunction inlineFn) {
+                if (inlineFn.getBody() != null) {
+                    collectNamedDependencies(inlineFn.getBody(), dependencies);
+                }
+            } else {
+                collectNamedDependenciesInContents(child, dependencies);
             }
         });
     }
@@ -289,7 +302,9 @@ public final class PythonFunctionGenerator {
         Set<String> funcDeps = collectFunctionDependencies(function, context);
         context.getEnumImports().addAll(funcDeps);
         String functionFQN = context.getFullyQualifiedName(function);
-        context.getFunctionEnumImports().put(functionFQN, funcDeps);
+        // Dispatch implementations are generated under the base function's name, so add to the
+        // imports already recorded rather than replace them.
+        context.getFunctionEnumImports().computeIfAbsent(functionFQN, k -> new HashSet<>()).addAll(funcDeps);
 
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         expressionGenerator.setContext(context);

@@ -39,6 +39,7 @@ import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RFunction;
 import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
+import com.regnosys.rosetta.types.RosettaTypeProvider;
 import com.regnosys.rosetta.types.TypeSystem;
 
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
@@ -58,6 +59,10 @@ public final class PythonFunctionDependencyProvider {
     /** The Rosetta type system. */
     @Inject
     private TypeSystem typeSystem;
+
+    /** Gives the enum type an expression refers to, which may extend the enum declaring a value. */
+    @Inject
+    private RosettaTypeProvider typeProvider;
 
     public void addDependencies(RosettaNamed named, Set<String> enumImports, String sourceNamespace,
             PythonCodeGeneratorContext context) {
@@ -127,7 +132,9 @@ public final class PythonFunctionDependencyProvider {
                 switchOp.getCases().forEach(switchCase -> {
                     addDependencies(switchCase.getExpression(), enumImports, sourceNamespace, context);
                     if (switchCase.getGuard() != null && switchCase.getGuard().getEnumGuard() != null) {
-                        addDependencies(switchCase.getGuard().getEnumGuard(), enumImports, sourceNamespace, context);
+                        // The guard is written through the switch argument's enum type
+                        addDependencies(typeProvider.getRMetaAnnotatedType(switchOp.getArgument()).getRType(),
+                                enumImports, sourceNamespace, context);
                     }
                 });
                 addDependencies(switchOp.getDefault(), enumImports, sourceNamespace, context);
@@ -143,7 +150,11 @@ public final class PythonFunctionDependencyProvider {
                 addDependencies(featureCall.getReceiver(), enumImports, sourceNamespace, context);
             }
             case RosettaSymbolReference symbolRef -> {
-                if (symbolRef.getSymbol() instanceof RosettaNamed named) {
+                if (symbolRef.getSymbol() instanceof RosettaEnumValue) {
+                    // Written through the expression's enum type, as in PythonExpressionGenerator
+                    addDependencies(typeProvider.getRMetaAnnotatedType(symbolRef).getRType(),
+                            enumImports, sourceNamespace, context);
+                } else if (symbolRef.getSymbol() instanceof RosettaNamed named) {
                     addDependencies(named, enumImports, sourceNamespace, context);
                 }
                 symbolRef.getArgs().forEach(arg -> addDependencies(arg, enumImports, sourceNamespace, context));

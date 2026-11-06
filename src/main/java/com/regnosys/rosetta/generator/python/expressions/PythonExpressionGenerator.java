@@ -452,7 +452,13 @@ public final class PythonExpressionGenerator {
 
     private String generateFeatureCall(RosettaFeatureCall expr, PythonExpressionScope scope) {
         if (expr.getFeature() instanceof RosettaEnumValue evalue) {
-            return generateEnumString(evalue);
+            // Name the enum written in the model: for an extended enum, the declaring parent
+            // is a different Python Enum, whose members don't compare equal.
+            if (expr.getReceiver() instanceof RosettaSymbolReference receiverRef
+                    && receiverRef.getSymbol() instanceof RosettaEnumeration receiverEnum) {
+                return generateEnumString(evalue, receiverEnum.getModel().getName(), receiverEnum.getName());
+            }
+            return generateEnumString(evalue, typeProvider.getRMetaAnnotatedType(expr).getRType());
         }
         if (expr.getFeature() instanceof RosettaMetaType metaType) {
             String metaDataName = PythonCodeGeneratorUtil.mapMetaTypeToMetaDataName(metaType.getName());
@@ -663,7 +669,8 @@ public final class PythonExpressionGenerator {
         }
     }
 
-    private String getGuardExpression(SwitchCaseGuard caseGuard, PythonExpressionScope scope) {
+    private String getGuardExpression(SwitchCaseGuard caseGuard, RosettaExpression switchArgument,
+            PythonExpressionScope scope) {
         if (caseGuard == null) {
             throw new UnsupportedOperationException("Null SwitchCaseGuard");
         }
@@ -673,8 +680,8 @@ public final class PythonExpressionGenerator {
         }
         RosettaEnumValue enumGuard = caseGuard.getEnumGuard();
         if (enumGuard != null) {
-            return "switchAttribute == rune_resolve_attr(" + generateEnumString(enumGuard) + ",\""
-                    + enumGuard.getName() + "\")";
+            RType argumentType = typeProvider.getRMetaAnnotatedType(switchArgument).getRType();
+            return "switchAttribute == " + generateEnumString(enumGuard, argumentType);
         }
         RosettaFeature optionGuard = caseGuard.getChoiceOptionGuard();
         if (optionGuard != null) {
@@ -695,7 +702,7 @@ public final class PythonExpressionGenerator {
         } else if (symbol instanceof Attribute attr) {
             return generateAttributeReference(attr, scope);
         } else if (symbol instanceof RosettaEnumValue evalue) {
-            return generateEnumString(evalue);
+            return generateEnumString(evalue, typeProvider.getRMetaAnnotatedType(expr).getRType());
         } else if (symbol instanceof RosettaCallableWithArgs callable) {
             return generateCallableWithArgsCall(callable, expr, scope);
         } else if (symbol instanceof ClosureParameter) {
@@ -723,11 +730,24 @@ public final class PythonExpressionGenerator {
     }
 
     private String generateEnumString(RosettaEnumValue rev) {
-        String value = EnumHelper.convertValue(rev);
         RosettaEnumeration parent = rev.getEnumeration();
-        String parentName = parent.getName();
-        String modelName = context.applyPrefix(parent.getModel().getName());
-        return modelName + "." + parentName + "." + parentName + "." + value;
+        return generateEnumString(rev, parent.getModel().getName(), parent.getName());
+    }
+
+    /**
+     * Names an enum value through the enum type of the expression, if known. For a value that an
+     * extended enum inherits, that's the extended enum, not the parent that declares the value.
+     */
+    private String generateEnumString(RosettaEnumValue rev, RType referencedType) {
+        if (referencedType instanceof REnumType enumType) {
+            return generateEnumString(rev, enumType.getNamespace().toString(), enumType.getName());
+        }
+        return generateEnumString(rev);
+    }
+
+    private String generateEnumString(RosettaEnumValue rev, String namespace, String enumName) {
+        String value = EnumHelper.convertValue(rev);
+        return context.applyPrefix(namespace) + "." + enumName + "." + enumName + "." + value;
     }
 
     private String generateCallableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr,
@@ -939,7 +959,7 @@ public final class PythonExpressionGenerator {
             } else {
                 SwitchCaseGuard guard = currentCase.getGuard();
                 String prefix = (i == 0) ? "if " : "elif ";
-                writer.appendLine(prefix + getGuardExpression(guard, scope) + ":");
+                writer.appendLine(prefix + getGuardExpression(guard, expr.getArgument(), scope) + ":");
             }
             writer.indent();
             writer.appendLine("return " + funcName + "()");
