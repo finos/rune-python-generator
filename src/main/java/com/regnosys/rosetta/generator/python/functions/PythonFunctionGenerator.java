@@ -293,6 +293,7 @@ public final class PythonFunctionGenerator {
 
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         expressionGenerator.setContext(context);
+        expressionGenerator.setWritingStandaloneFile(isStandalone);
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -460,8 +461,20 @@ public final class PythonFunctionGenerator {
     }
 
     private String getTypeNameForContext(RosettaNamed type, PythonCodeGeneratorContext context) {
+        return getTypeNameForContext(type, context, false);
+    }
+
+    /**
+     * The name to use for a type in generated code. A standalone file refers to a bundled type by
+     * its stub name, which it imports; only _bundle.py defines the bundle name.
+     */
+    private String getTypeNameForContext(RosettaNamed type, PythonCodeGeneratorContext context,
+            boolean writingStandaloneFile) {
         if (type instanceof RosettaEnumeration || RuneToPythonMapper.isRosettaBasicType(type.getName())) {
             return context.getBundleObjectName(type);
+        }
+        if (writingStandaloneFile && type instanceof Data) {
+            return type.getName();
         }
         String fqn = context.getFullyQualifiedName(type);
         if (context.getStandaloneClasses().contains(fqn)) {
@@ -667,7 +680,8 @@ public final class PythonFunctionGenerator {
         PythonExpressionGenerator expressionGenerator) {
         if (rosettaFunctionExtensions.getOutput(function) != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
-            PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();
+            boolean isStandalone = context.getStandaloneClasses().contains(context.getFullyQualifiedName(function));
+            PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope(isStandalone);
 
             // 1. Preamble: Proactive initialization
             Set<String> seenRoots = new HashSet<>();
@@ -688,7 +702,7 @@ public final class PythonFunctionGenerator {
                                 scope.markInitialized(rootName);
                             } else if (operation.getPath() != null) {
                                 String bundleName = (type instanceof RosettaNamed named)
-                                        ? getTypeNameForContext(named, context)
+                                        ? getTypeNameForContext(named, context, scope.isStandalone())
                                         : context.getBundleObjectName((RosettaNamed) type);
                                 scope.markAsObjectBuilder(rootName);
                                 writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
@@ -761,7 +775,7 @@ public final class PythonFunctionGenerator {
             if (!scope.isInitialized(rootName)) {
                 if (rootType != null) {
                     String bundleName = (rootType instanceof RosettaNamed named)
-                            ? getTypeNameForContext(named, context)
+                            ? getTypeNameForContext(named, context, scope.isStandalone())
                             : context.getBundleObjectName((RosettaNamed) rootType);
                     scope.markAsObjectBuilder(rootName);
                     writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
@@ -804,7 +818,7 @@ public final class PythonFunctionGenerator {
             if (!scope.isInitialized(rootName)) {
                 if (operation.getPath() != null) {
                     String bundleName = (attributeType instanceof RosettaNamed named)
-                            ? getTypeNameForContext(named, context)
+                            ? getTypeNameForContext(named, context, scope.isStandalone())
                             : context.getBundleObjectName((RosettaNamed) attributeType);
                     scope.markAsObjectBuilder(rootName);
                     writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
@@ -867,7 +881,7 @@ public final class PythonFunctionGenerator {
                     } else if (current.getNext() != null) {
                         RosettaType attrType = attribute.getTypeCall().getType();
                         String bundleName = (attrType instanceof RosettaNamed named)
-                                ? getTypeNameForContext(named, context)
+                                ? getTypeNameForContext(named, context, scope.isStandalone())
                                 : context.getBundleObjectName((RosettaNamed) attrType);
                         writer.appendLine(currentPath + " = ObjectBuilder(" + bundleName + ")");
                         scope.markInitialized(currentPath);
@@ -909,10 +923,25 @@ public final class PythonFunctionGenerator {
      * a function.
      */
     private static class PythonFunctionGenerationScope {
+        /** Whether the function is written to its own file rather than to _bundle.py. */
+        private final boolean standalone;
         /** The set of variable names that have been initialized in this scope. */
         private final HashSet<String> initializedNames = new HashSet<>();
         /** The set of variable names that are marked as ObjectBuilders. */
         private final HashSet<String> objectBuilderNames = new HashSet<>();
+
+        PythonFunctionGenerationScope(boolean standalone) {
+            this.standalone = standalone;
+        }
+
+        /**
+         * Whether the function is written to its own file rather than to _bundle.py.
+         *
+         * @return true for a standalone function
+         */
+        public boolean isStandalone() {
+            return standalone;
+        }
 
         /**
          * Checks if a variable name has been initialized in this scope.

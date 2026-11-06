@@ -291,6 +291,7 @@ public class PythonModelObjectGenerator {
     private String generateBody(Data rc, PythonCodeGeneratorContext context, boolean isStandalone) {
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         expressionGenerator.setContext(context);
+        expressionGenerator.setWritingStandaloneFile(isStandalone);
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 

@@ -263,4 +263,88 @@ public class PythonCircularDependencyTest {
         testUtils.assertGeneratedContainsExpectedString(proxyB, "globals()['B'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyB, "# EOF");
     }
+
+    /**
+     * A standalone function refers to a bundled type by its stub name, which its file imports.
+     * The bundle name is only defined in _bundle.py.
+     */
+    @Test
+    public void testStandaloneFunctionUsesStubNameForBundledType() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type GroupB1:
+                    value number (0..1)
+                    groupB2 GroupB2 (0..1)
+
+                type GroupB2:
+                    groupB1 GroupB1 (0..1)
+
+                func MakeGroupB1:
+                    inputs:
+                        value number (0..1)
+                    output:
+                        result GroupB1 (0..1)
+                    set result:
+                        GroupB1 { value: value, ... }
+
+                func SetPathGroupB1:
+                    inputs:
+                        value number (0..1)
+                    output:
+                        result GroupB1 (0..1)
+                    set result -> value:
+                        value
+                """);
+        String make = python.get("src/com/rosetta/test/model/functions/MakeGroupB1.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(make,
+                "from com.rosetta.test.model.GroupB1 import GroupB1");
+        testUtils.assertGeneratedContainsExpectedString(make, "result = GroupB1(value=");
+        testUtils.assertGeneratedDoesNotContain(make, "com_rosetta_test_model_GroupB1");
+
+        String setPath = python.get("src/com/rosetta/test/model/functions/SetPathGroupB1.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(setPath, "result = ObjectBuilder(GroupB1)");
+        testUtils.assertGeneratedDoesNotContain(setPath, "com_rosetta_test_model_GroupB1");
+    }
+
+    /**
+     * A standalone class condition imports a bundled type it builds, inside the condition, and a
+     * bundled condition does the same for a standalone type. The bundle itself keeps the bundle
+     * name for bundled types.
+     */
+    @Test
+    public void testConditionsImportTypesTheyBuild() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type GroupB1:
+                    value number (0..1)
+                    groupB2 GroupB2 (0..1)
+
+                type GroupB2:
+                    groupB1 GroupB1 (0..1)
+
+                    condition BuildsStandaloneType:
+                        Leaf { value: 1 } -> value = 1
+
+                    condition BuildsBundledType:
+                        GroupB1 { value: 1, ... } -> value = 1
+
+                type Leaf:
+                    value number (0..1)
+
+                type Checker:
+                    value number (0..1)
+
+                    condition BuildsBundledType:
+                        GroupB1 { value: 1, ... } -> value = 1
+                """);
+        String checker = python.get("src/com/rosetta/test/model/Checker.py").toString();
+        testUtils.assertAppearsAfter(checker, "def condition_0_BuildsBundledType(self):",
+                "        from com.rosetta.test.model.GroupB1 import GroupB1");
+        testUtils.assertGeneratedDoesNotContain(checker, "com_rosetta_test_model_GroupB1");
+
+        String bundle = python.get("src/com/_bundle.py").toString();
+        testUtils.assertAppearsAfter(bundle, "def condition_0_BuildsStandaloneType(self):",
+                "        from com.rosetta.test.model.Leaf import Leaf");
+        testUtils.assertGeneratedContainsExpectedString(bundle, "com_rosetta_test_model_GroupB1(value=1)");
+    }
 }

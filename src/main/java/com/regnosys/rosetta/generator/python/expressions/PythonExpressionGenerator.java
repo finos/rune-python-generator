@@ -128,14 +128,24 @@ public final class PythonExpressionGenerator {
     private int generatedFunctionCounter = 0;
 
     /**
-     * Imports for the functions called by the class condition being generated, or null when no
-     * class condition is being generated. Each is emitted inside that condition, so a function is
-     * only imported once all modules have loaded, whichever module was imported first.
+     * Imports for the functions called and types built by the class condition being generated, or
+     * null when no class condition is being generated. Each is emitted inside that condition, so it
+     * only runs once all modules have loaded, whichever module was imported first.
      */
-    private Set<String> conditionFunctionImports = null;
+    private Set<String> conditionImports = null;
+
+    /**
+     * True when generating code for a standalone file rather than for _bundle.py. A standalone
+     * file refers to a bundled type by its stub name; only _bundle.py defines the bundle name.
+     */
+    private boolean writingStandaloneFile = false;
 
     /** The Python code generator context. */
     private PythonCodeGeneratorContext context;
+
+    public void setWritingStandaloneFile(boolean writingStandaloneFile) {
+        this.writingStandaloneFile = writingStandaloneFile;
+    }
 
     public void setContext(PythonCodeGeneratorContext context) {
         this.context = context;
@@ -620,7 +630,15 @@ public final class PythonExpressionGenerator {
         if (expr.getTypeCall() != null && expr.getTypeCall().getType() != null) {
             com.regnosys.rosetta.rosetta.RosettaNamed typeNamed = expr.getTypeCall().getType();
             String fqn = context.getFullyQualifiedName(typeNamed);
-            type = context.getStandaloneClasses().contains(fqn) ? typeNamed.getName() : context.getBundleObjectName(typeNamed);
+            if (writingStandaloneFile || context.getStandaloneClasses().contains(fqn)) {
+                // The stub name for a bundled type, or the type's own name if it is standalone
+                type = typeNamed.getName();
+                if (conditionImports != null) {
+                    conditionImports.add("from " + fqn + " import " + type);
+                }
+            } else {
+                type = context.getBundleObjectName(typeNamed);
+            }
         }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
@@ -724,8 +742,8 @@ public final class PythonExpressionGenerator {
             case null, default -> {
                 String fqn = context.getFullyQualifiedName(s);
                 if (context.getStandaloneClasses().contains(fqn)) {
-                    if (conditionFunctionImports != null) {
-                        conditionFunctionImports.add("from " + fqn + " import " + s.getName());
+                    if (conditionImports != null) {
+                        conditionImports.add("from " + fqn + " import " + s.getName());
                     }
                     yield s.getName();
                 } else {
@@ -787,13 +805,13 @@ public final class PythonExpressionGenerator {
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : cls.getConditions()) {
-            conditionFunctionImports = new LinkedHashSet<>();
+            conditionImports = new LinkedHashSet<>();
             String body = isConstraintCondition(cond)
                     ? generateConstraintCondition(cls, cond)
                     : generateIfThenElseOrSwitch(cond);
-            result.append(generateConditionBoilerPlate(cond, nConditions, conditionFunctionImports));
+            result.append(generateConditionBoilerPlate(cond, nConditions, conditionImports));
             result.append(body);
-            conditionFunctionImports = null;
+            conditionImports = null;
             nConditions++;
         }
         return result.toString();
@@ -824,7 +842,7 @@ public final class PythonExpressionGenerator {
         return cond.getExpression() instanceof ChoiceOperation;
     }
 
-    private String generateConditionBoilerPlate(Condition cond, int nConditions, Set<String> functionImports) {
+    private String generateConditionBoilerPlate(Condition cond, int nConditions, Set<String> imports) {
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.newLine();
         writer.appendLine("@rune_condition");
@@ -836,7 +854,7 @@ public final class PythonExpressionGenerator {
             writer.appendLine(cond.getDefinition());
             writer.appendLine("\"\"\"");
         }
-        functionImports.forEach(writer::appendLine);
+        imports.forEach(writer::appendLine);
         writer.appendLine("item = self");
         return writer.toString();
     }
