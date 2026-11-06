@@ -6,26 +6,12 @@ package com.regnosys.rosetta.generator.python.functions;
 
 import java.util.Set;
 
-
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
-import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.expression.InlineFunction;
-import com.regnosys.rosetta.rosetta.expression.ListLiteral;
-import com.regnosys.rosetta.rosetta.expression.RosettaBinaryOperation;
-import com.regnosys.rosetta.rosetta.expression.RosettaConditionalExpression;
-import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
-import com.regnosys.rosetta.rosetta.expression.RosettaFeatureCall;
-import com.regnosys.rosetta.rosetta.expression.RosettaFunctionalOperation;
-import com.regnosys.rosetta.rosetta.expression.RosettaOnlyExistsExpression;
-import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
-import com.regnosys.rosetta.rosetta.expression.RosettaUnaryOperation;
-import com.regnosys.rosetta.rosetta.expression.SwitchOperation;
-import com.regnosys.rosetta.rosetta.expression.ToEnumOperation;
-import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.types.RAliasType;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.REnumType;
@@ -35,12 +21,19 @@ import com.regnosys.rosetta.types.TypeSystem;
 
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 
+import com.regnosys.rosetta.generator.python.util.PythonDependencyCollector;
 import jakarta.inject.Inject;
 
 /**
  * Determine the Rosetta dependencies for a Function
  */
 public final class PythonFunctionDependencyProvider {
+    /**
+     * Collects the functions, types and enums an expression refers to.
+     */
+    @Inject
+    private PythonDependencyCollector dependencyCollector;
+
     /** The Rosetta type system. */
     @Inject
     private TypeSystem typeSystem;
@@ -86,93 +79,12 @@ public final class PythonFunctionDependencyProvider {
 
     public void addDependencies(RosettaExpression expression, Set<String> enumImports, String sourceNamespace,
             PythonCodeGeneratorContext context) {
-        if (expression == null) {
-            return;
-        }
-        switch (expression) {
-            case RosettaBinaryOperation binary -> {
-                addDependencies(binary.getLeft(), enumImports, sourceNamespace, context);
-                addDependencies(binary.getRight(), enumImports, sourceNamespace, context);
-            }
-            case RosettaConditionalExpression cond -> {
-                addDependencies(cond.getIf(), enumImports, sourceNamespace, context);
-                addDependencies(cond.getIfthen(), enumImports, sourceNamespace, context);
-                addDependencies(cond.getElsethen(), enumImports, sourceNamespace, context);
-            }
-            case RosettaOnlyExistsExpression onlyExists -> {
-                onlyExists.getArgs().forEach(arg -> addDependencies(arg, enumImports, sourceNamespace, context));
-            }
-            case RosettaFunctionalOperation functional -> {
-                if (functional.getArgument() != null) {
-                    addDependencies(functional.getArgument(), enumImports, sourceNamespace, context);
-                }
-                addDependencies(functional.getFunction(), enumImports, sourceNamespace, context);
-            }
-            case WithMetaOperation withMeta -> {
-                addDependencies(withMeta.getArgument(), enumImports, sourceNamespace, context);
-                withMeta.getEntries().forEach(entry -> addDependencies(entry.getValue(), enumImports, sourceNamespace, context));
-            }
-            case SwitchOperation switchOp -> {
-                addDependencies(switchOp.getArgument(), enumImports, sourceNamespace, context);
-                switchOp.getCases().forEach(switchCase -> {
-                    addDependencies(switchCase.getExpression(), enumImports, sourceNamespace, context);
-                    if (switchCase.getGuard() != null && switchCase.getGuard().getEnumGuard() != null) {
-                        // The guard is written through the switch argument's enum type
-                        addDependencies(typeProvider.getRMetaAnnotatedType(switchOp.getArgument()).getRType(),
-                                enumImports, sourceNamespace, context);
-                    }
-                });
-                addDependencies(switchOp.getDefault(), enumImports, sourceNamespace, context);
-            }
-            case ToEnumOperation toEnum -> {
-                addDependencies(toEnum.getEnumeration(), enumImports, sourceNamespace, context);
-                addDependencies(toEnum.getArgument(), enumImports, sourceNamespace, context);
-            }
-            case RosettaUnaryOperation unary -> {
-                addDependencies(unary.getArgument(), enumImports, sourceNamespace, context);
-            }
-            case RosettaFeatureCall featureCall -> {
-                addDependencies(featureCall.getReceiver(), enumImports, sourceNamespace, context);
-            }
-            case RosettaSymbolReference symbolRef -> {
-                if (symbolRef.getSymbol() instanceof RosettaEnumValue) {
-                    // Written through the expression's enum type, as in PythonExpressionGenerator
-                    addDependencies(typeProvider.getRMetaAnnotatedType(symbolRef).getRType(),
-                            enumImports, sourceNamespace, context);
-                } else if (symbolRef.getSymbol() instanceof RosettaNamed named) {
-                    addDependencies(named, enumImports, sourceNamespace, context);
-                }
-                symbolRef.getArgs().forEach(arg -> addDependencies(arg, enumImports, sourceNamespace, context));
-            }
-            case RosettaEnumValueReference ref -> {
-                addDependencies(ref.getEnumeration(), enumImports, sourceNamespace, context);
-            }
-            case InlineFunction inline -> {
-                addDependencies(inline, enumImports, sourceNamespace, context);
-            }
-            case ListLiteral listLiteral -> {
-                listLiteral.getElements().forEach(el -> addDependencies(el, enumImports, sourceNamespace, context));
-            }
-            case RosettaConstructorExpression constructor -> {
-                if (constructor.getTypeCall() != null && constructor.getTypeCall().getType() != null) {
-                    addDependencies(constructor.getTypeCall().getType(), enumImports, sourceNamespace, context);
-                }
-                constructor.getValues()
-                        .forEach(valuePair -> addDependencies(valuePair.getValue(), enumImports, sourceNamespace, context));
-            }
-            default -> {
-                // For unknown expressions, we can still use eContents()
-                expression.eContents().forEach(child -> {
-                    if (child instanceof RosettaExpression expr) {
-                        addDependencies(expr, enumImports, sourceNamespace, context);
-                    } else if (child instanceof RosettaNamed named) {
-                         addDependencies(named, enumImports, sourceNamespace, context);
-                    } else if (child instanceof InlineFunction inline) {
-                         addDependencies(inline, enumImports, sourceNamespace, context);
-                    }
-                });
-            }
-        }
+        PythonDependencyCollector.Dependencies found = dependencyCollector.collect(expression);
+        found.symbols().forEach(named -> addDependencies(named, enumImports, sourceNamespace, context));
+        found.constructedTypes().forEach(type -> addDependencies(type, enumImports, sourceNamespace, context));
+        found.toEnumTargets().forEach(target -> addDependencies(target, enumImports, sourceNamespace, context));
+        // Written through the expression's enum type, as in PythonExpressionGenerator
+        found.enumValueTypes().forEach(type -> addDependencies(type, enumImports, sourceNamespace, context));
     }
 
     public void addDependencies(RType type, Set<String> enumImports, String sourceNamespace,

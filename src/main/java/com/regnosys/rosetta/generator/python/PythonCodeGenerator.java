@@ -6,6 +6,7 @@ package com.regnosys.rosetta.generator.python;
 
 import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.INIT;
 import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.PYPROJECT_TOML;
+import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.README_MD;
 import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.PYTHON;
 import static com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants.SRC;
 
@@ -297,6 +298,8 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             }
         }
         result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(null, cleanVersion, resolvedProjectName));
+        // pyproject.toml names this file as the package description
+        result.put(README_MD, PythonCodeGeneratorUtil.createReadmeFile(resolvedProjectName, cleanVersion));
         return result;
     }
 

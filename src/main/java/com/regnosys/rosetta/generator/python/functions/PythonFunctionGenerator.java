@@ -30,13 +30,7 @@ import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaType;
-import com.regnosys.rosetta.rosetta.expression.AsOperation;
-import com.regnosys.rosetta.rosetta.expression.InlineFunction;
-import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
-import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
-import com.regnosys.rosetta.rosetta.expression.SwitchOperation;
-import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.rosetta.simple.Annotated;
 import com.regnosys.rosetta.rosetta.simple.AssignPathRoot;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
@@ -47,6 +41,7 @@ import com.regnosys.rosetta.rosetta.simple.Segment;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.types.RObjectFactory;
 
+import com.regnosys.rosetta.generator.python.util.PythonDependencyCollector;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
@@ -56,6 +51,12 @@ public final class PythonFunctionGenerator {
      * The logger.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator.class);
+
+    /**
+     * Collects the functions, types and enums an expression refers to.
+     */
+    @Inject
+    private PythonDependencyCollector dependencyCollector;
 
     /**
      * Determines whether an expression is multi-valued.
@@ -139,52 +140,13 @@ public final class PythonFunctionGenerator {
     }
 
     private void collectNamedDependencies(RosettaExpression expression, Set<RosettaNamed> dependencies) {
-        if (expression == null) {
-            return;
-        }
-        switch (expression) {
-            case RosettaSymbolReference ref -> {
-                if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
-                        || ref.getSymbol() instanceof RosettaEnumeration) {
-                    dependencies.add((RosettaNamed) ref.getSymbol());
-                }
-                ref.getArgs().forEach(arg -> collectNamedDependencies(arg, dependencies));
-            }
-            case RosettaConstructorExpression cons -> {
-                if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
-                    dependencies.add(cons.getTypeCall().getType());
-                }
-                cons.getValues().forEach(val -> collectNamedDependencies(val.getValue(), dependencies));
-            }
-            case AsOperation asOp -> {
-                // The target of `as` is a cross-reference (not a containment child), so it
-                // is invisible to the eContents() walk below and must be added explicitly.
-                // Only data type targets need an import; choice option targets are just an
-                // attribute name on the choice's own (already-imported) class.
-                if (asOp.getType() instanceof Data dataTarget) {
-                    dependencies.add(dataTarget);
-                }
-            }
-            // Switch cases and with-meta entries aren't expressions, so the walk below doesn't
-            // reach the expressions they hold.
-            case SwitchOperation switchOp -> switchOp.getCases().forEach(switchCase -> {
-                collectNamedDependencies(switchCase.getExpression(), dependencies);
-                if (switchCase.getGuard() != null) {
-                    collectNamedDependencies(switchCase.getGuard().getLiteralGuard(), dependencies);
-                }
-            });
-            case WithMetaOperation withMeta -> withMeta.getEntries()
-                    .forEach(entry -> collectNamedDependencies(entry.getValue(), dependencies));
-            default -> {
-            }
-        }
-        expression.eContents().forEach(child -> {
-            if (child instanceof RosettaExpression childExpr) {
-                collectNamedDependencies(childExpr, dependencies);
-            } else if (child instanceof InlineFunction inlineFn && inlineFn.getBody() != null) {
-                collectNamedDependencies(inlineFn.getBody(), dependencies);
-            }
-        });
+        PythonDependencyCollector.Dependencies found = dependencyCollector.collect(expression);
+        found.symbols().stream()
+                .filter(symbol -> symbol instanceof Function || symbol instanceof Data
+                        || symbol instanceof RosettaEnumeration)
+                .forEach(dependencies::add);
+        dependencies.addAll(found.constructedTypes());
+        dependencies.addAll(found.asTargets());
     }
 
     private void addFunctionDependencies(

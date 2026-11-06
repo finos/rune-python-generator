@@ -196,6 +196,27 @@ public final class PythonCodeGeneratorUtil {
                 where = ["src"]""".formatted(name, version).stripIndent();
     }
 
+    /**
+     * Creates the README that pyproject.toml names as the package's description, so that the
+     * generated package is complete without any file supplied from elsewhere.
+     *
+     * @param projectName the package name, as in pyproject.toml
+     * @param version     the package version, as in pyproject.toml
+     * @return the README content
+     */
+    public static String createReadmeFile(String projectName, String version) {
+        return """
+                # %s
+
+                Python package generated from a Rune model by \
+                [rune-python-generator](https://github.com/finos/rune-python-generator).
+
+                Version: %s
+
+                The generated code depends on the `rune.runtime` package.
+                """.formatted(projectName, version);
+    }
+
     public static String cleanVersion(String version) {
         if (version == null || version.equals("${project.version}")) {
             return "0.0.0";

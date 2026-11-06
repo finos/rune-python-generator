@@ -33,6 +33,9 @@ import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
 
 import com.regnosys.rosetta.generator.python.functions.PythonFunctionDependencyProvider;
 
+import com.regnosys.rosetta.generator.python.util.PythonDependencyCollector;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.simple.Function;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
@@ -77,6 +80,12 @@ public class PythonModelObjectGenerator {
      */
     @Inject
     private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
+
+    /**
+     * Collects the functions, types and enums an expression refers to.
+     */
+    @Inject
+    private PythonDependencyCollector dependencyCollector;
 
     /**
      * Collects the imports that condition expressions need.
@@ -137,31 +146,13 @@ public class PythonModelObjectGenerator {
         String className,
         RosettaExpression expression,
         PythonCodeGeneratorContext context) {
-        if (expression == null) {
-            return;
-        }
-        if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference ref) {
-            if (ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Data
-                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Function
-                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.RosettaEnumeration) {
-
-                String depName = context.getFullyQualifiedName((com.regnosys.rosetta.rosetta.RosettaNamed) ref.getSymbol());
-                addDependency(dependencyDAG, className, depName);
-            }
-            ref.getArgs().forEach(arg -> addExpressionDependencies(dependencyDAG, className, arg, context));
-        } else if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression cons) {
-            if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
-                String depName = context.getFullyQualifiedName(cons.getTypeCall().getType());
-                addDependency(dependencyDAG, className, depName);
-            }
-            cons.getValues().forEach(val -> addExpressionDependencies(dependencyDAG, className, val.getValue(), context));
-        }
-
-        expression.eContents().forEach(child -> {
-            if (child instanceof com.regnosys.rosetta.rosetta.expression.RosettaExpression childExpr) {
-                addExpressionDependencies(dependencyDAG, className, childExpr, context);
-            }
-        });
+        PythonDependencyCollector.Dependencies found = dependencyCollector.collect(expression);
+        found.symbols().stream()
+                .filter(symbol -> symbol instanceof Data || symbol instanceof Function
+                        || symbol instanceof RosettaEnumeration)
+                .forEach(symbol -> addDependency(dependencyDAG, className, context.getFullyQualifiedName(symbol)));
+        found.constructedTypes()
+                .forEach(type -> addDependency(dependencyDAG, className, context.getFullyQualifiedName(type)));
     }
 
     /**
