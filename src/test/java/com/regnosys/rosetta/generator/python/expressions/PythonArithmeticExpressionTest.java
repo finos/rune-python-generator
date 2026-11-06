@@ -175,6 +175,25 @@ public class PythonArithmeticExpressionTest {
                             @rune_condition
                             def condition_0_EnumConvCheck(self):
                                 item = self
-                                return rune_all_elements(com.rosetta.test.model.MyEnum.MyEnum(rune_resolve_attr(self, "s")), "=", com.rosetta.test.model.MyEnum.MyEnum.VALUE_1)""");
+                                return rune_all_elements((lambda v: None if v is None else next((m for m in com.rosetta.test.model.MyEnum.MyEnum if m.value == v), None))(rune_resolve_attr(self, "s")), "=", com.rosetta.test.model.MyEnum.MyEnum.VALUE_1)""");
+    }
+
+    /**
+     * Converting one enum to another matches the value name, and gives nothing if the target
+     * has no value of that name, as in Rune's Java generator.
+     */
+    @Test
+    public void testEnumToEnumConversion() {
+        testUtils.assertBundleContainsExpectedString("""
+                enum Source:
+                    Red
+                enum Target:
+                    Red
+                type TestEnumToEnumConv:
+                    colour Source (1..1)
+                    condition EnumConvCheck:
+                        colour to-enum Target = Target -> Red
+                """,
+                "return rune_all_elements((lambda v: None if v is None else com.rosetta.test.model.Target.Target.__members__.get(rune_unwrap(v).name))(rune_resolve_attr(self, \"colour\")), \"=\", com.rosetta.test.model.Target.Target.RED)");
     }
 }

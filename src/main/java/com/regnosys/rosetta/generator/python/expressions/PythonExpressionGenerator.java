@@ -85,6 +85,7 @@ import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RMetaAnnotatedType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.RosettaTypeProvider;
+import com.regnosys.rosetta.types.TypeSystem;
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 
@@ -115,6 +116,12 @@ public final class PythonExpressionGenerator {
      */
     @Inject
     private RosettaTypeProvider typeProvider;
+
+    /**
+     * Strips type aliases, to tell an enum argument of to-enum from a string one.
+     */
+    @Inject
+    private TypeSystem typeSystem;
 
     /**
      * The cardinality provider.
@@ -267,10 +274,7 @@ public final class PythonExpressionGenerator {
                 return generateSwitchOperation(switchOp, scope);
             }
             case ToEnumOperation toEnum -> {
-                RosettaEnumeration enumeration = toEnum.getEnumeration();
-                String enumName = context.applyPrefix(enumeration.getModel().getName()) + "."
-                        + enumeration.getName() + "." + enumeration.getName();
-                return enumName + "(" + generateExpression(toEnum.getArgument(), scope) + ")";
+                return generateToEnumOperation(toEnum, scope);
             }
             case ToStringOperation toString -> {
                 return "rune_str(" + generateExpression(toString.getArgument(), scope) + ")";
@@ -740,6 +744,25 @@ public final class PythonExpressionGenerator {
         }
         String receiver = functionInputs.contains(s) ? "self" : scope.receiver();
         return "rune_resolve_attr(" + receiver + ", \"" + s.getName() + "\")";
+    }
+
+    /**
+     * A conversion that gives nothing when the input matches no value, as Rune specifies and the
+     * Java generator does. A string matches by display name, which the generated Python enums
+     * store as each member's value. Another enum matches by value name, as Java's
+     * {@code valueOf(e.name())} does; {@code _EnumWrapper.name} passes through to the member.
+     */
+    private String generateToEnumOperation(ToEnumOperation toEnum, PythonExpressionScope scope) {
+        RosettaEnumeration enumeration = toEnum.getEnumeration();
+        String enumName = context.applyPrefix(enumeration.getModel().getName()) + "."
+                + enumeration.getName() + "." + enumeration.getName();
+        String argument = generateExpression(toEnum.getArgument(), scope);
+        boolean argumentIsEnum = typeSystem.stripFromTypeAliases(
+                typeProvider.getRMetaAnnotatedType(toEnum.getArgument()).getRType()) instanceof REnumType;
+        String lookup = argumentIsEnum
+                ? enumName + ".__members__.get(rune_unwrap(v).name)"
+                : "next((m for m in " + enumName + " if m.value == v), None)";
+        return "(lambda v: None if v is None else " + lookup + ")(" + argument + ")";
     }
 
     private String generateEnumString(RosettaEnumValue rev) {
