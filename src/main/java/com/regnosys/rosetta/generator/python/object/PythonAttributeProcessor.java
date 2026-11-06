@@ -299,6 +299,17 @@ public final class PythonAttributeProcessor {
         if (!validators.isEmpty()) {
             keyRefConstraints.put(ra.getName(), new ArrayList<>(validators));
         }
+        // A type with [metadata key] can carry @key and @key:external wherever it is used. The
+        // runtime writes them only through the field's serializer, so the field needs the hooks
+        // and a validator that allows the keys, even without metadata on the attribute itself.
+        if (resolveType(ra) instanceof RDataType dataType
+                && dataType.getMetaAttributes().stream().anyMatch(ma -> "key".equals(ma.getName()))) {
+            for (String key : List.of("@key", "@key:external")) {
+                if (!validators.contains(key)) {
+                    validators.add(key);
+                }
+            }
+        }
         validators.addAll(otherMeta);
         return new MetaDataResult(validators, hasReference);
     }
