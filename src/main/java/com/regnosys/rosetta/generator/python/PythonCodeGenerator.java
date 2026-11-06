@@ -30,6 +30,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.alg.connectivity.KosarajuStrongConnectivityInspector;
+import org.jgrapht.graph.AsSubgraph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -309,6 +310,16 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
             new KosarajuStrongConnectivityInspector<>(dependencyDAG);
         List<Set<String>> sccs = inspector.stronglyConnectedSets();
         context.setSccs(sccs);
+
+        // Cycles made only of function calls. Classes take part in other cycles, but conditions
+        // import the functions they call inside themselves, so only function-to-function calls
+        // can form a cycle of module-level imports.
+        Graph<String, DefaultEdge> functionCalls = new AsSubgraph<>(dependencyDAG,
+                context.getFunctionNames().stream().filter(dependencyDAG::containsVertex)
+                        .collect(Collectors.toSet()));
+        new KosarajuStrongConnectivityInspector<>(functionCalls).stronglyConnectedSets().stream()
+                .filter(cycle -> cycle.size() > 1)
+                .forEach(context::addFunctionCycle);
 
         Set<String> standaloneClasses = context.getStandaloneClasses();
         for (Set<String> scc : sccs) {
@@ -1090,6 +1101,10 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                 String depName = dependencyDAG.getEdgeSource(edge);
                 boolean isClassDep = context.getClassObjects().containsKey(depName);
                 boolean isFuncDep  = context.getFunctionObjects().containsKey(depName);
+                if (isFuncDep && context.isInFunctionCycle(name, depName)) {
+                    // Imported inside the calling function instead
+                    continue;
+                }
                 if (isClassDep || (context.getStandaloneClasses().contains(depName) && isFuncDep)) {
                     // Data class dep (standalone or bundled) or standalone function dep:
                     // standalone function signatures use the simple class name, so import

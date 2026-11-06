@@ -233,6 +233,25 @@ public final class PythonCodeGeneratorContext {
         return superTypes;
     }
 
+    /**
+     * For each function in a cycle of function calls, the functions in that cycle. A call
+     * between them is imported inside the calling function, because importing at module level
+     * would make each module import the other while it is still loading.
+     */
+    private final Map<String, Set<String>> functionCycles = new HashMap<>();
+
+    public void addFunctionCycle(Set<String> cycle) {
+        cycle.forEach(function -> functionCycles.put(function, cycle));
+    }
+
+    /**
+     * @return true if {@code caller} and {@code callee} are different functions in the same
+     *         cycle of function calls
+     */
+    public boolean isInFunctionCycle(String caller, String callee) {
+        return !caller.equals(callee) && functionCycles.getOrDefault(caller, Set.of()).contains(callee);
+    }
+
     public List<Set<String>> getSccs() {
         return sccs;
     }

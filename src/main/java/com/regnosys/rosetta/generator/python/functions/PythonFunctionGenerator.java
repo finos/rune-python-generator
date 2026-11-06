@@ -272,6 +272,23 @@ public final class PythonFunctionGenerator {
         expressionGenerator.setContext(context);
         expressionGenerator.setWritingStandaloneFile(isStandalone);
         expressionGenerator.setFunctionInputs(rosettaFunctionExtensions.getInputs(function));
+        expressionGenerator.setCurrentFunction(functionFQN);
+
+        // Generate the body first, so that the imports it needs are known before it is written
+        String conditions = generateConditions(function, expressionGenerator);
+        String aliases = generateAlias(function, expressionGenerator);
+        boolean isCodeImplementation = isCodeImplementation(function);
+        boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
+        String operations;
+        if (isDispatcher) {
+            operations = generateDispatchLogic(function, pythonName, isCodeImplementation, context);
+        } else if (isCodeImplementation) {
+            operations = generateNativeFunctionCall(function, context);
+        } else {
+            operations = generateOperations(function, context, expressionGenerator);
+        }
+        String output = generateOutput(function, isCodeImplementation, expressionGenerator);
+
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -284,6 +301,9 @@ public final class PythonFunctionGenerator {
 
         writer.appendBlock(generateDescription(function, context));
 
+        // Functions in the same cycle of calls are imported here, once both modules have loaded
+        expressionGenerator.getFunctionLocalImports().forEach(writer::appendLine);
+
         writer.appendLine("self = inspect.currentframe()");
         writer.appendLine("");
         Iterable<Attribute> inputs = rosettaFunctionExtensions.getInputs(function);
@@ -294,21 +314,14 @@ public final class PythonFunctionGenerator {
             writer.appendLine("");
         }
 
-        writer.appendBlock(generateConditions(function, expressionGenerator));
-        writer.appendBlock(generateAlias(function, expressionGenerator));
-
-        boolean isCodeImplementation = isCodeImplementation(function);
-        boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
-
-        if (isDispatcher) {
-            writer.appendBlock(generateDispatchLogic(function, pythonName, isCodeImplementation, context));
-        } else if (isCodeImplementation) {
-            writer.appendLine(generateNativeFunctionCall(function, context));
+        writer.appendBlock(conditions);
+        writer.appendBlock(aliases);
+        if (isCodeImplementation && !isDispatcher) {
+            writer.appendLine(operations);
         } else {
-            writer.appendBlock(generateOperations(function, context, expressionGenerator));
+            writer.appendBlock(operations);
         }
-
-        writer.appendBlock(generateOutput(function, isCodeImplementation, expressionGenerator));
+        writer.appendBlock(output);
 
         writer.unindent();
         writer.newLine();

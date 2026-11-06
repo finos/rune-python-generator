@@ -154,11 +154,31 @@ public final class PythonExpressionGenerator {
      */
     private Set<Attribute> functionInputs = Set.of();
 
+    /** The function being generated, or null when generating a class. */
+    private String currentFunction = null;
+
+    /**
+     * Imports for calls to functions in the same cycle of function calls as the function being
+     * generated. They are written inside that function, rather than at the top of its module.
+     */
+    private final Set<String> functionLocalImports = new LinkedHashSet<>();
+
     /** The Python code generator context. */
     private PythonCodeGeneratorContext context;
 
     public void setWritingStandaloneFile(boolean writingStandaloneFile) {
         this.writingStandaloneFile = writingStandaloneFile;
+    }
+
+    public void setCurrentFunction(String functionFqn) {
+        this.currentFunction = functionFqn;
+    }
+
+    /**
+     * @return the imports to write inside the function being generated
+     */
+    public Set<String> getFunctionLocalImports() {
+        return functionLocalImports;
     }
 
     public void setFunctionInputs(Collection<Attribute> functionInputs) {
@@ -792,6 +812,9 @@ public final class PythonExpressionGenerator {
                 if (context.getStandaloneClasses().contains(fqn)) {
                     if (conditionImports != null) {
                         conditionImports.add("from " + fqn + " import " + s.getName());
+                    }
+                    if (currentFunction != null && context.isInFunctionCycle(currentFunction, fqn)) {
+                        functionLocalImports.add("from " + fqn + " import " + s.getName());
                     }
                     yield s.getName();
                 } else {
