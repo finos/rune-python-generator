@@ -96,6 +96,7 @@ public class PythonDependencyCollector
         private final Set<Data> asTargets = new LinkedHashSet<>();
         private final Set<RosettaEnumeration> toEnumTargets = new LinkedHashSet<>();
         private final Set<RType> enumValueTypes = new LinkedHashSet<>();
+        private final Set<Data> switchCaseTypes = new LinkedHashSet<>();
 
         /**
          * @return the named elements referred to directly, such as functions, types, enums and
@@ -124,6 +125,13 @@ public class PythonDependencyCollector
          */
         public Set<RosettaEnumeration> toEnumTargets() {
             return toEnumTargets;
+        }
+
+        /**
+         * @return the data types that switch cases test the value against
+         */
+        public Set<Data> switchCaseTypes() {
+            return switchCaseTypes;
         }
 
         /**
@@ -242,6 +250,9 @@ public class PythonDependencyCollector
             visit(switchCase.getExpression(), dependencies);
             if (switchCase.getGuard() != null) {
                 visit(switchCase.getGuard().getLiteralGuard(), dependencies);
+                if (switchCase.getGuard().getDataGuard() != null) {
+                    dependencies.switchCaseTypes.add(switchCase.getGuard().getDataGuard());
+                }
                 if (switchCase.getGuard().getEnumGuard() != null) {
                     // The guard is written through the switch argument's enum type
                     dependencies.enumValueTypes.add(

@@ -237,6 +237,8 @@ public class PythonConditionalExpressionTest {
                         def _then_default():
                             return False
                         switchAttribute = rune_resolve_attr(self, "a")
+                        if switchAttribute is None:
+                            return None
                         if switchAttribute == 1:
                             return _then_1()
                         elif switchAttribute == 2:
@@ -246,6 +248,78 @@ public class PythonConditionalExpressionTest {
 
                     return _switch_fn_0()
             """);
+    }
+
+    /**
+     * A switch on a type with subtypes tests the value's type, and passes the matched value to
+     * the case as item, so the case can use that type's attributes.
+     */
+    @Test
+    public void testGenerateTypeSwitch() {
+        String bundle = testUtils.generatePythonAndExtractBundle(
+            """
+            type Person:
+                name string (0..1)
+
+            type Employee extends Person:
+                salary number (1..1)
+
+            func Wage:
+                inputs:
+                    person Person (0..1)
+                output:
+                    wage number (0..1)
+                set wage:
+                    person switch
+                        Employee then salary,
+                        default 0
+            """);
+        testUtils.assertGeneratedContainsExpectedString(bundle, "def _then_1(item):\n            return rune_resolve_attr(item, \"salary\")");
+        testUtils.assertGeneratedContainsExpectedString(bundle, "if switchAttribute is None:\n            return None");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "if isinstance(rune_unwrap(switchAttribute), Employee):\n            return _then_1(switchAttribute)");
+    }
+
+    /**
+     * A switch on a choice follows the path through nested choices to the option, and passes the
+     * option's value to the case as item.
+     */
+    @Test
+    public void testGenerateNestedChoiceSwitch() {
+        String bundle = testUtils.generatePythonAndExtractBundle(
+            """
+            choice PoweredVehicle:
+                PetrolCar
+                Motorcycle
+
+            type PetrolCar:
+                fuelCapacity number (1..1)
+
+            type Motorcycle:
+                fuelCapacity number (1..1)
+
+            choice Vehicle:
+                PoweredVehicle
+                Bicycle
+
+            type Bicycle:
+                weight number (1..1)
+
+            func Mileage:
+                inputs:
+                    vehicle Vehicle (1..1)
+                output:
+                    mileage number (1..1)
+                set mileage:
+                    vehicle switch
+                        PetrolCar then 15 * fuelCapacity,
+                        PoweredVehicle then 80,
+                        Bicycle then 30
+            """);
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "if (caseValue := rune_resolve_attr(rune_resolve_attr(switchAttribute, \"PoweredVehicle\"), \"PetrolCar\")) is not None:\n            return _then_1(caseValue)");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "return (15 * rune_resolve_attr(item, \"fuelCapacity\"))");
     }
 
     // -------------------------------------------------------------------------

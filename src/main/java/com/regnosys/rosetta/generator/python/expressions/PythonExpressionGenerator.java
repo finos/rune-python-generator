@@ -15,6 +15,7 @@ import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaCallableWithArgs;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
 import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
@@ -654,16 +655,7 @@ public final class PythonExpressionGenerator {
         String type = null;
         if (expr.getTypeCall() != null && expr.getTypeCall().getType() != null) {
             com.regnosys.rosetta.rosetta.RosettaNamed typeNamed = expr.getTypeCall().getType();
-            String fqn = context.getFullyQualifiedName(typeNamed);
-            if (writingStandaloneFile || context.getStandaloneClasses().contains(fqn)) {
-                // The stub name for a bundled type, or the type's own name if it is standalone
-                type = typeNamed.getName();
-                if (conditionImports != null) {
-                    conditionImports.add("from " + fqn + " import " + type);
-                }
-            } else {
-                type = context.getBundleObjectName(typeNamed);
-            }
+            type = typeReference(typeNamed);
         }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
@@ -963,8 +955,16 @@ public final class PythonExpressionGenerator {
 
     // ... (helper methods like isConstraintCondition, etc. remain unchanged) ...
 
+    /**
+     * A switch tries its cases in order, as Rune's Java generator does. An absent value gives
+     * nothing. A case on a type or on a choice option passes the matched value to its body as
+     * {@code item}, so the body can use that value's attributes directly.
+     */
     private String generateSwitchOperation(SwitchOperation expr, PythonExpressionScope scope) {
         String attr = generateExpression(expr.getArgument(), scope);
+        RType argumentType = typeSystem.stripFromTypeAliases(
+                typeProvider.getRMetaAnnotatedType(expr.getArgument()).getRType());
+        boolean narrows = argumentType instanceof RChoiceType || argumentType instanceof RDataType;
         PythonCodeWriter writer = new PythonCodeWriter();
 
         String switchFuncName = "_switch_fn_" + generatedFunctionCounter++;
@@ -975,30 +975,66 @@ public final class PythonExpressionGenerator {
         var cases = expr.getCases();
         for (int i = 0; i < cases.size(); i++) {
             var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
-            String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), scope)
-                    : generateExpression(currentCase.getExpression(), scope);
-
-            writer.appendLine("def " + funcName + "():");
+            boolean isDefault = currentCase.isDefault();
+            String funcName = isDefault ? "_then_default" : "_then_" + (i + 1);
+            String thenExprDef;
+            if (isDefault) {
+                thenExprDef = generateExpression(expr.getDefault(), scope);
+                writer.appendLine("def " + funcName + "():");
+            } else if (narrows) {
+                thenExprDef = generateExpression(currentCase.getExpression(), scope.withReceiver("item"));
+                writer.appendLine("def " + funcName + "(item):");
+            } else {
+                thenExprDef = generateExpression(currentCase.getExpression(), scope);
+                writer.appendLine("def " + funcName + "():");
+            }
             writer.indent();
             writer.appendLine("return " + thenExprDef);
             writer.unindent();
         }
 
         writer.appendLine("switchAttribute = " + attr);
+        writer.appendLine("if switchAttribute is None:");
+        writer.indent();
+        writer.appendLine("return None");
+        writer.unindent();
 
         for (int i = 0; i < cases.size(); i++) {
             var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
             if (currentCase.isDefault()) {
                 writer.appendLine("else:");
+                writer.indent();
+                writer.appendLine("return _then_default()");
+                writer.unindent();
+                continue;
+            }
+            String funcName = "_then_" + (i + 1);
+            String prefix = (i == 0) ? "if " : "elif ";
+            SwitchCaseGuard guard = currentCase.getGuard();
+            String call;
+            if (argumentType instanceof RChoiceType choiceType && guard.getChoiceOptionGuard() != null) {
+                // The option may be in a nested choice, so follow the path of options to it
+                List<String> path = findChoiceOptionPath(choiceType, guard.getChoiceOptionGuard());
+                if (path == null) {
+                    path = List.of(guard.getChoiceOptionGuard().getName());
+                }
+                String option = "switchAttribute";
+                for (String step : path) {
+                    option = "rune_resolve_attr(" + option + ", \"" + step + "\")";
+                }
+                writer.appendLine(prefix + "(caseValue := " + option + ") is not None:");
+                call = funcName + "(caseValue)";
+            } else if (guard.getDataGuard() != null) {
+                // Copy-on-write proxies aren't subclasses of the type they wrap, so unwrap first
+                writer.appendLine(prefix + "isinstance(rune_unwrap(switchAttribute), "
+                        + typeReference(guard.getDataGuard()) + "):");
+                call = funcName + "(switchAttribute)";
             } else {
-                SwitchCaseGuard guard = currentCase.getGuard();
-                String prefix = (i == 0) ? "if " : "elif ";
                 writer.appendLine(prefix + getGuardExpression(guard, expr.getArgument(), scope) + ":");
+                call = narrows ? funcName + "(switchAttribute)" : funcName + "()";
             }
             writer.indent();
-            writer.appendLine("return " + funcName + "()");
+            writer.appendLine("return " + call);
             writer.unindent();
         }
 
@@ -1006,6 +1042,22 @@ public final class PythonExpressionGenerator {
 
         ifCondBlocks.add(writer.toString());
         return switchFuncName + "()";
+    }
+
+    /**
+     * The name to use for a type in generated code: the stub name for a bundled type in a
+     * standalone file, the bundle name inside _bundle.py, or the type's own name if it is
+     * standalone. Inside a class condition, the name is also imported there.
+     */
+    private String typeReference(RosettaNamed type) {
+        String fqn = context.getFullyQualifiedName(type);
+        if (writingStandaloneFile || context.getStandaloneClasses().contains(fqn)) {
+            if (conditionImports != null) {
+                conditionImports.add("from " + fqn + " import " + type.getName());
+            }
+            return type.getName();
+        }
+        return context.getBundleObjectName(type);
     }
 
     private String generateWithMetaOperation(WithMetaOperation expr, PythonExpressionScope scope) {

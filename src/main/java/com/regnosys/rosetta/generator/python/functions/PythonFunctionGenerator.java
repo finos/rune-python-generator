@@ -147,6 +147,7 @@ public final class PythonFunctionGenerator {
                 .forEach(dependencies::add);
         dependencies.addAll(found.constructedTypes());
         dependencies.addAll(found.asTargets());
+        dependencies.addAll(found.switchCaseTypes());
     }
 
     private void addFunctionDependencies(
