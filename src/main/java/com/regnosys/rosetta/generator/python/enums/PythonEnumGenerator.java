@@ -30,7 +30,7 @@ public class PythonEnumGenerator {
     public Map<String, String> generate(Iterable<RosettaEnumeration> rosettaEnums, PythonCodeGeneratorContext context) {
         Map<String, String> result = new HashMap<>();
         for (RosettaEnumeration enumeration : rosettaEnums) {
-            RosettaModel tr = (RosettaModel) enumeration.eContainer();
+            RosettaModel tr = enumeration.getModel();
             String namespace = context.applyPrefix(tr.getName());
 
             PythonCodeWriter writer = new PythonCodeWriter();

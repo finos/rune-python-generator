@@ -5,6 +5,7 @@
 package com.regnosys.rosetta.generator.python.expressions;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -77,7 +78,6 @@ import com.regnosys.rosetta.rosetta.simple.ChoiceOption;
 import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
-import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
 import com.regnosys.rosetta.types.CardinalityProvider;
 import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
@@ -140,11 +140,21 @@ public final class PythonExpressionGenerator {
      */
     private boolean writingStandaloneFile = false;
 
+    /**
+     * The inputs of the function being generated, which are read from the function's frame rather
+     * than from the current item. Empty when generating a class.
+     */
+    private Set<Attribute> functionInputs = Set.of();
+
     /** The Python code generator context. */
     private PythonCodeGeneratorContext context;
 
     public void setWritingStandaloneFile(boolean writingStandaloneFile) {
         this.writingStandaloneFile = writingStandaloneFile;
+    }
+
+    public void setFunctionInputs(Collection<Attribute> functionInputs) {
+        this.functionInputs = Set.copyOf(functionInputs);
     }
 
     public void setContext(PythonCodeGeneratorContext context) {
@@ -728,9 +738,7 @@ public final class PythonExpressionGenerator {
         if (scope.shadowedSymbols().containsKey(s)) {
             return scope.shadowedSymbols().get(s);
         }
-        boolean isInput = s.eContainer() instanceof FunctionImpl c
-            && c.getInputs().stream().anyMatch(attr -> attr.getName().equals(s.getName()));
-        String receiver = isInput ? "self" : scope.receiver();
+        String receiver = functionInputs.contains(s) ? "self" : scope.receiver();
         return "rune_resolve_attr(" + receiver + ", \"" + s.getName() + "\")";
     }
 

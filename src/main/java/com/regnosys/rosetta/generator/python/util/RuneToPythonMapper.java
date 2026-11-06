@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.RosettaRootElement;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaTypeAlias;
 import com.regnosys.rosetta.types.RAttribute;
@@ -145,7 +146,7 @@ public final class RuneToPythonMapper {
                  break;
              }
         }
-        RosettaModel model = (RosettaModel) rn.eContainer();
+        RosettaModel model = (rn instanceof RosettaRootElement root) ? root.getModel() : null;
         if (model == null) {
             throw new RuntimeException("Rosetta model not found for data " + rn.getName());
         }

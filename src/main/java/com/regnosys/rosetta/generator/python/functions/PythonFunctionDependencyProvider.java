@@ -4,11 +4,7 @@
  */
 package com.regnosys.rosetta.generator.python.functions;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
@@ -16,8 +12,6 @@ import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
-import com.regnosys.rosetta.rosetta.RosettaRule;
-import com.regnosys.rosetta.rosetta.RosettaSymbol;
 import com.regnosys.rosetta.rosetta.expression.InlineFunction;
 import com.regnosys.rosetta.rosetta.expression.ListLiteral;
 import com.regnosys.rosetta.rosetta.expression.RosettaBinaryOperation;
@@ -32,12 +26,9 @@ import com.regnosys.rosetta.rosetta.expression.RosettaUnaryOperation;
 import com.regnosys.rosetta.rosetta.expression.SwitchOperation;
 import com.regnosys.rosetta.rosetta.expression.ToEnumOperation;
 import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
-import com.regnosys.rosetta.rosetta.simple.Function;
 import com.regnosys.rosetta.types.RAliasType;
 import com.regnosys.rosetta.types.RDataType;
 import com.regnosys.rosetta.types.REnumType;
-import com.regnosys.rosetta.types.RFunction;
-import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.RosettaTypeProvider;
 import com.regnosys.rosetta.types.TypeSystem;
@@ -50,12 +41,6 @@ import jakarta.inject.Inject;
  * Determine the Rosetta dependencies for a Function
  */
 public final class PythonFunctionDependencyProvider {
-    /**
-     * RObjectFactory is used to build RType objects from Rosetta objects.
-     */
-    @Inject
-    private RObjectFactory rTypeBuilderFactory;
-
     /** The Rosetta type system. */
     @Inject
     private TypeSystem typeSystem;
@@ -68,7 +53,7 @@ public final class PythonFunctionDependencyProvider {
             PythonCodeGeneratorContext context) {
         if (named instanceof RosettaEnumeration enumeration) {
             String name = enumeration.getName();
-            RosettaModel model = (RosettaModel) enumeration.eContainer();
+            RosettaModel model = enumeration.getModel();
             String prefix = context.applyPrefix(model.getName());
             enumImports.add("import " + prefix + "." + name);
         } else if (named instanceof RosettaEnumValue enumValue) {
@@ -76,7 +61,7 @@ public final class PythonFunctionDependencyProvider {
             addDependencies(enumValue.getEnumeration(), enumImports, sourceNamespace, context);
         } else if (named instanceof com.regnosys.rosetta.rosetta.simple.Data data) {
             String name = data.getName();
-            RosettaModel model = (RosettaModel) data.eContainer();
+            RosettaModel model = data.getModel();
             String fullNamespace = context.applyPrefix(model.getName());
             String rootNamespace = fullNamespace.split("\\.")[0];
             String sourceRoot = sourceNamespace.split("\\.")[0];
@@ -209,40 +194,5 @@ public final class PythonFunctionDependencyProvider {
                 enumImports.add(String.format("from %s.%s import %s", fullNamespace, name, name));
             }
         }
-    }
-
-    public Set<RFunction> rFunctionDependencies(RosettaExpression expression) {
-        Set<RFunction> result = new HashSet<>();
-        collectSymbolReferences(expression, result);
-        return result;
-    }
-
-    private void collectSymbolReferences(RosettaExpression expression, Set<RFunction> result) {
-        if (expression == null) {
-            return;
-        }
-        if (expression instanceof RosettaSymbolReference ref) {
-            RosettaSymbol symbol = ref.getSymbol();
-            if (symbol instanceof Function f) {
-                result.add(rTypeBuilderFactory.buildRFunction(f));
-            } else if (symbol instanceof RosettaRule r) {
-                result.add(rTypeBuilderFactory.buildRFunction(r));
-            }
-            ref.getArgs().forEach(arg -> collectSymbolReferences(arg, result));
-        }
-        expression.eContents().forEach(child -> {
-            if (child instanceof RosettaExpression expr) {
-                collectSymbolReferences(expr, result);
-            }
-        });
-    }
-
-    public Set<RFunction> rFunctionDependencies(Iterable<? extends RosettaExpression> expressions) {
-        if (expressions == null) {
-            return Collections.emptySet();
-        }
-        return StreamSupport.stream(expressions.spliterator(), false)
-                .flatMap(expr -> rFunctionDependencies(expr).stream())
-                .collect(Collectors.toSet());
     }
 }

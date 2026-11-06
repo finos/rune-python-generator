@@ -91,7 +91,7 @@ public final class PythonAttributeProcessor {
     }
 
     private AttributeResult createAttributeResult(Data rc, RAttribute ra, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
-        RosettaModel model = (RosettaModel) rc.eContainer();
+        RosettaModel model = rc.getModel();
         String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isStandalone = context.getStandaloneClasses().contains(className);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
@@ -145,7 +145,7 @@ public final class PythonAttributeProcessor {
         MetaDataResult metaDataResult,
         PythonCodeGeneratorContext context
     ) {
-        RosettaModel model = (RosettaModel) rc.eContainer();
+        RosettaModel model = rc.getModel();
         String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isSourceStandalone = context.getStandaloneClasses().contains(className);
 
@@ -406,7 +406,7 @@ public final class PythonAttributeProcessor {
         Set<String> standaloneClasses = context.getStandaloneClasses();
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
-        RosettaModel rcModel = (RosettaModel) rc.eContainer();
+        RosettaModel rcModel = rc.getModel();
         String rcFqn = context.applyPrefix(rcModel.getName()) + "." + rc.getName();
 
         for (RAttribute attr : allAttributes) {

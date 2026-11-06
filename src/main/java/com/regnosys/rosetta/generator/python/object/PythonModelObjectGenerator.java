@@ -199,7 +199,7 @@ public class PythonModelObjectGenerator {
     }
 
     private String generateClass(Data rc, Set<String> enumImports, PythonCodeGeneratorContext context) {
-        RosettaModel model = (RosettaModel) rc.eContainer();
+        RosettaModel model = rc.getModel();
         String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isStandalone = context.getStandaloneClasses().contains(className);
         if (rc.getSuperType() != null && rc.getSuperType().getName() == null) {
@@ -222,7 +222,7 @@ public class PythonModelObjectGenerator {
      * Adds the imports used by the type's conditions, such as an enum that only they refer to.
      */
     private void addConditionImports(Data rc, Set<String> imports, PythonCodeGeneratorContext context) {
-        String sourceNamespace = context.applyPrefix(((RosettaModel) rc.eContainer()).getName());
+        String sourceNamespace = context.applyPrefix(rc.getModel().getName());
         for (com.regnosys.rosetta.rosetta.simple.Condition condition : rc.getConditions()) {
             functionDependencyProvider.addDependencies(condition.getExpression(), imports, sourceNamespace, context);
         }

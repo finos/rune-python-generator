@@ -35,6 +35,8 @@ import com.regnosys.rosetta.rosetta.expression.InlineFunction;
 import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
+import com.regnosys.rosetta.rosetta.expression.SwitchOperation;
+import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.rosetta.simple.Annotated;
 import com.regnosys.rosetta.rosetta.simple.AssignPathRoot;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
@@ -118,7 +120,7 @@ public final class PythonFunctionGenerator {
 
     private void processFunction(Function function, PythonCodeGeneratorContext context,
             Map<String, String> result) {
-        RosettaModel model = (RosettaModel) function.eContainer();
+        RosettaModel model = function.getModel();
         if (model == null) {
             LOGGER.warn("Function {} has no container, skipping", function.getName());
             return;
@@ -163,27 +165,24 @@ public final class PythonFunctionGenerator {
                     dependencies.add(dataTarget);
                 }
             }
+            // Switch cases and with-meta entries aren't expressions, so the walk below doesn't
+            // reach the expressions they hold.
+            case SwitchOperation switchOp -> switchOp.getCases().forEach(switchCase -> {
+                collectNamedDependencies(switchCase.getExpression(), dependencies);
+                if (switchCase.getGuard() != null) {
+                    collectNamedDependencies(switchCase.getGuard().getLiteralGuard(), dependencies);
+                }
+            });
+            case WithMetaOperation withMeta -> withMeta.getEntries()
+                    .forEach(entry -> collectNamedDependencies(entry.getValue(), dependencies));
             default -> {
             }
         }
-        collectNamedDependenciesInContents(expression, dependencies);
-    }
-
-    /**
-     * Walks the contents of a model element. Children that aren't expressions, such as a switch
-     * case or a with-meta entry, are walked through to the expressions they contain.
-     */
-    private void collectNamedDependenciesInContents(org.eclipse.emf.ecore.EObject element,
-            Set<RosettaNamed> dependencies) {
-        element.eContents().forEach(child -> {
+        expression.eContents().forEach(child -> {
             if (child instanceof RosettaExpression childExpr) {
                 collectNamedDependencies(childExpr, dependencies);
-            } else if (child instanceof InlineFunction inlineFn) {
-                if (inlineFn.getBody() != null) {
-                    collectNamedDependencies(inlineFn.getBody(), dependencies);
-                }
-            } else {
-                collectNamedDependenciesInContents(child, dependencies);
+            } else if (child instanceof InlineFunction inlineFn && inlineFn.getBody() != null) {
+                collectNamedDependencies(inlineFn.getBody(), dependencies);
             }
         });
     }
@@ -309,6 +308,7 @@ public final class PythonFunctionGenerator {
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         expressionGenerator.setContext(context);
         expressionGenerator.setWritingStandaloneFile(isStandalone);
+        expressionGenerator.setFunctionInputs(rosettaFunctionExtensions.getInputs(function));
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
