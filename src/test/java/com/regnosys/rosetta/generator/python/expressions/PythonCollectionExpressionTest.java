@@ -961,4 +961,52 @@ public class PythonCollectionExpressionTest {
         assertFalse(generatedPython.contains("def _then_fn"),
                 "Conditional inside extract must not use pre-hoisted closure (item not in scope)");
     }
+
+    /**
+     * A filter on a single value applies the test to that value and keeps a single result.
+     * Passing the value to rune_filter would iterate it as if it were a list.
+     */
+    @Test
+    public void testFilterOnSingleValueDoesNotIterate() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type Leaf:
+                    value number (0..1)
+
+                func FilterSingle:
+                    inputs:
+                        lone Leaf (0..1)
+                    output:
+                        result Leaf (0..1)
+                    set result:
+                        lone filter value exists
+                """);
+        String generated = python.get("src/com/rosetta/test/model/functions/FilterSingle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "result = (lambda item: item if item is not None and (rune_attr_exists(rune_resolve_attr(item, \"value\"))) else None)(rune_resolve_attr(self, \"lone\"))");
+        testUtils.assertGeneratedDoesNotContain(generated, "rune_filter(");
+    }
+
+    /**
+     * A filter on a list still uses rune_filter.
+     */
+    @Test
+    public void testFilterOnListUsesRuneFilter() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type Leaf:
+                    value number (0..1)
+
+                func FilterMany:
+                    inputs:
+                        leaves Leaf (0..*)
+                    output:
+                        result Leaf (0..*)
+                    add result:
+                        leaves filter value exists
+                """);
+        String generated = python.get("src/com/rosetta/test/model/functions/FilterMany.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "rune_filter(rune_resolve_attr(self, \"leaves\"), lambda item: rune_attr_exists(rune_resolve_attr(item, \"value\")))");
+    }
 }

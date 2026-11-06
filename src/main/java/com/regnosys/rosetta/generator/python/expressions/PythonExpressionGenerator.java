@@ -609,6 +609,11 @@ public final class PythonExpressionGenerator {
         }
 
         String filterExpression = generateExpression(expr.getFunction().getBody(), subScope);
+        if (!cardinalityProvider.isMulti(expr.getArgument())) {
+            // A single value isn't iterable, and the result stays a single value
+            return "(lambda " + param + ": " + param + " if " + param + " is not None and (" + filterExpression
+                    + ") else None)(" + argument + ")";
+        }
         return "rune_filter(" + argument + ", lambda " + param + ": " + filterExpression + ")";
     }
 
