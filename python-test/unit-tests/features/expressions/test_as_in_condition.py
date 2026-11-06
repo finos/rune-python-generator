@@ -22,10 +22,9 @@ OWNERS = [Checker, OwnerB]
 def test_condition_passes_when_value_has_target_type(owner, attr, value):
     '''narrowing finds a value of the target type.
 
-    Built with model_construct, because validation currently turns a subtype stored in a
-    parent-typed attribute into the parent type (a runtime issue), which would hide the
-    behaviour under test.'''
-    assert not owner.model_construct(**{attr: value()}).validate_conditions(raise_exc=False)
+    Fails until the runtime keeps a subtype stored in a parent-typed attribute, rather than
+    turning it into the parent type.'''
+    assert not owner(**{attr: value()}).validate_conditions(raise_exc=False)
 
 
 @pytest.mark.parametrize('owner', OWNERS)
