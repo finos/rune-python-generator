@@ -975,7 +975,7 @@ public final class PythonExpressionGenerator {
         // are referenced elsewhere in function bodies (namespace.EnumName.EnumName).
         if (argType instanceof REnumType) {
             String enumName = argType.getName();
-            String enumType = argType.getNamespace().toString() + "." + enumName + "." + enumName;
+            String enumType = context.applyPrefix(argType.getNamespace().toString()) + "." + enumName + "." + enumName;
             List<String[]> mappedEntries = expr.getEntries().stream()
                     .map(entry -> {
                         String mappedKey = switch (entry.getKey().getName()) {
