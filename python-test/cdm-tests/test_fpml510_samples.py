@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -80,6 +80,17 @@ def _value_kind(value) -> str:
     return type(value).__name__
 
 
+def _same_number(expected, actual) -> bool:
+    '''True for a number and a string holding the same value. Python writes
+    numbers as strings and Java as numbers; both read back as the same value.'''
+    if {_value_kind(expected), _value_kind(actual)} != {'number', 'str'}:
+        return False
+    try:
+        return Decimal(str(expected)) == Decimal(str(actual))
+    except InvalidOperation:
+        return False
+
+
 def _compare(expected, actual, path: str = '') -> list[tuple[str, str, object, object]]:
     '''Returns (kind, path, expected, actual) for every difference.'''
     differences = []
@@ -97,6 +108,8 @@ def _compare(expected, actual, path: str = '') -> list[tuple[str, str, object, o
             differences.append(('list length changed', path, len(expected), len(actual)))
         for i, (item_expected, item_actual) in enumerate(zip(expected, actual)):
             differences.extend(_compare(item_expected, item_actual, f'{path}[{i}]'))
+    elif _same_number(expected, actual):
+        pass
     elif _value_kind(expected) != _value_kind(actual):
         kind = f'type changed ({_value_kind(expected)} -> {_value_kind(actual)})'
         differences.append((kind, path, expected, actual))
