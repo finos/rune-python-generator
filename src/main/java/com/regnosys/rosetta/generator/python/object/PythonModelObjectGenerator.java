@@ -21,6 +21,7 @@ import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerat
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.simple.Choice;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.types.RAliasType;
 import com.regnosys.rosetta.types.RAttribute;
@@ -332,6 +333,12 @@ public class PythonModelObjectGenerator {
         // defer_build=True, so an explicit model_rebuild is needed to pick up Phase 2 annotation
         // updates.
         writer.appendLine("model_config = ConfigDict(defer_build=True)");
+
+        // A generated choice looks the same as a type with optional attributes and a one-of
+        // condition, but its JSON format differs, so the runtime has to be told which it is.
+        if (rc instanceof Choice) {
+            writer.appendLine("_RUNE_CHOICE: ClassVar[bool] = True");
+        }
 
         String metaData = getClassMetaDataString(rc);
         if (!metaData.isEmpty()) {

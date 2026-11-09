@@ -1,0 +1,62 @@
+namespace rosetta_dsl.test.serialization.choice_java_format : <"generate Python unit tests for reading and writing choice types in the Rune JSON format.">
+
+type A:
+    fieldA string (1..1)
+
+type B:
+    fieldB string (1..1)
+
+choice ChoiceData:
+    A
+    B
+
+choice ChoiceBasic:
+    string
+    int
+
+choice ChoiceNested:
+    ChoiceData
+    ChoiceBasic
+
+type PaymentDate:
+    [metadata key]
+    day string (1..1)
+
+type WithDate:
+    paymentDate PaymentDate (0..1)
+
+choice ChoiceDated:
+    WithDate
+    B
+
+// The same fields as a choice of A and B, but not a choice: its JSON uses attribute names.
+type ViaOneOf:
+    A A (0..1)
+    B B (0..1)
+
+    condition Choice:
+        one-of
+
+type Root:
+    data ChoiceData (0..1)
+    basic ChoiceBasic (0..1)
+    nested ChoiceNested (0..1)
+    entries ChoiceData (0..*)
+    located ChoiceData (0..1)
+        [metadata location]
+    dated ChoiceDated (0..1)
+    dateRef PaymentDate (0..1)
+        [metadata reference]
+    viaOneOf ViaOneOf (0..1)
+
+// LoopOption and LoopHolder refer to each other through LoopChoice, so all three are bundled.
+type LoopOption:
+    back LoopHolder (0..1)
+
+choice LoopChoice:
+    LoopOption
+    B
+
+type LoopHolder:
+    option LoopChoice (0..1)
+    options LoopChoice (0..*)

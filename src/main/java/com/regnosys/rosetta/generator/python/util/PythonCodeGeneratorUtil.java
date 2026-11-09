@@ -78,7 +78,7 @@ public final class PythonCodeGeneratorUtil {
                 import inspect
                 import sys
                 from decimal import Decimal
-                from typing import Annotated, Optional
+                from typing import Annotated, ClassVar, Optional
 
                 from pydantic import ConfigDict, Field, validate_call, InstanceOf
 
