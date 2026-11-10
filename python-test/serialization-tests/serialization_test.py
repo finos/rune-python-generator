@@ -17,7 +17,15 @@ from rune.runtime.object_registry import _OBJECT_REGISTRY
 from test_helper.test_helper.dict_comp import dict_comp
 
 ROUNDTRIP_DIR = 'rune-common/serialization/src/test/resources/rune-serializer-round-trip-test'
-SHOULDFAIL_DIR = 'rune-common/serialization/src/test/resources/rune-serializer-error-handling-test'
+# Cases that must fail: the error-handling cases kept in this repo (rune-common
+# removed them), and the invalid choice options from rune-common's choice
+# deserializer suite
+CHOICE_DESERIALIZER_DIR = 'rune-common/serialization/src/test/resources/rune-json-choice-type-deserializer-test'
+SHOULDFAIL_DIRS = [
+    'error-handling',
+    CHOICE_DESERIALIZER_DIR + '/invalidchoiceoption',
+    CHOICE_DESERIALIZER_DIR + '/invalidnestedchoiceoption',
+]
 
 
 def extract_dir_and_file(path_name) -> str:
@@ -93,7 +101,9 @@ def test_round_trip_files(round_trip_file):
 
 @pytest.mark.parametrize(
     "should_fail_file",
-    glob.glob(SHOULDFAIL_DIR + os.sep + '**/*.json', recursive=True))
+    sorted(path_name
+           for dir_name in SHOULDFAIL_DIRS
+           for path_name in glob.glob(dir_name + os.sep + '**/*.json', recursive=True)))
 def test_should_fail_files(should_fail_file):
     '''test should fail files'''
     try:
