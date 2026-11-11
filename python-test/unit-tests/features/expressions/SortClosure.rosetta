@@ -21,3 +21,17 @@ func SortIntegers:
     output: result int (0..*)
     set result:
         items sort
+
+type SortParty:
+    [metadata key]
+    name string (1..1)
+
+type SortContract:
+    parties SortParty (0..*)
+    [metadata reference]
+
+func SortContractParties:
+    inputs: contract SortContract (1..1)
+    output: result SortContract (1..1)
+    set result -> parties:
+        contract -> parties sort [ item -> name ]
