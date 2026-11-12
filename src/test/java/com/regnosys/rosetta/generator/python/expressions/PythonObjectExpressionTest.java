@@ -54,7 +54,7 @@ public class PythonObjectExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class TestConst(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "f: Foo = Field(..., description='')");
+                "f: Annotated[Foo, Foo.serializer(), Foo.validator()] = Field(..., description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "return rune_all_elements(rune_resolve_attr(self, \"f\"), \"=\", Foo(a=1, b=2))");
     }

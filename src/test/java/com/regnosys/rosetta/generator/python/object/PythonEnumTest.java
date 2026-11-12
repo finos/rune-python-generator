@@ -100,7 +100,7 @@ public class PythonEnumTest {
                 \"""
                 Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)
                 \"""
-                legalEntity: Optional[LegalEntity] = Field(None, description='')
+                legalEntity: Annotated[Optional[LegalEntity], LegalEntity.serializer(), LegalEntity.validator()] = Field(None, description='')
 
                 @rune_condition
                 def condition_0_(self):

@@ -160,8 +160,8 @@ public class PythonStandaloneStructureTest {
         String generatedPython = gf.get("src/test/generated_syntax/basic/Root.py").toString();
         String expectedRoot = """
             class Root(BaseDataClass):
-                basicSingle: Optional[BasicSingle] = Field(None, description='')
-                basicList: Optional[BasicList] = Field(None, description='')
+                basicSingle: Annotated[Optional[BasicSingle], BasicSingle.serializer(), BasicSingle.validator()] = Field(None, description='')
+                basicList: Annotated[Optional[BasicList], BasicList.serializer(), BasicList.validator()] = Field(None, description='')
             """;
         testUtils.assertGeneratedContainsExpectedString(generatedPython, expectedRoot);
     }

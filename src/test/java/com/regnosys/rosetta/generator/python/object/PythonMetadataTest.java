@@ -101,7 +101,7 @@ public class PythonMetadataTest {
         String nodeRefPython = getPython().get("src/test/generated_syntax/metadata/NodeRef.py").toString();
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython, "class NodeRef(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython,
-            "typeA: Optional[A] = Field(None, description='')");
+            "typeA: Annotated[Optional[A], A.serializer(), A.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython,
             "aReference: Annotated[Optional[A | BaseReference], A.serializer(), A.validator(('@key', '@key:external', '@ref', '@ref:external'))] = Field(None, description='')");
     }
@@ -129,9 +129,9 @@ public class PythonMetadataTest {
         String rootPython = getPython().get("src/test/generated_syntax/metadata/Root.py").toString();
         testUtils.assertGeneratedContainsExpectedString(rootPython, "class Root(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(rootPython,
-            "nodeRef: Optional[NodeRef] = Field(None, description='')");
+            "nodeRef: Annotated[Optional[NodeRef], NodeRef.serializer(), NodeRef.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(rootPython,
-            "attributeRef: Optional[AttributeRef] = Field(None, description='')");
+            "attributeRef: Annotated[Optional[AttributeRef], AttributeRef.serializer(), AttributeRef.validator()] = Field(None, description='')");
     }
 
     /**

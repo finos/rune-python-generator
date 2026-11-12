@@ -289,7 +289,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class TestFilter(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "items: Optional[list[Item | None]] = Field(None, description='')");
+                "items: Annotated[Optional[list[Item | None]], Item.serializer(), Item.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
     }
@@ -337,7 +337,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class TestMap(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "items: Optional[list[Item | None]] = Field(None, description='')");
+                "items: Annotated[Optional[list[Item | None]], Item.serializer(), Item.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))([x for x in map(lambda item: rune_resolve_attr(item, \"val\"), rune_resolve_attr(self, \"items\") or []) if x is not None]), \"=\", 0)");
     }
@@ -367,7 +367,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class Foo(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "bars: Optional[list[Bar | None]] = Field(None, description='test bar')");
+                "bars: Annotated[Optional[list[Bar | None]], Bar.serializer(), Bar.validator()] = Field(None, description='test bar')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "return rune_all_elements([1, 2, 3], \"=\", (lambda item: (lambda nested: [x for sub in (nested or []) if sub is not None for x in (sub if (hasattr(sub, '__iter__') and not isinstance(sub, (str, dict, bytes, bytearray))) else [sub]) if x is not None] if nested is not None else None)(item))([x for x in map(lambda item: rune_resolve_attr(item, \"numbers\"), rune_resolve_attr(self, \"bars\") or []) if x is not None]))");
     }
@@ -399,7 +399,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class Test(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "aValue: list[A | None] = Field(..., description='Test A type aValue', min_length=1)");
+                "aValue: Annotated[list[A | None], A.serializer(), A.validator()] = Field(..., description='Test A type aValue', min_length=1)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "def condition_0_TestCond(self):");
 
         // Targeted assertions for A class
@@ -438,7 +438,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "class Test(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "aValue: list[A | None] = Field(..., description='Test A type aValue', min_length=1)");
+                "aValue: Annotated[list[A | None], A.serializer(), A.validator()] = Field(..., description='Test A type aValue', min_length=1)");
         testUtils.assertGeneratedContainsExpectedString(generatedPython, "def condition_0_TestCond(self):");
 
         // Targeted assertions for A class
@@ -692,7 +692,7 @@ public class PythonCollectionExpressionTest {
                     \"""
                     Test int field 2
                     \"""
-                    aValue: list[A | None] = Field(..., description='Test A type aValue', min_length=1)
+                    aValue: Annotated[list[A | None], A.serializer(), A.validator()] = Field(..., description='Test A type aValue', min_length=1)
                     \"""
                     Test A type aValue
                     \"""
@@ -703,7 +703,7 @@ public class PythonCollectionExpressionTest {
                     \"""
                     Test filter operation condition
                     \"""
-                    bValue: list[B | None] = Field(..., description='Test B type bValue', min_length=1)
+                    bValue: Annotated[list[B | None], B.serializer(), B.validator()] = Field(..., description='Test B type bValue', min_length=1)
                     \"""
                     Test B type bValue
                     \"""
