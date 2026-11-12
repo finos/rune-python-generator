@@ -144,7 +144,7 @@ public class PythonCollectionExpressionTest {
                             items = rune_cow(items)
 
 
-                            result = (lambda items: sorted(x for x in (items or []) if x is not None) if items is not None else None)(rune_resolve_attr(self, \"items\"))
+                            result = (lambda items: rune_sorted(items, skip_none=True) if items is not None else None)(rune_resolve_attr(self, \"items\"))
 
 
                             return result
@@ -915,7 +915,30 @@ public class PythonCollectionExpressionTest {
                     set result:
                         items sort [ item -> val ]
                 """,
-                "(lambda items: sorted((x for x in (items or []) if x is not None), key=lambda item: rune_resolve_attr(item, \"val\")) if items is not None else None)(rune_resolve_attr(self, \"items\"))");
+                "(lambda items: rune_sorted(items, key=lambda item: rune_resolve_attr(item, \"val\"), skip_none=True) if items is not None else None)(rune_resolve_attr(self, \"items\"))");
+    }
+
+    /**
+     * Sorting an attribute held as references uses {@code rune_sorted}, which keeps
+     * each item's reference details, so the sorted items are written as references (#327).
+     */
+    @Test
+    public void testSortReferenceListUsesRuneSorted() {
+        testUtils.assertBundleContainsExpectedString("""
+                type Party:
+                    [metadata key]
+                    name string (1..1)
+
+                type Contract:
+                    parties Party (0..*)
+                    [metadata reference]
+
+                func SortParties:
+                    inputs: c Contract (1..1)
+                    output: out Contract (1..1)
+                    set out -> parties: c -> parties sort [ item -> name ]
+                """,
+                "out.parties = (lambda items: rune_sorted(items, key=lambda item: rune_resolve_attr(item, \"name\"), skip_none=True) if items is not None else None)(rune_resolve_attr(rune_resolve_attr(self, \"c\"), \"parties\"))");
     }
 
     @Test

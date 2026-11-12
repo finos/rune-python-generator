@@ -5,7 +5,16 @@
 
 """Sort closure expression unit tests."""
 
+import json
+
+from rune.runtime.metadata import KeyType, Reference
+
+from rosetta_dsl.test.expressions.sort_closure.SortContract import SortContract
 from rosetta_dsl.test.expressions.sort_closure.SortItem import SortItem
+from rosetta_dsl.test.expressions.sort_closure.SortParty import SortParty
+from rosetta_dsl.test.expressions.sort_closure.functions.SortContractParties import (
+    SortContractParties,
+)
 from rosetta_dsl.test.expressions.sort_closure.functions.SortItems import SortItems
 from rosetta_dsl.test.expressions.sort_closure.functions.SortItemsBySecondField import (
     SortItemsBySecondField,
@@ -42,3 +51,24 @@ def test_sort_preserves_all_non_null_items():
     assert len(result) == 2
     assert result[0].val1 == 2
     assert result[1].val1 == 10
+
+
+def test_sort_drops_none_items():
+    """None items are dropped before sorting, with and without a key."""
+    assert SortIntegers(items=[3, None, 1]) == [1, 3]
+    items = [SortItem(val1=5, val2=10), None, SortItem(val1=1, val2=100)]
+    assert SortItems(items=items) == [SortItem(val1=1, val2=100), SortItem(val1=5, val2=10)]
+
+
+def test_sort_reference_list_keeps_references():
+    """Sorted references are written as references, in sorted order (#327)."""
+    party_b, party_a = SortParty(name="B"), SortParty(name="A")
+    contract = SortContract(
+        parties=[
+            Reference(party_b, "p2", KeyType.EXTERNAL),
+            Reference(party_a, "p1", KeyType.EXTERNAL),
+        ]
+    )
+    result = SortContractParties(contract=contract)
+    written = json.loads(result.rune_serialize(validate_model=False))
+    assert written.get("parties") == [{"@ref:external": "p1"}, {"@ref:external": "p2"}]

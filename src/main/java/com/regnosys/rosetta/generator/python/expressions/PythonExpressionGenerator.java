@@ -1166,7 +1166,9 @@ public final class PythonExpressionGenerator {
         String argument = generateExpression(expr.getArgument(), scope);
         InlineFunction inlineFunc = expr.getFunction();
         if (inlineFunc == null) {
-            return "(lambda items: sorted(x for x in (items or []) if x is not None) if items is not None else None)(" + argument + ")";
+            // rune_sorted keeps the reference details of each item, which sorted() drops;
+            // skip_none=True drops None items, and the guard keeps None for a None list.
+            return "(lambda items: rune_sorted(items, skip_none=True) if items is not None else None)(" + argument + ")";
         }
         String param = inlineFunc.getParameters().isEmpty() ? "item" : inlineFunc.getParameters().get(0).getName();
         PythonExpressionScope subScope = scope.withReceiver(param);
@@ -1174,7 +1176,7 @@ public final class PythonExpressionGenerator {
             subScope = subScope.withShadow(ref.getSymbol(), param);
         }
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
-        return "(lambda items: sorted((x for x in (items or []) if x is not None), key=lambda " + param + ": " + funcBody + ") if items is not None else None)(" + argument + ")";
+        return "(lambda items: rune_sorted(items, key=lambda " + param + ": " + funcBody + ", skip_none=True) if items is not None else None)(" + argument + ")";
     }
     private String generateDistinctOperation(DistinctOperation distinct, PythonExpressionScope scope) {
         String arg = generateExpression(distinct.getArgument(), scope);
