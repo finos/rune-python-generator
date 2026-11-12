@@ -77,6 +77,12 @@ public class PythonModelObjectGenerator {
     private PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
     /**
+     * The Python choice dispatch processor.
+     */
+    @Inject
+    private PythonChoiceDispatchProcessor pythonChoiceDispatchProcessor;
+
+    /**
      * The Python expression generator provider.
      */
     @Inject
@@ -336,8 +342,9 @@ public class PythonModelObjectGenerator {
 
         // A generated choice looks the same as a type with optional attributes and a one-of
         // condition, but its JSON format differs, so the runtime has to be told which it is.
-        if (rc instanceof Choice) {
+        if (rc instanceof Choice choice) {
             writer.appendLine("_RUNE_CHOICE: ClassVar[bool] = True");
+            pythonChoiceDispatchProcessor.generateChoiceDispatch(writer, choice);
         }
 
         String metaData = getClassMetaDataString(rc);
