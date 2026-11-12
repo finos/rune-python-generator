@@ -74,7 +74,7 @@ public class PythonTypeAliasTest {
         // 1. Check field usage (uses the underlying object type with short name: Origin)
         testUtils.assertGeneratedContainsExpectedString(
                 generatedPython,
-                "val: Origin = Field(..., description='')");
+                "val: Annotated[Origin, Origin.serializer(), Origin.validator()] = Field(..., description='')");
 
         // 2. Check that the alias assignment is NOT present
         Assertions.assertFalse(generatedPython.contains("AliasToOrigin"));

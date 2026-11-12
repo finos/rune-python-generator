@@ -61,6 +61,7 @@ PYTHON_SETUP_PATH="$MY_PATH/../env-setup"
 JAR_PATH="$PROJECT_ROOT_PATH/target/python-0.0.0.main-SNAPSHOT.jar"
 SERIALIZATION_SOURCE_ROOT="$MY_PATH/rune-common/serialization/src/test/resources"
 PYTHON_TESTS_TARGET_PATH="$PROJECT_ROOT_PATH/target/python-tests/serialization_unit_tests"
+PYTHON_PROJECT_NAME="serialization_unit_tests"
 
 # Optionally fetch the serialization sources
 if [[ $DO_GET_SERIALIZATION_SOURCE -eq 1 ]]; then
@@ -94,7 +95,8 @@ echo "***** generating Python serialization tests"
 mkdir -p "$PYTHON_TESTS_TARGET_PATH"
 java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI \
   -s "$SERIALIZATION_SOURCE_ROOT" \
-  -t "$PYTHON_TESTS_TARGET_PATH"
+  -t "$PYTHON_TESTS_TARGET_PATH" \
+  -p "$PYTHON_PROJECT_NAME"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -ne 0 ]]; then
     echo "Java program returned exit code $JAVA_EXIT_CODE. Stopping script."
