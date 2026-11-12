@@ -61,14 +61,14 @@ class PythonTomlGeneratorTest {
 
     /**
      * Generated projects require the runtime version that introduced
-     * {@code rune_resolve_attr_values}.
+     * {@code rune_sorted}.
      */
     @Test
-    void testTomlRequiresRuntimeVersionTwoTwoOrLater() {
+    void testTomlRequiresRuntimeVersionThreeOrLater() {
         Map<String, CharSequence> python = testUtils.generatePythonFromString(MODEL);
         String toml = python.get("pyproject.toml").toString();
-        assertTrue(toml.contains("\"rune.runtime>=2.2.0,<3.0.0\""),
-                "Expected pyproject.toml to require rune.runtime>=2.2.0,<3.0.0 but was:\n" + toml);
+        assertTrue(toml.contains("\"rune.runtime>=3.0.0,<4.0.0\""),
+                "Expected pyproject.toml to require rune.runtime>=3.0.0,<4.0.0 but was:\n" + toml);
     }
 
     /**
