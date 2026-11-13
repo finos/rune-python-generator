@@ -43,24 +43,28 @@ public class PythonInheritanceTest {
 
         String expectedA = """
                 class A(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     aa: Optional[str] = Field(None, description='')
                 """;
         String expectedB = """
                 from com.rosetta.test.model.A import A
 
                 class B(A):
+                    model_config = ConfigDict(defer_build=True)
                     bb: Optional[str] = Field(None, description='')
                 """;
         String expectedC = """
                 from com.rosetta.test.model.B import B
 
                 class C(B):
+                    model_config = ConfigDict(defer_build=True)
                     cc: Optional[str] = Field(None, description='')
                 """;
         String expectedD = """
                 from com.rosetta.test.model.C import C
 
                 class D(C):
+                    model_config = ConfigDict(defer_build=True)
                     dd: Optional[str] = Field(None, description='')
                 """;
         testUtils.assertGeneratedContainsExpectedString(pythonString, expectedA);
@@ -88,6 +92,7 @@ public class PythonInheritanceTest {
 
         String expectedBaz = """
                 class Baz(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     pass
                 """;
 
@@ -95,6 +100,7 @@ public class PythonInheritanceTest {
                 from test.Baz import Baz
 
                 class Bar(Baz):
+                    model_config = ConfigDict(defer_build=True)
                     pass
                 """;
 
@@ -102,6 +108,7 @@ public class PythonInheritanceTest {
                 from test.Bar import Bar
 
                 class Foo(Bar):
+                    model_config = ConfigDict(defer_build=True)
                     pass
                 """;
 
@@ -168,6 +175,7 @@ public class PythonInheritanceTest {
             """,
             """
             class B(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 b: str = Field(..., description='')
             """);
 
@@ -181,6 +189,7 @@ public class PythonInheritanceTest {
             """,
             """
             class A(B):
+                model_config = ConfigDict(defer_build=True)
                 a: str = Field(..., description='')
             """);
     }
@@ -198,6 +207,7 @@ public class PythonInheritanceTest {
             """,
             """
             class Foo(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 a: Optional[str] = Field(None, description='')
                 b: Optional[str] = Field(None, description='')
             """);
@@ -213,6 +223,7 @@ public class PythonInheritanceTest {
             """,
             """
             class Bar(Foo):
+                model_config = ConfigDict(defer_build=True)
                 a: Optional[str] = Field(None, description='')
             """);
     }
@@ -228,6 +239,7 @@ public class PythonInheritanceTest {
             """,
             """
             class A(B):
+                model_config = ConfigDict(defer_build=True)
                 pass
             """);
     }
@@ -270,6 +282,7 @@ public class PythonInheritanceTest {
         testUtils.assertBundleContainsExpectedString(model,
             """
             class MeasureBase(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Provides an abstract type to define a measure as a number associated to a unit. This type is abstract because all its attributes are optional. The types that extend it can specify further existence constraints.
                 \"\"\"
@@ -286,6 +299,7 @@ public class PythonInheritanceTest {
         testUtils.assertBundleContainsExpectedString(model,
             """
             class Measure(MeasureBase):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Defines a concrete measure as a number associated to a unit. It extends MeasureBase by requiring the value attribute to be present. A measure may be unit-less so the unit attribute is still optional.
                 \"\"\"
@@ -299,6 +313,7 @@ public class PythonInheritanceTest {
         testUtils.assertBundleContainsExpectedString(model,
             """
             class UnitType(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Defines the unit to be used for price, quantity, or other purposes
                 \"\"\"

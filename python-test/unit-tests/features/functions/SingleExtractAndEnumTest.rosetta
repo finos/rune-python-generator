@@ -1,0 +1,105 @@
+namespace rosetta_dsl.test.functions.single_extract_enum : <"generate Python unit tests from Rosetta.">
+
+enum PriceKind:
+    AssetPrice
+    Other
+
+type Multiplier:
+    value number (1..1)
+
+type Quantity:
+    value number (1..1)
+    multiplier Multiplier (0..1)
+
+type Price:
+    priceKind PriceKind (1..1)
+
+func ExtractFromSingleValue: <"extract over a (0..1) input produces a single value.">
+    inputs:
+        quantity Quantity (0..1)
+    output:
+        result number (0..1)
+
+    alias units:
+        quantity
+            extract
+                if multiplier exists
+                then value * multiplier -> value
+                else value
+
+    set result:
+        units
+
+func UseExtractedSingleValueInArithmetic: <"The extracted single value can be used as a number.">
+    inputs:
+        quantity Quantity (0..1)
+        factor number (1..1)
+    output:
+        result number (0..1)
+
+    alias units:
+        quantity
+            extract value
+
+    set result:
+        factor * units
+
+func CountWithUnqualifiedEnumValue: <"The enum value is written without its type.">
+    inputs:
+        prices Price (0..*)
+    output:
+        result int (1..1)
+
+    set result:
+        prices
+            filter priceKind = AssetPrice
+            then count
+
+func CountWithQualifiedEnumValue: <"Control: the enum value is written with its type.">
+    inputs:
+        prices Price (0..*)
+    output:
+        result int (1..1)
+
+    set result:
+        prices
+            filter priceKind = PriceKind -> AssetPrice
+            then count
+
+func CountWithEnumValueInThen: <"The walk for imports must enter the body of then.">
+    inputs:
+        prices Price (0..*)
+    output:
+        result int (1..1)
+
+    set result:
+        prices
+            then filter priceKind = AssetPrice
+            then count
+
+func ConvertToEnum: <"to-enum refers to the enum by name only.">
+    inputs:
+        name string (1..1)
+    output:
+        result string (0..1)
+
+    set result:
+        name to-enum PriceKind to-string
+
+func EnumValueInSwitch: <"The walk for imports must enter the cases of switch.">
+    inputs:
+        name string (1..1)
+    output:
+        result string (1..1)
+
+    set result:
+        name switch
+            "asset" then PriceKind -> AssetPrice to-string,
+            default PriceKind -> Other to-string
+
+type PricedQuantity extends Price: <"The enum belongs to the parent type, so only the condition uses it here.">
+    value number (0..1)
+
+    condition ValueRequiredForAssetPrice:
+        if priceKind = AssetPrice
+        then value exists

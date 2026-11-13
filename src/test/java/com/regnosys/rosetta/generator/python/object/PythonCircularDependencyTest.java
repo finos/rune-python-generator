@@ -144,12 +144,14 @@ public class PythonCircularDependencyTest {
         testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "_v = _b.com_rosetta_test_model_CircularA");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "globals()['CircularA'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularA, "# EOF");
+        testUtils.assertGeneratedDoesNotContain(proxyCircularA, "class ");
 
         String proxyCircularB = gfAttr.get("src/com/rosetta/test/model/CircularB.py").toString();
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "def __getattr__(name: str):");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "_v = _b.com_rosetta_test_model_CircularB");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "globals()['CircularB'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyCircularB, "# EOF");
+        testUtils.assertGeneratedDoesNotContain(proxyCircularB, "class ");
 
         // Inheritance cycle: Parent ↔ Child (default namespace → com._bundle)
         Map<String, CharSequence> gfInh = testUtils.generatePythonFromString(
@@ -260,5 +262,125 @@ public class PythonCircularDependencyTest {
                 "_v = _b.rosetta_dsl_test_language_CircularDependency_B");
         testUtils.assertGeneratedContainsExpectedString(proxyB, "globals()['B'] = _v");
         testUtils.assertGeneratedContainsExpectedString(proxyB, "# EOF");
+    }
+
+    /**
+     * A standalone function refers to a bundled type by its stub name, which its file imports.
+     * The bundle name is only defined in _bundle.py.
+     */
+    @Test
+    public void testStandaloneFunctionUsesStubNameForBundledType() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type GroupB1:
+                    value number (0..1)
+                    groupB2 GroupB2 (0..1)
+
+                type GroupB2:
+                    groupB1 GroupB1 (0..1)
+
+                func MakeGroupB1:
+                    inputs:
+                        value number (0..1)
+                    output:
+                        result GroupB1 (0..1)
+                    set result:
+                        GroupB1 { value: value, ... }
+
+                func SetPathGroupB1:
+                    inputs:
+                        value number (0..1)
+                    output:
+                        result GroupB1 (0..1)
+                    set result -> value:
+                        value
+                """);
+        String make = python.get("src/com/rosetta/test/model/functions/MakeGroupB1.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(make,
+                "from com.rosetta.test.model.GroupB1 import GroupB1");
+        testUtils.assertGeneratedContainsExpectedString(make, "result = GroupB1(value=");
+        testUtils.assertGeneratedDoesNotContain(make, "com_rosetta_test_model_GroupB1");
+
+        String setPath = python.get("src/com/rosetta/test/model/functions/SetPathGroupB1.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(setPath, "result = ObjectBuilder(GroupB1)");
+        testUtils.assertGeneratedDoesNotContain(setPath, "com_rosetta_test_model_GroupB1");
+    }
+
+    /**
+     * A standalone class condition imports a bundled type it builds, inside the condition, and a
+     * bundled condition does the same for a standalone type. The bundle itself keeps the bundle
+     * name for bundled types.
+     */
+    @Test
+    public void testConditionsImportTypesTheyBuild() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type GroupB1:
+                    value number (0..1)
+                    groupB2 GroupB2 (0..1)
+
+                type GroupB2:
+                    groupB1 GroupB1 (0..1)
+
+                    condition BuildsStandaloneType:
+                        Leaf { value: 1 } -> value = 1
+
+                    condition BuildsBundledType:
+                        GroupB1 { value: 1, ... } -> value = 1
+
+                type Leaf:
+                    value number (0..1)
+
+                type Checker:
+                    value number (0..1)
+
+                    condition BuildsBundledType:
+                        GroupB1 { value: 1, ... } -> value = 1
+                """);
+        String checker = python.get("src/com/rosetta/test/model/Checker.py").toString();
+        testUtils.assertAppearsAfter(checker, "def condition_0_BuildsBundledType(self):",
+                "        from com.rosetta.test.model.GroupB1 import GroupB1");
+        testUtils.assertGeneratedDoesNotContain(checker, "com_rosetta_test_model_GroupB1");
+
+        String bundle = python.get("src/com/_bundle.py").toString();
+        testUtils.assertAppearsAfter(bundle, "def condition_0_BuildsStandaloneType(self):",
+                "        from com.rosetta.test.model.Leaf import Leaf");
+        testUtils.assertGeneratedContainsExpectedString(bundle, "com_rosetta_test_model_GroupB1(value=1)");
+    }
+
+    /**
+     * A bundled field gets its metadata serializer and validator on the field pydantic builds,
+     * not only in __annotations__, so its metadata (such as @key:scoped) is written. A bundled
+     * field inherited by a bundled subclass gets them on the subclass too. A field with no
+     * serializer or validator gets no metadata line.
+     */
+    @Test
+    public void testBundledFieldGetsMetadataSerializerAndValidator() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type Measure:
+                    value number (0..1)
+
+                type Holder:
+                    measure Measure (0..1)
+                        [metadata location]
+                    back Back (0..1)
+
+                type ChildHolder extends Holder:
+                    extra number (0..1)
+
+                type Back:
+                    holder Holder (0..1)
+                """);
+        String bundle = python.get("src/com/_bundle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "com_rosetta_test_model_Holder.model_fields[\"measure\"].metadata += "
+                        + "[Measure.serializer(), Measure.validator(('@key:scoped', ))]");
+        testUtils.assertGeneratedContainsExpectedString(bundle,
+                "com_rosetta_test_model_ChildHolder.model_fields[\"measure\"].metadata += "
+                        + "[Measure.serializer(), Measure.validator(('@key:scoped', ))]");
+        testUtils.assertAppearsAfter(bundle,
+                "com_rosetta_test_model_Holder.__annotations__[\"measure\"] = ",
+                "com_rosetta_test_model_Holder.model_fields[\"measure\"].metadata += ");
     }
 }

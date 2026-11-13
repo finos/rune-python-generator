@@ -1,0 +1,30 @@
+namespace rosetta_dsl.test.functions.filter_single_value : <"generate Python unit tests from Rosetta.">
+
+type Leaf:
+    value number (0..1)
+
+type Holder:
+    lone Leaf (0..1)
+
+    condition FilteredCountMatches: <"Filtering a single value keeps it when the test holds.">
+        if lone -> value exists
+        then (lone filter value exists then count) = 1
+        else (lone filter value exists then count) = 0
+
+func FilterSingle: <"A filter on a single value gives that value or nothing.">
+    inputs:
+        lone Leaf (0..1)
+    output:
+        result Leaf (0..1)
+
+    set result:
+        lone filter value exists
+
+func FilterSingleThenCount:
+    inputs:
+        lone Leaf (0..1)
+    output:
+        result int (1..1)
+
+    set result:
+        lone filter value exists then count

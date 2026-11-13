@@ -29,6 +29,18 @@ mvn clean package
 
 The JUnit tests compare generated Python output against expected results. All tests should pass.
 
+### Known Build Warnings
+
+These warnings come from upstream dependencies and don't affect the build. They are left visible rather than suppressed.
+
+- **`jvnet-nexus-releases` (Maven 3.10 and later):**
+
+  ```
+  [WARNING] Could not transfer metadata /.meta/prefixes.txt from/to jvnet-nexus-releases (https://maven.java.net/content/repositories/releases/): (certificate_expired) PKIX path validation failed
+  ```
+
+  `maven-checkstyle-plugin` 3.6.0 depends on `javax.xml.bind:jaxb-api` 2.3.1, whose parent POM declares the retired `maven.java.net` repository. Maven 3.10 checks that repository and reports the failure; every file still resolves from Maven Central. The dependency is removed upstream for `maven-checkstyle-plugin` 3.6.1 ([apache/maven-checkstyle-plugin#736](https://github.com/apache/maven-checkstyle-plugin/issues/736)), which is not yet released. Tracked in [#335](https://github.com/finos/rune-python-generator/issues/335).
+
 ---
 
 ## Run Python Unit Tests

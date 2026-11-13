@@ -22,6 +22,10 @@ public final class PythonCodeGeneratorConstants {
      */
     public static final String PYPROJECT_TOML = "pyproject.toml";
     /**
+     * The README file name, which pyproject.toml names as the package description.
+     */
+    public static final String README_MD = "README.md";
+    /**
      * The __init__ file name.
      */
     public static final String INIT = "__init__";

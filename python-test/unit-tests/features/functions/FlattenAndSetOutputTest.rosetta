@@ -1,0 +1,144 @@
+namespace rosetta_dsl.test.functions.flatten_set_output : <"generate Python unit tests from Rosetta.">
+
+type Leaf:
+    value number (1..1)
+    name string (0..1)
+
+type Branch:
+    leaf Leaf (0..1)
+    leaves Leaf (0..*)
+    tags string (0..*)
+
+type Tree:
+    branches Branch (0..*)
+
+    condition AtMostTwoLeaves: <"flatten of model lists inside a condition.">
+        branches extract leaves then flatten then count <= 2
+
+type TreeOfSetOutputs:
+    branches Branch (0..*)
+
+    condition AtMostOneLeaf: <"flatten of a function's multi-valued output inside a condition.">
+        branches extract SetFromSingle(leaf) then flatten then count <= 1
+
+func FlattenModelLists:
+    inputs:
+        branches Branch (0..*)
+    output:
+        result Leaf (0..*)
+
+    add result:
+        branches extract leaves then flatten
+
+func FlattenStringLists: <"Strings have __iter__ but must stay whole.">
+    inputs:
+        branches Branch (0..*)
+    output:
+        result string (0..*)
+
+    add result:
+        branches extract tags then flatten
+
+func FlattenConditionalLists:
+    inputs:
+        branches Branch (0..*)
+    output:
+        result Leaf (0..*)
+
+    add result:
+        branches
+            extract
+                if leaves exists
+                then leaves
+                else empty
+            then flatten
+
+func AddFromSingle: <"Control: a multi-valued output filled with add.">
+    inputs:
+        leaf Leaf (0..1)
+    output:
+        result Leaf (0..*)
+
+    add result:
+        leaf
+
+func SetFromSingle: <"A multi-valued output filled with set from a single model object.">
+    inputs:
+        leaf Leaf (0..1)
+    output:
+        result Leaf (0..*)
+
+    set result:
+        leaf
+
+func SetFromSingleString: <"A multi-valued output filled with set from a single basic value.">
+    inputs:
+        name string (0..1)
+    output:
+        result string (0..*)
+
+    set result:
+        name
+
+func SetFromList: <"Control: a multi-valued output filled with set from a list.">
+    inputs:
+        leaves Leaf (0..*)
+    output:
+        result Leaf (0..*)
+
+    set result:
+        leaves
+
+func FlattenAddOutputs:
+    inputs:
+        branches Branch (0..*)
+    output:
+        result Leaf (0..*)
+
+    add result:
+        branches extract AddFromSingle(leaf) then flatten
+
+func FlattenSetOutputs:
+    inputs:
+        branches Branch (0..*)
+    output:
+        result Leaf (0..*)
+
+    add result:
+        branches extract SetFromSingle(leaf) then flatten
+
+func FlattenSetListOutputs: <"Control: the function returns a list from set.">
+    inputs:
+        branches Branch (0..*)
+    output:
+        result Leaf (0..*)
+
+    add result:
+        branches extract SetFromList(leaves) then flatten
+
+func ExtractFromSetOutput: <"Other callers rely on the output being a list too.">
+    inputs:
+        leaf Leaf (0..1)
+    output:
+        result number (0..*)
+
+    add result:
+        SetFromSingle(leaf) extract value
+
+func CountSetOutput:
+    inputs:
+        leaf Leaf (0..1)
+    output:
+        result int (1..1)
+
+    set result:
+        SetFromSingle(leaf) count
+
+func FirstOfSetOutput:
+    inputs:
+        leaf Leaf (0..1)
+    output:
+        result Leaf (0..1)
+
+    set result:
+        SetFromSingle(leaf) first

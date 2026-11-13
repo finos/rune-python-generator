@@ -14,9 +14,17 @@ import com.regnosys.rosetta.types.RAttribute;
 
 public final class PythonCodeGeneratorUtil {
 
+    /** A release version, {@code #.#.#} (e.g. {@code 1.2.3}). */
     public static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+    /**
+     * A development version, {@code #.#.#-dev.#} (e.g. {@code 1.2.3-dev.4}); groups: the release, then the counter.
+     */
     public static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
+    /** A Maven snapshot version (e.g. {@code 0.0.0.main-SNAPSHOT}); group: the release. */
     public static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+).*-SNAPSHOT");
+    /**
+     * A version already in PEP 440 development form, {@code #.#.#.dev#} (e.g. {@code 1.2.3.dev4}).
+     */
     private static final Pattern PEP440_DEV_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.dev\\d+");
 
     private PythonCodeGeneratorUtil() {
@@ -73,12 +81,15 @@ public final class PythonCodeGeneratorUtil {
                 # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
                 # pylint: disable=missing-module-docstring
                 from __future__ import annotations
+                import builtins as _builtins
                 import datetime
+                import datetime as _datetime
+                import decimal as _decimal
                 import functools
                 import inspect
                 import sys
                 from decimal import Decimal
-                from typing import Annotated, Optional
+                from typing import Annotated, ClassVar, Optional
 
                 from pydantic import ConfigDict, Field, validate_call, InstanceOf
 
@@ -177,7 +188,7 @@ public final class PythonCodeGeneratorUtil {
                 requires-python = ">= 3.11"
                 dependencies = [
                    "pydantic>=2.10.3",
-                   "rune.runtime>=3.0.0,<4.0.0"
+                   "rune.runtime>=3.1.0,<4.0.0"
                 ]
                 readme = "README.md"
                 classifiers = [
@@ -194,6 +205,27 @@ public final class PythonCodeGeneratorUtil {
 
                 [tool.setuptools.packages.find]
                 where = ["src"]""".formatted(name, version).stripIndent();
+    }
+
+    /**
+     * Creates the README that pyproject.toml names as the package's description, so that the
+     * generated package is complete without any file supplied from elsewhere.
+     *
+     * @param projectName the package name, as in pyproject.toml
+     * @param version     the package version, as in pyproject.toml
+     * @return the README content
+     */
+    public static String createReadmeFile(String projectName, String version) {
+        return """
+                # %s
+
+                Python package generated from a Rune model by \
+                [rune-python-generator](https://github.com/finos/rune-python-generator).
+
+                Version: %s
+
+                The generated code depends on the `rune.runtime` package.
+                """.formatted(projectName, version);
     }
 
     public static String cleanVersion(String version) {

@@ -1,0 +1,49 @@
+namespace rosetta_dsl.test.language.type_switch : <"generate Python unit tests from Rosetta.">
+
+// Based on the "Switch for complex types" example in the Rune documentation.
+
+type Person:
+    name string (0..1)
+
+type Employee extends Person:
+    salary number (1..1)
+
+type Contractor extends Person:
+    hourlyRate number (1..1)
+
+type Manager extends Employee:
+    bonus number (1..1)
+
+func ComputeMonthlyWage: <"A case can use the attributes of its type directly.">
+    inputs:
+        person Person (0..1)
+    output:
+        monthlyWage number (0..1)
+
+    set monthlyWage:
+        person switch
+            Employee then salary,
+            Contractor then hourlyRate * 8 * 5 * 20,
+            default 0
+
+func DescribeMostSpecificFirst: <"A subtype case comes before its parent type's case; Rune rejects the reverse order.">
+    inputs:
+        person Person (1..1)
+    output:
+        description string (1..1)
+
+    set description:
+        person switch
+            Manager then "manager",
+            Employee then "employee",
+            default "person"
+
+type Payroll: <"A type switch inside a class condition.">
+    person Person (0..1)
+
+    condition PositivePay:
+        if person exists
+        then person switch
+            Employee then salary > 0,
+            Contractor then hourlyRate > 0,
+            default True

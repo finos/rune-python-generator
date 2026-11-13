@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package com.regnosys.rosetta.generator.python.expressions;
 
 import org.eclipse.xtext.testing.InjectWith;
@@ -14,6 +18,7 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class RosettaReduceOperationTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

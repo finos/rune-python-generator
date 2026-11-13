@@ -4,6 +4,8 @@
  */
 package com.regnosys.rosetta.generator.python.expressions;
 
+import java.util.Map;
+
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
@@ -559,5 +561,118 @@ public class PythonAsOperationTest {
             """
             result = rune_resolve_attr(rune_resolve_attr(rune_resolve_attr(self, "outer"), "Inner1"), "Bar")
             """);
+    }
+
+    // -------------------------------------------------------------------------
+    // Type names and imports for data type narrowing
+    // -------------------------------------------------------------------------
+
+    /**
+     * DogB and OwnerB refer to each other, so they are bundled, and so is their supertype Pet.
+     * Shape and Circle are standalone. Checker is a standalone class, OwnerB a bundled one, and
+     * NarrowPet a function; each narrows to a bundled type and to a standalone one.
+     */
+    private static final String NARROWING_MODEL = """
+            type Pet:
+
+            type DogB extends Pet:
+                owner OwnerB (0..1)
+
+            type OwnerB:
+                dog DogB (0..1)
+                pet Pet (0..1)
+                shape Shape (0..1)
+
+                condition NarrowsToBundledType:
+                    if pet exists then (pet as DogB) exists
+
+                condition NarrowsToStandaloneType:
+                    if shape exists then (shape as Circle) exists
+
+            type Shape:
+
+            type Circle extends Shape:
+                radius number (0..1)
+
+            type Checker:
+                pet Pet (0..1)
+                shape Shape (0..1)
+
+                condition NarrowsToBundledType:
+                    if pet exists then (pet as DogB) exists
+
+                condition NarrowsToStandaloneType:
+                    if shape exists then (shape as Circle) exists
+
+            func NarrowPet:
+                inputs:
+                    pet Pet (1..1)
+                    shape Shape (1..1)
+                output:
+                    result boolean (1..1)
+                set result:
+                    (pet as DogB) exists and (shape as Circle) exists
+            """;
+
+    private Map<String, CharSequence> narrowing() {
+        return testUtils.generatePythonFromString(NARROWING_MODEL);
+    }
+
+    /**
+     * A condition in the bundle narrows to a bundled type by its bundle name.
+     */
+    @Test
+    public void testBundledConditionNarrowsToBundledTypeByBundleName() {
+        String bundle = narrowing().get("src/com/_bundle.py").toString();
+        testUtils.assertAppearsAfter(bundle, "def condition_0_NarrowsToBundledType(self):",
+                "), com_rosetta_test_model_DogB) else None)");
+    }
+
+    /**
+     * A condition in the bundle imports a standalone type it narrows to, inside the condition.
+     */
+    @Test
+    public void testBundledConditionImportsStandaloneTarget() {
+        String bundle = narrowing().get("src/com/_bundle.py").toString();
+        testUtils.assertAppearsAfter(bundle, "def condition_1_NarrowsToStandaloneType(self):",
+                "        from com.rosetta.test.model.Circle import Circle");
+    }
+
+    /**
+     * A standalone class condition imports the bundled type it narrows to, inside the condition,
+     * and uses its stub name.
+     */
+    @Test
+    public void testStandaloneConditionImportsBundledTarget() {
+        String checker = narrowing().get("src/com/rosetta/test/model/Checker.py").toString();
+        testUtils.assertAppearsAfter(checker, "def condition_0_NarrowsToBundledType(self):",
+                "        from com.rosetta.test.model.DogB import DogB");
+        testUtils.assertGeneratedContainsExpectedString(checker, "), DogB) else None)");
+        testUtils.assertGeneratedDoesNotContain(checker, "com_rosetta_test_model_DogB");
+    }
+
+    /**
+     * A standalone class condition imports the standalone type it narrows to, inside the
+     * condition.
+     */
+    @Test
+    public void testStandaloneConditionImportsStandaloneTarget() {
+        String checker = narrowing().get("src/com/rosetta/test/model/Checker.py").toString();
+        testUtils.assertAppearsAfter(checker, "def condition_1_NarrowsToStandaloneType(self):",
+                "        from com.rosetta.test.model.Circle import Circle");
+    }
+
+    /**
+     * Control: a function imports both types it narrows to and uses their stub names.
+     */
+    @Test
+    public void testFunctionImportsNarrowingTargets() {
+        String narrowPet = narrowing().get("src/com/rosetta/test/model/functions/NarrowPet.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(narrowPet,
+                "from com.rosetta.test.model.DogB import DogB");
+        testUtils.assertGeneratedContainsExpectedString(narrowPet,
+                "from com.rosetta.test.model.Circle import Circle");
+        testUtils.assertGeneratedContainsExpectedString(narrowPet, "), DogB) else None)");
+        testUtils.assertGeneratedDoesNotContain(narrowPet, "com_rosetta_test_model_DogB");
     }
 }

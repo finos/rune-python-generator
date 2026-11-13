@@ -101,7 +101,7 @@ public class PythonMetadataTest {
         String nodeRefPython = getPython().get("src/test/generated_syntax/metadata/NodeRef.py").toString();
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython, "class NodeRef(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython,
-            "typeA: Annotated[Optional[A], A.serializer(), A.validator()] = Field(None, description='')");
+            "typeA: Annotated[Optional[A], A.serializer(), A.validator(('@key', '@key:external'))] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(nodeRefPython,
             "aReference: Annotated[Optional[A | BaseReference], A.serializer(), A.validator(('@key', '@key:external', '@ref', '@ref:external'))] = Field(None, description='')");
     }

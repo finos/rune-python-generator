@@ -121,6 +121,7 @@ public class PythonStandaloneStructureTest {
         String generatedPython = gf.get("src/test/generated_syntax/basic/BasicSingle.py").toString();
         String expectedBasicSingle = """
             class BasicSingle(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 booleanType: bool = Field(..., description='')
                 numberType: Decimal = Field(..., description='')
                 parameterisedNumberType: Decimal = Field(..., description='', max_digits=18, decimal_places=2)
@@ -140,6 +141,7 @@ public class PythonStandaloneStructureTest {
         String generatedPython = gf.get("src/test/generated_syntax/basic/BasicList.py").toString();
         String expectedBasicList = """
             class BasicList(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 booleanTypes: list[bool | None] = Field(..., description='', min_length=1)
                 numberTypes: list[Decimal | None] = Field(..., description='', min_length=1)
                 parameterisedNumberTypes: list[Annotated[Decimal, Field(max_digits=18, decimal_places=2)] | None] = Field(..., description='', min_length=1)
@@ -160,6 +162,7 @@ public class PythonStandaloneStructureTest {
         String generatedPython = gf.get("src/test/generated_syntax/basic/Root.py").toString();
         String expectedRoot = """
             class Root(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 basicSingle: Annotated[Optional[BasicSingle], BasicSingle.serializer(), BasicSingle.validator()] = Field(None, description='')
                 basicList: Annotated[Optional[BasicList], BasicList.serializer(), BasicList.validator()] = Field(None, description='')
             """;
