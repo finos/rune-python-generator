@@ -129,9 +129,9 @@ public class PythonMetadataTest {
         String rootPython = getPython().get("src/test/generated_syntax/metadata/Root.py").toString();
         testUtils.assertGeneratedContainsExpectedString(rootPython, "class Root(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(rootPython,
-            "nodeRef: Optional[NodeRef] = Field(None, description='')");
+            "nodeRef: Annotated[Optional[NodeRef], NodeRef.serializer(), NodeRef.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(rootPython,
-            "attributeRef: Optional[AttributeRef] = Field(None, description='')");
+            "attributeRef: Annotated[Optional[AttributeRef], AttributeRef.serializer(), AttributeRef.validator()] = Field(None, description='')");
     }
 
     /**

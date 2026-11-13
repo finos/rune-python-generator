@@ -290,7 +290,7 @@ public class PythonInheritanceTest {
                 \"\"\"
                 Specifies the value of the measure as a number. Optional because in a measure vector or schedule, this single value may be omitted.
                 \"\"\"
-                unit: Optional[UnitType] = Field(None, description='Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).')
+                unit: Annotated[Optional[UnitType], UnitType.serializer(), UnitType.validator()] = Field(None, description='Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).')
                 \"\"\"
                 Qualifies the unit by which the amount is measured. Optional because a measure may be unit-less (e.g. when representing a ratio between amounts in the same unit).
                 \"\"\"
@@ -339,5 +339,31 @@ public class PythonInheritanceTest {
                     item = self
                     return rune_check_one_of(item, 'capacityUnit', 'weatherUnit', 'financialUnit', 'currency', necessity=True)
             """);
+    }
+
+    /**
+     * A field of a data type in a standalone class gets the runtime's serializer and
+     * validator even without metadata, so a subtype keeps its type and `@type` (#329).
+     */
+    @Test
+    public void testStandaloneDataTypeFieldHasSerializerAndValidator() {
+        String model = """
+            type Animal:
+                name string (1..1)
+
+            type Dog extends Animal:
+                breed string (1..1)
+
+            type Owner:
+                pet Animal (0..1)
+                pets Animal (0..*)
+                firstPet Animal (1..1)
+            """;
+        testUtils.assertBundleContainsExpectedString(model,
+            "pet: Annotated[Optional[Animal], Animal.serializer(), Animal.validator()] = Field(None, description='')");
+        testUtils.assertBundleContainsExpectedString(model,
+            "pets: Annotated[Optional[list[Animal | None]], Animal.serializer(), Animal.validator()] = Field(None, description='')");
+        testUtils.assertBundleContainsExpectedString(model,
+            "firstPet: Annotated[Animal, Animal.serializer(), Animal.validator()] = Field(..., description='')");
     }
 }

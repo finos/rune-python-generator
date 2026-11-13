@@ -1,0 +1,11 @@
+namespace rosetta_dsl.test.model_structure.subtype_field : <"generate Python unit tests for a subtype held in a field declared as its parent type.">
+
+type Animal:
+    name string (1..1)
+
+type Dog extends Animal:
+    breed string (1..1)
+
+type Owner:
+    pet Animal (0..1)
+    pets Animal (0..*)

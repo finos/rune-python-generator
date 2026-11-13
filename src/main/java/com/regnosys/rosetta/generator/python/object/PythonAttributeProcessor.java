@@ -202,9 +202,10 @@ public final class PythonAttributeProcessor {
         String propString = validationProps.toFieldArgs();
         Optional<String> fieldProps = (isList && !propString.isEmpty()) ? Optional.of(propString) : Optional.empty();
 
-        // STANDALONE strategy: omit Annotated wrapper unless there are validators
-        // BUNDLED strategy: always use Annotated for isDelayed to support Phase 2 updates
-        boolean needsRuneAnns = (isDelayed && !isSourceStandalone) || !validators.isEmpty();
+        // Every field of a data type needs the runtime's serializer and validator, with or
+        // without metadata: they write `@type` for a subtype and keep the subtype when the
+        // object is built or read (#329).
+        boolean needsRuneAnns = isDelayed || !validators.isEmpty();
         Optional<String> runeAnns = needsRuneAnns ? Optional.of(getRuneAnnotationArgs(validators, baseTypeName))
                 : Optional.empty();
 

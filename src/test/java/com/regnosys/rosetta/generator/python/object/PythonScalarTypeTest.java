@@ -195,7 +195,7 @@ public class PythonScalarTypeTest {
                 testTypeValue1: str = Field(..., description='')
                 testTypeValue2: Optional[str] = Field(None, description='')
                 testTypeValue3: list[str | None] = Field(..., description='', min_length=1)
-                testTypeValue4: TestType2 = Field(..., description='')
+                testTypeValue4: Annotated[TestType2, TestType2.serializer(), TestType2.validator()] = Field(..., description='')
                 testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='')
             """);
     }
@@ -227,7 +227,7 @@ public class PythonScalarTypeTest {
             class MeasureBase(BaseDataClass):
                 model_config = ConfigDict(defer_build=True)
                 amount: Decimal = Field(..., description='')
-                unitOfAmount: UnitType = Field(..., description='')
+                unitOfAmount: Annotated[UnitType, UnitType.serializer(), UnitType.validator()] = Field(..., description='')
             """);
 
         testUtils.assertBundleContainsExpectedString(model,
@@ -235,7 +235,7 @@ public class PythonScalarTypeTest {
             class Quantity(MeasureBase):
                 model_config = ConfigDict(defer_build=True)
                 multiplier: Optional[Decimal] = Field(None, description='')
-                multiplierUnit: Optional[UnitType] = Field(None, description='')
+                multiplierUnit: Annotated[Optional[UnitType], UnitType.serializer(), UnitType.validator()] = Field(None, description='')
             """);
     }
 

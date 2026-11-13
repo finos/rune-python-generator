@@ -108,7 +108,7 @@ public class PythonConditionTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "class Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "quotePrice: Optional[QuotePrice] = Field(None, description='')");
+            "quotePrice: Annotated[Optional[QuotePrice], QuotePrice.serializer(), QuotePrice.validator()] = Field(None, description='')");
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "class QuotePrice(BaseDataClass):");
@@ -144,7 +144,7 @@ public class PythonConditionTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "class Quote(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "quotePrice: Optional[QuotePrice] = Field(None, description='')");
+            "quotePrice: Annotated[Optional[QuotePrice], QuotePrice.serializer(), QuotePrice.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(pythonString, "def condition_0_Quote_Price(self):");
     }
 
@@ -166,7 +166,7 @@ public class PythonConditionTest {
             """).toString();
 
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "quotePrice: Optional[QuotePrice] = Field(None, description='')");
+            "quotePrice: Annotated[Optional[QuotePrice], QuotePrice.serializer(), QuotePrice.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "return rune_all_elements(rune_resolve_attr(rune_resolve_attr(self, \"quotePrice\"), \"bidPrice\"), \"=\", Decimal('0.0'))");
     }
@@ -513,7 +513,7 @@ public class PythonConditionTest {
                     model_config = ConfigDict(defer_build=True)
                     intValue1: Optional[int] = Field(None, description='')
                     intValue2: Optional[int] = Field(None, description='')
-                    aValue: A = Field(..., description='')
+                    aValue: Annotated[A, A.serializer(), A.validator()] = Field(..., description='')
 
                     @rune_condition
                     def condition_0_Rule(self):
