@@ -32,7 +32,8 @@ import jakarta.inject.Inject;
  * <li>a data type is keyed by its Rune fully qualified name, as {@code _fqrtn()} returns it;</li>
  * <li>a basic type, an enum, or a type alias of either is keyed by the option name, which is what
  * the serializer writes as {@code @type};</li>
- * <li>a nested choice contributes every leaf and every choice beneath it, itself included.</li>
+ * <li>a nested choice contributes its leaves; its own FQN is included only when the option has
+ * metadata, because Java writes that option's metadata/reference wrapper with its own type.</li>
  * </ul>
  */
 public class PythonChoiceDispatchProcessor {
@@ -73,15 +74,8 @@ public class PythonChoiceDispatchProcessor {
         for (RChoiceOption option : choiceType.getOwnOptions()) {
             String optionName = option.getEObject().getName();
             String attribute = RuneToPythonMapper.mangleName(optionName);
-            RType optionType = typeSystem.stripFromTypeAliases(option.getType().getRType());
-            if (builtins.NOTHING.equals(optionType)) {
-                continue;
-            }
             Set<String> keys = new TreeSet<>();
-            keys.add(key(optionType, optionName));
-            if (optionType instanceof RChoiceType nested) {
-                collectNestedKeys(nested, keys);
-            }
+            collectOptionKeys(option, keys);
             for (String key : keys) {
                 String owner = optionByKey.putIfAbsent(key, optionName);
                 if (owner != null && !owner.equals(optionName)) {
@@ -96,21 +90,27 @@ public class PythonChoiceDispatchProcessor {
         return attributeByKey;
     }
 
-    private void collectNestedKeys(RChoiceType choiceType, Set<String> keys) {
-        for (RChoiceOption option : choiceType.getOwnOptions()) {
-            RType optionType = typeSystem.stripFromTypeAliases(option.getType().getRType());
-            if (builtins.NOTHING.equals(optionType)) {
-                continue;
+    private void collectOptionKeys(RChoiceOption option, Set<String> keys) {
+        RType optionType = typeSystem.stripFromTypeAliases(option.getType().getRType());
+        if (builtins.NOTHING.equals(optionType)) {
+            return;
+        }
+        if (optionType instanceof RChoiceType nested) {
+            // A choice cannot own type-level metadata. Attribute metadata belongs to
+            // the option's wrapper, whose @type still identifies the nested choice.
+            if (option.getType().hasAttributeMeta()) {
+                keys.add(fullyQualifiedName(nested));
             }
+            for (RChoiceOption nestedOption : nested.getOwnOptions()) {
+                collectOptionKeys(nestedOption, keys);
+            }
+        } else {
             keys.add(key(optionType, option.getEObject().getName()));
-            if (optionType instanceof RChoiceType nested) {
-                collectNestedKeys(nested, keys);
-            }
         }
     }
 
     private static String key(RType optionType, String optionName) {
-        return (optionType instanceof RDataType || optionType instanceof RChoiceType)
+        return optionType instanceof RDataType
                 ? fullyQualifiedName(optionType)
                 : optionName;
     }
