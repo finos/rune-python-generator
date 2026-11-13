@@ -1,6 +1,3 @@
-# xtend
-**/src-gen/
-**/xtend-gen/
 # Compiled Java class files
 *.class
 # Compiled Python bytecode
@@ -41,8 +38,6 @@ Thumbs.db
 *.wmv
 # Jupyter Notebook
 .ipynb_checkpoints
-# some other generated files
-*._trace
 # Python
 __pycache__
 .pyenv/
@@ -53,11 +48,9 @@ __pycache__
 **/.checkstyle
 # project
 **/*.egg-info
-**/rune.runtime-*.*.*-py3-none-any.whl
 **/test_helper-0.0.0-py3-none-any.whl
 **/python-test/serialization-tests/rune-common
 **/python-test/cdm-tests/rosetta/
 src/generated/
 *.todo
 /build/
-test/***
