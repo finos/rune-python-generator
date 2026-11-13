@@ -415,6 +415,12 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
+              Known warning with Maven 3.10+: "Could not transfer metadata /.meta/prefixes.txt from/to
+              jvnet-nexus-releases". This plugin's jaxb-api 2.3.1 dependency inherits that retired
+              repository; the build is unaffected. Fixed upstream for 3.6.1, not yet released:
+              https://github.com/apache/maven-checkstyle-plugin/issues/736. Tracked in https://github.com/finos/rune-python-generator/issues/335.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
