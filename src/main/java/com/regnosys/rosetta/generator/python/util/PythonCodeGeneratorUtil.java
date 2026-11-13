@@ -14,9 +14,17 @@ import com.regnosys.rosetta.types.RAttribute;
 
 public final class PythonCodeGeneratorUtil {
 
+    /** A release version, {@code #.#.#} (e.g. {@code 1.2.3}). */
     public static final Pattern VALID_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+");
+    /**
+     * A development version, {@code #.#.#-dev.#} (e.g. {@code 1.2.3-dev.4}); groups: the release, then the counter.
+     */
     public static final Pattern DEV_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)-dev\\.(\\d+)");
+    /** A Maven snapshot version (e.g. {@code 0.0.0.main-SNAPSHOT}); group: the release. */
     public static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+).*-SNAPSHOT");
+    /**
+     * A version already in PEP 440 development form, {@code #.#.#.dev#} (e.g. {@code 1.2.3.dev4}).
+     */
     private static final Pattern PEP440_DEV_VERSION_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.dev\\d+");
 
     private PythonCodeGeneratorUtil() {
