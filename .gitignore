@@ -61,4 +61,3 @@ src/generated/
 *.todo
 /build/
 test/***
-**/python-test/serialization-tests/error-handling
