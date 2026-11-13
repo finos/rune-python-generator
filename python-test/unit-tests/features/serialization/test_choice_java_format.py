@@ -12,12 +12,22 @@ from rune.runtime.base_data_class import BaseDataClass
 from rosetta_dsl.test.serialization.choice_java_format.A import A
 from rosetta_dsl.test.serialization.choice_java_format.B import B
 from rosetta_dsl.test.serialization.choice_java_format.ChoiceData import ChoiceData
+from rosetta_dsl.test.serialization.choice_java_format.ChoiceEnum import ChoiceEnum
+from rosetta_dsl.test.serialization.choice_java_format.CurrencyEnum import CurrencyEnum
 from rosetta_dsl.test.serialization.choice_java_format.LoopHolder import LoopHolder
 from rosetta_dsl.test.serialization.choice_java_format.Root import Root
 
 NS = 'rosetta_dsl.test.serialization.choice_java_format'
 A_JSON = {'@type': f'{NS}.A', 'fieldA': 'foo'}
 B_JSON = {'@type': f'{NS}.B', 'fieldB': 'bar'}
+
+# @type is the enum's Rune FQN for an enum option and the option name for a basic option, with or
+# without metadata. It never holds a language-specific name such as a Java class (java.lang.String),
+# which Java writes for a basic option with metadata. Java writes a plain enum option with its
+# option name.
+ENUM_JSON = {'@type': f'{NS}.CurrencyEnum', '@data': 'USD'}
+ENUM_META_JSON = {'@type': f'{NS}.CurrencyEnum', '@data': 'USD', '@scheme': 'urn:ccy'}
+STRING_META_JSON = {'@type': 'string', '@data': 'foo', '@scheme': 'urn:x'}
 
 
 def _read(body: dict, root: str = 'Root', validate: bool = True):
@@ -34,6 +44,10 @@ def _read(body: dict, root: str = 'Root', validate: bool = True):
     pytest.param('entries', [A_JSON, B_JSON], id='list'),
     pytest.param('located', {'@key:scoped': 'outer', '@data': A_JSON},
                  id='choice-attribute-with-metadata'),
+    pytest.param('currency', ENUM_JSON, id='enum-option'),
+    pytest.param('currency', {'@type': 'string', '@data': 'foo'}, id='string-option-beside-enum'),
+    pytest.param('currencyMeta', ENUM_META_JSON, id='enum-option-with-metadata'),
+    pytest.param('currencyMeta', STRING_META_JSON, id='string-option-with-metadata'),
 ])
 def test_round_trip(attribute, value):
     '''Java's JSON is read, and written back unchanged'''
@@ -52,6 +66,12 @@ def test_write_object_built_in_python():
     '''an object built in Python is written in the same format'''
     written = json.loads(Root(data=ChoiceData(A=A(fieldA='foo'))).rune_serialize())
     assert written['data'] == A_JSON
+
+
+def test_write_enum_option_built_in_python():
+    '''a plain enum option built in Python is written with the enum's Rune FQN as @type'''
+    written = json.loads(Root(currency=ChoiceEnum(CurrencyEnum=CurrencyEnum.USD)).rune_serialize())
+    assert written['currency'] == ENUM_JSON
 
 
 def test_reference_to_key_inside_choice():
@@ -77,6 +97,13 @@ def test_type_with_one_of_condition_keeps_attribute_names():
     pytest.param('data', {'A': {'fieldA': 'foo'}}, id='nested-form'),
     pytest.param('basic', {'string': 'foo'}, id='nested-form-basic'),
     pytest.param('data', {'@type': f'{NS}.PaymentDate', 'day': 'Monday'}, id='not-an-option'),
+    # An enum option is selected only by its Rune FQN, a basic option only by its option name
+    pytest.param('currency', {'@type': 'CurrencyEnum', '@data': 'USD'},
+                 id='enum-option-with-option-name'),
+    pytest.param('currencyMeta', {'@type': 'CurrencyEnum', '@data': 'USD', '@scheme': 'urn:ccy'},
+                 id='enum-option-with-metadata-with-option-name'),
+    pytest.param('currencyMeta', {'@type': 'java.lang.String', '@data': 'foo', '@scheme': 'urn:x'},
+                 id='string-option-with-metadata-with-java-class-name'),
 ])
 def test_invalid_choice_is_rejected(attribute, value, validate):
     '''only a declared option in the Rune JSON format is accepted'''

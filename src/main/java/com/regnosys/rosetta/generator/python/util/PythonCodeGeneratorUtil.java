@@ -180,7 +180,7 @@ public final class PythonCodeGeneratorUtil {
                 requires-python = ">= 3.11"
                 dependencies = [
                    "pydantic>=2.10.3",
-                   "rune.runtime>=3.0.0,<4.0.0"
+                   "rune.runtime>=3.1.0,<4.0.0"
                 ]
                 readme = "README.md"
                 classifiers = [

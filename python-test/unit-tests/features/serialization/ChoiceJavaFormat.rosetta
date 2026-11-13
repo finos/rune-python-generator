@@ -29,6 +29,24 @@ choice ChoiceDated:
     WithDate
     B
 
+enum CurrencyEnum:
+    USD
+    EUR
+
+// @type is the enum's Rune FQN for an enum option, and the option name for a basic option.
+// (Java writes the option name for a plain enum option.)
+choice ChoiceEnum:
+    CurrencyEnum
+    string
+
+// Metadata doesn't change @type, which is never a language-specific name.
+// (Java writes the wrapped value's Java class name here, e.g. java.lang.String.)
+choice ChoiceEnumMeta:
+    CurrencyEnum
+        [metadata scheme]
+    string
+        [metadata scheme]
+
 // The same fields as a choice of A and B, but not a choice: its JSON uses attribute names.
 type ViaOneOf:
     A A (0..1)
@@ -48,6 +66,8 @@ type Root:
     dateRef PaymentDate (0..1)
         [metadata reference]
     viaOneOf ViaOneOf (0..1)
+    currency ChoiceEnum (0..1)
+    currencyMeta ChoiceEnumMeta (0..1)
 
 // LoopOption and LoopHolder refer to each other through LoopChoice, so all three are bundled.
 type LoopOption:

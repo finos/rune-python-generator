@@ -22,10 +22,11 @@ import jakarta.inject.Inject;
 
 /**
  * Every choice class gets a {@code _CHOICE_DISPATCH} table mapping each {@code @type} it can be
- * read with to the attribute name of the option that holds it (#333). A data type is keyed by its
- * Rune FQN, a basic type, enum or type alias of either by the option name, and a nested choice
- * contributes its leaves. An intermediate choice also contributes its own FQN when the option
- * has metadata, because Java writes that choice's metadata/reference wrapper with its own type.
+ * read with to the attribute name of the option that holds it (#333). Keys are Rune names only:
+ * a data type or enum is keyed by its Rune FQN, a basic type by the option name, with or without
+ * metadata, and a type alias by the key of the type it names (keeping the option name for a basic
+ * type). A nested choice contributes its leaves; an intermediate choice also contributes its own FQN
+ * when the option has metadata, because that option's metadata/reference wrapper carries its type.
  */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
@@ -133,7 +134,7 @@ public class PythonChoiceDispatchTest {
     }
 
     @Test
-    public void testBasicTypeAndEnumOptionsAreKeyedByOptionName() {
+    public void testBasicTypeOptionsAreKeyedByOptionNameAndEnumsByFullyQualifiedName() {
         String model = """
                 enum CurrencyEnum:
                     USD
@@ -151,9 +152,169 @@ public class PythonChoiceDispatchTest {
                 generated(model, "rosetta/test/model/Pick.py"),
                 MARKER + """
                     _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
-                        "CurrencyEnum": "CurrencyEnum",
                         "com.rosetta.test.model.A": "A",
+                        "com.rosetta.test.model.CurrencyEnum": "CurrencyEnum",
                         "string": "string",
+                    }
+                """);
+    }
+
+    /**
+     * Metadata doesn't change an option's key: a basic type keeps its option name and an enum its
+     * Rune FQN, as without metadata, and never a language-specific name such as a Java class name.
+     */
+    @Test
+    public void testMetadataDoesNotChangeKeys() {
+        String model = """
+                enum CurrencyEnum:
+                    USD
+                    EUR
+
+                choice WithMeta:
+                    CurrencyEnum
+                        [metadata scheme]
+                    string
+                        [metadata scheme]
+                    number
+                        [metadata scheme]
+                    int
+                        [metadata scheme]
+                    boolean
+                        [metadata scheme]
+                    date
+                        [metadata scheme]
+                    time
+                        [metadata scheme]
+                    dateTime
+                        [metadata scheme]
+                    zonedDateTime
+                        [metadata scheme]
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/WithMeta.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "boolean": "boolean",
+                        "com.rosetta.test.model.CurrencyEnum": "CurrencyEnum",
+                        "date": "date",
+                        "dateTime": "dateTime",
+                        "int": "int",
+                        "number": "number",
+                        "string": "string",
+                        "time": "time",
+                        "zonedDateTime": "zonedDateTime",
+                    }
+                """);
+    }
+
+    /** An integer's digits don't change its key. */
+    @Test
+    public void testIntegerWithMetadataIsKeyedByOptionNameWhateverItsDigits() {
+        String model = """
+                typeAlias Medium: int(digits: 12)
+                typeAlias Large: int(digits: 20)
+
+                choice Sized:
+                    Medium
+                        [metadata scheme]
+                    Large
+                        [metadata scheme]
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Sized.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "Large": "Large",
+                        "Medium": "Medium",
+                    }
+                """);
+    }
+
+    @Test
+    public void testAliasOptionsFollowTheTypeTheyNameWithOrWithoutMetadata() {
+        String model = """
+                enum CurrencyEnum:
+                    USD
+                    EUR
+
+                typeAlias Money: CurrencyEnum
+                typeAlias AliasOfMoney: Money
+                typeAlias Text: string
+
+                choice Plain:
+                    AliasOfMoney
+                    Text
+
+                choice Meta:
+                    AliasOfMoney
+                        [metadata scheme]
+                    Text
+                        [metadata scheme]
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Plain.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "Text": "Text",
+                        "com.rosetta.test.model.CurrencyEnum": "AliasOfMoney",
+                    }
+                """);
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Meta.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "Text": "Text",
+                        "com.rosetta.test.model.CurrencyEnum": "AliasOfMoney",
+                    }
+                """);
+    }
+
+    @Test
+    public void testNestedEnumOptionIsKeyedByFullyQualifiedName() {
+        // From finos/rune-python-generator#338
+        String model = """
+                enum CurrencyEnum:
+                    USD
+                    EUR
+
+                choice Inner:
+                    CurrencyEnum
+                    string
+                choice Outer:
+                    Inner
+                    int
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Outer.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.CurrencyEnum": "Inner",
+                        "int": "int",
+                        "string": "Inner",
+                    }
+                """);
+    }
+
+    /** A namespace segment that is a Java keyword gets no special treatment: the key is the Rune name. */
+    @Test
+    public void testDataTypeInNamespaceWithJavaKeywordIsKeyedByRuneName() {
+        String model = """
+                namespace test.new.model
+
+                type A:
+                    value string (1..1)
+
+                choice Pick:
+                    A
+                    string
+                """;
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(model);
+        testUtils.assertGeneratedContainsExpectedString(
+                python.get("src/test/new/model/Pick.py").toString(),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "string": "string",
+                        "test.new.model.A": "A",
                     }
                 """);
     }

@@ -174,7 +174,13 @@ if [[ -z "$WHEEL_FILE" ]]; then
   source "$PYTHON_SETUP_PATH/cleanup_python_env.sh"
   exit 1
 fi
-python -m pip install "$WHEEL_FILE" || error
+# With a local or GitHub runtime (see setup_python_env.sh), skip dependencies so pip keeps it
+# instead of replacing it with a release that satisfies the generated pin
+if [ -n "$RUNE_RUNTIME_DIR" ] || [ -n "$RUNE_RUNTIME_REF" ]; then
+  python -m pip install --no-deps "$WHEEL_FILE" || error
+else
+  python -m pip install "$WHEEL_FILE" || error
+fi
 
 # run tests
 echo "***** run tests"
