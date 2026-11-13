@@ -113,6 +113,27 @@ for GROUP in "${INVALID_CHOICE_GROUPS[@]}"; do
   cp -R "$CHOICE_DESERIALIZER_SOURCE_DIR/$GROUP" "$GENERATION_SOURCE_DIR/$GROUP" || error
 done
 
+# ChoiceDeepNested in rune-common's choicetype model reaches the same leaves through two options.
+# The DSL warns about that and will reject it; the generator already rejects it. Leave it out of
+# the staged copy until rune-common changes the model (https://github.com/finos/rune-dsl/issues/1464);
+# serialization_test.py skips its fixtures.
+echo "***** removing ChoiceDeepNested from the staged choicetype model"
+python3 - "$GENERATION_SOURCE_DIR/round-trip/choicetype/choice.rosetta" <<'EOF' || error
+import re
+import sys
+
+path = sys.argv[1]
+text = open(path, encoding='utf-8').read()
+for name in ('MiddleChoiceA', 'MiddleChoiceB', 'ChoiceDeepNested'):
+    text, count = re.subn(rf'^choice {name}:\n(?:[ \t]+\S.*\n)*\n?', '', text, flags=re.M)
+    if count != 1:
+        sys.exit(f'{path}: choice {name} not found; check whether this step is still needed')
+text, count = re.subn(r'^[ \t]+choiceDeepNested ChoiceDeepNested .*\n', '', text, flags=re.M)
+if count != 1:
+    sys.exit(f'{path}: attribute choiceDeepNested not found; check whether this step is still needed')
+open(path, 'w', encoding='utf-8').write(text)
+EOF
+
 # Generate Python serialization tests using the CLI
 echo "***** generating Python serialization tests"
 # Clear earlier output so modules from previous runs aren't packaged
