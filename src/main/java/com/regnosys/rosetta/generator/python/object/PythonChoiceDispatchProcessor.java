@@ -15,6 +15,7 @@ import com.regnosys.rosetta.rosetta.simple.Choice;
 import com.regnosys.rosetta.types.RChoiceOption;
 import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
+import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RObjectFactory;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.TypeSystem;
@@ -29,9 +30,9 @@ import jakarta.inject.Inject;
  * leaf, not the option of the choice that holds it. The table maps each {@code @type} the choice
  * can be read with to the Python attribute name of that option:
  * <ul>
- * <li>a data type is keyed by its Rune fully qualified name, as {@code _fqrtn()} returns it;</li>
- * <li>a basic type, an enum, or a type alias of either is keyed by the option name, which is what
- * the serializer writes as {@code @type};</li>
+ * <li>a data type or enum is keyed by its Rune fully qualified name;</li>
+ * <li>a basic type is keyed by the option name;</li>
+ * <li>type aliases use the key of their underlying type, retaining the alias option name for basic types;</li>
  * <li>a nested choice contributes its leaves; its own FQN is included only when the option has
  * metadata, because Java writes that option's metadata/reference wrapper with its own type.</li>
  * </ul>
@@ -110,7 +111,7 @@ public class PythonChoiceDispatchProcessor {
     }
 
     private static String key(RType optionType, String optionName) {
-        return optionType instanceof RDataType
+        return optionType instanceof RDataType || optionType instanceof REnumType
                 ? fullyQualifiedName(optionType)
                 : optionName;
     }

@@ -22,9 +22,9 @@ import jakarta.inject.Inject;
 
 /**
  * Every choice class gets a {@code _CHOICE_DISPATCH} table mapping each {@code @type} it can be
- * read with to the attribute name of the option that holds it (#333). A data type is keyed by its
- * Rune FQN, a basic type, enum or type alias of either by the option name, and a nested choice
- * contributes its leaves. An intermediate choice also contributes its own FQN when the option
+ * read with to the attribute name of the option that holds it (#333). Data types and enums use
+ * their Rune FQN, basic types use the option name, and aliases follow their underlying type.
+ * A nested choice contributes its leaves. An intermediate choice also contributes its own FQN when the option
  * has metadata, because Java writes that choice's metadata/reference wrapper with its own type.
  */
 @ExtendWith(InjectionExtension.class)
@@ -133,7 +133,7 @@ public class PythonChoiceDispatchTest {
     }
 
     @Test
-    public void testBasicTypeAndEnumOptionsAreKeyedByOptionName() {
+    public void testDataAndEnumOptionsUseFullyQualifiedNames() {
         String model = """
                 enum CurrencyEnum:
                     USD
@@ -151,9 +151,81 @@ public class PythonChoiceDispatchTest {
                 generated(model, "rosetta/test/model/Pick.py"),
                 MARKER + """
                     _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
-                        "CurrencyEnum": "CurrencyEnum",
                         "com.rosetta.test.model.A": "A",
+                        "com.rosetta.test.model.CurrencyEnum": "CurrencyEnum",
                         "string": "string",
+                    }
+                """);
+    }
+
+    @Test
+    public void testMetadataDoesNotChangeBasicAndEnumDiscriminatorKeys() {
+        String model = """
+                enum CurrencyEnum:
+                    USD
+                    EUR
+
+                choice Pick:
+                    CurrencyEnum
+                        [metadata scheme]
+                    string
+                        [metadata scheme]
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Pick.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.CurrencyEnum": "CurrencyEnum",
+                        "string": "string",
+                    }
+                """);
+    }
+
+    @Test
+    public void testEnumAliasesUseUnderlyingEnumFullyQualifiedName() {
+        String model = """
+                enum CurrencyEnum:
+                    USD
+                    EUR
+
+                typeAlias Money: CurrencyEnum
+                typeAlias AliasOfMoney: Money
+
+                choice Pick:
+                    AliasOfMoney
+                    string
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Pick.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.CurrencyEnum": "AliasOfMoney",
+                        "string": "string",
+                    }
+                """);
+    }
+
+    @Test
+    public void testNestedEnumDiscriminatorsUseFullyQualifiedNames() {
+        String model = """
+                enum CurrencyEnum:
+                    USD
+                    EUR
+
+                choice Inner:
+                    CurrencyEnum
+                    string
+                choice Outer:
+                    Inner
+                    int
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Outer.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.CurrencyEnum": "Inner",
+                        "int": "int",
+                        "string": "Inner",
                     }
                 """);
     }
