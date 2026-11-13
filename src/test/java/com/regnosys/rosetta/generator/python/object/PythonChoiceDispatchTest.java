@@ -24,7 +24,8 @@ import jakarta.inject.Inject;
  * Every choice class gets a {@code _CHOICE_DISPATCH} table mapping each {@code @type} it can be
  * read with to the attribute name of the option that holds it (#333). A data type is keyed by its
  * Rune FQN, a basic type, enum or type alias of either by the option name, and a nested choice
- * contributes every leaf and every choice beneath it, itself included.
+ * contributes its leaves. An intermediate choice also contributes its own FQN when the option
+ * has metadata, because Java writes that choice's metadata/reference wrapper with its own type.
  */
 @ExtendWith(InjectionExtension.class)
 @InjectWith(RosettaInjectorProvider.class)
@@ -108,8 +109,6 @@ public class PythonChoiceDispatchTest {
                         "com.rosetta.test.model.A": "ChoiceAB",
                         "com.rosetta.test.model.B": "ChoiceAB",
                         "com.rosetta.test.model.C": "ChoiceCD",
-                        "com.rosetta.test.model.ChoiceAB": "ChoiceAB",
-                        "com.rosetta.test.model.ChoiceCD": "ChoiceCD",
                         "com.rosetta.test.model.D": "ChoiceCD",
                     }
                 """);
@@ -124,12 +123,6 @@ public class PythonChoiceDispatchTest {
                         "com.rosetta.test.model.A": "ChoiceABCD",
                         "com.rosetta.test.model.B": "ChoiceABCD",
                         "com.rosetta.test.model.C": "ChoiceABCD",
-                        "com.rosetta.test.model.ChoiceAB": "ChoiceABCD",
-                        "com.rosetta.test.model.ChoiceABCD": "ChoiceABCD",
-                        "com.rosetta.test.model.ChoiceCD": "ChoiceABCD",
-                        "com.rosetta.test.model.ChoiceEF": "ChoiceEFGH",
-                        "com.rosetta.test.model.ChoiceEFGH": "ChoiceEFGH",
-                        "com.rosetta.test.model.ChoiceGH": "ChoiceEFGH",
                         "com.rosetta.test.model.D": "ChoiceABCD",
                         "com.rosetta.test.model.E1": "ChoiceEFGH",
                         "com.rosetta.test.model.F": "ChoiceEFGH",
@@ -161,6 +154,137 @@ public class PythonChoiceDispatchTest {
                         "CurrencyEnum": "CurrencyEnum",
                         "com.rosetta.test.model.A": "A",
                         "string": "string",
+                    }
+                """);
+    }
+
+    @Test
+    public void testPlainNestedChoicesDoNotExposeIntermediateDiscriminators() {
+        String outer = generated(NESTED_MODEL, "rosetta/test/model/OuterChoice.py");
+        for (String intermediate : new String[] {
+                "ChoiceAB", "ChoiceCD", "ChoiceEF", "ChoiceGH", "ChoiceABCD", "ChoiceEFGH"
+        }) {
+            testUtils.assertGeneratedDoesNotContain(outer,
+                    "\"com.rosetta.test.model." + intermediate + "\":");
+        }
+    }
+
+    @Test
+    public void testLocatedChoiceOptionKeepsItsOwnDiscriminator() {
+        String model = """
+                type A:
+                    value string (1..1)
+                type B:
+                    value string (1..1)
+                choice Inner:
+                    A
+                    B
+                choice Located:
+                    Inner
+                        [metadata location]
+                    int
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Located.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.A": "Inner",
+                        "com.rosetta.test.model.B": "Inner",
+                        "com.rosetta.test.model.Inner": "Inner",
+                        "int": "int",
+                    }
+                """);
+    }
+
+    @Test
+    public void testWrappedDescendantDiscriminatorSurvivesPlainAncestor() {
+        String model = """
+                type A:
+                    value string (1..1)
+                type B:
+                    value string (1..1)
+                type C:
+                    value string (1..1)
+                choice Inner:
+                    A
+                    B
+                choice Located:
+                    Inner
+                        [metadata location]
+                    string
+                choice Ancestor:
+                    Located
+                    C
+                """;
+        String ancestor = generated(model, "rosetta/test/model/Ancestor.py");
+        testUtils.assertGeneratedContainsExpectedString(ancestor,
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.A": "Located",
+                        "com.rosetta.test.model.B": "Located",
+                        "com.rosetta.test.model.C": "C",
+                        "com.rosetta.test.model.Inner": "Located",
+                        "string": "Located",
+                    }
+                """);
+        testUtils.assertGeneratedDoesNotContain(ancestor, "\"com.rosetta.test.model.Located\":");
+    }
+
+    @Test
+    public void testReferenceChoiceOptionKeepsItsOwnDiscriminator() {
+        String model = """
+                type A:
+                    value string (1..1)
+                type B:
+                    value string (1..1)
+                choice Inner:
+                    A
+                    B
+                choice Referenced:
+                    Inner
+                        [metadata address "pointsTo"=Root->located]
+                    string
+                type Root:
+                    located Inner (0..1)
+                        [metadata location]
+                    payload Referenced (0..1)
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Referenced.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.A": "Inner",
+                        "com.rosetta.test.model.B": "Inner",
+                        "com.rosetta.test.model.Inner": "Inner",
+                        "string": "string",
+                    }
+                """);
+    }
+
+    @Test
+    public void testAliasOfPlainChoiceOnlyContributesLeafDiscriminators() {
+        String model = """
+                type A:
+                    value string (1..1)
+                type B:
+                    value string (1..1)
+                type C:
+                    value string (1..1)
+                choice Inner:
+                    A
+                    B
+                typeAlias AliasOfInner: Inner
+                choice Pick:
+                    AliasOfInner
+                    C
+                """;
+        testUtils.assertGeneratedContainsExpectedString(
+                generated(model, "rosetta/test/model/Pick.py"),
+                MARKER + """
+                    _CHOICE_DISPATCH: ClassVar[dict[str, str]] = {
+                        "com.rosetta.test.model.A": "AliasOfInner",
+                        "com.rosetta.test.model.B": "AliasOfInner",
+                        "com.rosetta.test.model.C": "C",
                     }
                 """);
     }
