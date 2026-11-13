@@ -245,6 +245,8 @@ public final class PythonCodeGeneratorContext {
     }
 
     /**
+     * @param caller the calling function's name
+     * @param callee the called function's name
      * @return true if {@code caller} and {@code callee} are different functions in the same
      *         cycle of function calls
      */

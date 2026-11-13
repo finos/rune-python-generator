@@ -25,10 +25,14 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonTypeLevelKeyTest {
 
+    /** The serializer and validator of a field whose type, {@code Party}, has type-level keys. */
     private static final String HOOKS = "Party.serializer(), Party.validator(('@key', '@key:external'))";
 
-    // SingleParty and PartyList are standalone. BundledSingle and Loop refer to each other, so
-    // they are bundled.
+    /**
+     * The Rune model the tests generate Python from.
+     * SingleParty and PartyList are standalone. BundledSingle and Loop refer to each other, so
+     * they are bundled.
+     */
     private static final String MODEL = """
             type Party:
                 [metadata key]
@@ -48,6 +52,7 @@ public class PythonTypeLevelKeyTest {
                 back BundledSingle (0..1)
             """;
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

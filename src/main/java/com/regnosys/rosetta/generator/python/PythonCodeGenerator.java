@@ -128,6 +128,9 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonCodeGenerator.class);
 
+    /** The start of a bundle annotation update to a field, up to the field's name. */
+    private static final String MODEL_FIELDS_PREFIX = ".model_fields[\"";
+
     /**
      * The contexts.
      */
@@ -859,12 +862,13 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
     }
 
     private String extractModelFieldsName(String updateLine) {
-        int start = updateLine.indexOf(".model_fields[\"");
+        int start = updateLine.indexOf(MODEL_FIELDS_PREFIX);
         if (start < 0) {
             return null;
         }
-        int end = updateLine.indexOf("\"", start + 15);
-        return end >= 0 ? updateLine.substring(start + 15, end) : null;
+        int nameStart = start + MODEL_FIELDS_PREFIX.length();
+        int end = updateLine.indexOf("\"", nameStart);
+        return end >= 0 ? updateLine.substring(nameStart, end) : null;
     }
 
     private Set<String> extractFieldNamesFromUpdates(List<String> updates) {
@@ -880,7 +884,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
 
     private boolean isUpdateLineForFields(String line, Set<String> fields, String bundleName) {
         for (String field : fields) {
-            if (line.startsWith(bundleName + ".model_fields[\"" + field + "\"]")
+            if (line.startsWith(bundleName + MODEL_FIELDS_PREFIX + field + "\"]")
                     || line.startsWith(bundleName + ".__annotations__[\"" + field + "\"]")) {
                 return true;
             }

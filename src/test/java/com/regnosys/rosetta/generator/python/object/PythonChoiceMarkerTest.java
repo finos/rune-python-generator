@@ -25,9 +25,13 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonChoiceMarkerTest {
 
+    /** The class attribute that marks a class generated from a choice. */
     private static final String MARKER = "_RUNE_CHOICE: ClassVar[bool] = True";
 
-    // LoopOption and LoopHolder refer to each other through LoopChoice, so all three are bundled.
+    /**
+     * The Rune model the tests generate Python from.
+     * LoopOption and LoopHolder refer to each other through LoopChoice, so all three are bundled.
+     */
     private static final String MODEL = """
             type A:
                 fieldA string (1..1)
@@ -61,6 +65,7 @@ public class PythonChoiceMarkerTest {
                 option LoopChoice (0..1)
             """;
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

@@ -27,7 +27,10 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonBuiltinNameClashTest {
 
-    // BundledChoice and Node refer to each other, so both are bundled. The other types are standalone.
+    /**
+     * The Rune model the tests generate Python from.
+     * BundledChoice and Node refer to each other, so both are bundled. The other types are standalone.
+     */
     private static final String MODEL = """
             choice ChoiceBasic:
                 string
@@ -65,6 +68,7 @@ public class PythonBuiltinNameClashTest {
                 str string (0..1)
             """;
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

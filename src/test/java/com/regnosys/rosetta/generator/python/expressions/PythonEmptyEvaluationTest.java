@@ -29,6 +29,7 @@ import jakarta.inject.Inject;
 @SuppressWarnings("LineLength")
 public class PythonEmptyEvaluationTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

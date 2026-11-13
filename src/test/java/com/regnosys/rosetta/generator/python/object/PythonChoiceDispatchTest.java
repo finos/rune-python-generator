@@ -33,8 +33,12 @@ import jakarta.inject.Inject;
 @SuppressWarnings("checkstyle:LineLength")
 public class PythonChoiceDispatchTest {
 
+    /** The line that marks a choice class; its dispatch table follows it. */
     private static final String MARKER = "    _RUNE_CHOICE: ClassVar[bool] = True\n";
 
+    /**
+     * Choices three levels deep: {@code OuterChoice} holds {@code ChoiceABCD} and {@code ChoiceEFGH}, which hold choices of {@code A} to {@code H}.
+     */
     private static final String NESTED_MODEL = """
             type A:
                 value string (1..1)
@@ -81,6 +85,7 @@ public class PythonChoiceDispatchTest {
                 payload OuterChoice (0..1)
             """;
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

@@ -84,18 +84,24 @@ import jakarta.inject.Inject;
  *
  * <p>References are kept by kind, because each caller uses a different selection of them.
  */
-public class PythonDependencyCollector
+public final class PythonDependencyCollector
         extends RosettaExpressionSwitch<Void, PythonDependencyCollector.Dependencies> {
 
     /**
      * The references found in one or more expressions.
      */
     public static final class Dependencies {
+        /** The named elements referred to directly; see {@link #symbols()}. */
         private final Set<RosettaNamed> symbols = new LinkedHashSet<>();
+        /** The types built with a constructor; see {@link #constructedTypes()}. */
         private final Set<RosettaNamed> constructedTypes = new LinkedHashSet<>();
+        /** The data types named as the target of {@code as}. */
         private final Set<Data> asTargets = new LinkedHashSet<>();
+        /** The enums named as the target of {@code to-enum}. */
         private final Set<RosettaEnumeration> toEnumTargets = new LinkedHashSet<>();
+        /** The enum types that enum values are written through; see {@link #enumValueTypes()}. */
         private final Set<RType> enumValueTypes = new LinkedHashSet<>();
+        /** The data types that switch cases test the value against. */
         private final Set<Data> switchCaseTypes = new LinkedHashSet<>();
 
         /**

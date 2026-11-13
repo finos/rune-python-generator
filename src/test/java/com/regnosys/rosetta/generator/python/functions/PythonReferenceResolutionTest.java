@@ -25,6 +25,7 @@ import jakarta.inject.Inject;
 @SuppressWarnings("LineLength")
 public class PythonReferenceResolutionTest {
 
+    /** The Rune model the tests generate Python from. */
     private static final String MODEL = """
             enum Kind:
                 Plain
@@ -118,6 +119,7 @@ public class PythonReferenceResolutionTest {
                 set result: False
             """;
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

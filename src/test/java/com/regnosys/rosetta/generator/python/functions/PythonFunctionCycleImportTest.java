@@ -28,11 +28,15 @@ import jakarta.inject.Inject;
 @InjectWith(RosettaInjectorProvider.class)
 public class PythonFunctionCycleImportTest {
 
+    /** The package of the generated functions. */
     private static final String PACKAGE = "com.rosetta.test.model.functions.";
 
-    // IsEven and IsOdd call each other. IsEven also calls Helper, which is outside the cycle.
-    // UsesIsEven calls into the cycle from outside it. UsesHelper has no cycle near it.
-    // Countdown calls itself.
+    /**
+     * The Rune model the tests generate Python from.
+     * IsEven and IsOdd call each other. IsEven also calls Helper, which is outside the cycle.
+     * UsesIsEven calls into the cycle from outside it. UsesHelper has no cycle near it.
+     * Countdown calls itself.
+     */
     private static final String MODEL = """
             func IsEven:
                 inputs:
@@ -83,6 +87,7 @@ public class PythonFunctionCycleImportTest {
                     if n = 0 then 0 else Countdown(n - 1)
             """;
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 
