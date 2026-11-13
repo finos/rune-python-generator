@@ -115,6 +115,35 @@ public final class RuneToPythonMapper {
     }
 
     /**
+     * Qualifies a basic Python type when an attribute's own name would shadow it (#331).
+     *
+     * <p>Generated modules use {@code from __future__ import annotations}, so pydantic resolves a
+     * field's annotation with the class's names in scope. An attribute named {@code int},
+     * {@code str}, {@code bool}, {@code Decimal} or {@code datetime} is a {@code FieldInfo} there,
+     * so {@code int: Optional[int]} would not be validated, and {@code datetime: Optional[datetime.date]}
+     * would fail to resolve. The type is written through an alias imported by
+     * {@code PythonCodeGeneratorUtil.createImports()} instead. The aliases start with {@code _},
+     * which {@link #mangleName} never leaves on an attribute name, so they can't clash.
+     *
+     * @param pythonType     the Python type, as {@link #toPythonType} returns it
+     * @param attrPythonName the attribute's Python name, as {@link #mangleName} returns it
+     * @return the type, qualified through an alias if the attribute's name shadows it
+     */
+    public static String qualifyShadowedType(String pythonType, String attrPythonName) {
+        int dot = pythonType.indexOf('.');
+        String leading = (dot < 0) ? pythonType : pythonType.substring(0, dot);
+        if (!leading.equals(attrPythonName)) {
+            return pythonType;
+        }
+        return switch (leading) {
+            case "int", "str", "bool" -> "_builtins." + pythonType;
+            case "datetime" -> "_datetime" + pythonType.substring(leading.length());
+            case "Decimal" -> "_decimal." + pythonType;
+            default -> pythonType;
+        };
+    }
+
+    /**
      * Inner private function to convert from Rosetta type to Python type.
      * Returns null if no matching type.
      *

@@ -73,7 +73,10 @@ public final class PythonCodeGeneratorUtil {
                 # pylint: disable=wildcard-import, wrong-import-order, missing-class-docstring
                 # pylint: disable=missing-module-docstring
                 from __future__ import annotations
+                import builtins as _builtins
                 import datetime
+                import datetime as _datetime
+                import decimal as _decimal
                 import functools
                 import inspect
                 import sys

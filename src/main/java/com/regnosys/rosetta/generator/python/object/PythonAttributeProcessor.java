@@ -195,9 +195,16 @@ public final class PythonAttributeProcessor {
         int max = cardinality.getMax().orElse(-1);
         boolean isList = (cardinality.isMulti() || max > 1);
 
-        String baseTypeName = (!validators.isEmpty())
-                ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
-                : attrTypeNameIn;
+        String baseTypeName;
+        if (!validators.isEmpty()) {
+            baseTypeName = RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn);
+        } else if (RuneToPythonMapper.isRosettaBasicType(rt)) {
+            // An attribute named after the type it holds (int, str, ..., datetime) would shadow it (#331)
+            baseTypeName = RuneToPythonMapper.qualifyShadowedType(attrTypeNameIn,
+                    RuneToPythonMapper.mangleName(ra.getName()));
+        } else {
+            baseTypeName = attrTypeNameIn;
+        }
 
         String propString = validationProps.toFieldArgs();
         Optional<String> fieldProps = (isList && !propString.isEmpty()) ? Optional.of(propString) : Optional.empty();
