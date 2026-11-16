@@ -47,8 +47,6 @@ import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.Function;
 import com.regnosys.rosetta.rosetta.simple.FunctionDispatch;
-// todo: review migrating choice alias processor to PythonModelObjectGenerator
-// todo: refactor to create a BundleAssembler See ARCHITECTURE.md §7 for the full recommendation.
 
 import jakarta.inject.Inject;
 
@@ -97,6 +95,14 @@ import jakarta.inject.Inject;
  * The generator is designed to be extensible. Additional features or
  * customizations can be
  * implemented by extending this class or its collaborators.
+ * </p>
+ *
+ * <h2>Planned refactoring</h2>
+ * <p>
+ * todo: extract a {@code BundleAssembler} so that {@code emitBundledClass},
+ * {@code emitSortedClasses} and {@code assembleBundleFile} no longer pass the
+ * bundle's writers and tracking sets as parameters
+ * (finos/rune-python-generator#BUNDLE_ASSEMBLER_ISSUE; see docs/ARCHITECTURE.md §7).
  * </p>
  *
  * @author Plamen Neykov
