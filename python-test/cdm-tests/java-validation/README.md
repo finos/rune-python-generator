@@ -53,4 +53,4 @@ A sample with a read error has no failure count or round-trip result. An empty o
 
 ## Comparing with Python
 
-`python-test/cdm-tests/run_fpml510_tests.sh` and `test_fpml510_samples.py` read and round-trip the same samples with the generated Python. Use the same CDM commit for both, then compare per sample: whether it reads, whether the round trip is unchanged, and the validation failures.
+`python-test/cdm-tests/roundtrip-comparison/` builds CDM Java and CDM Python from the same CDM commit, runs both on every sample, and compares them per sample: whether it reads, whether the round trip is unchanged, and the validation failures. It also checks each sample against the model. See its README.
