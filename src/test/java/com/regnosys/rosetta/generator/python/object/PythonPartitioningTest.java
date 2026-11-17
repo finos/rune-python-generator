@@ -4,6 +4,7 @@
  */
 package com.regnosys.rosetta.generator.python.object;
 
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.xtext.testing.InjectWith;
@@ -276,14 +277,15 @@ public class PythonPartitioningTest {
     }
 
     // -----------------------------------------------------------------------
-    // Test 12 — standalone types referenced by bundled types are reverse-promoted
-    //           into the bundle; no scattered imports remain in the bundle body
+    // Test 12 — standalone attribute types stay standalone with a deferred import,
+    //           unless they are on a path between bundled types
     // -----------------------------------------------------------------------
     /**
      * A standalone own-type used only as an attribute type (not as a direct base class)
-     * of a bundled type is NOT reverse-promoted. Attribute annotations are lazy strings
-     * under PEP 563 and do not need the type at class-definition time. The import is
-     * deferred to a consolidated section after all bundled class definitions.
+     * of a bundled type, and which does not depend on a bundled type, is NOT promoted.
+     * Attribute annotations are lazy strings under PEP 563 and do not need the type at
+     * class-definition time. The import is deferred to a consolidated section after all
+     * bundled class definitions.
      *
      * Model structure:
      *   CycleA1 ↔ CycleA2   (first SCC — bundled)
@@ -309,7 +311,7 @@ public class PythonPartitioningTest {
                     b1 CycleB1 (0..1)
 
                 type Standalone:
-                    a1 CycleA1 (0..1)
+                    value int (0..1)
                 """);
 
         String bundlePython = gf.get("src/com/_bundle.py").toString();
@@ -328,6 +330,69 @@ public class PythonPartitioningTest {
         testUtils.assertAppearsAfter(bundlePython,
                 "class com_rosetta_test_model_CycleB1(BaseDataClass):",
                 "from com.rosetta.test.model.Standalone import Standalone");
+    }
+
+    /**
+     * Types on a path between bundled types are promoted, however long the path. The two
+     * cycle groups are separate in the dependency graph, so the path is not a cycle, but
+     * they share one _bundle.py, so leaving Outer or Inner standalone would make the files
+     * circular.
+     *
+     * Model structure:
+     *   CycleB1 ↔ CycleB2   (first SCC — bundled; CycleB1 has attribute of type Outer)
+     *   Outer → Inner → CycleA1 (promoted — each depends on a bundled type)
+     *   CycleA1 ↔ CycleA2   (second SCC — bundled)
+     *   Unrelated            (used by CycleB1, depends on nothing — stays standalone)
+     */
+    @Test
+    public void testTypesOnPathBetweenBundledTypesArePromoted() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString("""
+                namespace com.rosetta.test.model
+
+                type CycleA1:
+                    a2 CycleA2 (0..1)
+
+                type CycleA2:
+                    a1 CycleA1 (0..1)
+
+                type CycleB1:
+                    b2 CycleB2 (0..1)
+                    outer Outer (0..1)
+                    unrelated Unrelated (0..1)
+
+                type CycleB2:
+                    b1 CycleB1 (0..1)
+
+                type Outer:
+                    inner Inner (0..1)
+
+                type Inner:
+                    a1 CycleA1 (0..1)
+
+                type Unrelated:
+                    value int (0..1)
+                """);
+
+        String bundlePython = gf.get("src/com/_bundle.py").toString();
+
+        for (String promoted : List.of("Outer", "Inner")) {
+            testUtils.assertGeneratedContainsExpectedString(bundlePython,
+                    "class com_rosetta_test_model_" + promoted + "(BaseDataClass):");
+            testUtils.assertGeneratedContainsExpectedString(bundlePython,
+                    "com_rosetta_test_model_" + promoted + ".model_rebuild(force=True)");
+            testUtils.assertGeneratedDoesNotContain(bundlePython,
+                    "from com.rosetta.test.model." + promoted + " import " + promoted);
+
+            String stubPython = gf.get("src/com/rosetta/test/model/" + promoted + ".py").toString();
+            testUtils.assertGeneratedContainsExpectedString(stubPython, "__getattr__");
+            testUtils.assertGeneratedDoesNotContain(stubPython, "class " + promoted + "(BaseDataClass):");
+        }
+
+        // A type the bundle uses, but which does not lead back to it, stays standalone
+        String unrelatedPython = gf.get("src/com/rosetta/test/model/Unrelated.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(unrelatedPython, "class Unrelated(BaseDataClass):");
+        testUtils.assertGeneratedContainsExpectedString(bundlePython,
+                "from com.rosetta.test.model.Unrelated import Unrelated");
     }
 
     /**

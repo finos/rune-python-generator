@@ -38,6 +38,53 @@ public class PythonFunctionOutputTest {
     /**
      * Test case for function with add operation.
      */
+    /**
+     * Setting a whole multi-valued output from a single value must still give a list.
+     */
+    @Test
+    public void testSetMultiValuedOutputFromSingleValueWrapsInList() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                type Leaf:
+                    value number (1..1)
+
+                func SetFromSingle:
+                    inputs:
+                        leaf Leaf (0..1)
+                    output:
+                        result Leaf (0..*)
+                    set result:
+                        leaf
+                """);
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/SetFromSingle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+                "result = (lambda v: [] if v is None else (v if isinstance(rune_unwrap(v), list) else [v]))"
+                        + "(rune_resolve_attr(self, \"leaf\"))");
+    }
+
+    /**
+     * Setting a whole multi-valued output from a list leaves the assignment unchanged.
+     */
+    @Test
+    public void testSetMultiValuedOutputFromListIsNotWrapped() {
+        Map<String, CharSequence> gf = testUtils.generatePythonFromString(
+                """
+                type Leaf:
+                    value number (1..1)
+
+                func SetFromList:
+                    inputs:
+                        leaves Leaf (0..*)
+                    output:
+                        result Leaf (0..*)
+                    set result:
+                        leaves
+                """);
+        String generatedPython = gf.get("src/com/rosetta/test/model/functions/SetFromList.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generatedPython,
+                "result = rune_resolve_attr(self, \"leaves\")");
+    }
+
     @Test
     public void testGenerateAddOperation() {
         Map<String, CharSequence> gf = testUtils.generatePythonFromString(

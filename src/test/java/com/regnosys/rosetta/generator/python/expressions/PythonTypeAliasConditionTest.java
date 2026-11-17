@@ -39,6 +39,7 @@ import jakarta.inject.Inject;
 @SuppressWarnings("LineLength")
 public class PythonTypeAliasConditionTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

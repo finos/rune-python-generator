@@ -38,6 +38,7 @@ import jakarta.inject.Inject;
 @SuppressWarnings("LineLength")
 public class PythonBundleRebuildOrderTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

@@ -21,6 +21,7 @@ import com.regnosys.rosetta.generator.python.expressions.PythonExpressionGenerat
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaModel;
+import com.regnosys.rosetta.rosetta.simple.Choice;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.types.RAliasType;
 import com.regnosys.rosetta.types.RAttribute;
@@ -31,6 +32,11 @@ import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.TypeSystem;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
 
+import com.regnosys.rosetta.generator.python.functions.PythonFunctionDependencyProvider;
+
+import com.regnosys.rosetta.generator.python.util.PythonDependencyCollector;
+import com.regnosys.rosetta.rosetta.RosettaEnumeration;
+import com.regnosys.rosetta.rosetta.simple.Function;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
@@ -71,10 +77,28 @@ public class PythonModelObjectGenerator {
     private PythonChoiceAliasProcessor pythonChoiceAliasProcessor;
 
     /**
+     * The Python choice dispatch processor.
+     */
+    @Inject
+    private PythonChoiceDispatchProcessor pythonChoiceDispatchProcessor;
+
+    /**
      * The Python expression generator provider.
      */
     @Inject
     private Provider<PythonExpressionGenerator> expressionGeneratorProvider;
+
+    /**
+     * Collects the functions, types and enums an expression refers to.
+     */
+    @Inject
+    private PythonDependencyCollector dependencyCollector;
+
+    /**
+     * Collects the imports that condition expressions need.
+     */
+    @Inject
+    private PythonFunctionDependencyProvider functionDependencyProvider;
 
     /**
      * Scan Rosetta classes to build dependency graph and record super types.
@@ -129,31 +153,13 @@ public class PythonModelObjectGenerator {
         String className,
         RosettaExpression expression,
         PythonCodeGeneratorContext context) {
-        if (expression == null) {
-            return;
-        }
-        if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference ref) {
-            if (ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Data
-                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.simple.Function
-                || ref.getSymbol() instanceof com.regnosys.rosetta.rosetta.RosettaEnumeration) {
-
-                String depName = context.getFullyQualifiedName((com.regnosys.rosetta.rosetta.RosettaNamed) ref.getSymbol());
-                addDependency(dependencyDAG, className, depName);
-            }
-            ref.getArgs().forEach(arg -> addExpressionDependencies(dependencyDAG, className, arg, context));
-        } else if (expression instanceof com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression cons) {
-            if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
-                String depName = context.getFullyQualifiedName(cons.getTypeCall().getType());
-                addDependency(dependencyDAG, className, depName);
-            }
-            cons.getValues().forEach(val -> addExpressionDependencies(dependencyDAG, className, val.getValue(), context));
-        }
-
-        expression.eContents().forEach(child -> {
-            if (child instanceof com.regnosys.rosetta.rosetta.expression.RosettaExpression childExpr) {
-                addExpressionDependencies(dependencyDAG, className, childExpr, context);
-            }
-        });
+        PythonDependencyCollector.Dependencies found = dependencyCollector.collect(expression);
+        found.symbols().stream()
+                .filter(symbol -> symbol instanceof Data || symbol instanceof Function
+                        || symbol instanceof RosettaEnumeration)
+                .forEach(symbol -> addDependency(dependencyDAG, className, context.getFullyQualifiedName(symbol)));
+        found.constructedTypes()
+                .forEach(type -> addDependency(dependencyDAG, className, context.getFullyQualifiedName(type)));
     }
 
     /**
@@ -191,7 +197,7 @@ public class PythonModelObjectGenerator {
     }
 
     private String generateClass(Data rc, Set<String> enumImports, PythonCodeGeneratorContext context) {
-        RosettaModel model = (RosettaModel) rc.eContainer();
+        RosettaModel model = rc.getModel();
         String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isStandalone = context.getStandaloneClasses().contains(className);
         if (rc.getSuperType() != null && rc.getSuperType().getName() == null) {
@@ -204,9 +210,20 @@ public class PythonModelObjectGenerator {
 
         if (!isStandalone) {
             pythonAttributeProcessor.getImportsFromAttributes(rc, enumImports, context, false);
+            addConditionImports(rc, enumImports, context);
         }
 
         return generateBody(rc, context, isStandalone);
+    }
+
+    /**
+     * Adds the imports used by the type's conditions, such as an enum that only they refer to.
+     */
+    private void addConditionImports(Data rc, Set<String> imports, PythonCodeGeneratorContext context) {
+        String sourceNamespace = context.applyPrefix(rc.getModel().getName());
+        for (com.regnosys.rosetta.rosetta.simple.Condition condition : rc.getConditions()) {
+            functionDependencyProvider.addDependencies(condition.getExpression(), imports, sourceNamespace, context);
+        }
     }
 
     /**
@@ -272,6 +289,7 @@ public class PythonModelObjectGenerator {
     private String generateBody(Data rc, PythonCodeGeneratorContext context, boolean isStandalone) {
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         expressionGenerator.setContext(context);
+        expressionGenerator.setWritingStandaloneFile(isStandalone);
         RDataType rosettaDataType = rObjectFactory.buildRDataType(rc);
         Map<String, List<String>> keyRefConstraints = new HashMap<>();
 
@@ -301,6 +319,7 @@ public class PythonModelObjectGenerator {
             // Add attribute-level imports (all Data types safe for standalone files)
             Set<String> imports = new java.util.HashSet<>();
             pythonAttributeProcessor.getImportsFromAttributes(rc, imports, context, true);
+            addConditionImports(rc, imports, context);
             for (String imp : imports) {
                 writer.appendLine(imp);
             }
@@ -311,14 +330,21 @@ public class PythonModelObjectGenerator {
         writer.appendLine("class " + classNameDefinition + "(" + superClassName + "):");
         writer.indent();
 
-        // Bundled classes defer initial schema compilation until after all class bodies are
-        // defined. By the time Phase 3 model_rebuild(force=True) runs, all cyclic types are
-        // fully available, so Pydantic can build schemas ~4× faster (~1.8 GB / ~5s for CDM
-        // vs ~7.9 GB / ~17s without defer_build). Phase 3 is still required: Pydantic
-        // builds None-typed placeholder schemas eagerly even with defer_build=True, so an
-        // explicit model_rebuild is needed to pick up Phase 2 annotation updates.
-        if (!isStandalone) {
-            writer.appendLine("model_config = ConfigDict(defer_build=True)");
+        // Every class defers schema compilation. Standalone classes build on first use, which
+        // avoids compiling schemas that are never used. Bundled classes wait until all class
+        // bodies are defined: by the time Phase 3 model_rebuild(force=True) runs, all cyclic
+        // types are fully available, so Pydantic can build schemas ~4× faster (~1.8 GB / ~5s for
+        // CDM vs ~7.9 GB / ~17s without defer_build). Phase 3 is still required for bundled
+        // classes: Pydantic builds None-typed placeholder schemas eagerly even with
+        // defer_build=True, so an explicit model_rebuild is needed to pick up Phase 2 annotation
+        // updates.
+        writer.appendLine("model_config = ConfigDict(defer_build=True)");
+
+        // A generated choice looks the same as a type with optional attributes and a one-of
+        // condition, but its JSON format differs, so the runtime has to be told which it is.
+        if (rc instanceof Choice choice) {
+            writer.appendLine("_RUNE_CHOICE: ClassVar[bool] = True");
+            pythonChoiceDispatchProcessor.generateChoiceDispatch(writer, choice);
         }
 
         String metaData = getClassMetaDataString(rc);
@@ -355,9 +381,7 @@ public class PythonModelObjectGenerator {
             writer.appendBlock(constraints);
         }
 
-        context.setGeneratingBundledTypeCondition(!isStandalone);
         writer.appendBlock(expressionGenerator.generateTypeConditions(rc));
-        context.setGeneratingBundledTypeCondition(false);
 
         return writer.toString();
     }

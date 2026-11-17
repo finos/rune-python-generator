@@ -1,0 +1,75 @@
+namespace rosetta_dsl.test.language.choice_switch : <"generate Python unit tests from Rosetta.">
+
+// Based on the "Using switch for choice types" example in the Rune documentation.
+
+choice PoweredVehicle:
+    PetrolCar
+    ElectricCar
+    Motorcycle
+
+type PetrolCar:
+    fuelCapacity number (1..1)
+
+type ElectricCar:
+    batteryCapacity number (1..1)
+
+type Motorcycle:
+    fuelCapacity number (1..1)
+
+choice Vehicle:
+    PoweredVehicle
+    Bicycle
+
+type Bicycle:
+    weight number (1..1)
+
+enum Size:
+    Small
+    Large
+
+func ComputeMileage: <"A case can use the attributes of its option directly.">
+    inputs:
+        vehicle PoweredVehicle (0..1)
+    output:
+        mileage number (0..1)
+
+    set mileage:
+        vehicle switch
+            PetrolCar then 15 * fuelCapacity,
+            ElectricCar then 5 * batteryCapacity,
+            default 80
+
+func ComputeVehicleMileage: <"A case can name an option of a nested choice.">
+    inputs:
+        vehicle Vehicle (1..1)
+    output:
+        mileage number (1..1)
+
+    set mileage:
+        vehicle switch
+            PetrolCar then 15 * fuelCapacity,
+            ElectricCar then 5 * batteryCapacity,
+            PoweredVehicle then 80,
+            Bicycle then 30
+
+func DescribeSize: <"Enum switch with a default.">
+    inputs:
+        size Size (0..1)
+    output:
+        description string (0..1)
+
+    set description:
+        size switch
+            Small then "small",
+            default "other"
+
+func DescribeNumber: <"Literal switch with a default.">
+    inputs:
+        n int (0..1)
+    output:
+        description string (0..1)
+
+    set description:
+        n switch
+            1 then "one",
+            default "other"

@@ -1,0 +1,85 @@
+namespace rosetta_dsl.test.functions.to_enum_conversion : <"generate Python unit tests from Rosetta.">
+
+enum Foo:
+    VALUE1
+    VALUE2 displayName "Value 2"
+
+enum Source:
+    Red
+    Green displayName "Leaf green"
+
+enum Target:
+    Red
+    Green
+
+func StringToFoo: <"to-enum converts a string by display name.">
+    inputs:
+        name string (0..1)
+    output:
+        result Foo (0..1)
+
+    set result:
+        name to-enum Foo
+
+func SourceToTarget: <"to-enum converts an enum by value name.">
+    inputs:
+        colour Source (0..1)
+    output:
+        result Target (0..1)
+
+    set result:
+        colour to-enum Target
+
+func SchemeStringToFoo: <"to-enum converts a string that carries a scheme.">
+    inputs:
+        name string (0..1)
+            [metadata scheme]
+    output:
+        result Foo (0..1)
+
+    set result:
+        name to-enum Foo
+
+func SchemeSourceToTarget: <"to-enum converts an enum that carries a scheme.">
+    inputs:
+        colour Source (0..1)
+            [metadata scheme]
+    output:
+        result Target (0..1)
+
+    set result:
+        colour to-enum Target
+
+func StringToSchemeFoo: <"to-enum result stored in an output that allows a scheme.">
+    inputs:
+        name string (0..1)
+    output:
+        result Foo (0..1)
+            [metadata scheme]
+
+    set result:
+        name to-enum Foo
+
+type Holder: <"Attributes with a scheme, as read from a document.">
+    name string (0..1)
+        [metadata scheme]
+    colour Source (0..1)
+        [metadata scheme]
+
+func HolderNameToFoo: <"to-enum on a string attribute that carries a scheme.">
+    inputs:
+        holder Holder (0..1)
+    output:
+        result Foo (0..1)
+
+    set result:
+        holder -> name to-enum Foo
+
+func HolderColourToTarget: <"to-enum on an enum attribute that carries a scheme.">
+    inputs:
+        holder Holder (0..1)
+    output:
+        result Target (0..1)
+
+    set result:
+        holder -> colour to-enum Target

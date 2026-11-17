@@ -105,18 +105,6 @@ public final class PythonCodeGeneratorContext {
      * calls in dependency order.
      */
     private Map<String, Set<String>> rebuildDeps = null;
-    /**
-     * Deferred imports for standalone functions referenced from bundle condition methods
-     * (insertion-ordered for deterministic output). Each entry is a complete import statement,
-     * e.g. "from com.rosetta.model.Func import Func".
-     */
-    private LinkedHashSet<String> bundleConditionFunctionImports = null;
-    /**
-     * Set to true while generating conditions for a bundled (non-standalone) type.
-     * Guards {@link #addBundleConditionFunctionImport} so that function calls inside
-     * standalone function bodies do not pollute the bundle's deferred import list.
-     */
-    private boolean generatingBundledTypeCondition = false;
 
     public PythonCodeGeneratorContext() {
         this.subfolders = new LinkedHashSet<>();
@@ -136,7 +124,6 @@ public final class PythonCodeGeneratorContext {
         this.superTypes = new HashMap<>();
         this.functionEnumImports = new HashMap<>();
         this.rebuildDeps = new HashMap<>();
-        this.bundleConditionFunctionImports = new LinkedHashSet<>();
     }
 
     public List<String> getSubfolders() {
@@ -246,6 +233,27 @@ public final class PythonCodeGeneratorContext {
         return superTypes;
     }
 
+    /**
+     * For each function in a cycle of function calls, the functions in that cycle. A call
+     * between them is imported inside the calling function, because importing at module level
+     * would make each module import the other while it is still loading.
+     */
+    private final Map<String, Set<String>> functionCycles = new HashMap<>();
+
+    public void addFunctionCycle(Set<String> cycle) {
+        cycle.forEach(function -> functionCycles.put(function, cycle));
+    }
+
+    /**
+     * @param caller the calling function's name
+     * @param callee the called function's name
+     * @return true if {@code caller} and {@code callee} are different functions in the same
+     *         cycle of function calls
+     */
+    public boolean isInFunctionCycle(String caller, String callee) {
+        return !caller.equals(callee) && functionCycles.getOrDefault(caller, Set.of()).contains(callee);
+    }
+
     public List<Set<String>> getSccs() {
         return sccs;
     }
@@ -262,20 +270,6 @@ public final class PythonCodeGeneratorContext {
 
     public Map<String, Set<String>> getRebuildDeps() {
         return rebuildDeps;
-    }
-
-    public void setGeneratingBundledTypeCondition(boolean value) {
-        this.generatingBundledTypeCondition = value;
-    }
-
-    public void addBundleConditionFunctionImport(String fqn, String name) {
-        if (generatingBundledTypeCondition) {
-            bundleConditionFunctionImports.add("from " + fqn + " import " + name);
-        }
-    }
-
-    public Set<String> getBundleConditionFunctionImports() {
-        return bundleConditionFunctionImports;
     }
 
     public String getNamespacePrefix() {

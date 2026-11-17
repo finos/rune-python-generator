@@ -3,6 +3,7 @@ namespace rosetta_dsl.test.model.circular_dependency : <"generate Python unit te
 type Bar1: <"Test Circular Dependency">
     number1 int(1..1)
     bar2 Bar2(0..1)
+    leaf BarLeaf (0..1)
 type Bar2: 
     number2 int(1..1)
     bar1 Bar1(0..1)
@@ -10,3 +11,8 @@ type Bar2:
         if bar1 exists
             then bar1->number1 > 0
 
+type BarLeaf: <"Standalone, used by the bundle.">
+    value int (0..1)
+
+type BarContainer: <"Standalone, uses the bundle.">
+    bar1 Bar1 (0..1)

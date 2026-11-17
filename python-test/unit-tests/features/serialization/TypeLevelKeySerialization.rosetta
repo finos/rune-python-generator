@@ -1,0 +1,13 @@
+namespace rosetta_dsl.test.serialization.type_level_key : <"generate Python unit tests for writing type-level keys.">
+
+// Party has a key on the type, not on the attribute. SingleParty and PartyList are standalone.
+
+type Party:
+    [metadata key]
+    name string (0..1)
+
+type SingleParty:
+    party Party (0..1)
+
+type PartyList:
+    parties Party (0..*)

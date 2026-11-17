@@ -1,0 +1,23 @@
+namespace rosetta_dsl.test.serialization.scoped_key : <"generate Python unit tests for writing scoped keys.">
+
+// BundledHolder and Back refer to each other, so they are bundled. Holder is standalone and
+// otherwise the same.
+
+type Measure:
+    value int (0..1)
+
+type Holder:
+    measure Measure (0..1)
+        [metadata location]
+    measureRef Measure (0..1)
+        [metadata address "pointsTo"=Holder->measure]
+
+type BundledHolder:
+    measure Measure (0..1)
+        [metadata location]
+    measureRef Measure (0..1)
+        [metadata address "pointsTo"=BundledHolder->measure]
+    back Back (0..1)
+
+type Back:
+    holder BundledHolder (0..1)

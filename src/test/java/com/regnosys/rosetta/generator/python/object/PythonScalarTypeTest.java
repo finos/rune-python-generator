@@ -34,6 +34,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Tester(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 one: Optional[str] = Field(None, description='')
                 list: list[str | None] = Field(..., description='', min_length=1)""");
     }
@@ -48,6 +49,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Tester(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 one: Optional[int] = Field(None, description='')
                 list: list[int | None] = Field(..., description='', min_length=1)""");
     }
@@ -62,6 +64,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Tester(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 one: Optional[Decimal] = Field(None, description='')
                 list: list[Decimal | None] = Field(..., description='', min_length=1)""");
     }
@@ -76,6 +79,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Tester(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 one: Optional[bool] = Field(None, description='')
                 list: list[bool | None] = Field(..., description='', min_length=1)""");
     }
@@ -90,6 +94,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Tester(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 one: Optional[datetime.date] = Field(None, description='')
                 list: list[datetime.date | None] = Field(..., description='', min_length=1)""");
     }
@@ -105,6 +110,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Tester(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 one: Optional[datetime.datetime] = Field(None, description='')
                 list: list[datetime.datetime | None] = Field(..., description='', min_length=1)
                 zoned: Optional[datetime.datetime] = Field(None, description='')""");
@@ -120,6 +126,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Tester(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 one: Optional[datetime.time] = Field(None, description='')
                 list: list[datetime.time | None] = Field(..., description='', min_length=1)""");
     }
@@ -133,6 +140,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class AttributeGlobalKeyTest(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 withoutGlobalKey: str = Field(..., description='')""");
     }
 
@@ -145,6 +153,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class Foo(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 bar: Optional[str] = Field(None, description='')""");
     }
 
@@ -170,6 +179,7 @@ public class PythonScalarTypeTest {
         testUtils.assertBundleContainsExpectedString(model,
             """
             class TestType2(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 testType2Value1: list[Decimal | None] = Field(..., description='', min_length=1)
                 testType2Value2: Optional[datetime.date] = Field(None, description='')
                 testEnum: Optional[com.rosetta.test.model.TestEnum.TestEnum] = Field(None, description='')
@@ -178,6 +188,7 @@ public class PythonScalarTypeTest {
         testUtils.assertBundleContainsExpectedString(model,
             """
             class TestType(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"\"\"
                 Test type description.
                 \"\"\"
@@ -207,12 +218,14 @@ public class PythonScalarTypeTest {
         testUtils.assertBundleContainsExpectedString(model,
             """
             class UnitType(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 currency: Optional[str] = Field(None, description='')
             """);
 
         testUtils.assertBundleContainsExpectedString(model,
             """
             class MeasureBase(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 amount: Decimal = Field(..., description='')
                 unitOfAmount: Annotated[UnitType, UnitType.serializer(), UnitType.validator()] = Field(..., description='')
             """);
@@ -220,6 +233,7 @@ public class PythonScalarTypeTest {
         testUtils.assertBundleContainsExpectedString(model,
             """
             class Quantity(MeasureBase):
+                model_config = ConfigDict(defer_build=True)
                 multiplier: Optional[Decimal] = Field(None, description='')
                 multiplierUnit: Annotated[Optional[UnitType], UnitType.serializer(), UnitType.validator()] = Field(None, description='')
             """);
@@ -235,6 +249,7 @@ public class PythonScalarTypeTest {
             """,
             """
             class MultilineDefinition(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 field: str = Field(..., description='This is a multiline definition for a field.')""");
     }
 }

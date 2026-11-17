@@ -1,0 +1,63 @@
+namespace rosetta_dsl.test.functions.bundled_type_name : <"generate Python unit tests from Rosetta.">
+
+// GroupB1 and GroupB2 form a cycle, so both are bundled. Standalone functions and classes
+// build them, and a bundled condition builds a standalone type.
+
+type GroupB1:
+    value number (0..1)
+    groupB2 GroupB2 (0..1)
+
+type GroupB2:
+    groupB1 GroupB1 (0..1)
+
+    condition BuildsStandaloneType: <"A bundled condition building a standalone type.">
+        Leaf { value: 1 } -> value = 1
+
+type Leaf: <"Standalone, used only by a bundled condition.">
+    value number (0..1)
+
+type Mid: <"Standalone, holds a bundled type.">
+    groupB1 GroupB1 (0..1)
+
+type Checker: <"Standalone, its condition builds a bundled type.">
+    value number (0..1)
+
+    condition BuildsBundledType:
+        if value exists
+        then GroupB1 { value: value, ... } -> value = value
+
+func MakeGroupB1: <"Builds a bundled type with a constructor.">
+    inputs:
+        value number (0..1)
+    output:
+        result GroupB1 (0..1)
+
+    set result:
+        GroupB1 { value: value, ... }
+
+func SetPathGroupB1: <"Builds a bundled type with an ObjectBuilder.">
+    inputs:
+        value number (0..1)
+    output:
+        result GroupB1 (0..1)
+
+    set result -> value:
+        value
+
+func MakeMid: <"Builds a bundled type that appears only in the function body.">
+    inputs:
+        value number (0..1)
+    output:
+        result Mid (0..1)
+
+    set result:
+        Mid { groupB1: GroupB1 { value: value, ... } }
+
+func ValueViaGroupB1: <"Builds a bundled type that appears in neither the signature nor any other type.">
+    inputs:
+        value number (0..1)
+    output:
+        result number (0..1)
+
+    set result:
+        GroupB1 { value: value, ... } -> value

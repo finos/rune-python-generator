@@ -35,8 +35,9 @@ rune-python-generator; CDM 7.7.0 exhibited this; regression test for the fix.
 
 ### Additional Context:
 The current generator emits the lazy __getattr__ pattern for all bundle class modules.
-This test confirms that pattern is present and that importing a bundle class via
-`from module import ClassName` delivers the fully-rebuilt class, not the placeholder.
+That pattern is checked by the JUnit tests. These tests confirm that importing a bundle
+class via `from module import ClassName` delivers the fully-rebuilt class, not the
+placeholder.
 """
 
 import sys
@@ -50,26 +51,6 @@ def _clear_bundle_modules():
                  or k == 'rosetta_dsl._bundle']
     for k in to_remove:
         del sys.modules[k]
-
-
-def test_g2_bundle_class_module_uses_lazy_getattr():
-    """
-    Each bundle class module must define __getattr__ rather than a top-level
-    class. A module-level class definition is the old pattern that causes G2:
-    the importing module gets the class before Phase-3 rebuilds it.
-    """
-    import inspect
-    import rosetta_dsl.test.model.circular_dependency.Bar1 as bar1_module
-    import rosetta_dsl.test.model.circular_dependency.Bar2 as bar2_module
-
-    for name, mod in [('Bar1', bar1_module), ('Bar2', bar2_module)]:
-        source = inspect.getsource(mod)
-        assert 'def __getattr__' in source, (
-            f"G2 regression: {name}.py does not use lazy __getattr__ pattern"
-        )
-        assert 'class ' not in source, (
-            f"G2 regression: {name}.py defines the class directly (old pattern)"
-        )
 
 
 def test_g2_from_import_of_bundle_class_returns_rebuilt_type():

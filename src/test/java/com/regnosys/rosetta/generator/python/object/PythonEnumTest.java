@@ -64,6 +64,7 @@ public class PythonEnumTest {
 
         String expectedTestType1 = """
             class LegalEntity(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 _ALLOWED_METADATA = {'@key', '@key:external'}
                 \"""
                 A class to specify a legal entity, with a required name and an optional entity identifier (such as the LEI).
@@ -79,6 +80,7 @@ public class PythonEnumTest {
             """;
         String expectedTestType2 = """
             class TelephoneNumber(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"""
                 A class to specify a telephone number as a type of phone number (e.g. work, personal, ...) alongside with the actual number.
                 \"""
@@ -93,6 +95,7 @@ public class PythonEnumTest {
             """;
         String expectedTestType3 = """
             class AncillaryEntity(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"""
                 Holds an identifier for an ancillary entity, either identified directly via its ancillary role or directly as a legal entity.
                 \"""
@@ -100,7 +103,7 @@ public class PythonEnumTest {
                 \"""
                 Identifies a party via its ancillary role on a transaction (e.g. CCP or DCO through which the trade test be cleared.)
                 \"""
-                legalEntity: Annotated[Optional[LegalEntity], LegalEntity.serializer(), LegalEntity.validator()] = Field(None, description='')
+                legalEntity: Annotated[Optional[LegalEntity], LegalEntity.serializer(), LegalEntity.validator(('@key', '@key:external'))] = Field(None, description='')
 
                 @rune_condition
                 def condition_0_(self):
@@ -174,6 +177,7 @@ public class PythonEnumTest {
 
         String expectedTestType = """
             class UnitType(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 \"""
                 Defines the unit to be used for price, quantity, or other purposes
                 \"""

@@ -1,0 +1,35 @@
+namespace rosetta_dsl.test.functions.condition_function_import : <"generate Python unit tests from Rosetta.">
+
+// GroupB1 and GroupB2 form a cycle, so both are bundled. Conditions on bundled and
+// standalone classes call functions that use GroupB1.
+
+type GroupB1:
+    value number (0..1)
+    groupB2 GroupB2 (0..1)
+
+    condition HasItsValue: <"A bundled class whose condition calls a function.">
+        HasValue(item)
+
+type GroupB2:
+    groupB1 GroupB1 (0..1)
+
+type WithBundledAttribute: <"Standalone, with a bundled attribute, calling a function directly.">
+    groupB1 GroupB1 (0..1)
+
+    condition UsesFunction:
+        HasValue(groupB1)
+
+type WithoutBundledAttribute: <"Standalone, with no bundled attribute; its function uses a bundled type.">
+    value number (0..1)
+
+    condition UsesFunction:
+        HasValue(empty) = False
+
+func HasValue:
+    inputs:
+        groupB1 GroupB1 (0..1)
+    output:
+        result boolean (1..1)
+
+    set result:
+        groupB1 -> value exists

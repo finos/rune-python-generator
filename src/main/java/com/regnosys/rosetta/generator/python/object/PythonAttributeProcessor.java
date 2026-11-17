@@ -91,7 +91,7 @@ public final class PythonAttributeProcessor {
     }
 
     private AttributeResult createAttributeResult(Data rc, RAttribute ra, MetaDataResult metaDataResult, PythonCodeGeneratorContext context) {
-        RosettaModel model = (RosettaModel) rc.eContainer();
+        RosettaModel model = rc.getModel();
         String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isStandalone = context.getStandaloneClasses().contains(className);
         String attrName = RuneToPythonMapper.mangleName(ra.getName());
@@ -114,9 +114,14 @@ public final class PythonAttributeProcessor {
             // Phase 2 updates both __annotations__ (full Annotated type for pydantic schema) and
             // model_fields[x].annotation (bare type, required so model_rebuild(force=True) picks up
             // the real type rather than the NoneType placeholder stored in model_fields).
+            // model_rebuild builds the field from model_fields, so the field's serializer and
+            // validator are also added to its metadata; otherwise the field would be built without
+            // them and its metadata (e.g. @key:scoped) would not be written.
             pythonType = "None";
             annotationUpdates.add(String.format("model_fields[\"%s\"].annotation = %s", attrName, hint.build(false)));
             annotationUpdates.add(String.format("__annotations__[\"%s\"] = %s", attrName, hint.build(true)));
+            hint.runeAnnotations().ifPresent(runeAnnotations -> annotationUpdates.add(
+                    String.format("model_fields[\"%s\"].metadata += [%s]", attrName, runeAnnotations)));
 
             // Record rebuild dependency: className's model_rebuild must run after the referenced
             // type's model_rebuild. Only track types in the same bundle (same context, not standalone).
@@ -145,7 +150,7 @@ public final class PythonAttributeProcessor {
         MetaDataResult metaDataResult,
         PythonCodeGeneratorContext context
     ) {
-        RosettaModel model = (RosettaModel) rc.eContainer();
+        RosettaModel model = rc.getModel();
         String className = context.applyPrefix(model.getName()) + "." + rc.getName();
         boolean isSourceStandalone = context.getStandaloneClasses().contains(className);
 
@@ -190,9 +195,16 @@ public final class PythonAttributeProcessor {
         int max = cardinality.getMax().orElse(-1);
         boolean isList = (cardinality.isMulti() || max > 1);
 
-        String baseTypeName = (!validators.isEmpty())
-                ? RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn)
-                : attrTypeNameIn;
+        String baseTypeName;
+        if (!validators.isEmpty()) {
+            baseTypeName = RuneToPythonMapper.getAttributeTypeWithMeta(attrTypeNameIn);
+        } else if (RuneToPythonMapper.isRosettaBasicType(rt)) {
+            // An attribute named after the type it holds (int, str, ..., datetime) would shadow it (#331)
+            baseTypeName = RuneToPythonMapper.qualifyShadowedType(attrTypeNameIn,
+                    RuneToPythonMapper.mangleName(ra.getName()));
+        } else {
+            baseTypeName = attrTypeNameIn;
+        }
 
         String propString = validationProps.toFieldArgs();
         Optional<String> fieldProps = (isList && !propString.isEmpty()) ? Optional.of(propString) : Optional.empty();
@@ -294,6 +306,17 @@ public final class PythonAttributeProcessor {
         }
         if (!validators.isEmpty()) {
             keyRefConstraints.put(ra.getName(), new ArrayList<>(validators));
+        }
+        // A type with [metadata key] can carry @key and @key:external wherever it is used. The
+        // runtime writes them only through the field's serializer, so the field needs the hooks
+        // and a validator that allows the keys, even without metadata on the attribute itself.
+        if (resolveType(ra) instanceof RDataType dataType
+                && dataType.getMetaAttributes().stream().anyMatch(ma -> "key".equals(ma.getName()))) {
+            for (String key : List.of("@key", "@key:external")) {
+                if (!validators.contains(key)) {
+                    validators.add(key);
+                }
+            }
         }
         validators.addAll(otherMeta);
         return new MetaDataResult(validators, hasReference);
@@ -407,7 +430,7 @@ public final class PythonAttributeProcessor {
         Set<String> standaloneClasses = context.getStandaloneClasses();
         RDataType buildRDataType = rObjectFactory.buildRDataType(rc);
         Collection<RAttribute> allAttributes = buildRDataType.getOwnAttributes();
-        RosettaModel rcModel = (RosettaModel) rc.eContainer();
+        RosettaModel rcModel = rc.getModel();
         String rcFqn = context.applyPrefix(rcModel.getName()) + "." + rc.getName();
 
         for (RAttribute attr : allAttributes) {

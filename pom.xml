@@ -270,10 +270,6 @@
         </dependency>
         <!-- extra dependencies -->
         <dependency>
-            <groupId>org.eclipse.emf</groupId>
-            <artifactId>org.eclipse.emf.codegen.ecore</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
         </dependency>
@@ -377,6 +373,10 @@
                             </includes>
                             <excludes>
                                 <exclude>src/generated/**</exclude>
+                                <!-- Local virtual environments and caches; not part of the repository -->
+                                <exclude>**/.pyenv/**</exclude>
+                                <exclude>**/.profile-pyenv/**</exclude>
+                                <exclude>**/__pycache__/**</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>
@@ -385,7 +385,9 @@
                 <executions>
                     <execution>
                         <id>check-license-headers</id>
-                        <phase>verify</phase>
+                        <!-- Run before package: maven-shade-plugin's dependency-reduced POM moves the
+                             project base directory to target/, after which no includes match (#337) -->
+                        <phase>validate</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
@@ -419,6 +421,12 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
+              Known warning with Maven 3.10+: "Could not transfer metadata /.meta/prefixes.txt from/to
+              jvnet-nexus-releases". This plugin's jaxb-api 2.3.1 dependency inherits that retired
+              repository; the build is unaffected. Fixed upstream for 3.6.1, not yet released:
+              https://github.com/apache/maven-checkstyle-plugin/issues/736. Tracked in https://github.com/finos/rune-python-generator/issues/335.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>

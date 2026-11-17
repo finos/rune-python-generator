@@ -1,0 +1,50 @@
+namespace rosetta_dsl.test.functions.count_single_value : <"generate Python unit tests from Rosetta.">
+
+type Inner:
+    value number (1..1)
+    name string (0..1)
+
+type Holder:
+    lone Inner (0..1)
+    several Inner (0..*)
+
+    condition AtMostOneSingle: <"count of a single model object is 1, not its number of fields.">
+        lone count <= 1
+
+    condition CountInCondition: <"count must agree with the cardinality in a calculation.">
+        if lone exists
+        then lone count = 1
+        else lone count = 0
+
+    condition CountOfSeveral:
+        several count <= 2
+
+type Parent:
+    inner Inner (0..1)
+
+func CountSingle: <"The input is a proxy for the model object inside a function.">
+    inputs:
+        lone Inner (0..1)
+    output:
+        result int (1..1)
+
+    set result:
+        lone count
+
+func CountSingleAttribute: <"count of a path that ends in a single model object.">
+    inputs:
+        parent Parent (0..1)
+    output:
+        result int (1..1)
+
+    set result:
+        parent -> inner count
+
+func CountSeveral: <"Control: count of a list.">
+    inputs:
+        several Inner (0..*)
+    output:
+        result int (1..1)
+
+    set result:
+        several count

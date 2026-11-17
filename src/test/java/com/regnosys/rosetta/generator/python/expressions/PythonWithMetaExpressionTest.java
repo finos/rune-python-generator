@@ -4,6 +4,8 @@
  */
 package com.regnosys.rosetta.generator.python.expressions;
 
+import java.util.Map;
+
 import org.eclipse.xtext.testing.InjectWith;
 import org.eclipse.xtext.testing.extensions.InjectionExtension;
 import org.junit.jupiter.api.Test;
@@ -136,6 +138,38 @@ public class PythonWithMetaExpressionTest {
                         val with-meta { scheme: schemeVal }
                 """,
                 "com.rosetta.test.model.MyEnum.MyEnum.deserialize({'@data': rune_resolve_attr(self, \"val\"), '@scheme': rune_resolve_attr(self, \"schemeVal\")}, allowed_meta={'@scheme'})");
+    }
+
+    /**
+     * With a namespace prefix, the enum must be referred to by its prefixed module path: the Rune
+     * namespace alone is not a Python package.
+     */
+    @Test
+    public void testWithMetaEnumSchemeUsesNamespacePrefix() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString("""
+                enum MyEnum:
+                    VALUE_A
+                    VALUE_B
+
+                func TestWithMetaEnum:
+                    inputs:
+                        val MyEnum (0..1)
+                        schemeVal string (0..1)
+                    output:
+                        result MyEnum (0..1)
+                            [metadata scheme]
+                    set result:
+                        val with-meta { scheme: schemeVal }
+                """, "finos", null);
+        String function = python.entrySet().stream()
+                .filter(e -> e.getKey().endsWith("/functions/TestWithMetaEnum.py"))
+                .map(e -> e.getValue().toString())
+                .findFirst()
+                .orElseThrow();
+        testUtils.assertGeneratedContainsExpectedString(function,
+                "result = finos.com.rosetta.test.model.MyEnum.MyEnum.deserialize(");
+        testUtils.assertGeneratedDoesNotContain(function,
+                "result = com.rosetta.test.model.MyEnum.MyEnum.deserialize(");
     }
 
     // -------------------------------------------------------------------------

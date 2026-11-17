@@ -1,0 +1,27 @@
+namespace rosetta_dsl.test.model_structure.builtin_name_clash : <"generate Python unit tests for attributes named after a Python name their own type annotation uses.">
+
+choice ChoiceBasic:
+    string
+    int
+
+type Clash:
+    str string (0..1)
+    bool boolean (0..1)
+
+type DateClash:
+    datetime date (0..1)
+
+type TimeClash:
+    datetime time (0..1)
+
+type DecimalClash:
+    Decimal number (0..1)
+
+// BundledChoice and Node refer to each other, so both are bundled. The other types are standalone.
+choice BundledChoice:
+    int
+    Node
+
+type Node:
+    next BundledChoice (0..1)
+    str string (0..1)

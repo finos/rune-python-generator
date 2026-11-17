@@ -3,6 +3,7 @@
 # Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
 # SPDX-License-Identifier: Apache-2.0
 #
+
 # Run the CDM test suite: import smoke test + deserialization ingestion test.
 #
 # Usage (from project root):
@@ -91,7 +92,7 @@ CDM_BRANCH="$_SAVED_CDM_BRANCH"
 unset _SAVED_MY_PATH _SAVED_CDM_BRANCH
 
 # ---------------------------------------------------------------------------
-# Step 3: fetch CDM serialization samples (FX and IRD)
+# Step 3: fetch CDM serialization samples (two fully valid rates trades)
 # ---------------------------------------------------------------------------
 PYTEST_ARGS=(-p no:cacheprovider)
 SAMPLE_TMPDIR=""
@@ -101,21 +102,23 @@ if [[ $SKIP_INGESTION -eq 0 ]]; then
     CDM_RAW_BASE="https://raw.githubusercontent.com/finos/common-domain-model/$CDM_BRANCH"
     SAMPLE_TMPDIR="$(mktemp -d)"
 
-    FX_REPO_PATH="$CDM_BASE/fpml-5-13-products-fx-derivatives/fx-ex01-fx-spot.json"
-    FX_FILE="$SAMPLE_TMPDIR/fx-ex01-fx-spot.json"
-    echo "***** Step 3a: fetching FX sample from $CDM_RAW_BASE/$FX_REPO_PATH"
-    curl -sSL --fail "$CDM_RAW_BASE/$FX_REPO_PATH" -o "$FX_FILE" \
-        || { echo "ERROR: failed to fetch FX sample"; rm -rf "$SAMPLE_TMPDIR"; exit 1; }
-    echo "***** FX sample saved ($( wc -c < "$FX_FILE" | tr -d ' ') bytes)"
-    export CDM_FX_SAMPLE_PATH="$FX_FILE"
+    # The only two samples that are fully valid in both CDM master and 7.10.0. Both are rates
+    # trades: no FX sample is fully valid.
+    XCCY_REPO_PATH="$CDM_BASE/fpml-5-10-products-rates/ird-xccy-fixed-swap-uti.json"
+    XCCY_FILE="$SAMPLE_TMPDIR/ird-xccy-fixed-swap-uti.json"
+    echo "***** Step 3a: fetching cross-currency swap sample from $CDM_RAW_BASE/$XCCY_REPO_PATH"
+    curl -sSL --fail "$CDM_RAW_BASE/$XCCY_REPO_PATH" -o "$XCCY_FILE" \
+        || { echo "ERROR: failed to fetch cross-currency swap sample"; rm -rf "$SAMPLE_TMPDIR"; exit 1; }
+    echo "***** cross-currency swap sample saved ($( wc -c < "$XCCY_FILE" | tr -d ' ') bytes)"
+    export CDM_XCCY_SAMPLE_PATH="$XCCY_FILE"
 
-    IRD_REPO_PATH="$CDM_BASE/fpml-5-13-products-interest-rate-derivatives/ird-ex01-vanilla-swap.json"
-    IRD_FILE="$SAMPLE_TMPDIR/ird-ex01-vanilla-swap.json"
-    echo "***** Step 3b: fetching IRD sample from $CDM_RAW_BASE/$IRD_REPO_PATH"
-    curl -sSL --fail "$CDM_RAW_BASE/$IRD_REPO_PATH" -o "$IRD_FILE" \
-        || { echo "ERROR: failed to fetch IRD sample"; rm -rf "$SAMPLE_TMPDIR"; exit 1; }
-    echo "***** IRD sample saved ($( wc -c < "$IRD_FILE" | tr -d ' ') bytes)"
-    export CDM_IRD_SAMPLE_PATH="$IRD_FILE"
+    RFR_REPO_PATH="$CDM_BASE/fpml-5-12-products-rates/ird-ex40-rfr-avg-swap-obs-period-shift.json"
+    RFR_FILE="$SAMPLE_TMPDIR/ird-ex40-rfr-avg-swap-obs-period-shift.json"
+    echo "***** Step 3b: fetching RFR swap sample from $CDM_RAW_BASE/$RFR_REPO_PATH"
+    curl -sSL --fail "$CDM_RAW_BASE/$RFR_REPO_PATH" -o "$RFR_FILE" \
+        || { echo "ERROR: failed to fetch RFR swap sample"; rm -rf "$SAMPLE_TMPDIR"; exit 1; }
+    echo "***** RFR swap sample saved ($( wc -c < "$RFR_FILE" | tr -d ' ') bytes)"
+    export CDM_RFR_SAMPLE_PATH="$RFR_FILE"
 else
     echo "***** Step 3: skipping ingestion test (-i)"
     PYTEST_ARGS+=(--ignore="$MY_PATH/test_deserialize_trade_state.py")

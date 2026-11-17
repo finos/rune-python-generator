@@ -17,7 +17,24 @@ from rune.runtime.object_registry import _OBJECT_REGISTRY
 from test_helper.test_helper.dict_comp import dict_comp
 
 ROUNDTRIP_DIR = 'rune-common/serialization/src/test/resources/rune-serializer-round-trip-test'
-SHOULDFAIL_DIR = 'rune-common/serialization/src/test/resources/rune-serializer-error-handling-test'
+# ChoiceDeepNested in rune-common's choicetype model reaches the same leaves through two
+# options. The DSL warns about that and will reject it; the generator already rejects it, so
+# run_serialization_tests.sh leaves it out of the generated model. Skip the fixtures that use
+# it until rune-common changes the model (https://github.com/finos/rune-dsl/issues/1464).
+SKIPPED_ROUND_TRIP_FILES = {
+    'choicetype/choice-deep-nested.json',
+    'choicetype/choice-deep-nested-2.json',
+    'choicetype/choice-deep-nested-extended.json',
+}
+# Cases that must fail: the error-handling cases kept in this repo (rune-common
+# removed them), and the invalid choice options from rune-common's choice
+# deserializer suite
+CHOICE_DESERIALIZER_DIR = 'rune-common/serialization/src/test/resources/rune-json-choice-type-deserializer-test'
+SHOULDFAIL_DIRS = [
+    'error-handling',
+    CHOICE_DESERIALIZER_DIR + '/invalidchoiceoption',
+    CHOICE_DESERIALIZER_DIR + '/invalidnestedchoiceoption',
+]
 
 
 def extract_dir_and_file(path_name) -> str:
@@ -81,9 +98,18 @@ def process_directory(dir_name):
           'failures:', failures)
 
 
-@pytest.mark.parametrize(
-    "round_trip_file",
-    glob.glob(ROUNDTRIP_DIR + os.sep + '**/*.json', recursive=True))
+def _round_trip_files() -> list[str]:
+    '''the round-trip fixtures, without the skipped ones; fails if a skipped one is missing'''
+    files = glob.glob(ROUNDTRIP_DIR + os.sep + '**/*.json', recursive=True)
+    found = {extract_dir_and_file(f) for f in files}
+    missing = SKIPPED_ROUND_TRIP_FILES - found
+    if missing and files:
+        raise RuntimeError(f'skipped round-trip fixtures not found: {sorted(missing)}; '
+                           'check whether SKIPPED_ROUND_TRIP_FILES is still needed')
+    return [f for f in files if extract_dir_and_file(f) not in SKIPPED_ROUND_TRIP_FILES]
+
+
+@pytest.mark.parametrize("round_trip_file", _round_trip_files())
 def test_round_trip_files(round_trip_file):
     '''test round trip files'''
     try:
@@ -93,7 +119,9 @@ def test_round_trip_files(round_trip_file):
 
 @pytest.mark.parametrize(
     "should_fail_file",
-    glob.glob(SHOULDFAIL_DIR + os.sep + '**/*.json', recursive=True))
+    sorted(path_name
+           for dir_name in SHOULDFAIL_DIRS
+           for path_name in glob.glob(dir_name + os.sep + '**/*.json', recursive=True)))
 def test_should_fail_files(should_fail_file):
     '''test should fail files'''
     try:

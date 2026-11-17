@@ -5,13 +5,17 @@
 package com.regnosys.rosetta.generator.python.expressions;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.regnosys.rosetta.generator.java.enums.EnumHelper;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.generator.python.util.RuneToPythonMapper;
 import com.regnosys.rosetta.rosetta.RosettaCallableWithArgs;
+import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
 import com.regnosys.rosetta.rosetta.RosettaEnumValueReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
@@ -75,7 +79,6 @@ import com.regnosys.rosetta.rosetta.simple.ChoiceOption;
 import com.regnosys.rosetta.rosetta.simple.Condition;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
-import com.regnosys.rosetta.rosetta.simple.impl.FunctionImpl;
 import com.regnosys.rosetta.types.CardinalityProvider;
 import com.regnosys.rosetta.types.RChoiceType;
 import com.regnosys.rosetta.types.RDataType;
@@ -83,6 +86,7 @@ import com.regnosys.rosetta.types.REnumType;
 import com.regnosys.rosetta.types.RMetaAnnotatedType;
 import com.regnosys.rosetta.types.RType;
 import com.regnosys.rosetta.types.RosettaTypeProvider;
+import com.regnosys.rosetta.types.TypeSystem;
 import com.regnosys.rosetta.generator.python.PythonCodeGeneratorContext;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
 
@@ -115,6 +119,12 @@ public final class PythonExpressionGenerator {
     private RosettaTypeProvider typeProvider;
 
     /**
+     * Strips type aliases, to tell an enum argument of to-enum from a string one.
+     */
+    @Inject
+    private TypeSystem typeSystem;
+
+    /**
      * The cardinality provider.
      */
     @Inject
@@ -125,8 +135,55 @@ public final class PythonExpressionGenerator {
      */
     private int generatedFunctionCounter = 0;
 
+    /**
+     * Imports for the functions called and types built by the class condition being generated, or
+     * null when no class condition is being generated. Each is emitted inside that condition, so it
+     * only runs once all modules have loaded, whichever module was imported first.
+     */
+    private Set<String> conditionImports = null;
+
+    /**
+     * True when generating code for a standalone file rather than for _bundle.py. A standalone
+     * file refers to a bundled type by its stub name; only _bundle.py defines the bundle name.
+     */
+    private boolean writingStandaloneFile = false;
+
+    /**
+     * The inputs of the function being generated, which are read from the function's frame rather
+     * than from the current item. Empty when generating a class.
+     */
+    private Set<Attribute> functionInputs = Set.of();
+
+    /** The function being generated, or null when generating a class. */
+    private String currentFunction = null;
+
+    /**
+     * Imports for calls to functions in the same cycle of function calls as the function being
+     * generated. They are written inside that function, rather than at the top of its module.
+     */
+    private final Set<String> functionLocalImports = new LinkedHashSet<>();
+
     /** The Python code generator context. */
     private PythonCodeGeneratorContext context;
+
+    public void setWritingStandaloneFile(boolean writingStandaloneFile) {
+        this.writingStandaloneFile = writingStandaloneFile;
+    }
+
+    public void setCurrentFunction(String functionFqn) {
+        this.currentFunction = functionFqn;
+    }
+
+    /**
+     * @return the imports to write inside the function being generated
+     */
+    public Set<String> getFunctionLocalImports() {
+        return functionLocalImports;
+    }
+
+    public void setFunctionInputs(Collection<Attribute> functionInputs) {
+        this.functionInputs = Set.copyOf(functionInputs);
+    }
 
     public void setContext(PythonCodeGeneratorContext context) {
         this.context = context;
@@ -238,8 +295,7 @@ public final class PythonExpressionGenerator {
                 return generateSwitchOperation(switchOp, scope);
             }
             case ToEnumOperation toEnum -> {
-                return toEnum.getEnumeration().getName() + "("
-                        + generateExpression(toEnum.getArgument(), scope) + ")";
+                return generateToEnumOperation(toEnum, scope);
             }
             case ToStringOperation toString -> {
                 return "rune_str(" + generateExpression(toString.getArgument(), scope) + ")";
@@ -374,7 +430,7 @@ public final class PythonExpressionGenerator {
 
         // Narrowed values may still be wrapped in a copy-on-write proxy (rune_cow), which is
         // not a subclass of the wrapped type, so the isinstance check must unwrap first.
-        String targetTypeName = ((Data) expr.getType()).getName();
+        String targetTypeName = typeReference((Data) expr.getType());
         if (isMulti) {
             return "[_x for _x in (" + arg + " or []) if isinstance(rune_unwrap(_x), " + targetTypeName + ")]";
         }
@@ -431,7 +487,13 @@ public final class PythonExpressionGenerator {
 
     private String generateFeatureCall(RosettaFeatureCall expr, PythonExpressionScope scope) {
         if (expr.getFeature() instanceof RosettaEnumValue evalue) {
-            return generateEnumString(evalue);
+            // Name the enum written in the model: for an extended enum, the declaring parent
+            // is a different Python Enum, whose members don't compare equal.
+            if (expr.getReceiver() instanceof RosettaSymbolReference receiverRef
+                    && receiverRef.getSymbol() instanceof RosettaEnumeration receiverEnum) {
+                return generateEnumString(evalue, receiverEnum.getModel().getName(), receiverEnum.getName());
+            }
+            return generateEnumString(evalue, typeProvider.getRMetaAnnotatedType(expr).getRType());
         }
         if (expr.getFeature() instanceof RosettaMetaType metaType) {
             String metaDataName = PythonCodeGeneratorUtil.mapMetaTypeToMetaDataName(metaType.getName());
@@ -517,7 +579,9 @@ public final class PythonExpressionGenerator {
         String param = thenFunc.getParameters().isEmpty() ? "item"
                 : thenFunc.getParameters().get(0).getName();
         String rawCollection = generateExpression(mapOp.getArgument(), scope);
-        String rawArg = "[x for x in " + rawCollection + " or [] if x is not None]";
+        String rawItems = cardinalityProvider.isMulti(mapOp.getArgument())
+                ? rawCollection + " or []" : "[" + rawCollection + "]";
+        String rawArg = "[x for x in " + rawItems + " if x is not None]";
 
         String fieldName = refAttr.getName();
         String resolveCall = param + ".resolve_ref_key(\"" + fieldName + "\")";
@@ -580,6 +644,11 @@ public final class PythonExpressionGenerator {
         }
 
         String filterExpression = generateExpression(expr.getFunction().getBody(), subScope);
+        if (!cardinalityProvider.isMulti(expr.getArgument())) {
+            // A single value isn't iterable, and the result stays a single value
+            return "(lambda " + param + ": " + param + " if " + param + " is not None and (" + filterExpression
+                    + ") else None)(" + argument + ")";
+        }
         return "rune_filter(" + argument + ", lambda " + param + ": " + filterExpression + ")";
     }
 
@@ -594,6 +663,10 @@ public final class PythonExpressionGenerator {
         }
 
         String funcBody = generateExpression(inlineFunc.getBody(), subScope);
+        if (!cardinalityProvider.isMulti(expr.getArgument())) {
+            // A single value isn't iterable, and the result stays a single value
+            return "(lambda " + param + ": None if " + param + " is None else " + funcBody + ")(" + argument + ")";
+        }
         String lambdaFunction = "lambda " + param + ": " + funcBody;
         return "[x for x in map(" + lambdaFunction + ", " + argument + " or []) if x is not None]";
     }
@@ -602,8 +675,7 @@ public final class PythonExpressionGenerator {
         String type = null;
         if (expr.getTypeCall() != null && expr.getTypeCall().getType() != null) {
             com.regnosys.rosetta.rosetta.RosettaNamed typeNamed = expr.getTypeCall().getType();
-            String fqn = context.getFullyQualifiedName(typeNamed);
-            type = context.getStandaloneClasses().contains(fqn) ? typeNamed.getName() : context.getBundleObjectName(typeNamed);
+            type = typeReference(typeNamed);
         }
         if (type != null) {
             return type + "(" + expr.getValues().stream()
@@ -628,7 +700,8 @@ public final class PythonExpressionGenerator {
         }
     }
 
-    private String getGuardExpression(SwitchCaseGuard caseGuard, PythonExpressionScope scope) {
+    private String getGuardExpression(SwitchCaseGuard caseGuard, RosettaExpression switchArgument,
+            PythonExpressionScope scope) {
         if (caseGuard == null) {
             throw new UnsupportedOperationException("Null SwitchCaseGuard");
         }
@@ -638,8 +711,8 @@ public final class PythonExpressionGenerator {
         }
         RosettaEnumValue enumGuard = caseGuard.getEnumGuard();
         if (enumGuard != null) {
-            return "switchAttribute == rune_resolve_attr(" + generateEnumString(enumGuard) + ",\""
-                    + enumGuard.getName() + "\")";
+            RType argumentType = typeProvider.getRMetaAnnotatedType(switchArgument).getRType();
+            return "switchAttribute == " + generateEnumString(enumGuard, argumentType);
         }
         RosettaFeature optionGuard = caseGuard.getChoiceOptionGuard();
         if (optionGuard != null) {
@@ -660,7 +733,7 @@ public final class PythonExpressionGenerator {
         } else if (symbol instanceof Attribute attr) {
             return generateAttributeReference(attr, scope);
         } else if (symbol instanceof RosettaEnumValue evalue) {
-            return generateEnumString(evalue);
+            return generateEnumString(evalue, typeProvider.getRMetaAnnotatedType(expr).getRType());
         } else if (symbol instanceof RosettaCallableWithArgs callable) {
             return generateCallableWithArgsCall(callable, expr, scope);
         } else if (symbol instanceof ClosureParameter) {
@@ -681,18 +754,48 @@ public final class PythonExpressionGenerator {
         if (scope.shadowedSymbols().containsKey(s)) {
             return scope.shadowedSymbols().get(s);
         }
-        boolean isInput = s.eContainer() instanceof FunctionImpl c
-            && c.getInputs().stream().anyMatch(attr -> attr.getName().equals(s.getName()));
-        String receiver = isInput ? "self" : scope.receiver();
+        String receiver = functionInputs.contains(s) ? "self" : scope.receiver();
         return "rune_resolve_attr(" + receiver + ", \"" + s.getName() + "\")";
     }
 
+    /**
+     * A conversion that gives nothing when the input matches no value, as Rune specifies and the
+     * Java generator does. A string matches by display name, which the generated Python enums
+     * store as each member's value. Another enum matches by value name, as Java's
+     * {@code valueOf(e.name())} does; {@code _EnumWrapper.name} passes through to the member.
+     */
+    private String generateToEnumOperation(ToEnumOperation toEnum, PythonExpressionScope scope) {
+        RosettaEnumeration enumeration = toEnum.getEnumeration();
+        String enumName = context.applyPrefix(enumeration.getModel().getName()) + "."
+                + enumeration.getName() + "." + enumeration.getName();
+        String argument = generateExpression(toEnum.getArgument(), scope);
+        boolean argumentIsEnum = typeSystem.stripFromTypeAliases(
+                typeProvider.getRMetaAnnotatedType(toEnum.getArgument()).getRType()) instanceof REnumType;
+        String lookup = argumentIsEnum
+                ? enumName + ".__members__.get(rune_unwrap(v).name)"
+                : "next((m for m in " + enumName + " if m.value == v), None)";
+        return "(lambda v: None if v is None else " + lookup + ")(" + argument + ")";
+    }
+
     private String generateEnumString(RosettaEnumValue rev) {
-        String value = EnumHelper.convertValue(rev);
         RosettaEnumeration parent = rev.getEnumeration();
-        String parentName = parent.getName();
-        String modelName = context.applyPrefix(parent.getModel().getName());
-        return modelName + "." + parentName + "." + parentName + "." + value;
+        return generateEnumString(rev, parent.getModel().getName(), parent.getName());
+    }
+
+    /**
+     * Names an enum value through the enum type of the expression, if known. For a value that an
+     * extended enum inherits, that's the extended enum, not the parent that declares the value.
+     */
+    private String generateEnumString(RosettaEnumValue rev, RType referencedType) {
+        if (referencedType instanceof REnumType enumType) {
+            return generateEnumString(rev, enumType.getNamespace().toString(), enumType.getName());
+        }
+        return generateEnumString(rev);
+    }
+
+    private String generateEnumString(RosettaEnumValue rev, String namespace, String enumName) {
+        String value = EnumHelper.convertValue(rev);
+        return context.applyPrefix(namespace) + "." + enumName + "." + enumName + "." + value;
     }
 
     private String generateCallableWithArgsCall(RosettaCallableWithArgs s, RosettaSymbolReference expr,
@@ -707,7 +810,12 @@ public final class PythonExpressionGenerator {
             case null, default -> {
                 String fqn = context.getFullyQualifiedName(s);
                 if (context.getStandaloneClasses().contains(fqn)) {
-                    context.addBundleConditionFunctionImport(fqn, s.getName());
+                    if (conditionImports != null) {
+                        conditionImports.add("from " + fqn + " import " + s.getName());
+                    }
+                    if (currentFunction != null && context.isInFunctionCycle(currentFunction, fqn)) {
+                        functionLocalImports.add("from " + fqn + " import " + s.getName());
+                    }
                     yield s.getName();
                 } else {
                     yield context.getBundleObjectName(s);
@@ -768,12 +876,13 @@ public final class PythonExpressionGenerator {
         int nConditions = 0;
         StringBuilder result = new StringBuilder();
         for (Condition cond : cls.getConditions()) {
-            result.append(generateConditionBoilerPlate(cond, nConditions));
-            if (isConstraintCondition(cond)) {
-                result.append(generateConstraintCondition(cls, cond));
-            } else {
-                result.append(generateIfThenElseOrSwitch(cond));
-            }
+            conditionImports = new LinkedHashSet<>();
+            String body = isConstraintCondition(cond)
+                    ? generateConstraintCondition(cls, cond)
+                    : generateIfThenElseOrSwitch(cond);
+            result.append(generateConditionBoilerPlate(cond, nConditions, conditionImports));
+            result.append(body);
+            conditionImports = null;
             nConditions++;
         }
         return result.toString();
@@ -804,7 +913,7 @@ public final class PythonExpressionGenerator {
         return cond.getExpression() instanceof ChoiceOperation;
     }
 
-    private String generateConditionBoilerPlate(Condition cond, int nConditions) {
+    private String generateConditionBoilerPlate(Condition cond, int nConditions, Set<String> imports) {
         PythonCodeWriter writer = new PythonCodeWriter();
         writer.newLine();
         writer.appendLine("@rune_condition");
@@ -816,6 +925,7 @@ public final class PythonExpressionGenerator {
             writer.appendLine(cond.getDefinition());
             writer.appendLine("\"\"\"");
         }
+        imports.forEach(writer::appendLine);
         writer.appendLine("item = self");
         return writer.toString();
     }
@@ -868,8 +978,16 @@ public final class PythonExpressionGenerator {
 
     // ... (helper methods like isConstraintCondition, etc. remain unchanged) ...
 
+    /**
+     * A switch tries its cases in order, as Rune's Java generator does. An absent value gives
+     * nothing. A case on a type or on a choice option passes the matched value to its body as
+     * {@code item}, so the body can use that value's attributes directly.
+     */
     private String generateSwitchOperation(SwitchOperation expr, PythonExpressionScope scope) {
         String attr = generateExpression(expr.getArgument(), scope);
+        RType argumentType = typeSystem.stripFromTypeAliases(
+                typeProvider.getRMetaAnnotatedType(expr.getArgument()).getRType());
+        boolean narrows = argumentType instanceof RChoiceType || argumentType instanceof RDataType;
         PythonCodeWriter writer = new PythonCodeWriter();
 
         String switchFuncName = "_switch_fn_" + generatedFunctionCounter++;
@@ -880,30 +998,66 @@ public final class PythonExpressionGenerator {
         var cases = expr.getCases();
         for (int i = 0; i < cases.size(); i++) {
             var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
-            String thenExprDef = currentCase.isDefault() ? generateExpression(expr.getDefault(), scope)
-                    : generateExpression(currentCase.getExpression(), scope);
-
-            writer.appendLine("def " + funcName + "():");
+            boolean isDefault = currentCase.isDefault();
+            String funcName = isDefault ? "_then_default" : "_then_" + (i + 1);
+            String thenExprDef;
+            if (isDefault) {
+                thenExprDef = generateExpression(expr.getDefault(), scope);
+                writer.appendLine("def " + funcName + "():");
+            } else if (narrows) {
+                thenExprDef = generateExpression(currentCase.getExpression(), scope.withReceiver("item"));
+                writer.appendLine("def " + funcName + "(item):");
+            } else {
+                thenExprDef = generateExpression(currentCase.getExpression(), scope);
+                writer.appendLine("def " + funcName + "():");
+            }
             writer.indent();
             writer.appendLine("return " + thenExprDef);
             writer.unindent();
         }
 
         writer.appendLine("switchAttribute = " + attr);
+        writer.appendLine("if switchAttribute is None:");
+        writer.indent();
+        writer.appendLine("return None");
+        writer.unindent();
 
         for (int i = 0; i < cases.size(); i++) {
             var currentCase = cases.get(i);
-            String funcName = currentCase.isDefault() ? "_then_default" : "_then_" + (i + 1);
             if (currentCase.isDefault()) {
                 writer.appendLine("else:");
+                writer.indent();
+                writer.appendLine("return _then_default()");
+                writer.unindent();
+                continue;
+            }
+            String funcName = "_then_" + (i + 1);
+            String prefix = (i == 0) ? "if " : "elif ";
+            SwitchCaseGuard guard = currentCase.getGuard();
+            String call;
+            if (argumentType instanceof RChoiceType choiceType && guard.getChoiceOptionGuard() != null) {
+                // The option may be in a nested choice, so follow the path of options to it
+                List<String> path = findChoiceOptionPath(choiceType, guard.getChoiceOptionGuard());
+                if (path == null) {
+                    path = List.of(guard.getChoiceOptionGuard().getName());
+                }
+                String option = "switchAttribute";
+                for (String step : path) {
+                    option = "rune_resolve_attr(" + option + ", \"" + step + "\")";
+                }
+                writer.appendLine(prefix + "(caseValue := " + option + ") is not None:");
+                call = funcName + "(caseValue)";
+            } else if (guard.getDataGuard() != null) {
+                // Copy-on-write proxies aren't subclasses of the type they wrap, so unwrap first
+                writer.appendLine(prefix + "isinstance(rune_unwrap(switchAttribute), "
+                        + typeReference(guard.getDataGuard()) + "):");
+                call = funcName + "(switchAttribute)";
             } else {
-                SwitchCaseGuard guard = currentCase.getGuard();
-                String prefix = (i == 0) ? "if " : "elif ";
-                writer.appendLine(prefix + getGuardExpression(guard, scope) + ":");
+                writer.appendLine(prefix + getGuardExpression(guard, expr.getArgument(), scope) + ":");
+                call = narrows ? funcName + "(switchAttribute)" : funcName + "()";
             }
             writer.indent();
-            writer.appendLine("return " + funcName + "()");
+            writer.appendLine("return " + call);
             writer.unindent();
         }
 
@@ -911,6 +1065,22 @@ public final class PythonExpressionGenerator {
 
         ifCondBlocks.add(writer.toString());
         return switchFuncName + "()";
+    }
+
+    /**
+     * The name to use for a type in generated code: the stub name for a bundled type in a
+     * standalone file, the bundle name inside _bundle.py, or the type's own name if it is
+     * standalone. Inside a class condition, the name is also imported there.
+     */
+    private String typeReference(RosettaNamed type) {
+        String fqn = context.getFullyQualifiedName(type);
+        if (writingStandaloneFile || context.getStandaloneClasses().contains(fqn)) {
+            if (conditionImports != null) {
+                conditionImports.add("from " + fqn + " import " + type.getName());
+            }
+            return type.getName();
+        }
+        return context.getBundleObjectName(type);
     }
 
     private String generateWithMetaOperation(WithMetaOperation expr, PythonExpressionScope scope) {
@@ -936,7 +1106,7 @@ public final class PythonExpressionGenerator {
         // are referenced elsewhere in function bodies (namespace.EnumName.EnumName).
         if (argType instanceof REnumType) {
             String enumName = argType.getName();
-            String enumType = argType.getNamespace().toString() + "." + enumName + "." + enumName;
+            String enumType = context.applyPrefix(argType.getNamespace().toString()) + "." + enumName + "." + enumName;
             List<String[]> mappedEntries = expr.getEntries().stream()
                     .map(entry -> {
                         String mappedKey = switch (entry.getKey().getName()) {
@@ -1034,7 +1204,9 @@ public final class PythonExpressionGenerator {
 
     private String generateCountOperation(RosettaCountOperation count, PythonExpressionScope scope) {
         String arg = generateExpression(count.getArgument(), scope);
-        return "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(" + arg + ")";
+        // Models define __iter__ over their fields, and function inputs are proxies that
+        // appear to have it, so a single model object must not be treated as a collection.
+        return "(lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))(" + arg + ")";
     }
 
     private String generateExistsOperation(RosettaExistsExpression exists, PythonExpressionScope scope) {

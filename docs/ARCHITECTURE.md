@@ -353,4 +353,4 @@ Each call site in `processDAG` constructs one `BundleAssembler` per namespace an
 
 ### Tracking
 
-A TODO comment is present at in `PythonCodeGenerator.java`.
+Tracked in finos/rune-python-generator#BUNDLE_ASSEMBLER_ISSUE. The `PythonCodeGenerator` class Javadoc has a todo that points to it.

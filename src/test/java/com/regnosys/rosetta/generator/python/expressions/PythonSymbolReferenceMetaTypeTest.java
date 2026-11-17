@@ -44,6 +44,7 @@ import jakarta.inject.Inject;
 @SuppressWarnings("LineLength")
 public class PythonSymbolReferenceMetaTypeTest {
 
+    /** Injected test utilities. */
     @Inject
     private PythonGeneratorTestUtils testUtils;
 

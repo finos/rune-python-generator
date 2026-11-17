@@ -1,0 +1,26 @@
+namespace rosetta_dsl.test.model.bundle_schema_order : <"generate Python unit tests from Rosetta.">
+
+// Two independent cycle groups share one _bundle.py, joined by other types:
+// GroupA1 -> Outer -> Inner -> GroupB1. The dependency graph has no cycle through
+// Outer and Inner, but the files do, so Outer and Inner must also be bundled.
+
+type GroupA1: <"First cycle group.">
+    groupA2 GroupA2 (0..1)
+    outer Outer (0..1)
+
+type GroupA2:
+    groupA1 GroupA1 (0..1)
+
+type Outer: <"On the path between the cycle groups. Used directly by the bundle.">
+    inner Inner (0..1)
+
+type Inner: <"On the path between the cycle groups. Uses the bundle directly.">
+    groupB1 GroupB1 (0..1)
+
+type GroupB1: <"Second cycle group.">
+    value int (1..1)
+    groupB2 GroupB2 (0..1)
+
+type GroupB2:
+    value int (1..1)
+    groupB1 GroupB1 (0..1)

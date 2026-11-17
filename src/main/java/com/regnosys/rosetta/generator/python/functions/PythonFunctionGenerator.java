@@ -4,6 +4,7 @@
  */
 package com.regnosys.rosetta.generator.python.functions;
 
+import com.regnosys.rosetta.types.CardinalityProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,11 +30,7 @@ import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 import com.regnosys.rosetta.rosetta.RosettaType;
-import com.regnosys.rosetta.rosetta.expression.AsOperation;
-import com.regnosys.rosetta.rosetta.expression.InlineFunction;
-import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
 import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
-import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
 import com.regnosys.rosetta.rosetta.simple.Annotated;
 import com.regnosys.rosetta.rosetta.simple.AssignPathRoot;
 import com.regnosys.rosetta.rosetta.simple.Attribute;
@@ -44,6 +41,7 @@ import com.regnosys.rosetta.rosetta.simple.Segment;
 import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
 import com.regnosys.rosetta.types.RObjectFactory;
 
+import com.regnosys.rosetta.generator.python.util.PythonDependencyCollector;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
@@ -53,6 +51,18 @@ public final class PythonFunctionGenerator {
      * The logger.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(PythonFunctionGenerator.class);
+
+    /**
+     * Collects the functions, types and enums an expression refers to.
+     */
+    @Inject
+    private PythonDependencyCollector dependencyCollector;
+
+    /**
+     * Determines whether an expression is multi-valued.
+     */
+    @Inject
+    private CardinalityProvider cardinalityProvider;
 
     /**
      * The function dependency provider.
@@ -111,7 +121,7 @@ public final class PythonFunctionGenerator {
 
     private void processFunction(Function function, PythonCodeGeneratorContext context,
             Map<String, String> result) {
-        RosettaModel model = (RosettaModel) function.eContainer();
+        RosettaModel model = function.getModel();
         if (model == null) {
             LOGGER.warn("Function {} has no container, skipping", function.getName());
             return;
@@ -130,42 +140,14 @@ public final class PythonFunctionGenerator {
     }
 
     private void collectNamedDependencies(RosettaExpression expression, Set<RosettaNamed> dependencies) {
-        if (expression == null) {
-            return;
-        }
-        switch (expression) {
-            case RosettaSymbolReference ref -> {
-                if (ref.getSymbol() instanceof Function || ref.getSymbol() instanceof Data
-                        || ref.getSymbol() instanceof RosettaEnumeration) {
-                    dependencies.add((RosettaNamed) ref.getSymbol());
-                }
-                ref.getArgs().forEach(arg -> collectNamedDependencies(arg, dependencies));
-            }
-            case RosettaConstructorExpression cons -> {
-                if (cons.getTypeCall() != null && cons.getTypeCall().getType() != null) {
-                    dependencies.add(cons.getTypeCall().getType());
-                }
-                cons.getValues().forEach(val -> collectNamedDependencies(val.getValue(), dependencies));
-            }
-            case AsOperation asOp -> {
-                // The target of `as` is a cross-reference (not a containment child), so it
-                // is invisible to the eContents() walk below and must be added explicitly.
-                // Only data type targets need an import; choice option targets are just an
-                // attribute name on the choice's own (already-imported) class.
-                if (asOp.getType() instanceof Data dataTarget) {
-                    dependencies.add(dataTarget);
-                }
-            }
-            default -> {
-            }
-        }
-        expression.eContents().forEach(child -> {
-            if (child instanceof RosettaExpression childExpr) {
-                collectNamedDependencies(childExpr, dependencies);
-            } else if (child instanceof InlineFunction inlineFn && inlineFn.getBody() != null) {
-                collectNamedDependencies(inlineFn.getBody(), dependencies);
-            }
-        });
+        PythonDependencyCollector.Dependencies found = dependencyCollector.collect(expression);
+        found.symbols().stream()
+                .filter(symbol -> symbol instanceof Function || symbol instanceof Data
+                        || symbol instanceof RosettaEnumeration)
+                .forEach(dependencies::add);
+        dependencies.addAll(found.constructedTypes());
+        dependencies.addAll(found.asTargets());
+        dependencies.addAll(found.switchCaseTypes());
     }
 
     private void addFunctionDependencies(
@@ -282,10 +264,31 @@ public final class PythonFunctionGenerator {
         Set<String> funcDeps = collectFunctionDependencies(function, context);
         context.getEnumImports().addAll(funcDeps);
         String functionFQN = context.getFullyQualifiedName(function);
-        context.getFunctionEnumImports().put(functionFQN, funcDeps);
+        // Dispatch implementations are generated under the base function's name, so add to the
+        // imports already recorded rather than replace them.
+        context.getFunctionEnumImports().computeIfAbsent(functionFQN, k -> new HashSet<>()).addAll(funcDeps);
 
         PythonExpressionGenerator expressionGenerator = expressionGeneratorProvider.get();
         expressionGenerator.setContext(context);
+        expressionGenerator.setWritingStandaloneFile(isStandalone);
+        expressionGenerator.setFunctionInputs(rosettaFunctionExtensions.getInputs(function));
+        expressionGenerator.setCurrentFunction(functionFQN);
+
+        // Generate the body first, so that the imports it needs are known before it is written
+        String conditions = generateConditions(function, expressionGenerator);
+        String aliases = generateAlias(function, expressionGenerator);
+        boolean isCodeImplementation = isCodeImplementation(function);
+        boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
+        String operations;
+        if (isDispatcher) {
+            operations = generateDispatchLogic(function, pythonName, isCodeImplementation, context);
+        } else if (isCodeImplementation) {
+            operations = generateNativeFunctionCall(function, context);
+        } else {
+            operations = generateOperations(function, context, expressionGenerator);
+        }
+        String output = generateOutput(function, isCodeImplementation, expressionGenerator);
+
         PythonCodeWriter writer = new PythonCodeWriter();
 
         writer.appendLine("");
@@ -298,6 +301,9 @@ public final class PythonFunctionGenerator {
 
         writer.appendBlock(generateDescription(function, context));
 
+        // Functions in the same cycle of calls are imported here, once both modules have loaded
+        expressionGenerator.getFunctionLocalImports().forEach(writer::appendLine);
+
         writer.appendLine("self = inspect.currentframe()");
         writer.appendLine("");
         Iterable<Attribute> inputs = rosettaFunctionExtensions.getInputs(function);
@@ -308,21 +314,14 @@ public final class PythonFunctionGenerator {
             writer.appendLine("");
         }
 
-        writer.appendBlock(generateConditions(function, expressionGenerator));
-        writer.appendBlock(generateAlias(function, expressionGenerator));
-
-        boolean isCodeImplementation = isCodeImplementation(function);
-        boolean isDispatcher = rosettaFunctionExtensions.handleAsEnumFunction(function);
-
-        if (isDispatcher) {
-            writer.appendBlock(generateDispatchLogic(function, pythonName, isCodeImplementation, context));
-        } else if (isCodeImplementation) {
-            writer.appendLine(generateNativeFunctionCall(function, context));
+        writer.appendBlock(conditions);
+        writer.appendBlock(aliases);
+        if (isCodeImplementation && !isDispatcher) {
+            writer.appendLine(operations);
         } else {
-            writer.appendBlock(generateOperations(function, context, expressionGenerator));
+            writer.appendBlock(operations);
         }
-
-        writer.appendBlock(generateOutput(function, isCodeImplementation, expressionGenerator));
+        writer.appendBlock(output);
 
         writer.unindent();
         writer.newLine();
@@ -453,8 +452,20 @@ public final class PythonFunctionGenerator {
     }
 
     private String getTypeNameForContext(RosettaNamed type, PythonCodeGeneratorContext context) {
+        return getTypeNameForContext(type, context, false);
+    }
+
+    /**
+     * The name to use for a type in generated code. A standalone file refers to a bundled type by
+     * its stub name, which it imports; only _bundle.py defines the bundle name.
+     */
+    private String getTypeNameForContext(RosettaNamed type, PythonCodeGeneratorContext context,
+            boolean writingStandaloneFile) {
         if (type instanceof RosettaEnumeration || RuneToPythonMapper.isRosettaBasicType(type.getName())) {
             return context.getBundleObjectName(type);
+        }
+        if (writingStandaloneFile && type instanceof Data) {
+            return type.getName();
         }
         String fqn = context.getFullyQualifiedName(type);
         if (context.getStandaloneClasses().contains(fqn)) {
@@ -660,7 +671,8 @@ public final class PythonFunctionGenerator {
         PythonExpressionGenerator expressionGenerator) {
         if (rosettaFunctionExtensions.getOutput(function) != null) {
             PythonCodeWriter writer = new PythonCodeWriter();
-            PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope();
+            boolean isStandalone = context.getStandaloneClasses().contains(context.getFullyQualifiedName(function));
+            PythonFunctionGenerationScope scope = new PythonFunctionGenerationScope(isStandalone);
 
             // 1. Preamble: Proactive initialization
             Set<String> seenRoots = new HashSet<>();
@@ -681,7 +693,7 @@ public final class PythonFunctionGenerator {
                                 scope.markInitialized(rootName);
                             } else if (operation.getPath() != null) {
                                 String bundleName = (type instanceof RosettaNamed named)
-                                        ? getTypeNameForContext(named, context)
+                                        ? getTypeNameForContext(named, context, scope.isStandalone())
                                         : context.getBundleObjectName((RosettaNamed) type);
                                 scope.markAsObjectBuilder(rootName);
                                 writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
@@ -741,13 +753,20 @@ public final class PythonFunctionGenerator {
         RosettaType rootType = (root instanceof Attribute attr) ? attr.getTypeCall().getType() : null;
 
         if (rootType instanceof RosettaEnumeration || operation.getPath() == null) {
+            if (operation.getPath() == null && root instanceof Attribute attr && attr.getCard().isIsMany()
+                    && !cardinalityProvider.isMulti(operation.getExpression())) {
+                // A multi-valued output must be a list even when set from a single value. The value
+                // is still checked at runtime, because some single-valued expressions give a list.
+                expression = "(lambda v: [] if v is None else (v if isinstance(rune_unwrap(v), list) else [v]))("
+                        + expression + ")";
+            }
             writer.appendLine(rootName + " = " + expression);
             scope.markInitialized(rootName);
         } else {
             if (!scope.isInitialized(rootName)) {
                 if (rootType != null) {
                     String bundleName = (rootType instanceof RosettaNamed named)
-                            ? getTypeNameForContext(named, context)
+                            ? getTypeNameForContext(named, context, scope.isStandalone())
                             : context.getBundleObjectName((RosettaNamed) rootType);
                     scope.markAsObjectBuilder(rootName);
                     writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
@@ -790,7 +809,7 @@ public final class PythonFunctionGenerator {
             if (!scope.isInitialized(rootName)) {
                 if (operation.getPath() != null) {
                     String bundleName = (attributeType instanceof RosettaNamed named)
-                            ? getTypeNameForContext(named, context)
+                            ? getTypeNameForContext(named, context, scope.isStandalone())
                             : context.getBundleObjectName((RosettaNamed) attributeType);
                     scope.markAsObjectBuilder(rootName);
                     writer.appendLine(rootName + " = ObjectBuilder(" + bundleName + ")");
@@ -853,7 +872,7 @@ public final class PythonFunctionGenerator {
                     } else if (current.getNext() != null) {
                         RosettaType attrType = attribute.getTypeCall().getType();
                         String bundleName = (attrType instanceof RosettaNamed named)
-                                ? getTypeNameForContext(named, context)
+                                ? getTypeNameForContext(named, context, scope.isStandalone())
                                 : context.getBundleObjectName((RosettaNamed) attrType);
                         writer.appendLine(currentPath + " = ObjectBuilder(" + bundleName + ")");
                         scope.markInitialized(currentPath);
@@ -895,10 +914,25 @@ public final class PythonFunctionGenerator {
      * a function.
      */
     private static class PythonFunctionGenerationScope {
+        /** Whether the function is written to its own file rather than to _bundle.py. */
+        private final boolean standalone;
         /** The set of variable names that have been initialized in this scope. */
         private final HashSet<String> initializedNames = new HashSet<>();
         /** The set of variable names that are marked as ObjectBuilders. */
         private final HashSet<String> objectBuilderNames = new HashSet<>();
+
+        PythonFunctionGenerationScope(boolean standalone) {
+            this.standalone = standalone;
+        }
+
+        /**
+         * Whether the function is written to its own file rather than to _bundle.py.
+         *
+         * @return true for a standalone function
+         */
+        public boolean isStandalone() {
+            return standalone;
+        }
 
         /**
          * Checks if a variable name has been initialized in this scope.

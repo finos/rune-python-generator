@@ -309,7 +309,7 @@ public class PythonConditionTest {
         testUtils.assertGeneratedContainsExpectedString(pythonString,
             "class CondTest(BaseDataClass):");
         testUtils.assertGeneratedContainsExpectedString(pythonString,
-            "return rune_all_elements((lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
+            "return rune_all_elements((lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))(rune_resolve_attr(self, \"multiAttr\")), \">=\", 0)");
     }
 
     /**
@@ -390,6 +390,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class A(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a0: Optional[str] = Field(None, description='')
                     a1: Optional[str] = Field(None, description='')
 
@@ -415,6 +416,7 @@ public class PythonConditionTest {
                 pythonString,
                 """
                 class TestType(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test type description.
                     \"""
@@ -451,6 +453,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class AttributeIfThenTest(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     attr1: Optional[str] = Field(None, description='')
                     attr2: Optional[str] = Field(None, description='')
 
@@ -494,6 +497,7 @@ public class PythonConditionTest {
                 pythonString,
                 """
                 class A(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a0: Optional[int] = Field(None, description='')
                     a1: Optional[int] = Field(None, description='')
 
@@ -506,6 +510,7 @@ public class PythonConditionTest {
                 pythonString,
                 """
                 class B(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     intValue1: Optional[int] = Field(None, description='')
                     intValue2: Optional[int] = Field(None, description='')
                     aValue: Annotated[A, A.serializer(), A.validator()] = Field(..., description='')
@@ -557,6 +562,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class AttributeIfThenElseTest(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     attr1: Optional[str] = Field(None, description='')
                     attr2: Optional[str] = Field(None, description='')
                     attr3: Optional[str] = Field(None, description='')
@@ -586,6 +592,7 @@ public class PythonConditionTest {
                 """,
                 """
                 class Foo(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     a: Optional[Decimal] = Field(None, description='')
                     b: Optional[Decimal] = Field(None, description='')
 
@@ -620,6 +627,7 @@ public class PythonConditionTest {
         String choicePython = python.get("src/test/generated_syntax/semantic/Choice.py").toString();
         String expectedChoice = """
             class Choice(BaseDataClass):
+                model_config = ConfigDict(defer_build=True)
                 intType: Optional[int] = Field(None, description='')
                 stringType: Optional[str] = Field(None, description='')
 
@@ -632,13 +640,13 @@ public class PythonConditionTest {
     }
 
     /**
-     * When a bundled type's condition calls a standalone function, the bundle must contain
-     * a deferred import for that function so it is resolvable at runtime.
-     * A and B form a cycle (both bundled); IsPositive is acyclic (standalone).
+     * When a bundled type's condition calls a standalone function, the condition imports the
+     * function itself. A module-level import would make the bundle import a function that
+     * imports the bundle. A and B form a cycle (both bundled); IsPositive is acyclic (standalone).
      */
     @Test
     public void testBundledConditionWithStandaloneFunctionCallGeneratesImport() {
-        testUtils.assertBundleContainsExpectedString(
+        String bundle = testUtils.generatePythonAndExtractBundle(
                 """
                 func IsPositive:
                     inputs:
@@ -656,8 +664,40 @@ public class PythonConditionTest {
 
                 type B:
                     a A (0..1)
-                """,
-                "from com.rosetta.test.model.functions.IsPositive import IsPositive");
+                """);
+        testUtils.assertAppearsAfter(bundle,
+                "def condition_0_PositiveValue(self):",
+                "        from com.rosetta.test.model.functions.IsPositive import IsPositive");
+        testUtils.assertGeneratedDoesNotContain(bundle,
+                "\nfrom com.rosetta.test.model.functions.IsPositive import IsPositive");
+    }
+
+    /**
+     * A standalone type's condition imports the function it calls, inside the condition, so
+     * the module can be imported first whatever the function itself imports.
+     */
+    @Test
+    public void testStandaloneConditionWithFunctionCallGeneratesImport() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                func IsPositive:
+                    inputs:
+                        value number (0..1)
+                    output:
+                        result boolean (1..1)
+
+                type Holder:
+                    value number (0..1)
+
+                    condition PositiveValue:
+                        IsPositive( value )
+                """);
+        String holder = python.get("src/com/rosetta/test/model/Holder.py").toString();
+        testUtils.assertAppearsAfter(holder,
+                "def condition_0_PositiveValue(self):",
+                "        from com.rosetta.test.model.functions.IsPositive import IsPositive");
+        testUtils.assertGeneratedDoesNotContain(holder,
+                "\nfrom com.rosetta.test.model.functions.IsPositive import IsPositive");
     }
 
     /**

@@ -1,0 +1,59 @@
+namespace rosetta_dsl.test.functions.function_cycle : <"generate Python unit tests from Rosetta.">
+
+// IsEven and IsOdd call each other. IsEven also calls Helper, which is outside the cycle.
+// UsesIsEven calls into the cycle from outside it. UsesHelper has no cycle near it.
+// Countdown calls itself.
+
+func IsEven:
+    inputs:
+        n int (1..1)
+    output:
+        result boolean (1..1)
+
+    set result:
+        if n = 0 then True else IsOdd(Helper(n) - 2)
+
+func IsOdd:
+    inputs:
+        n int (1..1)
+    output:
+        result boolean (1..1)
+
+    set result:
+        if n = 0 then False else IsEven(n - 1)
+
+func Helper:
+    inputs:
+        n int (1..1)
+    output:
+        result int (1..1)
+
+    set result:
+        n + 1
+
+func UsesHelper:
+    inputs:
+        n int (1..1)
+    output:
+        result int (1..1)
+
+    set result:
+        Helper(n)
+
+func UsesIsEven:
+    inputs:
+        n int (1..1)
+    output:
+        result boolean (1..1)
+
+    set result:
+        IsEven(n)
+
+func Countdown:
+    inputs:
+        n int (1..1)
+    output:
+        result int (1..1)
+
+    set result:
+        if n = 0 then 0 else Countdown(n - 1)

@@ -291,7 +291,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "items: Annotated[Optional[list[Item | None]], Item.serializer(), Item.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
+                "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5))), \"=\", 0)");
     }
 
     /**
@@ -312,7 +312,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "def TestNestedNested(items: list[InstanceOf[Item] | None] | None) -> int:");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "result = (lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
+                "result = (lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))(item))(rune_filter(rune_resolve_attr(self, \"items\"), lambda item: rune_all_elements(rune_resolve_attr(item, \"val\"), \">\", 5)))");
     }
 
     // -------------------------------------------------------------------------
@@ -339,7 +339,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 "items: Annotated[Optional[list[Item | None]], Item.serializer(), Item.validator()] = Field(None, description='')");
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
-                "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(items, (str, dict, bytes, bytearray))) else ([items] if items is not None else [])) if x is not None))(item))([x for x in map(lambda item: rune_resolve_attr(item, \"val\"), rune_resolve_attr(self, \"items\") or []) if x is not None]), \"=\", 0)");
+                "return rune_all_elements((lambda item: (lambda items: sum(1 for x in (items if (hasattr(items, '__iter__') and not isinstance(rune_unwrap(items), (str, dict, bytes, bytearray, BaseDataClass))) else ([items] if items is not None else [])) if x is not None))(item))([x for x in map(lambda item: rune_resolve_attr(item, \"val\"), rune_resolve_attr(self, \"items\") or []) if x is not None]), \"=\", 0)");
     }
 
     // -------------------------------------------------------------------------
@@ -469,6 +469,7 @@ public class PythonCollectionExpressionTest {
                 """,
                 """
                 class Test(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test any operation condition
                     \"""
@@ -670,6 +671,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedA = """
                 class A(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test type
                     \"""
@@ -685,6 +687,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedBPhase1 = """
                 class B(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test type B
                     \"""
@@ -700,6 +703,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedTestPhase1 = """
                 class Test(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test filter operation condition
                     \"""
@@ -754,6 +758,7 @@ public class PythonCollectionExpressionTest {
                 """,
                 """
                 class Test(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test disjoint binary expression condition
                     \"""
@@ -808,6 +813,7 @@ public class PythonCollectionExpressionTest {
         testUtils.assertGeneratedContainsExpectedString(generatedPython,
                 """
                         class TestJoin(BaseDataClass):
+                            model_config = ConfigDict(defer_build=True)
                             field1: list[str | None] = Field(..., description='', min_length=1)
                             delimiter: str = Field(..., description='')
 
@@ -854,6 +860,7 @@ public class PythonCollectionExpressionTest {
 
         String expectedTest1 = """
                 class Test1(BaseDataClass):
+                    model_config = ConfigDict(defer_build=True)
                     \"""
                     Test only-element condition.
                     \"""
@@ -976,5 +983,53 @@ public class PythonCollectionExpressionTest {
                 "if_cond_fn(rune_all_elements(item, \">\", 0), lambda: item, lambda: 0)");
         assertFalse(generatedPython.contains("def _then_fn"),
                 "Conditional inside extract must not use pre-hoisted closure (item not in scope)");
+    }
+
+    /**
+     * A filter on a single value applies the test to that value and keeps a single result.
+     * Passing the value to rune_filter would iterate it as if it were a list.
+     */
+    @Test
+    public void testFilterOnSingleValueDoesNotIterate() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type Leaf:
+                    value number (0..1)
+
+                func FilterSingle:
+                    inputs:
+                        lone Leaf (0..1)
+                    output:
+                        result Leaf (0..1)
+                    set result:
+                        lone filter value exists
+                """);
+        String generated = python.get("src/com/rosetta/test/model/functions/FilterSingle.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "result = (lambda item: item if item is not None and (rune_attr_exists(rune_resolve_attr(item, \"value\"))) else None)(rune_resolve_attr(self, \"lone\"))");
+        testUtils.assertGeneratedDoesNotContain(generated, "rune_filter(");
+    }
+
+    /**
+     * A filter on a list still uses rune_filter.
+     */
+    @Test
+    public void testFilterOnListUsesRuneFilter() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(
+                """
+                type Leaf:
+                    value number (0..1)
+
+                func FilterMany:
+                    inputs:
+                        leaves Leaf (0..*)
+                    output:
+                        result Leaf (0..*)
+                    add result:
+                        leaves filter value exists
+                """);
+        String generated = python.get("src/com/rosetta/test/model/functions/FilterMany.py").toString();
+        testUtils.assertGeneratedContainsExpectedString(generated,
+                "rune_filter(rune_resolve_attr(self, \"leaves\"), lambda item: rune_attr_exists(rune_resolve_attr(item, \"value\")))");
     }
 }

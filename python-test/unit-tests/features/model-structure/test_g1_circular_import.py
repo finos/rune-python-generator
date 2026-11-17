@@ -4,70 +4,52 @@
 #
 
 """
-## Bug Report
+G1 – circular ImportError when a module is imported before the bundle has loaded.
 
-G1 – Circular ImportError when non-bundle class is imported before _bundle initialises
+Bar1 and Bar2 form a cycle, so both are generated into _bundle.py. BarLeaf is a
+standalone type that the bundle uses, and BarContainer is a standalone type that uses
+the bundle. In CDM 7.7.0, importing such a standalone module first made the bundle
+import it again while it was still loading:
 
-### Steps to Reproduce:
- 1. Generate Python from a Rune model where some types are in a circular-dependency
-    bundle (Bar1/Bar2) and _bundle.py uses `from … ClassName import ClassName` for
-    any non-bundle module.
- 2. In a fresh Python process import the non-bundle module first; it imports a bundle
-    type at module level, triggering _bundle to load; _bundle then tries to import the
-    non-bundle module again from inside its own initialisation.
- 3. The circular initialisation raises ImportError.
-
-### Expected Result:
-_bundle.py must use `import module` style (never `from module import ClassName`) for
-all external references so that no module-level class import creates a circular chain.
-
-### Actual Result (bug scenario – CDM 7.7.0):
   ImportError: cannot import name 'Asset' from partially initialized module
   'finos.cdm.base.staticdata.asset.common.asset'
-CDM 7.7.0's _bundle.py contained `from … Asset import Asset` (line 4880), while
-Asset.py imported bundle types at module level — forming the cycle.
 
-### Environment:
-rune-python-generator; CDM 7.7.0 exhibited this; regression test for the fix.
-
-### Additional Context:
-The current generator emits `import module` style for all non-bundle module references
-in _bundle.py. This test confirms that pattern is preserved in the generated unit-test
-bundle.
+Each module must be importable first, and usable afterwards. Import order is the
+behaviour under test, so every case runs in a new interpreter: modules already loaded
+by pytest would hide the bug. How the generator writes the bundle's imports is checked
+by the JUnit tests.
 """
-
-import inspect
+import subprocess
+import sys
+import textwrap
 
 import pytest
 
-import rosetta_dsl._bundle as bundle
+NAMESPACE = 'rosetta_dsl.test.model.circular_dependency'
+ENTRY_POINTS = [f'{NAMESPACE}.{name}' for name in ('Bar1', 'Bar2', 'BarLeaf', 'BarContainer')]
 
 
-def test_g1_bundle_does_not_use_direct_class_import_for_non_bundle_modules():
-    """
-    _bundle.py must not contain any `from <module> import <ClassName>` line for
-    modules outside the bundle itself. Such a line would create a circular import
-    if that module imports a bundle type at module level.
+def _run_in_new_process(code: str) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, '-c', textwrap.dedent(code)],
+                          capture_output=True, text=True, check=False)
 
-    The generator must emit `import module` style for enum/non-bundle references.
-    """
-    source = inspect.getsource(bundle)
 
-    # Collect any `from X import Y` lines that are NOT standard-library / runtime imports
-    forbidden_prefixes = (
-        'rosetta_dsl.test.',
-        'finos.',
-    )
-    violations = []
-    for line in source.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith('from '):
-            continue
-        # Allow runtime / pydantic imports
-        if any(stripped.startswith(f'from {p}') for p in forbidden_prefixes):
-            violations.append(stripped)
+@pytest.mark.parametrize('entry_point', ENTRY_POINTS)
+def test_g1_module_can_be_imported_first(entry_point):
+    '''importing any module first must not raise a circular ImportError'''
+    result = _run_in_new_process(f'import {entry_point}')
+    assert result.returncode == 0, result.stderr
 
-    assert not violations, (
-        "G1 regression: _bundle.py uses direct class imports for non-bundle modules:\n"
-        + "\n".join(violations)
-    )
+
+@pytest.mark.parametrize('entry_point', ENTRY_POINTS)
+def test_g1_types_are_usable_after_importing_module_first(entry_point):
+    '''every type works together whichever module was imported first'''
+    result = _run_in_new_process(f'''
+        import {entry_point}
+        from {NAMESPACE}.Bar1 import Bar1
+        from {NAMESPACE}.BarContainer import BarContainer
+        from {NAMESPACE}.BarLeaf import BarLeaf
+        container = BarContainer(bar1=Bar1(number1=1, leaf=BarLeaf(value=2)))
+        assert container.bar1.leaf.value == 2
+    ''')
+    assert result.returncode == 0, result.stderr

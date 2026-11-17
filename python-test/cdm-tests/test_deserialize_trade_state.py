@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+# SPDX-License-Identifier: Apache-2.0
+#
+
 import logging
 import os
 import pytest
@@ -7,10 +12,11 @@ import finos
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Both samples are fetched from the CDM repo at test time by run_cdm_tests.sh.
+# Both samples are fetched from the CDM repo at test time by run_cdm_tests.sh. They are the
+# only two ingestion samples that are fully valid in CDM master and 7.10.0.
 # Tests are skipped when the env vars are not set (e.g. when running pytest directly).
-_FX_SAMPLE = os.environ.get("CDM_FX_SAMPLE_PATH")
-_IRD_SAMPLE = os.environ.get("CDM_IRD_SAMPLE_PATH")
+_XCCY_SAMPLE = os.environ.get("CDM_XCCY_SAMPLE_PATH")
+_RFR_SAMPLE = os.environ.get("CDM_RFR_SAMPLE_PATH")
 
 
 def _deserialize_file(path: str) -> BaseModel:
@@ -20,7 +26,8 @@ def _deserialize_file(path: str) -> BaseModel:
     return finos.rune_deserialize(json_data, validate_model=False)
 
 
-@pytest.mark.parametrize("sample", [_FX_SAMPLE, _IRD_SAMPLE], ids=["fx-spot", "ird-vanilla-swap"])
+@pytest.mark.parametrize("sample", [_XCCY_SAMPLE, _RFR_SAMPLE],
+                         ids=["ird-xccy-fixed-swap", "ird-rfr-avg-swap"])
 def test_deserialize_trade_state(sample: str):
     """Deserialize a CDM TradeState sample via finos.rune_deserialize.
 
