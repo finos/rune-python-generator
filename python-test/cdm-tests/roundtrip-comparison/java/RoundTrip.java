@@ -28,6 +28,9 @@ import java.nio.file.Paths;
  * {@code outputPath} is read from {@code <input-root>} and written to {@code <output-root>}.
  * The comparison of input and output is done by {@code compare.py}, so that both languages
  * are compared with the same rules.
+ *
+ * <p>The root type is the optional tenth column, a Java class name; without it, it follows from
+ * the test pack.
  */
 public final class RoundTrip {
     private static final int MAX_ERROR = 400;
@@ -49,10 +52,17 @@ public final class RoundTrip {
                 String[] t = line.split("\t");
                 String pack = t[0];
                 String sample = t[1];
-                Class<? extends RosettaModelObject> rootType = pack.startsWith("workflow-step")
-                        ? cdm.event.workflow.WorkflowStep.class : cdm.event.common.TradeState.class;
                 ObjectNode r = plain.createObjectNode();
                 r.put("sample", sample);
+                Class<? extends RosettaModelObject> rootType;
+                try {
+                    rootType = rootType(t, pack);
+                } catch (ClassNotFoundException e) {
+                    r.put("read", "error");
+                    r.put("read_error", "unknown root type: " + e.getMessage());
+                    results.println(plain.writeValueAsString(r));
+                    continue;
+                }
                 Path in = inRoot.resolve(sample);
                 if (!Files.exists(in)) {
                     r.put("read", "no input");
@@ -102,6 +112,16 @@ public final class RoundTrip {
                 results.flush();
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Class<? extends RosettaModelObject> rootType(String[] t, String pack)
+            throws ClassNotFoundException {
+        if (t.length > 9 && !t[9].isEmpty()) {
+            return (Class<? extends RosettaModelObject>) Class.forName(t[9]);
+        }
+        return pack.startsWith("workflow-step")
+                ? cdm.event.workflow.WorkflowStep.class : cdm.event.common.TradeState.class;
     }
 
     private static String describe(Exception e) {

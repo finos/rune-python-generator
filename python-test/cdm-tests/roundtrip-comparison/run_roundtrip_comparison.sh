@@ -5,7 +5,8 @@
 #
 
 # Build CDM Java and CDM Python from the same CDM commit, round-trip and validate CDM's FpML
-# ingestion samples in both, have Java read what Python wrote, and compare the results.
+# ingestion samples, or the JSON files in CDM's functions/ folder, in both, have Java read what
+# Python wrote, and compare the results.
 #
 # Usage (from the project root):
 #   python-test/cdm-tests/roundtrip-comparison/run_roundtrip_comparison.sh \
@@ -15,13 +16,16 @@
 #   <git-ref>       the CDM commit, branch or tag, for example upstream/master
 #   <work-dir>      a directory outside this repository; it is emptied first
 #   <pack-pattern>  a regular expression for the test packs to run (default: all of them);
-#                   incomplete and invalid packs are always left out
+#                   incomplete and invalid packs are always left out. The word "functions"
+#                   runs the JSON files in rosetta-source/src/main/resources/functions instead
 #
 # CDM Java is built and run from its packaged jar. The Python is generated with the generator
 # built from this checkout, packaged as a wheel, and installed with the rune.runtime release
 # that the generated pyproject.toml requires.
 #
-# Writes <work-dir>/results/results.csv (one row per sample) and summary.md (from the CSV).
+# Writes <work-dir>/results/results.csv (one row per sample) and summary.md (from the CSV). With
+# "functions", it also writes arguments.tsv, the function arguments that aren't Rune types,
+# checked against the function's inputs.
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
@@ -78,13 +82,25 @@ PYEXE="$(env -u VIRTUAL_ENV PATH="$(echo "$PATH" | sed -E 's|[^:]*/\.?[a-z]*pyen
 "$WORK/venv/bin/python" -m pip -q install "$WORK"/wheel/*.whl
 RUNTIME="$("$WORK/venv/bin/python" -m pip show rune.runtime | sed -n 's/^Version: //p')"
 
-echo "***** listing the samples (packs matching $PACKS, without incomplete or invalid packs)"
-python3 -I "$HERE/../java-validation/make_sample_list.py" "$CDM_REPO" "$COMMIT" "$WORK/all-samples.tsv"
-awk -F'\t' -v p="$PACKS" '$1 ~ p && $1 !~ /incomplete|invalid/' "$WORK/all-samples.tsv" \
-    > "$WORK/samples.tsv"
-echo "      $(wc -l < "$WORK/samples.tsv" | tr -d ' ') samples"
+if [[ "$PACKS" == functions ]]; then
+    echo "***** listing the documents in CDM's functions/ folder"
+    INPUT="$WORK/function-documents"
+    python3 -I "$HERE/make_function_manifest.py" "$CDM_REPO" "$COMMIT" "$INPUT" \
+        "$WORK/samples.tsv" "$RESULTS/arguments.tsv"
+    SCOPE="Documents: the JSON files in CDM's functions/ folder"
+    SCOPE_NOTE="Function arguments outside their cardinality: $(grep -c 'CARDINALITY$' \
+        "$RESULTS/arguments.tsv" || true) (see arguments.tsv)"
+else
+    echo "***** listing the samples (packs matching $PACKS, without incomplete or invalid packs)"
+    python3 -I "$HERE/../java-validation/make_sample_list.py" "$CDM_REPO" "$COMMIT" "$WORK/all-samples.tsv"
+    awk -F'\t' -v p="$PACKS" '$1 ~ p && $1 !~ /incomplete|invalid/' "$WORK/all-samples.tsv" \
+        > "$WORK/samples.tsv"
+    echo "      $(wc -l < "$WORK/samples.tsv" | tr -d ' ') samples"
 
-INPUT="$CDM/rosetta-source/src/main/resources"
+    INPUT="$CDM/rosetta-source/src/main/resources"
+    SCOPE="Packs: matching \`$PACKS\`, without incomplete or invalid packs"
+    SCOPE_NOTE=""
+fi
 javac -nowarn -cp "$CP" -d "$WORK/classes" "$HERE/java/RoundTrip.java"
 echo "***** Java: read, write, validate"
 java -cp "$WORK/classes:$CP" RoundTrip "$WORK/samples.tsv" "$INPUT" "$OUT/java" \
@@ -102,7 +118,7 @@ FPML_VERSION="$(basename "$(dirname "$FPML_JAR")")"
 python3 -I "$HERE/compare.py" "$WORK/rosetta" "$WORK/samples.tsv" "$INPUT" "$OUT" \
     "$RESULTS/results.csv"
 python3 -I "$HERE/summarize.py" "$RESULTS/results.csv" "$RESULTS/summary.md" \
-    "Packs: matching \`$PACKS\`, without incomplete or invalid packs" \
+    "$SCOPE" ${SCOPE_NOTE:+"$SCOPE_NOTE"} \
     "CDM: $COMMIT ($REF)" \
     "rune-fpml: $FPML_VERSION; rune-common (Java): $RUNE_COMMON" \
     "CDM Java: $(basename "$CDM_JAR")" \

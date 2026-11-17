@@ -7,6 +7,11 @@
 
     python3 -I compare.py <rosetta-dir> <samples.tsv> <input-root> <out-dir> <results.csv>
 
+An optional tenth column of <samples.tsv> gives the sample's root type, as a Rune name such as
+cdm.event.common.BusinessEvent; without it, the type follows from the test pack. The eleventh
+and twelfth, which make_function_manifest.py writes, give whether the file has the
+@model/@type/@version header and which file the sample comes from.
+
 <out-dir> holds what the run wrote: java/, python/ and java-reads-python/, each with the
 samples written back at their outputPath, and java.jsonl, python.jsonl and
 java-reads-python.jsonl with each sample's read, write and validation results.
@@ -161,7 +166,7 @@ def read_results(path: Path) -> dict:
 
 COLUMNS = [
     # The sample
-    'fpml_version', 'pack', 'sample',
+    'fpml_version', 'pack', 'sample', 'root_type', 'source_file', 'file_header',
     # CDM's ingestion status: the assertions in the sample's test-pack config
     'cdm_input_path', 'cdm_runtime_error', 'cdm_schema_validation_failure',
     'cdm_input_path_count', 'cdm_output_path_count', 'cdm_expected_failures',
@@ -249,7 +254,8 @@ def build_row(pack, sample, status, inputs, out, results, model) -> dict:
     row = {'fpml_version': version.group(1).replace('-', '.') if version else '',
            'pack': pack, 'sample': sample, **status}
     source = inputs / sample
-    root = next(fqn for prefix, fqn in ROOTS.items() if pack.startswith(prefix))
+    root = status['root_type'] or next(fqn for prefix, fqn in ROOTS.items()
+                                       if pack.startswith(prefix))
 
     # The independent check
     issues, refs = check(load(source), root, model) if source.exists() else ([], 0)
@@ -376,7 +382,8 @@ def ingestion_status(fields: list[str]) -> dict:
             if fields[i] in ('True', 'False') else fields[i]
     return {'cdm_expected_failures': value(2), 'cdm_runtime_error': value(3),
             'cdm_input_path': value(5), 'cdm_input_path_count': value(6),
-            'cdm_output_path_count': value(7), 'cdm_schema_validation_failure': value(8)}
+            'cdm_output_path_count': value(7), 'cdm_schema_validation_failure': value(8),
+            'root_type': fields[9], 'file_header': fields[10], 'source_file': fields[11]}
 
 
 def main(rosetta_dir, samples, input_root, out_dir, csv_path):
@@ -389,7 +396,7 @@ def main(rosetta_dir, samples, input_root, out_dir, csv_path):
         writer = csv.DictWriter(f, fieldnames=COLUMNS)
         writer.writeheader()
         for line in rows:
-            fields = line.rstrip('\n').split('\t') + [''] * 9
+            fields = line.rstrip('\n').split('\t') + [''] * 12
             pack, sample = fields[:2]
             writer.writerow(build_row(pack, sample, ingestion_status(fields),
                                       Path(input_root), out, results, model))

@@ -10,12 +10,15 @@
 Run it with the interpreter of the environment the CDM wheel is installed in. Each sample's
 outputPath is read from <input-root> and written to <output-root>. The comparison of input
 and output is done by compare.py, so that both languages are compared with the same rules.
+The root type is the optional tenth column of <samples.tsv>; without it, it follows from the
+test pack.
 
 A sample is read with `finos.rune_deserialize(..., validate_model=False)`. That raises on a
 reference whose key isn't in the file; Java reads such a reference as empty instead. So the
 read is then retried with dangling references left unresolved, and the sample is written and
 validated from that, so the rest of the comparison still covers it.
 """
+import importlib
 import inspect
 import json
 import logging
@@ -119,14 +122,23 @@ def read_ignoring_dangling(text: str, root_class):
     return model
 
 
-def run_one(pack: str, sample: str, in_root: Path, out_root: Path) -> dict:
+def run_one(pack: str, sample: str, in_root: Path, out_root: Path, root_type: str = '') -> dict:
     result = {'sample': sample}
     source = in_root / sample
     if not source.exists():
         result['read'] = 'no input'
         return result
     text = source.read_text(encoding='utf-8')
-    root_class = WorkflowStep if pack.startswith('workflow-step') else TradeState
+    if root_type:
+        try:
+            module = importlib.import_module('finos.' + root_type)
+            root_class = getattr(module, root_type.rsplit('.', 1)[1])
+        except (ImportError, AttributeError) as error:
+            result['read'] = 'error'
+            result['read_error'] = f'unknown root type: {root_type} ({describe(error)})'
+            return result
+    else:
+        root_class = WorkflowStep if pack.startswith('workflow-step') else TradeState
     try:
         model = finos.rune_deserialize(text, validate_model=False)
         result['read'] = 'ok'
@@ -168,8 +180,10 @@ def main(samples: str, in_root: str, out_root: str, results: str) -> None:
     logging.disable(logging.CRITICAL)
     with open(samples, encoding='utf-8') as rows, open(results, 'w', encoding='utf-8') as out:
         for line in rows:
-            pack, sample = line.rstrip('\n').split('\t')[:2]
-            out.write(json.dumps(run_one(pack, sample, Path(in_root), Path(out_root))) + '\n')
+            fields = line.rstrip('\n').split('\t') + [''] * 10
+            pack, sample = fields[:2]
+            result = run_one(pack, sample, Path(in_root), Path(out_root), fields[9])
+            out.write(json.dumps(result) + '\n')
             out.flush()
 
 

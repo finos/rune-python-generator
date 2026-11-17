@@ -9,6 +9,9 @@
 
 Everything in the summary is counted from the CSV, so it can be checked against it.
 Any further arguments are written as lines under the title, for example the versions tested.
+
+Rows with a root type (the documents from CDM's functions/ folder) have no ingestion status, so
+their summary groups them by folder and leaves out the ingestion columns and section.
 """
 import csv
 import re
@@ -37,15 +40,21 @@ def without_count(part: str) -> tuple[str, int]:
 def main(csv_path: str, out_path: str, *heading: str) -> None:
     with open(csv_path, encoding='utf-8') as f:
         rows = list(csv.DictReader(f))
-    versions = sorted({r['fpml_version'] for r in rows})
-    out = ['# CDM FpML ingestion samples: Python and Java', '']
+    functions = any(r.get('root_type') for r in rows)
+
+    def group_of(r):
+        return r['pack'] if functions else r['fpml_version']
+
+    versions = sorted({group_of(r) for r in rows})
+    title = 'CDM function samples' if functions else 'CDM FpML ingestion samples'
+    out = [f'# {title}: Python and Java', '']
     out += [f'{line}  ' for line in heading] + [''] if heading else []
 
     def by_version(test, label):
-        return [label] + [sum(test(r) for r in rows if r['fpml_version'] == v) for v in versions] \
+        return [label] + [sum(test(r) for r in rows if group_of(r) == v) for v in versions] \
             + [sum(test(r) for r in rows)]
 
-    columns = [''] + [f'FpML {v}' for v in versions] + ['All']
+    columns = [''] + (versions if functions else [f'FpML {v}' for v in versions]) + ['All']
 
     # The files, grouped by what is wrong with them
     def java_total(r):
@@ -106,7 +115,7 @@ def main(csv_path: str, out_path: str, *heading: str) -> None:
          python_mark(g, lambda r: int(r['python_condition_failures'] or 0) == 0),
          mark(g, lambda r: r['verdict'] == 'valid')]
         for label, g in file_groups])
-    out += ['**Files by FpML version**', '']
+    out += [f"**Files by {'folder' if functions else 'FpML version'}**", '']
     out += table(columns, [by_version(lambda r, g=g: r in g, label) for label, g in file_groups]
                  + [by_version(lambda r: True, '**All**')])
     unconfirmed = Counter(r['verdict'] for r in rows if r['verdict'] not in (
@@ -116,13 +125,37 @@ def main(csv_path: str, out_path: str, *heading: str) -> None:
         out += table(['Not confirmed', 'Files'], [[k, v] for k, v in unconfirmed.most_common()])
     out += [f'With a dangling reference on an optional attribute: '
             f'{sum(r["dangling_optional_refs"] not in ("", "0") for r in rows)} files.', '']
+    if functions:
+        sources, types = {}, {}
+        for r in rows:
+            sources.setdefault(r['source_file'], r)
+            types.setdefault(r['source_file'], set()).add(r['root_type'].rsplit('.', 1)[-1])
+        headerless = [r for r in sources.values() if r['file_header'] != 'complete']
+        out += ['## Files without the header', '',
+                f'{len(headerless)} of the {len(sources)} files have no `@model`, `@type` and '
+                '`@version` header, so the file doesn\'t say what type it is. They were checked as '
+                'the type given in `make_function_manifest.py`, with the header added. A file that '
+                'is a JSON list can\'t have a header.', '']
+        kinds = sorted({r['pack'] for r in sources.values()})
+        out += table(['Files'] + kinds + ['All'], [
+            [label] + [sum(test(r) for r in sources.values() if r['pack'] == k) for k in kinds]
+            + [sum(test(r) for r in sources.values())]
+            for label, test in [('With the header', lambda r: r['file_header'] == 'complete'),
+                                ('Without it', lambda r: r['file_header'] == 'missing'),
+                                ('A JSON list', lambda r: r['file_header'] == 'list')]])
+        out += table(['Checked as', 'Files without the header'], [
+            [', '.join(f'`{t}`' for t in sorted(k)), n] for k, n in
+            Counter(frozenset(types[r['source_file']]) for r in headerless).most_common()])
+
     # Reading the files and reporting failures
-    readers = [('Ingestion', lambda r: r['cdm_runtime_error'] != 'true'),
-               ('Java', lambda r: r['java_read'] == 'ok'),
-               ('Python', python_reads)]
-    out += ['## Reading the files and reporting failures', '',
-            '"Ingestion" is CDM\'s ingestion test, as recorded in the test-pack configs; '
-            '"Java" and "Python" are this run.', '', '**Can it read the file?**', '']
+    readers = [('Java', lambda r: r['java_read'] == 'ok'), ('Python', python_reads)]
+    if not functions:
+        readers.insert(0, ('Ingestion', lambda r: r['cdm_runtime_error'] != 'true'))
+    out += ['## Reading the files and reporting failures', '']
+    if not functions:
+        out += ['"Ingestion" is CDM\'s ingestion test, as recorded in the test-pack configs; '
+                '"Java" and "Python" are this run.', '']
+    out += ['**Can it read the file?**', '']
     out += table(['', 'Files'] + [name for name, _ in readers],
                  [[label, len(g)] + [mark(g, test) for _, test in readers]
                   for label, g in file_groups if g] +
@@ -136,15 +169,16 @@ def main(csv_path: str, out_path: str, *heading: str) -> None:
         return mark(read, lambda r: total(r) > 0, 'failures', 'no failures')
 
     out += ['**Does it report validation failures?**', '']
-    out += table(['', 'Files', 'Valid', 'Ingestion', 'Java', 'Python'], [
-        [label, len(g), mark(g, lambda r: r['verdict'] == 'valid'),
-         failures(g, lambda r: int(r['cdm_expected_failures'] or 0)),
-         failures(g, java_total), failures(g, python_total, python_reads)]
+    ingestion = [] if functions else ['Ingestion']
+    out += table(['', 'Files', 'Valid'] + ingestion + ['Java', 'Python'], [
+        [label, len(g), mark(g, lambda r: r['verdict'] == 'valid')]
+        + ([] if functions else [failures(g, lambda r: int(r['cdm_expected_failures'] or 0))])
+        + [failures(g, java_total), failures(g, python_total, python_reads)]
         for label, g in file_groups if g])
 
     # CDM's ingestion status of the invalid files
     invalid = [r for r in rows if r['verdict'].startswith('invalid')]
-    if invalid:
+    if invalid and not functions:
         groups = [('Malformed', [r for r in invalid if r['file_class'] == 'malformed']),
                   ('Well-formed — conditions fail',
                    [r for r in invalid if r['file_class'] == 'well-formed']),
