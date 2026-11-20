@@ -13,9 +13,14 @@ the model:
 - a value isn't of its basic type or isn't one of its enum's values;
 - a choice has no option, or more than one;
 - an @type isn't the attribute's type or a subtype of it;
-- a reference names a key that isn't in the document, on a required attribute;
+- a reference names a key that isn't in its scope, on a required attribute;
 - a reference names a key on an object of the wrong type;
-- the same key is on two different objects.
+- the same key is on two different objects in one scope.
+
+Keys are scoped as CDM Java's reference resolver scopes them (CdmReferenceConfig): an external or
+scoped key, and a reference to one, belongs to the nearest enclosing TradeState (SCOPE_TYPE), or
+to the document when there is none. A global key is a hash of its object and belongs to the
+document. A reference whose key is only in another scope is dangling, and its detail says so.
 
 An attribute with optional cardinality doesn't need a value. So a reference to a missing key on
 an optional attribute is reported, but doesn't make the document malformed
@@ -27,6 +32,10 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 DANGLING_OPTIONAL_IS_MALFORMED = False
+
+# The type whose objects scope external and scoped keys, as in CDM's CdmReferenceConfig
+SCOPE_TYPE = 'cdm.event.common.TradeState'
+DOCUMENT = '(document)'
 
 NAMESPACE = re.compile(r'^namespace\s+([\w.]+)')
 IMPORT = re.compile(r'^import\s+([\w.]+(?:\.\*)?)')
@@ -253,8 +262,13 @@ class Checker:
     def __init__(self, model: RuneModel):
         self.model = model
         self.issues = []
-        self.keys = {}       # (kind, value) -> [(type FQN, node)]
-        self.refs = []       # {'targets', 'path', 'expected', 'optional'}
+        self.keys = {}       # (kind, value, scope) -> [(type FQN, node)]
+        self.refs = []       # {'targets', 'path', 'expected', 'optional', 'scope'}
+        self.scope = DOCUMENT  # the path of the enclosing TradeState, or DOCUMENT
+
+    def key_scope(self, kind: str) -> str:
+        '''The scope a key or reference of this kind belongs to: '' is a global key.'''
+        return DOCUMENT if kind == '' else self.scope
 
     def issue(self, kind: str, path: str, detail: str) -> None:
         self.issues.append({'kind': kind, 'path': path or '(root)', 'detail': detail,
@@ -299,33 +313,13 @@ class Checker:
         if node is None:
             return
         if isinstance(node, dict):
-            self.metadata(node, typ, path, optional)
-            data_keys = [k for k in node if not k.startswith('@')]
-            if '@data' not in node and not data_keys and any(k.startswith('@ref') for k in node):
-                return  # a reference only: the referenced object is checked where it is
-            if self.is_complex(typ) and '@data' in node:
-                # an object with metadata, or a choice: the value is in @data
-                if data_keys:
-                    self.issue('wrong shape', path, f'{where}: attributes beside @data')
-                self.single(node['@data'], typ, path, optional, where)
-                return
-            if not self.is_complex(typ):
-                if '@data' in node:
-                    self.scalar(node['@data'], typ, path, where)
-                elif not any(k.startswith('@ref') for k in node):
-                    self.issue('metadata without a value', path, where)
-                return
-            declared = node.get('@type')
-            if isinstance(declared, str):
-                actual = model.resolve(declared)
-                if actual is None or model.conforms(actual, typ) is False:
-                    self.issue('wrong @type', path, f'{declared} where {short(typ)} is expected')
-                elif actual in model.types or actual in model.choices:
-                    typ = actual
-            if typ in model.choices:
-                self.choice(node, typ, path)
-            else:
-                self.object(node, typ, path)
+            outer = self.scope
+            if model.conforms(self.actual_type(node, typ), SCOPE_TYPE) is True:
+                self.scope = path or '(root)'
+            try:
+                self.single_object(node, typ, path, optional, where)
+            finally:
+                self.scope = outer
             return
         if isinstance(node, list):
             self.issue('wrong shape', path, f'{where}: a nested list')
@@ -334,6 +328,37 @@ class Checker:
             self.issue('wrong shape', path, f'{where}: a value where {short(typ)} is an object')
             return
         self.scalar(node, typ, path, where)
+
+    def single_object(self, node: dict, typ, path, optional, where) -> None:
+        '''One value that is a JSON object, within the current key scope.'''
+        model = self.model
+        self.metadata(node, typ, path, optional)
+        data_keys = [k for k in node if not k.startswith('@')]
+        if '@data' not in node and not data_keys and any(k.startswith('@ref') for k in node):
+            return  # a reference only: the referenced object is checked where it is
+        if self.is_complex(typ) and '@data' in node:
+            # an object with metadata, or a choice: the value is in @data
+            if data_keys:
+                self.issue('wrong shape', path, f'{where}: attributes beside @data')
+            self.single(node['@data'], typ, path, optional, where)
+            return
+        if not self.is_complex(typ):
+            if '@data' in node:
+                self.scalar(node['@data'], typ, path, where)
+            elif not any(k.startswith('@ref') for k in node):
+                self.issue('metadata without a value', path, where)
+            return
+        declared = node.get('@type')
+        if isinstance(declared, str):
+            actual = model.resolve(declared)
+            if actual is None or model.conforms(actual, typ) is False:
+                self.issue('wrong @type', path, f'{declared} where {short(typ)} is expected')
+            elif actual in model.types or actual in model.choices:
+                typ = actual
+        if typ in model.choices:
+            self.choice(node, typ, path)
+        else:
+            self.object(node, typ, path)
 
     def scalar(self, value, typ, path, where) -> None:
         if isinstance(value, (dict, list)):
@@ -349,13 +374,14 @@ class Checker:
         targets = []
         for key, value in node.items():
             if key.startswith('@key') and isinstance(value, str):
-                self.keys.setdefault((key.replace('@key', ''), value), []).append(
+                kind = key.replace('@key', '')
+                self.keys.setdefault((kind, value, self.key_scope(kind)), []).append(
                     (self.actual_type(node, typ), node))
             elif key.startswith('@ref') and isinstance(value, str):
                 targets.append((key.replace('@ref', ''), value))
         if targets:
             self.refs.append({'targets': targets, 'path': path, 'expected': typ,
-                              'optional': optional})
+                              'optional': optional, 'scope': self.scope})
 
     @staticmethod
     def attribute(path: str) -> str:
@@ -403,19 +429,25 @@ class Checker:
             self.single(node[key], options[key], f'{path}.{key}', False, f'{short(typ)}.{key}')
 
     def check_references(self) -> None:
-        for (kind, value), holders in self.keys.items():
-            # External and scoped keys are identifiers, so they must be unique. A global key
-            # is a hash of the object, so two equal objects can have the same one.
+        for (kind, value, scope), holders in self.keys.items():
+            # External and scoped keys are identifiers, so they must be unique in their scope.
+            # A global key is a hash of the object, so two equal objects can have the same one.
             nodes = [n for _, n in holders]
             if len(nodes) > 1 and (kind or any(nodes[0] != n for n in nodes[1:])):
-                self.issue('duplicate key', '', f'@key{kind} on {len(nodes)} objects: {value}')
+                where = '' if scope == DOCUMENT else f' in the TradeState at {scope}'
+                self.issue('duplicate key', '' if scope == DOCUMENT else scope,
+                           f'@key{kind} on {len(nodes)} objects{where}: {value}')
         for ref in self.refs:
             names = ', '.join(f'@ref{k}={v}' for k, v in ref['targets'])
-            found = [t for t in ref['targets'] if t in self.keys]
+            found = [(k, v, DOCUMENT if k == '' else ref['scope']) for k, v in ref['targets']]
+            found = [t for t in found if t in self.keys]
             if not found:
                 kind = ('dangling reference (optional attribute)' if ref['optional']
                         else 'dangling reference (required attribute)')
-                self.issue(kind, ref['path'], f'{self.attribute(ref["path"])}: {names}')
+                elsewhere = any(k == kind_ and v == value and k != ''
+                                for k, v in ref['targets'] for kind_, value, _ in self.keys)
+                self.issue(kind, ref['path'], f'{self.attribute(ref["path"])}: {names}'
+                           + (' (the key is only in another scope)' if elsewhere else ''))
                 continue
             keyed_type = self.keys[found[0]][0][0]
             if self.model.conforms(keyed_type, ref['expected']) is False:
