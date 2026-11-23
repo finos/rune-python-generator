@@ -33,3 +33,11 @@ type FooBar:
     foo Foo (1..1)
     condition Test: 
         foo->>deep1->attr = 3
+
+func GetDeepAttr: <"Deep path on a named function input.">
+    inputs:
+        foo Foo (1..1)
+    output:
+        result int (0..1)
+    set result:
+        foo->>deep1->attr
