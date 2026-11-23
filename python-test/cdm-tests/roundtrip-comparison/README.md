@@ -56,7 +56,9 @@ A document is **malformed** when its data doesn't match the model. That covers:
 - an `@type` that isn't the attribute's type or a subtype of it;
 - a dangling reference on a required attribute;
 - a reference to an object of the wrong type;
-- the same external or scoped key on two objects, or the same global key on two different objects.
+- the same external or scoped key on two objects in one scope, or the same global key on two different objects.
+
+Keys are scoped as CDM Java's reference resolver scopes them (`CdmReferenceConfig`). An external or scoped key, and a reference to one, belongs to its nearest enclosing `TradeState`, or to the document when there is none. So the same key in a business event's `before` and `after` states isn't a duplicate, and a reference whose key is only in another scope is dangling; its detail says so. A global key belongs to the document. The scope type is `SCOPE_TYPE` in `model_check.py`.
 
 An attribute with optional cardinality doesn't need a value. A dangling reference on an optional attribute is therefore counted, but it doesn't make the document malformed. To change that, set `DANGLING_OPTIONAL_IS_MALFORMED` in `model_check.py`.
 

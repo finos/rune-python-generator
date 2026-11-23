@@ -343,7 +343,8 @@ public final class PythonExpressionGenerator {
                 return generateCountOperation(count, scope);
             }
             case RosettaDeepFeatureCall deepFeature -> {
-                return "rune_resolve_deep_attr(self, \"" + deepFeature.getFeature().getName() + "\")";
+                String receiver = generateExpression(deepFeature.getReceiver(), scope);
+                return "rune_resolve_deep_attr(" + receiver + ", \"" + deepFeature.getFeature().getName() + "\")";
             }
             case RosettaEnumValueReference enumRef -> {
                 return enumRef.getEnumeration().getName() + "." + EnumHelper.convertValue(enumRef.getValue());
@@ -358,10 +359,7 @@ public final class PythonExpressionGenerator {
                 return "rune_get_only_element([x for x in (" + generateExpression(onlyElement.getArgument(), scope) + " or []) if x is not None])";
             }
             case RosettaOnlyExistsExpression onlyExists -> {
-                String args = onlyExists.getArgs().stream()
-                        .map(arg -> generateExpression(arg, scope))
-                        .collect(Collectors.joining(", "));
-                return "rune_check_one_of(self, " + args + ")";
+                return generateOnlyExistsExpression(onlyExists, scope);
             }
             case RosettaSymbolReference symbolRef -> {
                 return generateSymbolReference(symbolRef, scope);
@@ -610,6 +608,60 @@ public final class PythonExpressionGenerator {
         String body = generateExpression(func.getBody(), subScope);
 
         return "functools.reduce(lambda " + accParam + ", " + itemParam + ": " + body + ", " + argument + ")";
+    }
+
+    /**
+     * Generates {@code only exists}: true when exactly the listed attributes are set on the
+     * parent object and every other attribute of the parent's type (including inherited ones)
+     * is absent. Mirrors the Java runtime's {@code ExpressionOperators.onlyExists}.
+     *
+     * <p>The parent is the receiver of the first argument when it is a feature call
+     * ({@code bar -> before only exists}), otherwise the implicit variable
+     * ({@code before only exists} in a type condition). The DSL requires a single-cardinality
+     * parent, so it is a single object or {@code None}.
+     *
+     * <p>Generated inline from existing runtime helpers. If rune-python-runtime adds an
+     * {@code only exists} helper, this can delegate to it (finos/rune-python-generator#346).
+     */
+    private String generateOnlyExistsExpression(RosettaOnlyExistsExpression expr, PythonExpressionScope scope) {
+        RosettaExpression first = expr.getArgs().isEmpty() ? null : expr.getArgs().get(0);
+        String parent;
+        RMetaAnnotatedType parentType;
+        if (first instanceof RosettaFeatureCall firstFeatureCall) {
+            parent = generateExpression(firstFeatureCall.getReceiver(), scope);
+            parentType = typeProvider.getRMetaAnnotatedType(firstFeatureCall.getReceiver());
+        } else {
+            parent = scope.receiver();
+            parentType = typeProvider.typeOfImplicitVariable(expr);
+        }
+
+        RType rt = parentType == null ? null : typeSystem.stripFromTypeAliases(parentType.getRType());
+        RDataType dataType = rt instanceof RChoiceType choiceType ? choiceType.asRDataType()
+                : rt instanceof RDataType dt ? dt : null;
+        if (dataType == null) {
+            throw new UnsupportedOperationException(
+                    "Unsupported parent type in `only exists` expression: " + (rt == null ? null : rt.getName()));
+        }
+
+        Set<String> allNames = new LinkedHashSet<>();
+        dataType.getAllAttributes().forEach(a -> allNames.add(a.getName()));
+        Set<String> requiredNames = new LinkedHashSet<>();
+        for (RosettaExpression arg : expr.getArgs()) {
+            if (arg instanceof RosettaFeatureCall featureCall) {
+                requiredNames.add(featureCall.getFeature().getName());
+            } else if (arg instanceof RosettaSymbolReference symbolReference) {
+                requiredNames.add(symbolReference.getSymbol().getName());
+            } else {
+                throw new UnsupportedOperationException(
+                        "Unsupported argument in `only exists` expression: " + arg.getClass().getSimpleName());
+            }
+        }
+
+        String allTuple = allNames.stream().map(n -> "\"" + n + "\"").collect(Collectors.joining(", "))
+                + (allNames.size() == 1 ? "," : "");
+        String requiredSet = requiredNames.stream().map(n -> "\"" + n + "\"").collect(Collectors.joining(", "));
+        return "(lambda _p: _p is not None and {n for n in (" + allTuple
+                + ") if rune_attr_exists(rune_resolve_attr(_p, n))} == {" + requiredSet + "})(" + parent + ")";
     }
 
     private String generateOneOfOperation(OneOfOperation expr, PythonExpressionScope scope) {

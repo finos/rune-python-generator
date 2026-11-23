@@ -43,7 +43,7 @@ The following table tracks implementation status for core Rosetta language featu
 | Syntax Feature | Needs Generator Support? | Status | CDM Usage | DRR Usage | Implementation Details |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **`typeAlias`** (basic) | **N** | ⚠️ | Extensive | Extensive | The alias is expanded to its underlying base type at generation time (e.g., `typeAlias ISIN: string` → field typed as `str`). The domain name is not preserved in the output. See [ARCHITECTURE.md](ARCHITECTURE.md#6-design-decision-typealias-generation) for the rationale and the planned Rune Path approach. |
-| **`typeAlias`** (with `condition`) | **Y** | ⚠️ | 1 (`FpMLCodingScheme`) | 0 | Basic type constraints (pattern, min/max length, numeric ranges) on a `typeAlias` **are** propagated — the alias is stripped to its underlying base type and `processProperties` extracts those constraints. However, named `condition` blocks are silently discarded. In CDM, the only `typeAlias` with a named condition is `FpMLCodingScheme`, used exclusively for FpML codelist domain validation (calls native `ValidateFpMLCodingSchemeDomain`). See Known Validation and Runtime Gaps below. |
+| **`typeAlias`** (with `condition`) | **Y** | ⚠️ | 1 (`FpMLCodingScheme`) | 0 | Basic type constraints (pattern, min/max length, numeric ranges) on a `typeAlias` **are** propagated — the alias is stripped to its underlying base type and `processProperties` extracts those constraints. However, named `condition` blocks are silently discarded. In CDM, the only `typeAlias` with a named condition is `FpMLCodingScheme`, used exclusively for FpML codelist domain validation (calls `ValidateFpMLCodingSchemeDomain`, which depends on the native `LoadCodeList`). See Known Validation and Runtime Gaps below. |
 | **`extends`** (Functions) | **Y** | ❌ | 0 | 0 | Inherits shortcuts, logic, and structure from a base function. Defined in Rune grammar (`func ... extends ...`). Not currently used in CDM or DRR, but must be handled when encountered. |
 | **`super`** (Calls) | **Y** | ❌ | 0 | 0 | Invokes logic from a parent function within the current scope (`RosettaSuperCall` in Rune grammar). Not currently used in CDM or DRR. |
 
@@ -103,23 +103,28 @@ typeAlias FpMLCodingScheme(domain string):
 
 Named condition blocks are silently discarded. The alias is stripped to its base type and no validation is generated for the condition.
 
-**CDM usage**: The only `typeAlias` in CDM that carries a named condition is `FpMLCodingScheme`, a parameterized alias used exclusively for FpML codelist domain validation. All leaf aliases (`BusinessCenter`, `FloatingRateIndex`, etc.) are simple instantiations of `FpMLCodingScheme` with a specific domain string and do not carry their own conditions. The condition delegates to the native function `ValidateFpMLCodingSchemeDomain`, so addressing this gap is blocked on native function support as well as the broader Codelist / External Scheme Validation gap described below.
+**CDM usage**: The only `typeAlias` in CDM that carries a named condition is `FpMLCodingScheme`, a parameterized alias used exclusively for FpML codelist domain validation. All leaf aliases (`BusinessCenter`, `SettlementRateOption`, etc.) are simple instantiations of `FpMLCodingScheme` with a specific domain string and do not carry their own conditions. The condition calls `ValidateFpMLCodingSchemeDomain`, which depends on the native function `LoadCodeList`, so addressing this gap is blocked on native function support as well as the broader Codelist Validation gap described below.
 
 **Impact**: Any `typeAlias` with a named condition silently skips that validation in the generated Python. Addressing this requires either generating a constrained wrapper type (analogous to Pydantic's `Annotated[str, ...]` with a custom validator) or implementing the Rune Path so that the alias and its conditions are preserved in the output.
 
-### Codelist / External Scheme Validation
+### Codelist Validation
 
-Rune models commonly use `[metadata scheme]` to indicate that a field's value must come from an external coding scheme (e.g., FpML business center codes, ISO currency codes). In the Java implementation this is handled by a `CodelistLoader`. No equivalent exists in the Python generator or runtime.
+In CDM, the validation of codelist values is driven by the `FpMLCodingScheme` type alias condition described above, not by `[metadata scheme]`. The Java implementation works as follows:
 
-```rosetta
-type BusinessCenters:
-    businessCenter string (1..*)
-        [metadata scheme]
-```
+- `ValidateFpMLCodingSchemeDomain` calls `LoadCodeList`, a `[codeImplementation]` function.
+- `CdmRuntimeModule` binds it to `LoadCodeListImpl`, which reads `codelist/json/<domain>-N-M.json` from the classpath and caches it.
+- The generated data rule `FpMLCodingSchemeIsValidCodingScheme` runs only through `RosettaTypeValidator`. Construction, serialization and deserialization never run it.
+- The `@scheme` value on the attribute is ignored. A value is always checked against the fixed CDM list for that alias's domain.
 
-The generator emits no validation call for scheme-constrained fields. The runtime has no mechanism to load, cache, or query external code lists.
+**CDM usage**: CDM defines 15 aliases on `FpMLCodingScheme`, one per FpML codelist domain. Only `BusinessCenter` and `SettlementRateOption` are currently used as attribute types. The others are superseded by a parallel enum (for example, `CreditSeniorityEnum`), shadowed by a CDM type with the same name (`FloatingRateIndex`), or appear only in FpML ingestion. The CDM codelist authors plan to migrate further reference-data enums to codelists, so the number of affected attributes is expected to grow well beyond the current 15 domains.
 
-**Impact**: High. CDM uses external schemes for dozens of critical fields (Business Centers, Currencies, Instrument Identifiers). Without codelist support, generated CDM Python cannot achieve validation parity with the Java implementation.
+The Python output has three separate gaps:
+
+1. **The condition is not generated.** See `typeAlias` Named Condition Blocks above.
+2. **`LoadCodeList` has no Python implementation.** The generated stub calls `rune_execute_native(...)`. No native module is registered, so calling it, or calling `ValidateFpMLCodingSchemeDomain`, raises `NotImplementedError`. An application can register its own implementation with `rune_register_native()`.
+3. **The codelist JSON files are not packaged** in the Python distribution.
+
+**Impact**: Python validation accepts any string for a codelist-typed attribute, including on `rune_serialize`/`rune_deserialize` with their default validation. Java reports a `DATA_RULE` failure, but only when the validator is run. The gap is small today, but every enum migrated to a codelist moves a field from "bad values rejected at construction and on read" (the Python enum behaviour) to "bad values accepted". So the parity gap widens with each migration unless all three gaps are closed. Fixing gap 1 alone would cause validation to raise `NotImplementedError` until gaps 2 and 3 are addressed.
 
 ### Uniform Enum Metadata Wrapper
 

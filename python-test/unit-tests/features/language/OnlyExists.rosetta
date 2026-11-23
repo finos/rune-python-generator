@@ -1,0 +1,49 @@
+namespace rosetta_dsl.test.only_exists : <"generate Python unit tests from Rosetta.">
+
+type Bar:
+    before number (0..1)
+    after number (0..1)
+    other number (0..1)
+
+type SubBar extends Bar:
+    extra number (0..1)
+
+type Terms: <"only exists on bare attributes of the type being validated">
+    a number (0..1)
+    b number (0..1)
+    c number (0..1)
+
+    condition AOnly:
+        if a exists
+        then a only exists
+
+type Holder: <"only exists on a path in a type condition">
+    bar Bar (1..1)
+
+    condition BeforeOnly:
+        if bar -> before exists
+        then bar -> before only exists
+
+func BeforeOnlyExists: <"single path">
+    inputs:
+        bar Bar (1..1)
+    output:
+        result boolean (1..1)
+    set result:
+        bar -> before only exists
+
+func BeforeAndAfterOnlyExist: <"multiple paths">
+    inputs:
+        bar Bar (1..1)
+    output:
+        result boolean (1..1)
+    set result:
+        (bar -> before, bar -> after) only exists
+
+func SubBarBeforeOnlyExists: <"inherited and own attributes both count">
+    inputs:
+        subBar SubBar (1..1)
+    output:
+        result boolean (1..1)
+    set result:
+        subBar -> before only exists

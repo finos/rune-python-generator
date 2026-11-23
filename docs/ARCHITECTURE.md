@@ -354,3 +354,54 @@ Each call site in `processDAG` constructs one `BundleAssembler` per namespace an
 ### Tracking
 
 Tracked in finos/rune-python-generator#BUNDLE_ASSEMBLER_ISSUE. The `PythonCodeGenerator` class Javadoc has a todo that points to it.
+
+---
+
+## 8. Design Decision: When Validation Runs
+
+### Problem
+
+A generated model object can be checked at several points: when it is constructed, when an attribute is assigned, when it is (de)serialized, or when the caller asks for it explicitly. The choice decides when an invalid value is caught, and what it costs.
+
+### Current Behaviour
+
+Validation runs at the boundaries of an object's life, not when an attribute is assigned.
+
+| Point | Types / enum values | Cardinality and conditions |
+| :--- | :--- | :--- |
+| Construction (`Type(...)`) | Checked by Pydantic | Not checked |
+| Attribute assignment (`obj.attr = value`) | **Not checked** | Not checked |
+| `rune_deserialize(...)` (default `validate_model=True`) | Checked | Checked |
+| `rune_serialize(...)` (default `validate_model=True`) | Checked | Checked |
+| `validate_model()` | Checked | Checked |
+| `rune_serialize(validate_model=False)` / `rune_deserialize(validate_model=False)` | Not checked: the caller has opted out | Not checked |
+
+Assignment isn't checked because `BaseDataClass.model_config` (in rune-python-runtime) doesn't set Pydantic's `validate_assignment`, which is off by default. Generated classes add only `ConfigDict(defer_build=True)`. As a result, any field can hold a value of the wrong type after an assignment until the next validation point. This applies to an enum field set to `"BAD"`, a `time` field set to a string, and a string field set to an `int`:
+
+```python
+o = BusinessDayAdjustments(businessDayConvention=BusinessDayConventionEnum.FOLLOWING)
+o.businessDayConvention = "BAD"     # accepted
+o.validate_model()                  # raises ValidationError
+o.rune_serialize()                  # raises ValidationError
+o.rune_serialize(validate_model=False)   # writes "BAD" (Pydantic emits a serializer warning)
+```
+
+### Comparison with Java
+
+Java gets some of this for free from its type system. An enum setter only accepts an enum constant, and Jackson rejects an unknown enum string on read. All other value checks wait for `RosettaTypeValidator`: a string setter accepts any string, including a value outside a codelist. Java's mappers never validate on serialize or deserialize. Python's mappers validate by default, which is stricter than Java at the boundaries and looser at assignment.
+
+### Option: Turn on `validate_assignment`
+
+| Pros | Cons |
+| :--- | :--- |
+| Wrong-typed and bad enum values are rejected when they are assigned | A validation cost on every assignment, which matters in generated function bodies that set many attributes |
+| Closer to Java's behaviour for enums | Checks the assigned field's type only; cardinality and conditions would still wait for `validate_model()` |
+| | Interacts with the runtime's copy-on-write proxies (`cow.py`), which assign onto a shadow copy of the model. `ObjectBuilder` collects values in a dict and builds the model at the end, so it would be unaffected |
+
+### Ownership
+
+This is a runtime decision. The setting belongs in `BaseDataClass.model_config`. The generator could set it per class through the `ConfigDict` it already emits, but doing that unilaterally would split behaviour between generated models and the runtime's documented contract.
+
+### Current Position
+
+Keep validation at the boundaries. Changing it needs agreement in rune-python-runtime first, plus measurements on CDM-sized models.
