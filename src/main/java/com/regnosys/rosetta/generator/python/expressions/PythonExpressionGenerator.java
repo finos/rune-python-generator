@@ -343,7 +343,8 @@ public final class PythonExpressionGenerator {
                 return generateCountOperation(count, scope);
             }
             case RosettaDeepFeatureCall deepFeature -> {
-                return "rune_resolve_deep_attr(self, \"" + deepFeature.getFeature().getName() + "\")";
+                String receiver = generateExpression(deepFeature.getReceiver(), scope);
+                return "rune_resolve_deep_attr(" + receiver + ", \"" + deepFeature.getFeature().getName() + "\")";
             }
             case RosettaEnumValueReference enumRef -> {
                 return enumRef.getEnumeration().getName() + "." + EnumHelper.convertValue(enumRef.getValue());

@@ -53,7 +53,7 @@ public class PythonDeepPathTest {
                     condition DeepCheck:
                         item->>val = 5
                 """,
-                "rune_resolve_deep_attr(self, \"val\")");
+                "rune_resolve_deep_attr(item, \"val\")");
     }
 
     /**
@@ -79,7 +79,7 @@ public class PythonDeepPathTest {
                     condition DeepAttrCheck:
                         item->>leaf->val = 10
                 """,
-                "rune_resolve_deep_attr(self, \"leaf\")");
+                "rune_resolve_deep_attr(item, \"leaf\")");
     }
 
     /**
@@ -118,7 +118,7 @@ public class PythonDeepPathTest {
                     condition Test:
                         item->>deep1->attr = 3
                 """,
-                "rune_resolve_deep_attr(self, \"deep1\")");
+                "rune_resolve_deep_attr(item, \"deep1\")");
     }
 
     /**
@@ -145,6 +145,35 @@ public class PythonDeepPathTest {
                     condition DeepCheck:
                         inner->>val = 7
                 """,
-                "rune_resolve_deep_attr");
+                "rune_resolve_deep_attr(rune_resolve_attr(self, \"inner\"), \"val\")");
+    }
+
+    /**
+     * Deep path on a function input: {@code inner->>val} must resolve on the
+     * {@code inner} input, not on the function's frame.
+     */
+    @Test
+    public void testDeepPathOnFunctionInput() {
+        testUtils.assertBundleContainsExpectedString("""
+                type LeftBranch:
+                    val int (1..1)
+
+                type RightBranch:
+                    val int (1..1)
+
+                type Inner:
+                    left LeftBranch (0..1)
+                    right RightBranch (0..1)
+                    condition Choice: one-of
+
+                func GetDeepVal:
+                    inputs:
+                        inner Inner (1..1)
+                    output:
+                        result int (0..1)
+                    set result:
+                        inner->>val
+                """,
+                "rune_resolve_deep_attr(rune_resolve_attr(self, \"inner\"), \"val\")");
     }
 }
