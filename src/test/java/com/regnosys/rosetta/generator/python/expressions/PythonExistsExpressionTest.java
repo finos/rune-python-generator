@@ -384,7 +384,7 @@ public class PythonExistsExpressionTest {
                         if aValue -> field1 exists
                             then aValue -> field1 only exists
             """,
-            "return rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"aValue\"), \"field1\"))");
+            "return (lambda _p: _p is not None and {n for n in (\"field1\",) if rune_attr_exists(rune_resolve_attr(_p, n))} == {\"field1\"})(rune_resolve_attr(self, \"aValue\"))");
     }
 
     /**
@@ -404,7 +404,7 @@ public class PythonExistsExpressionTest {
                 set result:
                     ( bar -> before, bar -> after ) only exists
             """,
-            "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"after\"))");
+            "result = (lambda _p: _p is not None and {n for n in (\"before\", \"after\") if rune_attr_exists(rune_resolve_attr(_p, n))} == {\"before\", \"after\"})(rune_resolve_attr(self, \"bar\"))");
     }
 
     /**
@@ -424,7 +424,7 @@ public class PythonExistsExpressionTest {
                 set result:
                     bar -> before only exists
             """,
-            "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"before\"))");
+            "result = (lambda _p: _p is not None and {n for n in (\"before\",) if rune_attr_exists(rune_resolve_attr(_p, n))} == {\"before\"})(rune_resolve_attr(self, \"bar\"))");
     }
 
     /**
@@ -444,6 +444,27 @@ public class PythonExistsExpressionTest {
                 set result:
                     ( bar -> a, bar -> b, bar -> c ) only exists
             """,
-            "result = rune_check_one_of(self, rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"a\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"b\"), rune_resolve_attr(rune_resolve_attr(self, \"bar\"), \"c\"))");
+            "result = (lambda _p: _p is not None and {n for n in (\"a\", \"b\", \"c\") if rune_attr_exists(rune_resolve_attr(_p, n))} == {\"a\", \"b\", \"c\"})(rune_resolve_attr(self, \"bar\"))");
+    }
+
+    /**
+     * Test case for only-exists on a bare attribute in a type condition: the parent is the
+     * object being validated, and inherited attributes count as other attributes.
+     */
+    @Test
+    public void testOnlyExistsBareAttributeWithInheritance() {
+        testUtils.assertBundleContainsExpectedString("""
+            type Base:
+                inherited number (0..1)
+
+            type Terms extends Base:
+                a number (0..1)
+                b number (0..1)
+
+                condition AOnly:
+                    if a exists
+                    then a only exists
+            """,
+            "return (lambda _p: _p is not None and {n for n in (\"inherited\", \"a\", \"b\") if rune_attr_exists(rune_resolve_attr(_p, n))} == {\"a\"})(self)");
     }
 }
