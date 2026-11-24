@@ -333,7 +333,9 @@ public final class PythonAttributeProcessor {
             case RStringType stringType -> {
                 stringType
                     .getPattern()
-                    .ifPresent(value -> builder.pattern(String.format("r'^%s*$'", value)));
+                    // Group the pattern so the anchors apply to every alternative and the
+                    // whole value must match exactly once, as Java's Pattern.matches() does.
+                    .ifPresent(value -> builder.pattern(String.format("r'^(?:%s)$'", value)));
                 stringType
                     .getInterval()
                     .getMin()
