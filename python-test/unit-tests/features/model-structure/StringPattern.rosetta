@@ -1,0 +1,25 @@
+namespace rosetta_dsl.test.model_structure.string_pattern : <"A string pattern must match the whole value exactly once, as Java's Pattern.matches() does.">
+
+typeAlias CountryCode:
+    string(pattern: "[A-Z]{2,2}")
+
+typeAlias CurrencyPair:
+    string(pattern: "[A-Z]{3,3}/[A-Z]{3,3}")
+
+typeAlias Max35Text:
+    string(pattern: "[a-zA-Z0-9]{1,35}")
+
+typeAlias Alternatives:
+    string(pattern: "AB|CD")
+
+typeAlias Anchored:
+    string(pattern: "^[A-Z]{2}$")
+
+type PatternHolder:
+    country CountryCode (0..1)
+    pair CurrencyPair (0..1)
+    text Max35Text (0..1)
+    alternative Alternatives (0..1)
+    anchored Anchored (0..1)
+    letter string(pattern: "[a-zA-Z]") (0..1)
+    codes CountryCode (0..*)
