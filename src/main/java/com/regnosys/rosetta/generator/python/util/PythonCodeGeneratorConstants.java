@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+ * Copyright (c) 2023 CLOUDRISK Limited and FT Advisory LLC
  * SPDX-License-Identifier: Apache-2.0
  */
 package com.regnosys.rosetta.generator.python.util;
@@ -35,7 +35,7 @@ public final class PythonCodeGeneratorConstants {
      */
     public static final String LICENSE_HEADER =
             "#\n"
-            + "# Copyright (c) 2023-2026 CLOUDRISK Limited and FT Advisory LLC\n"
+            + "# Copyright (c) 2023 CLOUDRISK Limited and FT Advisory LLC\n"
             + "# SPDX-License-Identifier: Apache-2.0\n"
             + "#\n";
 }
