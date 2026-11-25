@@ -4,6 +4,7 @@
  */
 package com.regnosys.rosetta.generator.python.util;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -116,5 +117,55 @@ class PythonTomlGeneratorTest {
         String readme = python.get("README.md").toString();
         assertTrue(readme.contains("# python-finos"),
                 "Expected README.md to name python-finos but was:\n" + readme);
+    }
+
+    /**
+     * Without a licence file the generated pyproject.toml declares no licence and no authors.
+     */
+    @Test
+    void testTomlHasNoLicenseOrAuthorsByDefault() {
+        Map<String, CharSequence> python = testUtils.generatePythonFromString(MODEL);
+        String toml = python.get("pyproject.toml").toString();
+        assertFalse(toml.contains("license"),
+                "Expected pyproject.toml to have no license entry but was:\n" + toml);
+        assertFalse(toml.contains("authors"),
+                "Expected pyproject.toml to have no authors entry but was:\n" + toml);
+    }
+
+    /**
+     * With licence terms, pyproject.toml declares the licence and the originator as the author.
+     */
+    @Test
+    void testTomlDeclaresLicenseAndAuthorFromLicenseInfo() {
+        SpdxLicenseInfo info = new SpdxLicenseInfo("Community-Spec-1.0", "Copyright 2021 FINOS and CDM Participants",
+                null, null, "FINOS", null);
+        String toml = PythonCodeGeneratorUtil.createPYProjectTomlFile(null, "1.0.0", "python-cdm", info);
+        assertTrue(toml.contains("version = \"1.0.0\"\nlicense = \"Community-Spec-1.0\"\nrequires-python"),
+                "Expected pyproject.toml to declare the licence after the version but was:\n" + toml);
+        assertTrue(toml.contains("authors = [\n    { name = \"FINOS\" }\n]\n"),
+                "Expected pyproject.toml to name FINOS as the author but was:\n" + toml);
+    }
+
+    /**
+     * An originator email becomes the author's email, and quotes are escaped.
+     */
+    @Test
+    void testTomlAuthorWithEmailAndQuotes() {
+        SpdxLicenseInfo info = new SpdxLicenseInfo("MIT", "Copyright 2026 X", null, null,
+                "Example \"Q\" Ltd", "info@example.org");
+        String toml = PythonCodeGeneratorUtil.createPYProjectTomlFile(null, "1.0.0", "python-x", info);
+        assertTrue(toml.contains("{ name = \"Example \\\"Q\\\" Ltd\", email = \"info@example.org\" }"),
+                "Expected an escaped name and an email but was:\n" + toml);
+    }
+
+    /**
+     * Licence terms without an originator declare the licence but no authors.
+     */
+    @Test
+    void testTomlHasNoAuthorsWithoutOriginator() {
+        SpdxLicenseInfo info = new SpdxLicenseInfo("MIT", "Copyright 2026 X", null, null, null, null);
+        String toml = PythonCodeGeneratorUtil.createPYProjectTomlFile(null, "1.0.0", "python-x", info);
+        assertTrue(toml.contains("license = \"MIT\""), toml);
+        assertFalse(toml.contains("authors"), "Expected no authors entry but was:\n" + toml);
     }
 }

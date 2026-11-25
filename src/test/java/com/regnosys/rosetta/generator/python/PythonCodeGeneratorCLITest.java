@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -282,6 +283,138 @@ class PythonCodeGeneratorCLITest {
                 "The top-level src/rune/__init__.py must not be created when rune is copied as a top-level package");
         assertTrue(Files.exists(pythonDir.resolve("src/rune/native/__init__.py")),
                 "The native package subtree should still receive __init__.py files under src/rune/native");
+    }
+
+    @Test
+    void testLicenseFileWritesHeaderAndPyprojectLicense() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        Path spdx = tempDir.resolve("LICENSE.spdx");
+        Files.writeString(spdx, """
+                SPDXVersion: SPDX-2.3
+                PackageName: example-model
+                PackageHomePage: https://example.org/model
+                PackageOriginator: Organization: Example Org
+                PackageLicenseDeclared: Community-Spec-1.0
+                PackageCopyrightText: Copyright 2021 Example Participants
+                """);
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-p", "test-project",
+                "-v", "2.0.0",
+                "-l", spdx.toString()
+        });
+
+        assertEquals(0, exitCode, "Should return 0 with a valid licence file");
+        String expectedHeader = """
+                #
+                # Copyright 2021 Example Participants
+                # SPDX-License-Identifier: Community-Spec-1.0
+                # Generated from example-model 2.0.0 (https://example.org/model)
+                #
+                """;
+        String toml = Files.readString(pythonDir.resolve("pyproject.toml"));
+        assertTrue(toml.startsWith(expectedHeader), "pyproject.toml should start with the model's header, but was:\n" + toml);
+        assertTrue(toml.contains("license = \"Community-Spec-1.0\""), "pyproject.toml should declare the model's licence, but was:\n" + toml);
+        assertTrue(toml.contains("authors = [\n    { name = \"Example Org\" }\n]"), "pyproject.toml should name the model's originator as author, but was:\n" + toml);
+        try (var files = Files.walk(pythonDir.resolve("src"))) {
+            List<Path> pyFiles = files.filter(p -> p.toString().endsWith(".py")).toList();
+            assertFalse(pyFiles.isEmpty(), "Expected generated .py files");
+            for (Path py : pyFiles) {
+                assertTrue(Files.readString(py).startsWith(expectedHeader), py + " should start with the model's header");
+            }
+        }
+        assertFalse(Files.readString(pythonDir.resolve("README.md")).startsWith("#\n# Copyright"),
+                "README.md should not get the header");
+    }
+
+    @Test
+    void testNoLicenseFileWritesNoLicenceTerms() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-p", "test-project"
+        });
+
+        assertEquals(0, exitCode, "Should return 0 without a licence file");
+        String toml = Files.readString(pythonDir.resolve("pyproject.toml"));
+        assertTrue(toml.startsWith("[build-system]"), "pyproject.toml should have no header, but was:\n" + toml);
+        assertFalse(toml.contains("license"), "pyproject.toml should declare no licence, but was:\n" + toml);
+        assertFalse(toml.contains("authors"), "pyproject.toml should name no authors, but was:\n" + toml);
+        try (var files = Files.walk(pythonDir.resolve("src"))) {
+            for (Path py : files.filter(p -> p.toString().endsWith(".py")).toList()) {
+                String content = Files.readString(py);
+                assertFalse(content.contains("SPDX-License-Identifier") || content.contains("CLOUDRISK"),
+                        py + " should carry no licence header");
+            }
+        }
+    }
+
+    @Test
+    void testLicenseFileWithoutRequiredFieldWritesNoLicenceTerms() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path pythonDir = tempDir.resolve("python");
+        Path spdx = tempDir.resolve("LICENSE.spdx");
+        Files.writeString(spdx, "PackageLicenseDeclared: MIT\nPackageOriginator: Organization: Example Org\n");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", pythonDir.toString(),
+                "-p", "test-project",
+                "-l", spdx.toString()
+        });
+
+        assertEquals(0, exitCode, "A licence file without copyright text should warn, not fail");
+        String toml = Files.readString(pythonDir.resolve("pyproject.toml"));
+        assertTrue(toml.startsWith("[build-system]"), "pyproject.toml should have no header, but was:\n" + toml);
+        assertFalse(toml.contains("license"), "pyproject.toml should declare no licence, but was:\n" + toml);
+        assertFalse(toml.contains("authors"), "pyproject.toml should name no authors, but was:\n" + toml);
+        try (var files = Files.walk(pythonDir.resolve("src"))) {
+            for (Path py : files.filter(p -> p.toString().endsWith(".py")).toList()) {
+                assertFalse(Files.readString(py).contains("SPDX-License-Identifier"), py + " should carry no licence header");
+            }
+        }
+    }
+
+    @Test
+    void testMalformedLicenseFileReturnsError() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        Path licenseMd = tempDir.resolve("LICENSE.md");
+        Files.writeString(licenseMd, "# Some License\n\nThe terms of the licence.\n");
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", tempDir.resolve("python").toString(),
+                "-p", "test-project",
+                "-l", licenseMd.toString()
+        });
+
+        assertEquals(1, exitCode, "Should return 1 when the licence file is not an SPDX tag-value file");
+        assertFalse(Files.exists(tempDir.resolve("python")), "Nothing should be generated");
+    }
+
+    @Test
+    void testMissingLicenseFileReturnsError() throws IOException {
+        Path validFile = createValidRosettaFile(tempDir);
+        TestCLI cli = new TestCLI();
+
+        int exitCode = cli.run(new String[] {
+                "-f", validFile.toString(),
+                "-t", tempDir.resolve("python").toString(),
+                "-p", "test-project",
+                "-l", tempDir.resolve("missing.spdx").toString()
+        });
+
+        assertEquals(1, exitCode, "Should return 1 when the licence file does not exist");
     }
 
     private Path createValidRosettaFile(Path dir) throws IOException {

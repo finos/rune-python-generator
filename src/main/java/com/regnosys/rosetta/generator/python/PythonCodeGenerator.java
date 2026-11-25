@@ -41,6 +41,7 @@ import com.regnosys.rosetta.generator.python.enums.PythonEnumGenerator;
 import com.regnosys.rosetta.generator.python.functions.PythonFunctionGenerator;
 import com.regnosys.rosetta.generator.python.object.PythonModelObjectGenerator;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
+import com.regnosys.rosetta.generator.python.util.SpdxLicenseInfo;
 import com.regnosys.rosetta.generator.python.util.PythonCodeWriter;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaModel;
@@ -156,6 +157,21 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
      */
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    /**
+     * Optional licence terms of the model. When null, pyproject.toml has no {@code license} or
+     * {@code authors}.
+     */
+    private SpdxLicenseInfo licenseInfo = null;
+
+    /**
+     * Sets the model's licence terms, read from its SPDX file.
+     *
+     * @param licenseInfo the licence terms, or {@code null} to write none
+     */
+    public void setLicenseInfo(SpdxLicenseInfo licenseInfo) {
+        this.licenseInfo = licenseInfo;
     }
 
     /**
@@ -307,7 +323,7 @@ public final class PythonCodeGenerator extends AbstractExternalGenerator {
                         contexts.keySet(), resolvedProjectName);
             }
         }
-        result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(null, cleanVersion, resolvedProjectName));
+        result.put(PYPROJECT_TOML, PythonCodeGeneratorUtil.createPYProjectTomlFile(null, cleanVersion, resolvedProjectName, licenseInfo));
         // pyproject.toml names this file as the package description
         result.put(README_MD, PythonCodeGeneratorUtil.createReadmeFile(resolvedProjectName, cleanVersion));
         return result;

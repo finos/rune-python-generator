@@ -87,6 +87,34 @@ To generate Python code from a single file or directory, after building the proj
 java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI
 ```
 
+#### Licence terms of the generated code
+
+The generated code carries the licence terms of the model it was generated from, not those of the generator. Pass the model's SPDX tag-value file (for example its `LICENSE.spdx`) with `-l` / `--license-file`:
+
+```bash
+java -cp target/python-0.0.0.main-SNAPSHOT.jar com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI \
+  -s <rosetta-dir> -t <target-dir> -p <project-name> -v <version> -l <model>/LICENSE.spdx
+```
+
+The generator reads these fields and ignores all others:
+
+| SPDX field | Required | Used for |
+|---|---|---|
+| `PackageLicenseDeclared` | yes | the `SPDX-License-Identifier` line of the header, and `license` in `pyproject.toml` |
+| `PackageCopyrightText` | yes | the copyright line(s) of the header; a multi-line `<text>...</text>` value is written line by line |
+| `PackageName`, `PackageHomePage` | no | an attribution line, `Generated from <name> <version> (<home page>)`, written only when both are present |
+| `PackageOriginator` | no | `authors` in `pyproject.toml`, from `Organization: <name> (<email>)` or `Person: <name> (<email>)`; the email is optional |
+
+The header is written at the top of every generated `.py` and `.toml` file. Files copied from `--native-dir` are left unchanged.
+
+Licence terms are written only when both required fields are present. A field that is missing, empty, `NONE` or `NOASSERTION` is reported as a warning:
+
+- **A required field is missing:** a warning names it, and no licence terms are written at all: no header, and no `license` or `authors` in `pyproject.toml`. Generation continues.
+- **An optional field is missing:** a warning names it, and only the output that depends on it is left out.
+- **No `-l` given:** a warning says that no licence terms will be written.
+
+A licence file that cannot be read, or that is not a well-formed SPDX tag-value file, stops the CLI with an error and nothing is generated. A file is not well formed when it has a line that is not `Tag: value`, a comment (`#`) or blank, when a `<text>` value has no closing `</text>`, or when it has none of the tags `SPDXVersion`, `DataLicense`, `SPDXID` or `Package*` (for example a `LICENSE.md`, or an SPDX document in JSON or RDF).
+
 ### Using the Generated Code
 
 The generated Python classes are standard [Pydantic v2](https://docs.pydantic.dev/) models that extend `BaseDataClass` from the [rune-python-runtime](https://github.com/finos/rune-python-runtime). Each generated package exposes a `rune_deserialize` helper and every model instance exposes `rune_serialize`.

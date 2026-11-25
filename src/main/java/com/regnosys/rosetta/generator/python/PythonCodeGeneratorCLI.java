@@ -48,8 +48,8 @@ import com.regnosys.rosetta.RosettaStandaloneSetup;
 import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
 import com.regnosys.rosetta.generator.external.ExternalGenerator;
 import com.regnosys.rosetta.generator.external.ExternalGenerators;
-import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorConstants;
 import com.regnosys.rosetta.generator.python.util.PythonCodeGeneratorUtil;
+import com.regnosys.rosetta.generator.python.util.SpdxLicenseInfo;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaNamed;
 
@@ -83,6 +83,12 @@ import com.regnosys.rosetta.rosetta.RosettaNamed;
  * <li><b>-p, --project-name &lt;projectName&gt;</b>: Override the
  * <code>pyproject.toml</code> project name (defaults to
  * <code>python-&lt;first-namespace-segment&gt;</code>)</li>
+ * <li><b>-l, --license-file &lt;spdxFile&gt;</b>: SPDX tag-value file giving
+ * the model's licence and copyright. They are written into a header at the top
+ * of every generated <code>.py</code> and <code>.toml</code> file and into
+ * <code>pyproject.toml</code>. Without it, or when it lacks
+ * <code>PackageLicenseDeclared</code> or <code>PackageCopyrightText</code>, a
+ * warning is logged and no licence terms are written.</li>
  * <li><b>-e, --allow-errors</b>: Continue generation even if validation
  * errors are present</li>
  * <li><b>-w, --fail-on-warnings</b>: Treat validation warnings as
@@ -161,6 +167,9 @@ public class PythonCodeGeneratorCLI {
         Option nativeDirOpt = Option.builder("n").longOpt("native-dir").argName("nativeDir")
                 .desc("Source directory containing native function implementations to copy into the generated package")
                 .hasArg().get();
+        Option licenseFileOpt = Option.builder("l").longOpt("license-file").argName("spdxFile")
+                .desc("SPDX tag-value file with the model's licence and copyright (default: no licence terms written)")
+                .hasArg().get();
 
         options.addOption(help);
         options.addOption(srcDirOpt);
@@ -172,6 +181,7 @@ public class PythonCodeGeneratorCLI {
         options.addOption(versionOpt);
         options.addOption(namespacePrefixOpt);
         options.addOption(nativeDirOpt);
+        options.addOption(licenseFileOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -203,7 +213,29 @@ public class PythonCodeGeneratorCLI {
                 return 1;
             }
 
-            GenerationOptions opts = new GenerationOptions(allowErrors, failOnWarnings, projectName, version, namespacePrefix, nativeDir);
+            SpdxLicenseInfo licenseInfo = null;
+            if (cmd.hasOption("l")) {
+                String licenseFile = cmd.getOptionValue("l");
+                try {
+                    licenseInfo = SpdxLicenseInfo.read(Paths.get(licenseFile));
+                } catch (IOException e) {
+                    LOGGER.error("Failed to read licence file {}: {}", licenseFile, e.getMessage());
+                    return 1;
+                } catch (SpdxLicenseInfo.SpdxFormatException e) {
+                    LOGGER.error(e.getMessage());
+                    return 1;
+                }
+            }
+            if (licenseInfo != null) {
+                LOGGER.info("Licence terms from {}: {}, {}", cmd.getOptionValue("l"), licenseInfo.licenseId(),
+                        licenseInfo.copyrightText());
+            } else {
+                LOGGER.warn("No licence terms will be written to the generated code{}",
+                        cmd.hasOption("l") ? "" : " (no --license-file given)");
+            }
+
+            GenerationOptions opts = new GenerationOptions(allowErrors, failOnWarnings, projectName, version,
+                    namespacePrefix, nativeDir, licenseInfo);
             if (cmd.hasOption("s")) {
                 String srcDir = cmd.getOptionValue("s");
                 return translateFromSourceDir(srcDir, tgtDir, opts);
@@ -231,6 +263,7 @@ public class PythonCodeGeneratorCLI {
      * @param version         the version string written into the generated package
      * @param namespacePrefix optional namespace prefix prepended to all generated paths
      * @param nativeDir       optional directory containing native Python function implementations
+     * @param licenseInfo     optional licence terms of the model, read from its SPDX file
      */
     private record GenerationOptions(
         boolean allowErrors,
@@ -238,7 +271,8 @@ public class PythonCodeGeneratorCLI {
         String projectName,
         String version,
         String namespacePrefix,
-        String nativeDir
+        String nativeDir,
+        SpdxLicenseInfo licenseInfo
     ) {
 
     }
@@ -300,6 +334,7 @@ public class PythonCodeGeneratorCLI {
         String version = opts.version();
         String namespacePrefix = opts.namespacePrefix();
         String nativeDir = opts.nativeDir();
+        SpdxLicenseInfo licenseInfo = opts.licenseInfo();
 
         LOGGER.info("Processing {} .rosetta files, writing to: {}", rosettaFiles.size(), tgtDir);
 
@@ -325,6 +360,7 @@ public class PythonCodeGeneratorCLI {
         PythonCodeGenerator pythonCodeGenerator = injector.getInstance(PythonCodeGenerator.class);
         pythonCodeGenerator.setProjectName(projectName);
         pythonCodeGenerator.setNamespacePrefix(namespacePrefix);
+        pythonCodeGenerator.setLicenseInfo(licenseInfo);
         PythonModelLoader modelLoader = injector.getInstance(PythonModelLoader.class);
 
         List<RosettaModel> models = modelLoader.getRosettaModels(resources);
@@ -426,7 +462,8 @@ public class PythonCodeGeneratorCLI {
         }
         generatedPython.putAll(pythonCodeGenerator.afterAllGenerate(resourceSet, models, version));
 
-        writePythonFiles(generatedPython, tgtDir);
+        String header = licenseInfo != null ? licenseInfo.header(version) : null;
+        writePythonFiles(generatedPython, tgtDir, header);
         copyNativeFunctions(nativeDir, tgtDir, generatedPython.keySet(), namespacePrefix);
 
         LOGGER.info("Read {} model(s)", models.size());
@@ -449,7 +486,7 @@ public class PythonCodeGeneratorCLI {
         return injector.getInstance(IResourceValidator.class);
     }
 
-    private static void writePythonFiles(Map<String, CharSequence> generatedPython, String tgtDir) {
+    private static void writePythonFiles(Map<String, CharSequence> generatedPython, String tgtDir, String header) {
         Path targetRoot = Paths.get(tgtDir);
         File targetDirFile = targetRoot.toFile();
         // Remove existing target directory (if any), then (re)create it
@@ -473,8 +510,8 @@ public class PythonCodeGeneratorCLI {
             try {
                 Files.createDirectories(outputPath.getParent());
                 String body = content.toString();
-                if (filePath.endsWith(".py") || filePath.endsWith(".toml")) {
-                    body = PythonCodeGeneratorConstants.LICENSE_HEADER + body;
+                if (header != null && (filePath.endsWith(".py") || filePath.endsWith(".toml"))) {
+                    body = header + body;
                 }
                 Files.writeString(outputPath, body);
                 LOGGER.info("Wrote file: {}", outputPath);

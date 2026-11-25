@@ -173,9 +173,36 @@ public final class PythonCodeGeneratorUtil {
     }
 
     public static String createPYProjectTomlFile(String namespace, String version, String projectName) {
+        return createPYProjectTomlFile(namespace, version, projectName, null);
+    }
+
+    /**
+     * Creates the generated package's pyproject.toml.
+     *
+     * @param namespace   the namespace used to derive the project name when none is given
+     * @param version     the package version
+     * @param projectName the project name, or null to derive it from the namespace
+     * @param licenseInfo the model's licence terms, giving {@code license} and {@code authors};
+     *                    null to leave both out
+     * @return the pyproject.toml content
+     */
+    public static String createPYProjectTomlFile(String namespace, String version, String projectName,
+            SpdxLicenseInfo licenseInfo) {
         String name = (projectName != null && !projectName.isBlank())
                 ? projectName
                 : "python-" + namespace;
+        String licenseLine = "";
+        String authorsLine = "";
+        if (licenseInfo != null) {
+            licenseLine = "license = \"" + tomlEscape(licenseInfo.licenseId()) + "\"\n";
+            if (licenseInfo.originatorName() != null) {
+                String email = licenseInfo.originatorEmail() != null
+                        ? ", email = \"" + tomlEscape(licenseInfo.originatorEmail()) + "\""
+                        : "";
+                authorsLine = "authors = [\n    { name = \"" + tomlEscape(licenseInfo.originatorName()) + "\""
+                        + email + " }\n]\n";
+            }
+        }
         return """
                 [build-system]
                 requires = ["setuptools>=77.0.3"]
@@ -184,8 +211,7 @@ public final class PythonCodeGeneratorUtil {
                 [project]
                 name = "%s"
                 version = "%s"
-                license = "Apache-2.0"
-                requires-python = ">= 3.11"
+                %srequires-python = ">= 3.11"
                 dependencies = [
                    "pydantic>=2.10.3",
                    "rune.runtime>=3.1.0,<4.0.0"
@@ -196,15 +222,14 @@ public final class PythonCodeGeneratorUtil {
                     "Programming Language :: Python :: 3.11",
                     "Programming Language :: Python :: 3.12",
                     "Programming Language :: Python :: 3.13"
-                ]                
-                authors = [
-                    { name = "Daniel Schwartz" },
-                    { name = "Plamen Neykov" },
-                    { name = "Others (See AUTHORS)" }
                 ]
-
+                %s
                 [tool.setuptools.packages.find]
-                where = ["src"]""".formatted(name, version).stripIndent();
+                where = ["src"]""".formatted(name, version, licenseLine, authorsLine).stripIndent();
+    }
+
+    private static String tomlEscape(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /**
