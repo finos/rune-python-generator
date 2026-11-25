@@ -14,4 +14,4 @@ FilesAnalyzed: false
 PackageOriginator: Organization: CLOUDRISK Limited and FT Advisory LLC
 PackageHomePage: https://github.com/finos/rune-python-generator
 PackageLicenseDeclared: Apache-2.0
-PackageCopyrightText: Copyright 2023-2026 CLOUDRISK Limited and FT Advisory LLC
+PackageCopyrightText: Copyright 2023 CLOUDRISK Limited and FT Advisory LLC
