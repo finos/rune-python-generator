@@ -1,7 +1,17 @@
-SPDXVersion: SPDX-2.0
+SPDXVersion: SPDX-2.3
 DataLicense: CC0-1.0
-Creator: CLOUDRISK Limited and FT Advisory LLC
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: rune-python-generator
+DocumentNamespace: https://github.com/finos/rune-python-generator/spdx
+Creator: Organization: CLOUDRISK Limited
+Creator: Organization: FT Advisory LLC
+Created: 2023-05-02T00:00:00Z
+
 PackageName: rune-python-generator
-PackageOriginator: CLOUDRISK Limited and FT Advisory LLC
+SPDXID: SPDXRef-Package
+PackageDownloadLocation: https://github.com/finos/rune-python-generator
+FilesAnalyzed: false
+PackageOriginator: Organization: CLOUDRISK Limited and FT Advisory LLC
 PackageHomePage: https://github.com/finos/rune-python-generator
 PackageLicenseDeclared: Apache-2.0
+PackageCopyrightText: Copyright 2023-2026 CLOUDRISK Limited and FT Advisory LLC
