@@ -59,6 +59,7 @@ cat <<EOF > .git/info/sparse-checkout
 rosetta-source/src/main/rosetta/*
 pom.xml
 rosetta-source/pom.xml
+LICENSE.spdx
 EOF
 
 git remote add origin "$CDM_REMOTE"
@@ -66,6 +67,13 @@ git pull --depth 1 origin $CDM_BRANCH || error "git pull for CDM failed"
 
 # Copy CDM files to the target 'common-domain-model' folder
 cp -r rosetta-source/src/main/rosetta/* "${ROSETTA_DIR}/common-domain-model/"
+
+# CDM's SPDX file gives the licence terms of the generated code (passed to the generator with -l)
+if [ -f LICENSE.spdx ]; then
+    cp LICENSE.spdx "${ROSETTA_DIR}/LICENSE.spdx"
+else
+    echo "WARNING: $CDM_BRANCH has no LICENSE.spdx; the generated code will have no licence terms"
+fi
 
 FPML_VERSION=$(sed -n 's/.*<rune-fpml[-.]version>\(.*\)<\/rune-fpml[-.]version>.*/\1/p' pom.xml | head -n 1)
 

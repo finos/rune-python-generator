@@ -64,6 +64,7 @@ CDM_VERSION=""
 CDM_REPO="https://github.com/finos/common-domain-model.git"
 FPML_REPO="https://github.com/rosetta-models/rune-fpml.git"
 SKIP_CDM=0
+LICENSE_FILE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-cdm)
@@ -80,6 +81,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --fpml-repo)
       FPML_REPO="$2"
+      shift 2
+      ;;
+    -l|--license-file)
+      LICENSE_FILE="$2"
       shift 2
       ;;
     -v|--cdm-version)
@@ -111,8 +116,18 @@ fi
 
 ensure_jar_exists "$PROJECT_ROOT_PATH" "$JAR_PATH"
 
+# The licence terms of the generated code: CDM's LICENSE.spdx unless another file is given
+if [[ -z "$LICENSE_FILE" && -f "$CDM_SOURCE_PATH/LICENSE.spdx" ]]; then
+    LICENSE_FILE="$CDM_SOURCE_PATH/LICENSE.spdx"
+fi
+LICENSE_ARGS=()
+if [[ -n "$LICENSE_FILE" ]]; then
+    echo "***** licence terms from: $LICENSE_FILE"
+    LICENSE_ARGS=(-l "$LICENSE_FILE")
+fi
+
 echo "***** build CDM version: $CDM_BRANCH"
-java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -p $CDM_PROJECT_NAME -v $CDM_VERSION -x $CDM_PREFIX || error "Failed to generate CDM Python code"
+java -cp "$JAR_PATH" com.regnosys.rosetta.generator.python.PythonCodeGeneratorCLI -s $CDM_SOURCE_PATH -t $PYTHON_TARGET_PATH -p $CDM_PROJECT_NAME -v $CDM_VERSION -x $CDM_PREFIX "${LICENSE_ARGS[@]}" || error "Failed to generate CDM Python code"
 JAVA_EXIT_CODE=$?
 if [[ $JAVA_EXIT_CODE -eq 1 ]]; then
     echo "Java program returned exit code 1. Stopping script."
